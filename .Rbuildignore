@@ -1,0 +1,5 @@
+^\.travis\.yml$
+^cran-comments\.md$
+^README\.Rmd$
+^LICENSE\.md$
+^data-raw$
