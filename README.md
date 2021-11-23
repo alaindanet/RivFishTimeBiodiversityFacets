@@ -9,7 +9,7 @@
 
 The goal of RivFishTimeBiodiversityFacets is to …
 
-See [starting.R]() to see how the file was created.
+See [starting.R](starting.R) to see how the file was created.
 
 ## Installation
 
