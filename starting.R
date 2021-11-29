@@ -15,6 +15,7 @@ use_cran_comments()
 use_readme_rmd()
 use_mit_license()
 
+# Routine
 attachment::att_amend_desc()
 devtools::check()
 

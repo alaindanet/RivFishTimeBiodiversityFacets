@@ -15,9 +15,343 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
+library(tidyverse)
 library(RivFishTimeBiodiversityFacets)
+library(here)
+library(kableExtra)
+```
+
+# Load data
+
+- I load the main dataset
+
+```{r}
+fish_files <- list.files(here("inst", "extdata"))
+datapath <- system.file(paste0("extdata/", fish_files), package = "RivFishTimeBiodiversityFacets")
+
+characteristic <- read_csv(datapath[1])
+timeseries <- read_csv(datapath[2])
+
+# I copy the output of spec to reload properly
+spec(timeseries)
+
+timeseries <- read_csv(datapath[2],
+  col_types = cols(
+    X1 = col_double(),
+    OP_ID = col_character(),
+    Glob_ID = col_character(),
+    Species = col_character(),
+    Origin = col_character(),
+    SiteID = col_character(),
+    Name = col_character(),
+    Date = col_character(), #col_date(format = "%m/%d/%Y"),
+    Year = col_integer(),
+    Month = col_integer(),
+    Quarter = col_character(),
+    Protocol = col_character(),
+    SampledArea_m2 = col_double(),
+    SampledLength_m = col_double(),
+    speciesStatus = col_character(),
+    UnitAbundance = col_character(),
+    UnitBiomass = col_character(),
+    WaterTemp_C = col_double(),
+    Protocol_detail = col_character(),
+    MAIN_BAS = col_double(),
+    Country = col_character(),
+    Responsible = col_character(),
+    Abundance = col_double(),
+    Biomass = col_double(),
+    Ecoregion = col_character(),
+    Latitude = col_double(),
+    Longitude = col_double(),
+    Region = col_character(),
+    Province = col_character(),
+    Waterbody = col_character()
+  )
+)
+problems(timeseries)
+```
+
+- I reformat columns to not small case 
+- I remove the dummy variable
+
+```{r}
+colnames(timeseries) <- tolower(colnames(timeseries))
+timeseries <- select(timeseries, -x1)
+```
+
+
+# Get some information 
+
+```{r}
+summary(timeseries)
+```
+
+- I want histograms et summary of quantitative variables 
+
+```{r}
+mask_num_var <- map_lgl(timeseries, is.numeric)
+
+lg_timeseries_num <- timeseries[, mask_num_var] %>%
+  pivot_longer(cols = everything(),
+    names_to = "variable",
+    values_to = "values")
+```
+
+```{r hist_num}
+lg_timeseries_num %>%
+  ggplot(aes(x = values)) +
+  geom_histogram() +
+  facet_wrap(vars(variable), scales = "free")
 ```
 
 ```{r}
+summary_distribution <- 			# summary of a distribution
+  function(x = NULL, na.rm = FALSE) {
+
+    quant <- quantile(x, probs = c(0, .25, .5, .75, 1), na.rm = na.rm)
+    names(quant) <- c("min", "1st_quart", "median", "2nd_quart", "max")
+
+    other_desc <- c(
+      mean = mean(x, na.rm = na.rm),
+      sd = sd(x, na.rm = na.rm),
+      n = length(x),
+      n_na = length(x[is.na(x)]),
+      frac_na = length(x[is.na(x)]) / length(x)
+    )
+
+    output <- c(quant, other_desc)
+    return(output)
+}
+```
+
+```{r}
+map2_dfr(
+  timeseries[, mask_num_var], c(4, 2, 3, 3, 3, 8, 3, 4, 2, 2),
+  ~summary_distribution(.x, na.rm = TRUE) %>% formatC(., digits = .y),
+  .id = "variable") %>%
+kable(., caption = "Descriptive statistics of Global timeseries", label = "d-num")
+```
+
+# Site characteristics
+
+- Site are described by siteid  
+- Gathering info such as protocol, year range, location (gps, region),
+
+```{r}
+var_site <- c("species", "date", "year", "month", "quarter", "protocol",
+  "protocol_detail", "sampledlength_m", "speciesstatus", "unitabundance",
+  "unitbiomass", "country", "abundance", "biomass", "ecoregion", "region",
+  "latitude", "longitude", "province", "waterbody")
+
+var_localisation <- c(
+  "latitude", "longitude", "province", "waterbody", "country", "region",
+  "ecoregion", "main_bas"
+)
+
+var_protocol <- c("date", "year", "month", "quarter", "protocol",
+  "protocol_detail", "sampledlength_m", "unitabundance",
+  "unitbiomass", "watertemp_c"
+)
+```
+
+
+```{r}
+get_unique_values <- function(x = NULL, na.omit = TRUE) {
+
+  if (na.omit) {
+    x <- na.omit(x)
+  }
+
+  res <- unique(x)
+
+  if (length(res) <= 1) {
+    res
+  } else {
+    "no_unique"
+  }
+}
+
+get_unique_values_c <- compiler::cmpfun(get_unique_values)
+```
+
+```{r}
+x <- rep(list(c(runif(1e3), rep(NA, 1000))), 100)
+
+bench::mark(
+  map(x, get_unique_values),
+  map(x, get_unique_values_c)
+)[c("expression", "min", "median", "itr/sec", "n_gc")]
+```
+
+
+```{r}
+site_desc_loc <- timeseries %>%
+  group_by(siteid) %>%
+  summarise_at(.vars = var_localisation, .funs = ~get_unique_values_c(x = .x))
+```
+
+
+- Check that location are unique for all site 
+
+```{r}
+map(site_desc_loc, ~ tibble(
+    no_unique = .x[.x %in% c("no_unique")] %>% length,
+    na = .x[.x %in% NA] %>% length)) %>%
+  enframe(., name = "variable", value = "count") %>%
+  unnest(cols = c(count)) %>%
+  kable(., caption = "Nb sites which have NAs or no unique values")
+```
+
+- Some sites have no or several provinces, region and waterbody, looks
+  manageable
+
+```{r}
+site_desc_loc %>%
+  filter(waterbody == "no_unique")
+
+timeseries %>%
+  filter(siteid == filter(site_desc_loc, waterbody == "no_unique")$siteid[1:6]) %>%
+  group_by(siteid) %>%
+  summarise(unique(waterbody))
+```
+
+- Well, there are some problems with the waterbody name but I do not think that it is
+  really important
+
+```{r}
+usethis::use_data(site_desc_loc, overwrite = TRUE)
+```
+
+- I will described:
+  - Quantitative: 
+    - [x] Total species number, total, median, mean, sd, min, max 
+    - [x] year: min, max, median, range, sd, cover,
+    - [x] month: min, max, median, mean, sd 
+    - [x] sampledlength_m:  min, max, median, mean, sd
+  - Qualitative:
+    - [x] protocol: unique
+    - [x] protocol_detail: unique
+    - [x] speciesstatus: unique
+    - [x] unitabundance: unique
+    - [x] unitbiomass: unique
+
+## Species number and species traits 
+
+```{r}
+## Species number
+species_number_op <- timeseries %>%
+  group_by(siteid, op_id) %>%
+  summarise(species_nb = length(unique(species)), .groups = "drop")
+usethis::use_data(species_number_op, overwrite = TRUE)
+
+species_total_site <- timeseries %>%
+  group_by(siteid) %>%
+  summarise(species_tot_nb = length(unique(species)), .groups = "drop")
+
+species_number_site <- species_number_op %>%
+  group_by(siteid) %>%
+  summarise(enframe(summary_distribution(x = species_nb)), .groups = "drop") %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  left_join(species_total_site, by = "siteid")
+usethis::use_data(species_number_site, overwrite = TRUE)
+
+
+## Species traits
+species_status <- timeseries %>%
+  group_by(species) %>%
+  summarise(status = get_unique_values_c(speciesstatus))
+usethis::use_data(species_status, overwrite = TRUE)
+```
+
+## Fish operation
+
+
+```{r}
+# Fish operation description
+
+
+## Used Protocol
+quali_protocol <- timeseries %>%
+  group_by(siteid, op_id) %>%
+  summarise_at(vars(all_of(var_protocol)),
+    get_unique_values_c, na.omit = FALSE) %>%
+  ungroup()
+
+#unitbiomass is full of na bc often
+#biomass is not reported
+
+# Check if there are only single values by operation: 
+check_quali <- map_lgl(quali_protocol, ~all(.x != "no_unique", na.rm = TRUE))
+
+```
+
+- Make sure that each operation is described by a unique protocol, sampling
+  effort, measurement unit, date: `r all(check_quali)`
+  - This is not the case for `r names(check_quali)[!check_quali]`, let's check 
+
+```{r}
+quali_protocol %>%
+  filter(unitbiomass == "no_unique")
+
+timeseries %>%
+  filter(op_id == filter(quali_protocol, unitbiomass ==
+      "no_unique")$op_id[2]) %>%
+select(species, abundance, biomass, unitbiomass)
+
+timeseries %>%
+  filter(is.na(unitbiomass), !is.na(biomass))
+
+# Check if there are biomass measurements without biomass unit:
+all((!is.na(timeseries$biomass) & is.na(timeseries$unitbiomass)) == FALSE)
+# Good
+
+# Check if there are biomass unit without biomass measurement:
+all((!is.na(timeseries$unitbiomass) & is.na(timeseries$biomass)) == FALSE)
+# Yes, but not important
+```
+
+- So, when biomass unit has not been reported, it means that biomass has not
+  been recorded. For site and operation description, we keep the unique non-na
+  values 
+
+```{r}
+biomass_unit <- timeseries %>%
+  group_by(op_id) %>%
+  summarise(unitbiomass = get_unique_values_c(x = unitbiomass, na.omit = TRUE))
+
+# check
+all(!biomass_unit$unitbiomass %in% c("no_unique", NA))
+# Good
+```
+
+- Merge data 
+
+```{r}
+op_protocol <- quali_protocol %>%
+  select(-unitbiomass) %>%
+  left_join(biomass_unit, by = c("op_id"))
+usethis::use_data(op_protocol, overwrite = TRUE)
+```
+
+```{r}
+site_protocol <- quali_protocol %>%
+  group_by(siteid) %>%
+  select_if(is.numeric) %>%
+  pivot_longer(!siteid, names_to = "variable", values_to = "value") %>%
+  group_by(siteid, variable) %>%
+  summarise(enframe(summary_distribution(value, na.rm = TRUE)), .groups = "drop") %>%
+  pivot_wider(names_from = "name", values_from = "value")
+usethis::use_data(site_protocol, overwrite = TRUE)
+```
+
+## Measurements 
+
+- I save a data with only `op_id`, `species`, `abundance` and `biomass`
+
+```{r}
+measurement <- timeseries %>%
+  select(op_id, species, abundance, biomass)
+usethis::use_data(measurement, overwrite = TRUE)
 ```
 
