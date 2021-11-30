@@ -1,0 +1,17 @@
+---
+title: Biblio and research questions
+output: bookdown::html_document2
+---
+
+# Introduction
+
+# Research questions
+
+- facets of biodiversity trends
+- Biodiversity index
+- extirpation / colonisation
+- LPI
+- species characteristics
+
+# Methods
+

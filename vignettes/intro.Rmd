@@ -1,31 +1,22 @@
 ---
 title: "intro"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{intro}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: bookdown::html_document2
 ---
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  cache = TRUE
 )
 ```
 
 ```{r setup}
-library(tidyverse)
-library(RivFishTimeBiodiversityFacets)
 library(here)
-library(kableExtra)
+source(here("R", "misc.R"))
+source_dir(here("R"))
 
-library(scales)
 theme_set(theme_bw())
-library("sf")
-library("mapview")
-library("rnaturalearth")
-library("rnaturalearthdata")
 ```
 
 # Load data
@@ -84,7 +75,7 @@ problems(timeseries)
 
 ```{r}
 colnames(timeseries) <- tolower(colnames(timeseries))
-timeseries <- select(timeseries, -x1)
+timeseries <- select(timeseries, -...1)
 ```
 
 
@@ -153,7 +144,7 @@ bench::mark(
 ```{r}
 site_desc_loc <- timeseries %>%
   group_by(siteid) %>%
-  summarise_at(.vars = var_localisation, .funs = ~get_unique_values_c(x = .x)) %>%
+  summarise_at(.vars = var_localisation, .funs = ~get_unique_values_c(x = .x, na.omit = FALSE)) %>%
   ungroup()
 ```
 
@@ -427,7 +418,7 @@ site_protocol_quanti %>%
 ```{r}
 ti <- site_protocol_quanti %>%
   filter(variable == "year") %>%
-  left_join(site_protocol_loc, by = "siteid") %>%  
+  left_join(site_protocol_loc, by = "siteid") %>%
   mutate(
     span = max - min,
     cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
@@ -439,7 +430,6 @@ ti <- site_protocol_quanti %>%
       include.lowest=TRUE
     ),
   )
-
 ```
 - Completeness
 
@@ -449,6 +439,65 @@ ti %>%
   geom_bar() +
   labs(x = "Completness (nb sampling years / year span)", y = "Number of sites")
 ```
+
+```{r}
+ti %>%
+  ggplot(aes(x = cat_span, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Year span", y = "Number of sites")
+```
+
+- Year baseline:
+
+```{r}
+site_protocol_quanti %>%
+  filter(variable == "year") %>%
+  ggplot(aes(x = min )) +
+  geom_histogram() +
+  labs(x = "First year of monitoring", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+# Abundance data
+
+```{r}
+abun_check <- measurement %>%
+  group_by(op_id) %>%
+  summarise(
+    enframe(
+      c(
+        summary_distribution(abundance, na.rm = TRUE),
+        sum = sum(abundance, na.rm = TRUE)
+        )
+      ),
+    .groups = "drop"
+  )
+abun_check <- abun_check %>%
+  ungroup() %>%
+  left_join(op_protocol %>% select(op_id, unitabundance), by = "op_id") %>%
+  pivot_wider(names_from = "name", values_from = "value")
+```
+```{r}
+abun_check %>%
+  ggplot(aes(x = sum)) +
+  geom_histogram() +
+  labs(y = "Count", x = "Total abundance", title = "Total abundance by sampling
+    events") +
+  facet_wrap(vars(unitabundance), scales = "free_x")
+```
+
+```{r}
+total_abundance_distribution <- abun_check %>%
+  group_by(unitabundance) %>%
+  summarise(enframe(summary_distribution(sum)), .groups = "drop") %>%
+  pivot_wider(names_from = "name", values_from = "value") 
+
+total_abundance_distribution %>%
+  kable(., label = "tot-abun-dist", caption = "Distribution of total abundance
+    by sampling event by unit of abundance")
+```
+
+
 
 
 
