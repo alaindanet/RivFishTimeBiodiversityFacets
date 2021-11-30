@@ -19,6 +19,13 @@ library(tidyverse)
 library(RivFishTimeBiodiversityFacets)
 library(here)
 library(kableExtra)
+
+library(scales)
+theme_set(theme_bw())
+library("sf")
+library("mapview")
+library("rnaturalearth")
+library("rnaturalearthdata")
 ```
 
 # Load data
@@ -106,26 +113,6 @@ lg_timeseries_num %>%
 ```
 
 ```{r}
-summary_distribution <- 			# summary of a distribution
-  function(x = NULL, na.rm = FALSE) {
-
-    quant <- quantile(x, probs = c(0, .25, .5, .75, 1), na.rm = na.rm)
-    names(quant) <- c("min", "1st_quart", "median", "2nd_quart", "max")
-
-    other_desc <- c(
-      mean = mean(x, na.rm = na.rm),
-      sd = sd(x, na.rm = na.rm),
-      n = length(x),
-      n_na = length(x[is.na(x)]),
-      frac_na = length(x[is.na(x)]) / length(x)
-    )
-
-    output <- c(quant, other_desc)
-    return(output)
-}
-```
-
-```{r}
 map2_dfr(
   timeseries[, mask_num_var], c(4, 2, 3, 3, 3, 8, 3, 4, 2, 2),
   ~summary_distribution(.x, na.rm = TRUE) %>% formatC(., digits = .y),
@@ -144,40 +131,18 @@ var_site <- c("species", "date", "year", "month", "quarter", "protocol",
   "unitbiomass", "country", "abundance", "biomass", "ecoregion", "region",
   "latitude", "longitude", "province", "waterbody")
 
-var_localisation <- c(
-  "latitude", "longitude", "province", "waterbody", "country", "region",
-  "ecoregion", "main_bas"
-)
+var_localisation <- get_var_localisation()
 
-var_protocol <- c("date", "year", "month", "quarter", "protocol",
-  "protocol_detail", "sampledlength_m", "unitabundance",
-  "unitbiomass", "watertemp_c"
-)
+var_protocol <- get_var_protocol()
 ```
 
 
 ```{r}
-get_unique_values <- function(x = NULL, na.omit = TRUE) {
-
-  if (na.omit) {
-    x <- na.omit(x)
-  }
-
-  res <- unique(x)
-
-  if (length(res) <= 1) {
-    res
-  } else {
-    "no_unique"
-  }
-}
-
 get_unique_values_c <- compiler::cmpfun(get_unique_values)
 ```
 
 ```{r}
 x <- rep(list(c(runif(1e3), rep(NA, 1000))), 100)
-
 bench::mark(
   map(x, get_unique_values),
   map(x, get_unique_values_c)
@@ -188,7 +153,8 @@ bench::mark(
 ```{r}
 site_desc_loc <- timeseries %>%
   group_by(siteid) %>%
-  summarise_at(.vars = var_localisation, .funs = ~get_unique_values_c(x = .x))
+  summarise_at(.vars = var_localisation, .funs = ~get_unique_values_c(x = .x)) %>%
+  ungroup()
 ```
 
 
@@ -281,7 +247,7 @@ quali_protocol <- timeseries %>%
 #unitbiomass is full of na bc often
 #biomass is not reported
 
-# Check if there are only single values by operation: 
+# Check if there are only single values by operation:
 check_quali <- map_lgl(quali_protocol, ~all(.x != "no_unique", na.rm = TRUE))
 
 ```
@@ -335,15 +301,40 @@ usethis::use_data(op_protocol, overwrite = TRUE)
 ```
 
 ```{r}
-site_protocol <- quali_protocol %>%
+site_protocol_quanti <- op_protocol %>%
   group_by(siteid) %>%
   select_if(is.numeric) %>%
   pivot_longer(!siteid, names_to = "variable", values_to = "value") %>%
   group_by(siteid, variable) %>%
   summarise(enframe(summary_distribution(value, na.rm = TRUE)), .groups = "drop") %>%
   pivot_wider(names_from = "name", values_from = "value")
-usethis::use_data(site_protocol, overwrite = TRUE)
+
+site_protocol_quali <- op_protocol %>%
+  group_by(siteid) %>%
+  summarise_at(vars(all_of(c("protocol", "protocol_detail", "unitbiomass", "unitabundance"))),
+    get_unique_values_c, na.omit = FALSE) %>%
+  ungroup()
+unique(site_protocol_quali$protocol)
+unique(site_protocol_quali$protocol_detail)
+
+op_protocol %>%
+  filter(siteid == filter(site_protocol_quali, protocol ==
+      "no_unique")$siteid[14])
 ```
+- Ok, there are 
+  `r site_protocol_quali[site_protocol_quali$protocol == "no_unique",] %>% nrow`
+  sites that do not have an unique protocol in a site
+
+- There are 
+  `r site_protocol_quali[site_protocol_quali$unitabundance == "no_unique",] %>% nrow`
+  sites that do not have an unique unit of abundance measurement in a site
+
+```{r}
+
+usethis::use_data(site_protocol_quanti, overwrite = TRUE)
+usethis::use_data(site_protocol_quali, overwrite = TRUE)
+```
+
 
 ## Measurements 
 
@@ -354,4 +345,111 @@ measurement <- timeseries %>%
   select(op_id, species, abundance, biomass)
 usethis::use_data(measurement, overwrite = TRUE)
 ```
+
+# Map 
+
+```{r}
+data(site_desc_loc)
+data(species_number_site)
+data(site_protocol_quali)
+data(site_protocol_quanti)
+```
+```{r}
+site_protocol_loc <- site_desc_loc %>%
+  select(siteid, latitude, longitude, ecoregion) %>%
+  left_join(species_number_site %>% select(siteid, species_tot_nb), by = "siteid") %>%
+  left_join(site_protocol_quali %>% select(siteid, protocol, protocol_detail, unitabundance), by = "siteid")
+```
+
+```{r}
+site_protocol_loc_sf <- st_as_sf(site_protocol_loc, coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+- See ecoregion:
+  (idea: do a panel with the 6 ecoregion to better see species number)
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = site_protocol_loc_sf, aes(size =
+        species_tot_nb), shape = 1) +
+    ggtitle("Total number of species by site")
+
+```
+
+- We have plenty of site that have a constant protocol and unit of abundance. 
+
+```{r}
+#https://www.graphpad.com/support/faq/graph-tip-dont-use-a-log-scale-on-a-bar-graph/
+site_protocol_loc %>%
+  ggplot(aes(x = protocol, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Protocol", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r}
+site_protocol_loc %>%
+  ggplot(aes(x = unitabundance, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Abundance unit", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+- Let's see them on a map
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = site_protocol_loc_sf, aes(color = protocol)) +
+    xlab("Longitude") + ylab("Latitude") +
+    ggtitle("Protocol")
+```
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = site_protocol_loc_sf, aes(color = unitabundance)) +
+    ggtitle("Unit of abundance")
+```
+
+```{r}
+site_protocol_quanti %>%
+  filter(variable == "year") %>%
+  ggplot(aes(x = max -min )) +
+  geom_histogram() +
+  labs(x = "Year span (years)", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r}
+ti <- site_protocol_quanti %>%
+  filter(variable == "year") %>%
+  left_join(site_protocol_loc, by = "siteid") %>%  
+  mutate(
+    span = max - min,
+    cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
+#      labels=c("<=10","10<x<=20","20<x<=30","30<x<=40", "40<x<=70"),
+      include.lowest=TRUE
+    ),
+    cat_completness = cut(n / span, c(0, .1, .25, .5, .75, 1), right = TRUE,
+#      labels=c("<=10","10<x<=20","20<x<=30","30<x<=40", "40<x<=70"),
+      include.lowest=TRUE
+    ),
+  )
+
+```
+- Completeness
+
+```{r}
+ti %>%
+  ggplot(aes(x = cat_completness, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Completness (nb sampling years / year span)", y = "Number of sites")
+```
+
+
+
 

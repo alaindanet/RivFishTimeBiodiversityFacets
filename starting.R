@@ -17,7 +17,7 @@ use_mit_license()
 
 # Routine
 attachment::att_amend_desc()
-devtools::check()
+devtools::check(vignettes = FALSE)
 
 
 
@@ -71,3 +71,8 @@ use_git_ignore("inst/extdata", directory = ".")
 
 # git add remote origin git@github.com:alaindanet/RivFishTimeBiodiversityFacets.git
 
+# functions that return variable names
+use_r(name = "variable_shortcut")
+
+#
+use_r(name = "summary_distribution")
