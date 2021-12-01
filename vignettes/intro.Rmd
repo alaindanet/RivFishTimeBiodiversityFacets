@@ -21,61 +21,8 @@ theme_set(theme_bw())
 
 # Load data
 
-- I load the main dataset
-
 ```{r}
-fish_files <- list.files(here("inst", "extdata"))
-datapath <- system.file(paste0("extdata/", fish_files), package = "RivFishTimeBiodiversityFacets")
-
-characteristic <- read_csv(datapath[1])
-timeseries <- read_csv(datapath[2])
-
-# I copy the output of spec to reload properly
-spec(timeseries)
-
-timeseries <- read_csv(datapath[2],
-  col_types = cols(
-    X1 = col_double(),
-    OP_ID = col_character(),
-    Glob_ID = col_character(),
-    Species = col_character(),
-    Origin = col_character(),
-    SiteID = col_character(),
-    Name = col_character(),
-    Date = col_character(), #col_date(format = "%m/%d/%Y"),
-    Year = col_integer(),
-    Month = col_integer(),
-    Quarter = col_character(),
-    Protocol = col_character(),
-    SampledArea_m2 = col_double(),
-    SampledLength_m = col_double(),
-    speciesStatus = col_character(),
-    UnitAbundance = col_character(),
-    UnitBiomass = col_character(),
-    WaterTemp_C = col_double(),
-    Protocol_detail = col_character(),
-    MAIN_BAS = col_double(),
-    Country = col_character(),
-    Responsible = col_character(),
-    Abundance = col_double(),
-    Biomass = col_double(),
-    Ecoregion = col_character(),
-    Latitude = col_double(),
-    Longitude = col_double(),
-    Region = col_character(),
-    Province = col_character(),
-    Waterbody = col_character()
-  )
-)
-problems(timeseries)
-```
-
-- I reformat columns to not small case 
-- I remove the dummy variable
-
-```{r}
-colnames(timeseries) <- tolower(colnames(timeseries))
-timeseries <- select(timeseries, -...1)
+tar_load(timeseries)
 ```
 
 

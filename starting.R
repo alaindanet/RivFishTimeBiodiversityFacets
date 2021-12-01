@@ -76,3 +76,6 @@ use_r(name = "variable_shortcut")
 
 #
 use_r(name = "summary_distribution")
+
+library(tflow)
+
