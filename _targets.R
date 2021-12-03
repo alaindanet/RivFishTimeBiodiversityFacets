@@ -11,6 +11,7 @@ tar_plan(
     raw_data_file,
     here("inst", "extdata", "GlobalTimeSeries_database_1232021.csv"),
     format = "file"),
-  tar_target(timeseries, load_time_series_data(raw_data_file))
+  tar_target(timeseries, load_time_series_data(raw_data_file)),
+
 
 )

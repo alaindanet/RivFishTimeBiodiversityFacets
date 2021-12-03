@@ -1,17 +1,237 @@
 ---
 title: Biblio and research questions
-output: bookdown::html_document2
+output:
+  bookdown::html_document2:
+    theme: "readable"
+bibliography: bibliography.bib
 ---
+
+```{r}
+library(knitr)
+```
+
+- Database to add: 
+  - USGS: https://www.sciencebase.gov/catalog/item/529e0108e4b0516126f68e3c
+
 
 # Introduction
 
+## Treats on streams 
+
+- Land-use changes: @piet_climate_2010 in Climate change ...
+  - Forest vs drained = retained water vs greater run-off 
+  - River morphology: canalization, lost of connection
+
+- Climate change on stream hydrology:@piet_climate_2010
+  - More variable discharge regimes (south england): higher peaks in winters
+    (less winter droughts)
+    - higher flow redistributes resources homogenize water chemestry 
+    - lower flow: less oxygen, dried banks -> decrease stability
+
+- Temperature and hydrological factors on fishes: @hering_monitoring_2010
+  - changes of rivers discharges: decrease species richness and change life
+    cycles 
+  - Increasing temperature: threat to cold stenothermic species, confined in
+    headwaters due to the reduction of available cold waters
+
+```{r , fig.cap="fig/fish-trait-composition-temperature-rainfall-europe"}
+knitr::include_graphics("fig/fish-trait-composition-temperature-rainfall-europe.jpeg")
+```
+
+- Acidication due to emission of S and N in the atmosphere @wright_interaction_2010
+  - Highest pick in the 1980's, particularly severe in scandinavia
+  - Dramatic reduction after worldwide agreement on S and N emission (goal in
+    1999: -50% S and -20% N in 2010 relative to 1980) 
+  - increasing temperature: accelerated mineralization and increase of acidification
+
+- Freshwater ecology: a scientific introduction
+  - Get a look from chapter 5 to 10
+    
+- Conservation biology: to read
+
+## Biodiversity
+
+- Land-use change and species climatic tolerance: 
+  - loss of semi-natural habitat leaded to faster declines of thermal sensitive fishes [@williams_vertebrate_2021]
+  - temperature differences linked to land-use (average daily maximum temperature)
+
 # Research questions
 
-- facets of biodiversity trends
-- Biodiversity index
-- extirpation / colonisation
-- LPI
-- species characteristics
+- Biodiversity: 
+  - facets of biodiversity trends
+  - Biodiversity index
+  - species characteristics
+
+- Biological scale:
+  - Population: LPI
+  - Community: CWM, extirpation, colonisation
+  - Metacommunity: homogenization (betadiv)? 
+
+- climatic debts:
+  - [@vaughan_water_2019; @vaughan_using_2021]
+
+1. How do community of freshwater change through time ?
+   - Scale community / population
+   - Quantity / Heterogeneity
 
 # Methods
 
+# Sites:
+
+- Site protection status: 
+  - US database, Australian database
+  - [wdpar R package](https://prioritizr.github.io/wdpar/)
+
+- Land use:
+  - biais in studied land-use types in ecology: @martin_mapping_2012
+  - from 1700 to 2000: https://ecotope.org/anthromes/v2/ 
+  - Anthropogenic land use estimates for the Holocene – HYDE 3.2: -10000 to
+    2015: https://essd.copernicus.org/articles/9/927/2017/essd-9-927-2017.html, https://essd.copernicus.org/articles/9/927/2017/essd-9-927-2017.html 
+    - (1,000 y increments from 10,000 BCE to 1 CE, 100 y increments from 100 CE
+      to 1700 CE, 10 y increments from 1710 to 1990 CE, and 1 y increments from
+      2000 CE to 2017 CE). 
+    - HYDE1 https://agupubs.onlinelibrary.wiley.com/doi/pdf/10.1029/1999GB001232 
+    - Copernicus land cover 2016 to 2020: https://github.com/bluegreen-labs/ecmwfr
+    - 1995 à 2015 ESA: https://catalogue.ceda.ac.uk/uuid/b382ebe6679d44b8b0e68ea4ef4b701c 
+
+
+# Biodiversity:
+
+
+## LPI
+
+### Chain method
+
+Chain method is for poor timeseries with (n < 6) [@collen_monitoring_2009].
+
+$i$: a population
+$j$: a species
+$t$: a time step 
+
+$d_{i,j,t} = \log_{10}(\dfrac{N_{i,j,t}}{N_{i,j,t-1}}) = \log_{10}N_{i,j,t} - \log_{10}N_{i,j,t-1}$
+
+where $N_t$ is the abundance of a given population $i$ of the species $j$ at time $t$.
+
+One percent of the mean population measure value for the whole time series was
+added to all years in time series for which N was zero in any year. Missing
+values were imputed with log-linear interpolation:
+
+$N_t = N_p (\dfrac{N_s}{N_p})^{\dfrac{t-s}{s-p}}$ 
+
+with $p$ the previous time step with measured value and $s$ the subsequent year
+with a measured value.
+
+### GAM method
+
+Set a GAM for each timeseries and report the predicted abundance values each
+year. There are rules of thumbs to automatically set the smoothing parameters [see @collen_monitoring_2009].
+
+Following, $d_{i,j,t}$ are computed with the predicted abundance values.
+
+### LPI computation 
+
+If a species has several populations, the annual species trends is computed as
+the average[^1] of local population trends:
+
+$d_{j,t} = \dfrac{1}{n}\sum_{i = 1}^{n} d_{i,j,t}$
+
+It is a geometric mean because it the arithmetic mean of log transformed values of $N$: 
+
+$\sum_{i = 1}^{n} d_{i,j,t} = \sum_{i = 1}^{n} (\log_{10}N_{i,j,t} - \log_{10}N_{i,j,t-1})$
+
+The standardized index for a species is then computed as:
+
+$I_{j, t} = I_{j, t - 1} 10^{d_{j,t}}$, $I_0 = 1$
+
+### Confidence limits
+
+Bootstrap on the selection of the $n_j$ population.
+
+### Misc
+
+- LPI:
+  - @mcrae_diversity-weighted_2017; @capdevila_global_2021
+  - [rlpi R package](https://github.com/Zoological-Society-of-London/rlpi)
+
+#### Note on the geometric mean: @buckland_geometric_2011
+
+- Because it measures proportional changes, low change in absolute abundance in a rare
+    species can lead a big change in the geometric mean
+- Based on above, the geometric is linked to eveness
+
+How $G_t$ is linked to eveness ?
+
+$G_t = exp(\dfrac{1}{n} \sum_{i = 1}^{n} (\log N_{i,j,t} - \log N_{i,j,t-1}))$
+
+If we look at multicative change in species proportion:
+
+$\dfrac{p_{i,t}}{p_{i,t-1}} = exp((\log N_{j, t} - \log N_t) - (\log N_{j, t-1} - \log N_{t-1}))$
+
+where $N_t = \sum_{j=1} N_{j,t}$
+
+if $n$ stays constant between $G_t$ and  $G_{t-1}$ 
+
+If total abundances stays constant between years, i.e. $N_t = N_{t-1}$,
+
+$\dfrac{p_{i,t}}{p_{i,t-1}} = exp(\log N_{j, t} - \log N_{j, t-1})$, then
+
+$G_t = exp(\dfrac{1}{n} \sum_{i = 1}^{n} \log p_{i,j,t} - \dfrac{1}{n} \sum_{i = 1}^{n} \log p_{i,j,t-1})$
+
+"The mean of the log species proportions has the key property of an evenness
+measure, in that it attains its maximum value when all the species proportions
+are equal: $p_{i,t} = 1/n$ for all $i$".
+
+
+### Avantages
+
+- Not biais for detectability variation between species
+  - but biais if detectability change through time within species
+- LPI change even if evenness stays the same (contrary to shannon and simpson)
+
+
+- Linked to within-species (population) construction and reference to a baseline year:
+  - no differences if units are abundance, biomass, density
+  - combine trends of really different survey 
+
+- Rescale:
+  - if a new survey began in 2000, the index of 2000 for the this new survey
+    should be scaled to value of the composite index of 2000 
+  - if an abundant species become too rate to be included in the index, rescale
+    as this: for the final year which the species is included compute the index
+    with and without the species, the latter need to be rescale to match the
+    former. Same rescaling is necessary for all subsequent years.
+
+### Disaventages
+
+- Do not work when when relative abundance is 0: 
+  - one can add small numbers to 0 but the indice is sensible to the chosen
+    quantity + poor precision with rarely recorded species. 
+  - Shannon and Simpson are not influenced by rare species 
+  - Problem can be reduced if observed count are modeled before index
+    computation
+
+
+## Extirpation
+
+- extirpation / colonisation
+  - [@baeten_model-based_2014]
+
+## Turnover
+
+- Temporal turnover: 
+  - abundance based:
+    - @shimadzu_measuring_2015 (between two time steps), considers a turnover
+      metric decomposed based either on total abundance or species composition.
+      - Linked to Shannon's: species richness and heterogeneity
+      - Linked to Bray-Curtis decomposition: species richness and heterogeneity
+  - See [BAT R package](https://cran.r-project.org/web/packages/BAT/index.html) [@cardoso_bat_2015]
+
+## Species traits
+
+- Species traits:
+  - sti: @comte_climate_2021
+  - Freshwater known species number by ecoregion (representativity of our data):
+    @abell_freshwater_2008,
+    [data](https://databasin.org/datasets/0b6963be65074bca9306b1b6f05149d2/)
+
+# References {-}
