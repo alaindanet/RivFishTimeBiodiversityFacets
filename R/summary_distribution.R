@@ -22,6 +22,7 @@ get_unique_values <- function(x = NULL, na.omit = TRUE) {
     "no_unique"
   }
 }
+get_unique_values_c <- compiler::cmpfun(get_unique_values)
 
 #' Get the summary of a numerical vector
 #'

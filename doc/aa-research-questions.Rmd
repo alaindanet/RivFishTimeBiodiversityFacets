@@ -35,7 +35,7 @@ library(knitr)
     headwaters due to the reduction of available cold waters
 
 ```{r , fig.cap="fig/fish-trait-composition-temperature-rainfall-europe"}
-knitr::include_graphics("fig/fish-trait-composition-temperature-rainfall-europe.jpeg")
+knitr::include_graphics(here::here("doc/fig/fish-trait-composition-temperature-rainfall-europe.jpeg"))
 ```
 
 - Acidication due to emission of S and N in the atmosphere @wright_interaction_2010
