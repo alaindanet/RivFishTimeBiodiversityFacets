@@ -33,5 +33,6 @@ tar_plan(
 
   tar_render(explo, here("vignettes/intro.Rmd")),
   tar_render(report, here("doc/aa-research-questions.Rmd")),
+  tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
 
 )

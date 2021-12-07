@@ -4,26 +4,15 @@ output: bookdown::html_document2
 ---
 
 ```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  cache = TRUE
-)
+source(here::here("start_rmd.R"))
 ```
-
-```{r setup}
-library(here)
-source(here("R", "misc.R"))
-source(here("packages.R"))
-source_dir(here("R"))
-
-theme_set(theme_bw())
-```
-
 # Load data
 
 ```{r}
+#withr::with_dir(here::here(), {
 tar_load(timeseries)
+#}
+#)
 ```
 
 
@@ -45,6 +34,10 @@ lg_timeseries_num <- timeseries[, mask_num_var] %>%
 ```
 
 ```{r hist_num}
+#| hist_num, echo = FALSE, fig.width = 10,
+#| fig.cap = "This is a long long
+#|   long long caption."
+
 lg_timeseries_num %>%
   ggplot(aes(x = values)) +
   geom_histogram() +
@@ -178,7 +171,7 @@ all((!is.na(timeseries$unitbiomass) & is.na(timeseries$biomass)) == FALSE)
   been recorded. For site and operation description, we keep the unique non-na
   values 
 
-```{r}
+```{r, cache = FALSE}
 tar_load(site_protocol_quali)
 tar_load(site_protocol_quanti)
 ```
@@ -391,14 +384,157 @@ tar_load(abun_rich_op)
 
 trends_data <- abun_rich_op %>%
   left_join(op_protocol, by = "op_id") %>%
-  filter(siteid %in% mask_siteid)
+  filter(siteid %in% mask_siteid) %>%
+  mutate(
+    log_total_abundance = log(total_abundance),
+    log_species_nb = log(species_nb)
+  )
 
-get_rigal_trajectory_classification(
-  trends_data[trends_data$siteid == unique(trends_data$siteid)[2], ],
-  y_var = "total_abundance",
+rigal_test <- get_rigal_trajectory_classification(
+  trends_data,
+  y_var = "log_total_abundance",
   x_var = "year", site_id = "siteid")
 ```
 
+```{r}
+tar_load(site_desc_loc)
+site_loc <- get_site_location_as_sf()
+
+site_loc_trend <- site_loc %>%
+  filter(siteid %in% rigal_test$siteid) %>%
+  left_join(rigal_test %>%
+    select(siteid, direction, shape_class, linear_slope,
+      linear_slope_strd_error, linear_slope_pvalue),
+  by = "siteid")
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = site_loc_trend, aes(color =
+        direction), shape = 1) +
+    ggtitle("Total abundance trends")
+hist(rigal_test$linear_slope, main = "Distribution of log total abundance
+  temporal trend (slope)")
+rigal_test %>%
+  ggplot(aes(x = first_X_value, y = linear_slope)) + 
+  geom_point() +
+  geom_smooth(method = "auto") +
+  labs(x = "Baseline year", "Temporal slope of total abundance (log)")
+```
+
+```{r}
+rigal_test_richness <- get_rigal_trajectory_classification(
+  trends_data,
+  y_var = "log_species_nb",
+  x_var = "year", site_id = "siteid")
+
+site_loc_trend_richness <- site_loc %>%
+  filter(siteid %in% rigal_test_richness$siteid) %>%
+  left_join(rigal_test_richness %>%
+    select(siteid, direction, shape_class, linear_slope,
+      linear_slope_strd_error, linear_slope_pvalue),
+  by = "siteid")
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = site_loc_trend_richness, aes(color =
+        direction), shape = 1) +
+    ggtitle("Species richness temporal trends")
+
+hist(rigal_test_richness$linear_slope,
+  main = "Distribution of log species richness temporal trend (slope)")
+hist(rigal_test_richness$first_X_value,
+  main = "Distribution of first year of time sequence"
+)
+rigal_test_richness %>%
+  ggplot(aes(x = first_X_value, y = linear_slope)) +
+  geom_point() +
+  geom_smooth(method = "auto") +
+  labs(x = "Baseline year", "Temporal slope of species richness (log)")
+```
+
+
+```{r}
+summary_loc_trends_data <- site_loc_trend_richness %>%
+  group_by(ecoregion) %>%
+  summarise(n = n())
+site_loc_trend_richness %>%
+  ggplot(aes(x = ecoregion, y = linear_slope)) +
+  geom_violin() +
+  geom_text(data = summary_loc_trends_data,
+    aes(x = ecoregion, y = 0, label = paste0("n = ", n)),
+    color = "red", fontface = 2, size = 5) +
+  labs(y = "Temporal trends (slope) of species richness")
+```
+
+```{r}
+trends_data %>%
+  ggplot(aes(x = year, y = log_total_abundance)) +
+  geom_line(aes(group = siteid)) +
+  geom_smooth(aes(group = 1), size = 2, method = "lm", se = FALSE)
+
+trends_data %>%
+  ggplot(aes(x = year, y = log_species_nb)) +
+  geom_line(aes(group = siteid)) +
+  geom_smooth(aes(group = 1), size = 2, method = "lm", se = FALSE)
+```
+
+```{r, eval=FALSE}
+library(brms)
+fit1 <- brm(log_total_abundance ~ year + year^2,
+            data = trends_data[trends_data$siteid == unique(trends_data$siteid)[1],], family = gaussian())
+
+conditional_effects(fit1, surface = TRUE)
+```
+
+
+
+
+# Population
+
+```{r}
+tar_load(toy_dataset)
+```
+
+```{r, eval=FALSE}
+#devtools::install_github("Zoological-Society-of-London/rlpi", dependencies=TRUE)
+library(rlpi)
+CalcLPI(Species = toy_dataset$species, ID = toy_dataset$siteid, Year = toy_dataset$year,
+  Popvalue = toy_dataset$abundance)
+```
+
+```{r}
+# Get Population values
+
+## Put 0 in monitoring of each species
+test <- toy_dataset %>%
+  select(siteid, op_id, species, abundance) %>%
+  pivot_wider(names_from = "species", values_from = "abundance") %>%
+  mutate_if(is.numeric, ~replace(., is.na(.), 0))
+
+## Imput missing values
+
+## Compute changes by population
+
+## Compute LPI
+
+# GAM Method
+#1. fitted a GAM on observed values with log
+#10
+#(N
+#t
+#)asthe
+#dependent variable and year (t) as the independent,
+#2. set the smoothing parameter to the length of the pop-
+#ulation time series divided by 2 (Wood 2006),
+#3. selected the smoothing-parameter value by comparing
+#the estimated degrees of freedom when the smoothing
+#parameter was successively incremented by 1,
+#4. used fitted GAM values to calculate predicted values
+#for all years (including those with no real count data),
+#and
+#5. averaged and aggregated d values from the imputed
+#counts as described earlier
+```
 
 
 

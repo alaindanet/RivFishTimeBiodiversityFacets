@@ -100,7 +100,9 @@ knitr::include_graphics(here::here("doc/fig/fish-trait-composition-temperature-r
 
 ## LPI
 
-### Chain method
+### Get data 
+
+#### Chain method
 
 Chain method is for poor timeseries with (n < 6) [@collen_monitoring_2009].
 
@@ -121,7 +123,7 @@ $N_t = N_p (\dfrac{N_s}{N_p})^{\dfrac{t-s}{s-p}}$
 with $p$ the previous time step with measured value and $s$ the subsequent year
 with a measured value.
 
-### GAM method
+#### GAM method
 
 Set a GAM for each timeseries and report the predicted abundance values each
 year. There are rules of thumbs to automatically set the smoothing parameters [see @collen_monitoring_2009].
@@ -210,6 +212,11 @@ are equal: $p_{i,t} = 1/n$ for all $i$".
   - Problem can be reduced if observed count are modeled before index
     computation
 
+
+### Computation 
+
+- NA = 0 or missing values to interpolate ? It is 0 if a monitoring took place
+  or not
 
 ## Extirpation
 

@@ -1,0 +1,442 @@
+---
+title: "Vizualise Raw data"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::html_document2
+---
+
+```{r setup, include=FALSE}
+## target knits Rmds in their own session, so load libraries here.
+source(here::here("start_rmd.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(
+  c(site_protocol_quanti, site_protocol_quali,
+    op_protocol, abun_rich_op)
+)
+
+# # If your chunk output is shown in-line, then you'll need to wrap tar_load()
+# # like so:
+# 
+# withr::with_dir(here::here(), {
+#   tar_load(c(target_1, target_2, target_3))
+# })
+# 
+# # This is not needed when using tar_make() to render the document.
+```
+
+```{r}
+mask_siteid_sampling <- site_protocol_quanti[
+  site_protocol_quanti$variable == "year" &
+    site_protocol_quanti$n >= 10,
+  ]$siteid
+
+mask_siteid_protocol <- site_protocol_quali[
+  site_protocol_quali$unitabundance %in% c("Count", "Ind.100m2"), ]$siteid
+
+mask_siteid <- mask_siteid_sampling[mask_siteid_sampling %in% mask_siteid_protocol]
+```
+
+```{r}
+trends_data <- abun_rich_op %>%
+  left_join(op_protocol, by = "op_id") %>%
+  filter(siteid %in% mask_siteid) %>%
+  mutate(
+    log_total_abundance = log(total_abundance),
+    log_species_nb = log(species_nb)
+  )
+```
+
+```{r}
+plot_community_data <- function(dataset = NULL, y = NULL, x = NULL, title = NULL) {
+
+  p <- dataset %>%
+    ggplot(aes_string(y = y, x = x)) +
+    geom_point() +
+    geom_smooth(method = "loess", formula = "y ~ x")
+
+  if (!is.null(title)) {
+    p <- p +
+      labs(title = title)
+  }
+
+  return(p)
+}
+
+plot_trends <- trends_data %>%
+  group_by(siteid) %>%
+  nest() %>%
+  ungroup() %>%
+  slice_sample(n = 100) %>%
+  mutate(
+    p_abun = map2(data, siteid,
+      ~plot_community_data(
+        dataset = .x, y = "total_abundance", x = "year", title = .y)),
+    p_rich = map2(data, siteid,
+      ~plot_community_data(
+        dataset = .x, y = "species_nb", x = "year", title = .y),
+    )
+  )
+```
+
+## Total abundance
+
+```{r}
+n_plot_by_batch <- 8
+map(
+  split(
+    seq_len(nrow(plot_trends)),
+    1:floor(nrow(plot_trends) / n_plot_by_batch) + 1),
+  ~plot_grid(plotlist = plot_trends[.x, ]$p_abun)
+  )
+```
+
+## Species richness 
+
+```{r}
+
+map(
+  split(
+    seq_len(nrow(plot_trends)),
+    1:floor(nrow(plot_trends) / n_plot_by_batch) + 1
+    ),
+  ~plot_grid(plotlist = plot_trends[.x, ]$p_rich)
+  )
+
+```
+
+## 
+
+```{r}
+tar_load(toy_dataset)
+unique(toy_dataset$siteid)
+plot_temporal_biomass <- function (bm_data = NULL, biomass_var = NULL, com = NULL, .log = FALSE) {
+
+  #main_title <- paste0("Stab = ", round(1/(sync$cv_com), 2),", ", "Sync = ",
+    #round(sync$synchrony, 2),", ", "CVsp = ", round(sync$cv_sp, 2))
+  sym_bm_var <- rlang::sym(biomass_var)
+  # Total
+  total_biomass <- bm_data %>% 
+  group_by(date) %>%
+  summarise(!!sym_bm_var := sum(!!sym_bm_var, na.rm = FALSE))
+  
+  p <- bm_data %>%
+    mutate(label = if_else(date == max(date), as.character(species), NA_character_)) %>%
+  ggplot(aes_string(x = "date", y = biomass_var, color = "species")) + 
+  geom_line() +
+  lims(y = c(0, max(total_biomass[[biomass_var]]))) +
+  labs(
+  #title = main_title, subtitle = paste0("Station: ", station),
+    y = "Biomass (g)", x = "Sampling date"
+  ) +
+  ggrepel::geom_label_repel(aes(label = label),
+    size = 2.5, nudge_x = 1, na.rm = TRUE) 
+  
+  # Add total biomass
+  p2 <- p +
+    geom_line(data = total_biomass, aes(color = "black", size = 3)) +
+    theme(legend.position = "none")
+
+  # Add summary: richness, connectance, stab, t_lvl, sync, cv_sp 
+  com %<>%
+    mutate_if(is.double, round(., 2))
+
+  label <- paste(
+    "S = ", com$bm_std_stab,
+    "sync = ", com$sync,
+    "CVsp = ", com$cv_sp,
+    "R = ", com$rich_tot_std,
+    "C = ", com$ct,
+    "Tlvl = ", com$t_lvl
+  ) 
+
+  p3 <- p2 +
+    annotate("text", x = median(total_biomass$date),
+      y = 15, label = label)
+
+  if (.log) {
+    p3 <- p3 + scale_y_log10() 
+  }
+
+  return(p3)
+}
+
+ti <- toy_dataset %>%
+  filter(siteid == unique(toy_dataset$siteid)[2])
+plot_population <- function (dataset = NULL, y_var = NULL, time_var = NULL) {
+
+  sym_y_var <- rlang::sym(y_var)
+  sym_time_var <- rlang::sym(time_var)
+  # Total
+  total_dataset <- dataset %>%
+  group_by(!!sym_time_var) %>%
+  summarise(!!sym_y_var := sum(!!sym_y_var, na.rm = FALSE))
+  
+  p <- dataset %>%
+    mutate(label = if_else(!!sym_time_var == max(!!sym_time_var), as.character(species), NA_character_)) %>%
+  ggplot(aes_string(x = time_var, y = y_var, color = "species")) + 
+  geom_line() +
+  lims(y = c(0, max(total_dataset[[y_var]]))) +
+  labs(
+  #title = main_title, subtitle = paste0("Station: ", station),
+    y = "Biomass (g)", x = "Sampling time_var"
+  ) +
+  ggrepel::geom_label_repel(aes(label = label),
+    size = 2.5, nudge_x = 1, na.rm = TRUE)
+  
+  # Add total biomass
+  p2 <- p +
+    geom_line(data = total_dataset, aes(color = "black", size = 3)) +
+    theme(legend.position = "none")
+  return(p2)
+
+}
+
+plot_population(dataset = ti, y_var = "abundance", time_var = "year")
+```
+
+```{r}
+
+#' replace NA by 0 in abundance data 
+#'
+#' @param  dataset data.frame
+#' @param  y_var chr
+#' @param  species_var chr
+#' @param  time_var  chr
+#' @param  long_format lgl
+#'
+#' @examples
+#'tar_load(toy_dataset)
+#'ti <- toy_dataset %>%
+#'  filter(siteid == unique(toy_dataset$siteid)[2])
+#'get_com_matrix_from_site(dataset = ti, y_var = "abundance")
+get_com_matrix_from_site <- function(
+  dataset = NULL,
+  y_var = NULL,
+  species_var = "species",
+  time_var = "year",
+  long_format = TRUE
+
+) {
+
+  com <- dataset[, c(time_var, species_var, y_var)]
+
+  species <- unique(com[[species_var]])
+
+  com <- com %>%
+    pivot_wider(names_from = species_var, values_from = y_var) %>%
+    mutate(across(species, ~replace(.x, is.na(.x), 0))) %>%
+    arrange(!!sym(time_var)) %>%
+    complete(!!sym(time_var) := full_seq(!!sym(time_var), 1))
+
+  if (long_format) {
+    com <- com %>%
+      pivot_longer(cols = species, names_to = species_var, values_to = y_var)
+  }
+  return(com)
+}
+
+get_com_matrix_from_site(dataset = ti, y_var = "abundance")
+
+plot_temporal_population <- function(
+  com = NULL,
+  y_var = "abundance",
+  time_var = "year",
+  species_var = "species",
+  stacked = TRUE,
+  ribbon = FALSE,
+  .log = FALSE,
+  color_species = NULL,
+  label = NULL,
+  label_parsed = FALSE,
+  label_size = 4.5,
+  y_label = NULL,
+  my_ylim = NULL) {
+
+  # get bm dynamic
+  com <- get_com_matrix_from_site(
+    dataset = com,
+    y_var = y_var,
+    species_var = species_var,
+    time_var = time_var,
+    long_format = TRUE
+  )
+
+  # get total y
+  total <- com %>%
+    group_by(!!sym(time_var)) %>%
+    summarise(!!sym(y_var) != sum(!!sym(y_var)), .groups = "drop") %>%
+    mutate(!!sym(species_var) := "Total") 
+
+  p <- com %>%
+    ggplot(aes_string(x = time_var, y = y_var, color = species_var))
+
+
+
+  if (stacked) {
+    if (ribbon) {
+      com <- arrange(com, !!sym(time_var), !!sym(species_var)) 
+      com$ymax <- com[[y_var]]
+      com$ymin <- 0
+      zl <- unique(com[[species_var]])
+      for (i in 2:length(zl)) {
+        zi <- com[[species_var]] == zl[i]
+        zi_1 <- com[[species_var]] == zl[i - 1]
+        com$ymin[zi] <- com$ymax[zi_1]
+        com$ymax[zi] <- com$ymin[zi] + com$ymax[zi]
+      }
+
+      p <- com %>%
+        ggplot(
+          aes_string(
+          x = time_var,
+          y = y_var,
+          ymax = "ymax",
+          ymin = "ymin",
+          fill = species_var)
+          ) + geom_ribbon()
+    } else {
+      p <- p +
+        geom_area(aes_string(fill = species_var))
+
+    }
+  } else {
+    p <- p +
+      geom_line() +
+      geom_line(data = total, color = "black")
+  }
+
+  if (!is.null(my_ylim)) {
+    p <- p +
+      ylim(my_ylim)
+  }
+
+  # Make it professional:
+  p <- p +
+    labs(y = expression(Abundance), x = "Year")
+
+#  if (!is.null(sem_df)) {
+#    label <- get_network_summary(com = sem_df, station = station)
+#  }
+
+  if (!is.null(label)) {
+    if (is.null(y_label)) {
+      y_label <- max(total[[y_var]]) + max(total[[y_var]]) * 5 / 100
+    }
+
+    p <- p +
+    annotate("text", x = median(total[[year]]),
+      y = y_label,
+      label = label, parse = label_parsed, size = label_size)
+  }
+
+  if (.log) {
+    p <- p + scale_y_log10()
+  }
+
+  if (!is.null(color_species)) {
+    p <- p +
+      scale_fill_manual(values = color_species) +
+      scale_color_manual(values = color_species)
+  }
+
+  return(p)
+
+
+}
+  
+
+```
+```{r, eval=FALSE}
+plot_temporal_population(com = ti, ribbon = FALSE)
+
+p <- plot_temporal_population(com = ti, ribbon = TRUE)
+
+GeomRibbon$handle_na <- function(data, params) {  data }
+p$data %>%
+  ggplot(
+    aes(y = abundance, ymin = ymin, ymax = ymax, x = year,
+      fill = species)
+    ) +
+  geom_ribbon()
+```
+
+
+```{r, eval=FALSE}
+set.seed(1)
+
+test <- data.frame(x = rep(1:10, 3), y = abs(rnorm(30)), z = rep(LETTERS[1:3],
+    10)) %>% arrange(x, z)
+
+test[test$x == 4, "y"] <- NA
+
+test$ymax <- test$y
+test$ymin <- 0
+zl <- unique(test$z)
+for (i in 2:length(zl)) {
+    zi <- test$z == zl[i]
+    zi_1 <- test$z == zl[i - 1]
+    test$ymin[zi] <- test$ymax[zi_1]
+    test$ymax[zi] <- test$ymin[zi] + test$ymax[zi]
+}
+
+
+# fix GeomRibbon
+GeomRibbon$handle_na <- function(data, params) {  data }
+
+ggplot(test, aes(x = x, y=y, ymax = ymax, ymin = ymin, fill = z)) +
+  geom_ribbon()
+```
+
+- Be careful to multiple fishing per year
+
+```{r}
+plot_trends %>%
+  mutate(
+    p_pop = map(data, ~plot_temporal_population(com = .x))
+  )
+toy_dataset %>%
+  group_by(siteid, year, species) %>%
+  summarise(test=n()>1) %>%
+  filter(test)
+
+
+pop_trends <- toy_dataset %>%
+  filter(!siteid %in% c("S534", "S8633")) %>%
+  group_by(siteid) %>%
+  nest() %>%
+  mutate(
+    p_pop = map(data, ~plot_temporal_population(com = .x, ))
+  )
+plot_grid(plotlist = pop_trends$p_pop)
+```
+
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

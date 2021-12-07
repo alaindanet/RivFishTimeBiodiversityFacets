@@ -175,14 +175,14 @@ get_rigal_trajectory_classification <- function(
     ~try(class.trajectory(Y = .x[[y_var]], X = .x[[x_var]]))
   )
 
-  error <- which(purrr::map_chr(classification, class) != "try-error")
-  if (length(error) != 0) {
-    warning(paste0(length(error), "stations/variable failed"))
+  error <- purrr::map_chr(classification, class) == "try-error"
+  if (any(error)) {
+    warning(paste0(length(which(error)), " stations/variable failed"))
   }
 
-  to_add_to_output <- classification[error] %>%
+  to_add_to_output <- classification[!error] %>%
     bind_rows %>%
-    mutate(!!site_id_sym := output[[site_id]][error]) %>%
+    mutate(!!site_id_sym := output[[site_id]][!error]) %>%
     as_tibble
 
   output <- output %>%

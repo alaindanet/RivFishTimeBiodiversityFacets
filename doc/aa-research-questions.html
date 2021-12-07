@@ -488,8 +488,10 @@ to 1700 CE, 10 y increments from 1710 to 1990 CE, and 1 y increments from
 <h1><span class="header-section-number">5</span> Biodiversity:</h1>
 <div id="lpi" class="section level2">
 <h2><span class="header-section-number">5.1</span> LPI</h2>
-<div id="chain-method" class="section level3">
-<h3><span class="header-section-number">5.1.1</span> Chain method</h3>
+<div id="get-data" class="section level3">
+<h3><span class="header-section-number">5.1.1</span> Get data</h3>
+<div id="chain-method" class="section level4">
+<h4><span class="header-section-number">5.1.1.1</span> Chain method</h4>
 <p>Chain method is for poor timeseries with (n &lt; 6) <span class="citation">(Collen et al. 2009)</span>.</p>
 <p><span class="math inline">\(i\)</span>: a population
 <span class="math inline">\(j\)</span>: a species
@@ -503,14 +505,15 @@ values were imputed with log-linear interpolation:</p>
 <p>with <span class="math inline">\(p\)</span> the previous time step with measured value and <span class="math inline">\(s\)</span> the subsequent year
 with a measured value.</p>
 </div>
-<div id="gam-method" class="section level3">
-<h3><span class="header-section-number">5.1.2</span> GAM method</h3>
+<div id="gam-method" class="section level4">
+<h4><span class="header-section-number">5.1.1.2</span> GAM method</h4>
 <p>Set a GAM for each timeseries and report the predicted abundance values each
 year. There are rules of thumbs to automatically set the smoothing parameters <span class="citation">(see Collen et al. 2009)</span>.</p>
 <p>Following, <span class="math inline">\(d_{i,j,t}\)</span> are computed with the predicted abundance values.</p>
 </div>
+</div>
 <div id="lpi-computation" class="section level3">
-<h3><span class="header-section-number">5.1.3</span> LPI computation</h3>
+<h3><span class="header-section-number">5.1.2</span> LPI computation</h3>
 <p>If a species has several populations, the annual species trends is computed as
 the average[^1] of local population trends:</p>
 <p><span class="math inline">\(d_{j,t} = \dfrac{1}{n}\sum_{i = 1}^{n} d_{i,j,t}\)</span></p>
@@ -520,11 +523,11 @@ the average[^1] of local population trends:</p>
 <p><span class="math inline">\(I_{j, t} = I_{j, t - 1} 10^{d_{j,t}}\)</span>, <span class="math inline">\(I_0 = 1\)</span></p>
 </div>
 <div id="confidence-limits" class="section level3">
-<h3><span class="header-section-number">5.1.4</span> Confidence limits</h3>
+<h3><span class="header-section-number">5.1.3</span> Confidence limits</h3>
 <p>Bootstrap on the selection of the <span class="math inline">\(n_j\)</span> population.</p>
 </div>
 <div id="misc" class="section level3">
-<h3><span class="header-section-number">5.1.5</span> Misc</h3>
+<h3><span class="header-section-number">5.1.4</span> Misc</h3>
 <ul>
 <li>LPI:
 <ul>
@@ -533,7 +536,7 @@ the average[^1] of local population trends:</p>
 </ul></li>
 </ul>
 <div id="note-on-the-geometric-mean-buckland_geometric_2011" class="section level4">
-<h4><span class="header-section-number">5.1.5.1</span> Note on the geometric mean: <span class="citation">Buckland et al. (2011)</span></h4>
+<h4><span class="header-section-number">5.1.4.1</span> Note on the geometric mean: <span class="citation">Buckland et al. (2011)</span></h4>
 <ul>
 <li>Because it measures proportional changes, low change in absolute abundance in a rare
 species can lead a big change in the geometric mean</li>
@@ -554,7 +557,7 @@ are equal: <span class="math inline">\(p_{i,t} = 1/n\)</span> for all <span clas
 </div>
 </div>
 <div id="avantages" class="section level3">
-<h3><span class="header-section-number">5.1.6</span> Avantages</h3>
+<h3><span class="header-section-number">5.1.5</span> Avantages</h3>
 <ul>
 <li>Not biais for detectability variation between species
 <ul>
@@ -578,7 +581,7 @@ former. Same rescaling is necessary for all subsequent years.</li>
 </ul>
 </div>
 <div id="disaventages" class="section level3">
-<h3><span class="header-section-number">5.1.7</span> Disaventages</h3>
+<h3><span class="header-section-number">5.1.6</span> Disaventages</h3>
 <ul>
 <li>Do not work when when relative abundance is 0:
 <ul>
@@ -588,6 +591,13 @@ quantity + poor precision with rarely recorded species.</li>
 <li>Problem can be reduced if observed count are modeled before index
 computation</li>
 </ul></li>
+</ul>
+</div>
+<div id="computation" class="section level3">
+<h3><span class="header-section-number">5.1.7</span> Computation</h3>
+<ul>
+<li>NA = 0 or missing values to interpolate ? It is 0 if a monitoring took place
+or not</li>
 </ul>
 </div>
 </div>
