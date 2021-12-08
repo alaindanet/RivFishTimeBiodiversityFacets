@@ -16,6 +16,9 @@ library("rnaturalearthdata")
 
 library(cowplot)
 
+# Turnover
+library(codyn)
+
 conflict_prefer("filter", "dplyr")
 
 # For brms

@@ -76,7 +76,18 @@ knitr::include_graphics(here::here("doc/fig/fish-trait-composition-temperature-r
 
 # Methods
 
-# Sites:
+## Data selection
+
+- Check the utility functions of `codyn`:
+
+```{r}
+source("https://raw.githubusercontent.com/NCEAS/codyn/master/R/utilities.R")
+check_single_onerep
+```
+
+
+
+## Sites:
 
 - Site protection status: 
   - US database, Australian database
@@ -94,9 +105,7 @@ knitr::include_graphics(here::here("doc/fig/fish-trait-composition-temperature-r
     - Copernicus land cover 2016 to 2020: https://github.com/bluegreen-labs/ecmwfr
     - 1995 à 2015 ESA: https://catalogue.ceda.ac.uk/uuid/b382ebe6679d44b8b0e68ea4ef4b701c 
 
-
-# Biodiversity:
-
+# Biodiversity
 
 ## LPI
 
@@ -240,5 +249,7 @@ are equal: $p_{i,t} = 1/n$ for all $i$".
   - Freshwater known species number by ecoregion (representativity of our data):
     @abell_freshwater_2008,
     [data](https://databasin.org/datasets/0b6963be65074bca9306b1b6f05149d2/)
+
+
 
 # References {-}

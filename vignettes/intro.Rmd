@@ -486,6 +486,71 @@ fit1 <- brm(log_total_abundance ~ year + year^2,
 conditional_effects(fit1, surface = TRUE)
 ```
 
+## Turnover
+
+```{r}
+tar_load(c(timeseries, site_protocol_quali))
+selection_site <- op_protocol %>%
+  filter(unitabundance %in% c("Count", "Ind.100m2")) %>%
+  group_by(siteid) %>%
+  summarise(n = n()) %>%
+  filter(length(n) >= 10)
+rm(test)
+
+turnover <- timeseries %>%
+  filter(siteid %in% selection_site$siteid) %>%
+  nest_by(siteid) %>%
+  mutate(
+    turnover = list(try(turnover(
+          df = data,
+          time.var = "year",
+          species.var = "species",
+          abundance.var = "abundance",
+          replicate.var = NA,
+          metric = "total"
+          ))),
+  appearance = list(try(turnover(
+        df = data,
+        time.var = "year",
+        species.var = "species",
+        abundance.var = "abundance",
+        replicate.var = NA,
+        metric = "appearance"
+        ))),
+  disappearance = list(try(turnover(
+        df = data,
+        time.var = "year",
+        species.var = "species",
+        abundance.var = "abundance",
+        replicate.var = NA,
+        metric = "disappearance"
+        )))
+  )
+  
+
+turnover2 <- turnover[map_lgl(test$turnover, ~class(.x) != "try-error"),] %>%
+  mutate(test = list(left_join(left_join(turnover, appearance, by = "year"),
+        disappearance, by
+        ="year"))
+  )
+#  unnest(cols = c(turnover, appearance, disappearance), names_repair = "universal")
+
+turnover[map_lgl(turnover$turnover, ~class(.x) != "try-error"),] %>%
+  ungroup() %>%
+  mutate(test2 = map(list(turnover, appearance, disappearance), ~.x %>% reduce(left_join, by
+        = "year")))
+
+# Turnover to control for number of year between two time steps 
+turnover3 <- map(c("turnover", "appearance", "disappearance"),
+  ~turnover[map_lgl(turnover$turnover, ~class(.x) != "try-error"), c("siteid", .x)] %>%
+    ungroup() %>%
+    unnest(cols = .x)
+) %>%
+reduce(left_join, by = c("siteid", "year"))
+
+
+```
+
 
 
 

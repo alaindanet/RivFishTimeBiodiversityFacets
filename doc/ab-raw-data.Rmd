@@ -392,17 +392,15 @@ ggplot(test, aes(x = x, y=y, ymax = ymax, ymin = ymin, fill = z)) +
 
 - Be careful to multiple fishing per year
 
-```{r}
-plot_trends %>%
-  mutate(
-    p_pop = map(data, ~plot_temporal_population(com = .x))
-  )
+```{r, eval=FALSE}
 toy_dataset %>%
   group_by(siteid, year, species) %>%
   summarise(test=n()>1) %>%
   filter(test)
+```
 
 
+```{r}
 pop_trends <- toy_dataset %>%
   filter(!siteid %in% c("S534", "S8633")) %>%
   group_by(siteid) %>%
@@ -410,7 +408,7 @@ pop_trends <- toy_dataset %>%
   mutate(
     p_pop = map(data, ~plot_temporal_population(com = .x, ))
   )
-plot_grid(plotlist = pop_trends$p_pop)
+pop_trends$p_pop
 ```
 
 
