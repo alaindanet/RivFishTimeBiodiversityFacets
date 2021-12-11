@@ -29,10 +29,16 @@ tar_plan(
   op_protocol = op_protocol,
   site_protocol_quanti = site_protocol_quanti,
   seed = 123)),
+  tar_target(filtered_op_protocol, filter_op(
+      op_protocol = op_protocol,
+      selected_protocol = NULL,
+      nb_sampling = 6,
+      extent_month = 1.5
+    )),
 
-
-  tar_render(explo, here("vignettes/intro.Rmd")),
+  tar_render(intro, here("vignettes/intro.Rmd")),
   tar_render(report, here("doc/aa-research-questions.Rmd")),
   tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+  tar_render(meeting_slides, here("talk/meeting.Rmd")),
 
 )

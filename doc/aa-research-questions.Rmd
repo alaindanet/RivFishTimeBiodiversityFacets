@@ -35,7 +35,9 @@ library(knitr)
     headwaters due to the reduction of available cold waters
 
 ```{r , fig.cap="fig/fish-trait-composition-temperature-rainfall-europe"}
-knitr::include_graphics(here::here("doc/fig/fish-trait-composition-temperature-rainfall-europe.jpeg"))
+knitr::include_graphics(
+  here::here("doc/fig/fish-trait-composition-temperature-rainfall-europe.jpeg")
+)
 ```
 
 - Acidication due to emission of S and N in the atmosphere @wright_interaction_2010
@@ -86,8 +88,7 @@ check_single_onerep
 ```
 
 
-
-## Sites:
+## Environmental characteristics 
 
 - Site protection status: 
   - US database, Australian database
@@ -225,16 +226,30 @@ are equal: $p_{i,t} = 1/n$ for all $i$".
 ### Computation 
 
 - NA = 0 or missing values to interpolate ? It is 0 if a monitoring took place
-  or not
+  and that the species was missing
 
-## Extirpation
+## Compositional changes 
 
-- extirpation / colonisation
-  - [@baeten_model-based_2014]
+- Multi-site based on presence/absence probability [@baeten_model-based_2014]
+  - Based on deviance:   
+    - $D_i = -2n [p_i\log(p_i) + (1-p_i)\log(1-p_i)]$
+    - Omnipresent and rare species have the same contribution to the
+      heterogeneity in community composition
 
-## Turnover
+- extirpation / colonisation:
+  - Species exchange index:
+    - $SER_r = \dfrac{S_{imm} + S_{lost}}{S_{tot}}$ based on presence absence
+      - Implemented in [`codyn`](https://github.com/NCEAS/codyn)
+    - $SER_a = \dfrac{\sum_i (p_i - p'_i)^2}{\sum_i p_i^2 + \sum_i p'_i^2 - \sum p_i p'_i}$ 
+      - [See the math](https://besjournals.onlinelibrary.wiley.com/action/downloadSupplement?doi=10.1111%2F1365-2664.12959&file=jpe12959-sup-0005-AppendixS3.pdf)
+      - Complement Jaccard index as: $J_a = 1-SER_a = S_{comm} / S_{tot}$
+      - Here diversity is measured with the Simpson index: $\lambda = \sum_i{p_i^2}$  
+        if all species are equally abundant: $\lambda = \sum_i \dfrac{1}{S}^2 = \dfrac{S}{S^2} = \dfrac{1}{S}$
+        so $S = \dfrac{1}{\lamda}$
+      - Based on proportion of each species, so not affected by change of total
+        abundance
 
-- Temporal turnover: 
+- Temporal turnover:
   - abundance based:
     - @shimadzu_measuring_2015 (between two time steps), considers a turnover
       metric decomposed based either on total abundance or species composition.
@@ -250,6 +265,66 @@ are equal: $p_{i,t} = 1/n$ for all $i$".
     @abell_freshwater_2008,
     [data](https://databasin.org/datasets/0b6963be65074bca9306b1b6f05149d2/)
 
+
+# Modelling
+
+## Interesting links {-}
+
+- Statistical modelling: 
+  - [spaMM](https://gitlab.mbb.univ-montp2.fr/francois/spamm-ref)
+  - [INLA](https://becarioprecario.bitbucket.io/inla-gitbook/ch-temporal.html#sec:spacetime)
+  - [Tutorial on spde spatial autocorrelation](https://www.flutterbys.com.au/stats/tut/tut12.13.html)
+  - [Interesting massive statistical model for marine data](https://academic.oup.com/icesjms/article/74/5/1311/2907795?login=true)
+
+## One model by site / species
+
+- Easy to implement: GAM, polynomial [@rigal_method_2020]
+
+- Cons:
+  - Non robust temporal trends: to much parameters to estimate with few data
+    points, i.e. low degree of freedom. [@desquilbet_adequate_2020]
+  - How to assess imperfect detection  
+
+## Model all in one
+
+### Community abundance and species richness
+
+#### Temporal biais
+
+- Sampling effort
+- Sampling area ?
+
+#### Model
+
+- Reponse variable: Count
+- Distribution: Poisson or negative binomial
+- Fixed effect: year:Unit (Unit only for abundances)
+- Random effect:
+  - Realm: intercept + slope
+  - Basin: intercept + slope
+  - Spatial autocorrelation: SPDE (inla or spaMM)
+  - temporal autocorrelation: AR1 
+
+### Species abundances
+
+#### Biais
+
+- species detectability [@gotelli_detecting_2010] but see this [McGill's
+  post](https://dynamicecology.wordpress.com/2014/09/15/detection-probabilities-statistical-machismo-and-estimator-theory/)
+  Finally, I believe that @gotelli_detecting_2010 did not model detection
+  probability at all, it took one afternoon to understand that `r emo::ji("sweat_smile")`
+- sampling effort
+
+#### Model
+
+- Reponse variable: Count
+- Distribution: Poisson or negative binomial
+- Fixed effect: Species:year:Unit (Unit only for abundances)
+- Random effect:
+  - Realm: intercept + slope
+  - Basin: intercept + slope
+  - Spatial autocorrelation: SPDE (inla or spaMM)
+  - temporal autocorrelation: AR1
 
 
 # References {-}

@@ -1,0 +1,240 @@
+---
+title: "Post doc meeting"
+date: "`r paste0('Last update: ', format(Sys.time(), '%d %B %Y'))`"
+author: 'Alain Danet, Illinois State University [alaindanet.github.io](https://alaindanet.github.io)'
+output:
+  ioslides_presentation:
+    incremental: true
+    widescreen: true
+bibliography: "../doc/bibliography.bib"
+---
+
+
+```{r dsetup, results = "hide", echo = FALSE, message = FALSE}
+knitr::opts_chunk$set(
+  fig.align='center',
+  tidy=FALSE,
+  comment="R>> ",
+  size = 'small'
+)
+```
+
+# Introduction
+
+## {data-background=https://systemsthinking.blog.gov.uk/wp-content/uploads/sites/234/2020/04/Parable-of-the-elephant-.png data-background-size=cover} 
+
+<!--<div class="centered">-->
+
+<!--![test](https://systemsthinking.blog.gov.uk/wp-content/uploads/sites/234/2020/04/Parable-of-the-elephant-.png){with=50%}-->
+
+<!--</div>-->
+
+## Documenting community changes
+
+- Many papers report local species richness and temporal trends
+  - Abundance [@klink_meta-analysis_2020]
+  - Species richness: [@vellend_global_2013; @dornelas_assemblage_2014]
+
+- Other aspects of community structure vary through time:
+  - Composition: [@dornelas_assemblage_2014; @hillebrand_biodiversity_2018]
+  - Functional diversity [@barnagaud_temporal_2017]
+  - Evenness (ref)
+
+## Why do we want to assess community changes ? {.flexbox .vcenter}
+
+- Global changes have affect a tremendous effect communities
+- Understanding assembly and disassembly rules
+- Give a more complex and complete picture of what is going on ?
+
+<div class="notes">
+- Global changes affect greatly community
+- Understanding
+- Contradictory results
+
+So, we want to refine our assessment, to give a more complex picture of it
+
+</div>
+
+
+## Link between different facets of biodiversity
+
+
+- Species richness:
+  - Evenness / richness: (+) [@soininen_relationship_2012]
+  - FDiv / richness: (+) [@mouchet_functional_2010]
+  - FEve / richness: (O) [@mouchet_functional_2010]
+  ... to complete
+
+<div class="notes">
+Link to assembly rules
+</div>
+
+## Space for time substitution
+
+- Facet relationships come from space-for-time substitution
+
+- Assume an homology between variation in space and variation in time
+
+<div class="notes">
+
+- Turnover in space, dispersal limitation can limit  
+
+</div>
+
+## Research gaps
+
+- Few facets of biodiversity have been documented in time 
+- Relationships between facet temporal trends are even more scarce 
+
+## Research Questions  
+
+1. How do communities change through time ?
+   - Richness, Evenness, Disparity 
+2. How to species characteristics explains community change ?
+   - Life history traits, trophic position, ... 
+   - Make a typology of declining and increasing species
+
+# 
+
+## How to measure biodiversity through time ?
+
+- Three index categories [@daly_ecological_2018]:
+  1. Richness: number of species, number of individuals
+    - $S$, $N$
+  2. Evenness: distribution of species abundance 
+    - vector of species relative abundances $p = (p_1, ..., p_S)$  
+  3. Disparity: between species, i.e. functional, taxonomic, phylogenetic, ... 
+
+<div class="notes">
+
+Disparity: other index are often defined as species-neutral diversity 
+
+</div>
+
+## How do composition change ? 
+
+- Species exchange index: [@hillebrand_biodiversity_2018]
+  - $SER_r = \dfrac{S_{imm} + S_{lost}}{S_{tot}}$ based on presence absence
+  - $SER_a = \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}$ 
+
+- Abundance based (between two time steps)[@shimadzu_measuring_2015]:
+  - considers a turnover metric decomposed based
+    either on total abundance or species composition.
+
+<div class="notes">
+
+</div>
+ 
+## To keep in mind 
+
+We want to measure dimension of biodiversity that are not related to each other.
+
+- One measure reflecting richness 
+- One measure reflecting composition
+
+<div class="notes">
+
+Should we look at Hill numbers? like $q \right 1 = \mathrm{shannon}$,
+q = 2, Gini-Simpson
+
+</div>
+
+## Multi-site version of community change
+
+<div class="columns-2">
+ 
+- Based on deviance: [@baeten_model-based_2014]
+    - Omnipresent and rare species have the same contribution to the
+      heterogeneity in community composition
+
+![Figure 1](https://besjournals.onlinelibrary.wiley.com/cms/asset/6065732e-217f-48fb-bb34-828238e42705/mee312137-fig-0001-m.jpg){width=40%}
+
+</div>
+
+- $D_i = -2n [p_i\log(p_i) + (1-p_i)\log(1-p_i)]$
+
+- We can look at the contribution of each species (convergence or divergence)
+
+<div class="notes">
+
+The sum of
+the deviances of the species-level models (i.e. our deviance
+metric D = ΣDi ) equals the residual deviance of the single
+binomial model y ij ~ Speciesi. The difference in the residual
+deviance of separate models for each time period matches the
+DD metric. Adding a Site effect term to the model, that is,
+yij ~ Sitej + Speciesi, controls for the richness differences.
+The residual deviance of this model, which we will call DT,
+then quantifies the compositional heterogeneity due to turn-
+over only.
+
+</div>
+
+# Population
+
+## LPI 
+
+
+
+- $d_{i,j,t} = \log_{10}(\dfrac{N_{i,j,t}}{N_{i,j,t-1}}) = \log_{10}N_{i,j,t} - \log_{10}N_{i,j,t-1}$
+
+
+$i$: a population
+$j$: a species
+$t$: a time step 
+
+- Trends by species: $d_{j,t} = \dfrac{1}{n}\sum_{i = 1}^{n} d_{i,j,t}$
+
+- LPI: $I_{j, t} = I_{j, t - 1} 10^{d_{j,t}}$, $I_0 = 1$
+
+- Confidence interval: bootstrap on the selection of the $n_j$ populations by
+  species.
+
+<div class="notes">
+
+$N_t = N_p (\dfrac{N_s}{N_p})^{\dfrac{t-s}{s-p}}$ 
+
+</div>
+
+## Computation of the LPI 
+
+- Missing values: 
+  - imputed by log linear interpolation: $N_t = N_p (\dfrac{N_s}{N_p})^{\dfrac{t-s}{s-p}}$ 
+  - imputed by a GAM
+
+- Dealing with 0: 
+  - add a small quantity to 0 
+  - GAM get mostly rid of it
+
+## Properties of the LPI
+
+- Pro:
+  - Proportional changes, low change in absolute abundance in a rare
+      species can lead a big change in the geometric mean
+  - No biais for detectability variation between species
+  - no differences if units are abundance, biomass, density
+  - combine trends of really different survey 
+
+- Con:
+  - no differences if units are abundance, biomass, density
+  - combine trends of really different survey 
+
+
+# For next time 
+ 
+##
+
+
+- Homogenize temporal series:
+  - timing of fishing 
+
+  
+
+<div class="notes">
+
+</div>
+
+
+
+# References {-}
+

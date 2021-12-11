@@ -1,6 +1,9 @@
 ---
 title: "intro"
-output: bookdown::html_document2
+output:
+  bookdown::html_document2:
+    code_folding: hide
+
 ---
 
 ```{r, include = FALSE}
@@ -142,7 +145,7 @@ tar_load(op_protocol)
 
 ```{r}
 # Fish operation description
-check_quali <- map_lgl(op_protocol, ~all(.x != "no_unique", na.rm = TRUE))
+check_quali <- map_lgl(op_protocol[,!colnames(op_protocol) %in% "date"], ~all(.x != "no_unique", na.rm = TRUE))
 ```
 
 - Make sure that each operation is described by a unique protocol, sampling
@@ -488,7 +491,7 @@ conditional_effects(fit1, surface = TRUE)
 
 ## Turnover
 
-```{r}
+```{r, eval = FALSE}
 tar_load(c(timeseries, site_protocol_quali))
 selection_site <- op_protocol %>%
   filter(unitabundance %in% c("Count", "Ind.100m2")) %>%

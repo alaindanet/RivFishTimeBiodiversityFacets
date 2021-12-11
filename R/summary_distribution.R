@@ -1,3 +1,13 @@
+#' Get mode of a distribution 
+#'
+#' @examples
+#' getmode(c(1,1, 2, 3))
+#' getmode(c("a", "b", "b", "c"))
+getmode <- function(v) {
+   uniqv <- unique(v)
+   uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
 #' Get unique values
 #'
 #' @param x  numeric vector.

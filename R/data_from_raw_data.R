@@ -66,8 +66,7 @@ get_op_protocol <- function(ts_data = NULL) {
       get_unique_values_c, na.omit = FALSE) %>%
     ungroup()
 
-  #unitbiomass is full of na bc often
-  #biomass is not reported
+  #unitbiomass is full of na bc biomass is often not reported
 
   # Check if there are biomass measurements without biomass unit:
   stopifnot(all((!is.na(ts_data$biomass) & is.na(ts_data$unitbiomass)) == FALSE))
@@ -79,17 +78,25 @@ get_op_protocol <- function(ts_data = NULL) {
   # Check that there is not multiple biomass units by operation
   stopifnot(all(!biomass_unit$unitbiomass %in% c("no_unique", NA)))
 
-  # Merge data 
+  # Merge data
   op_protocol <- quali_protocol %>%
     select(-unitbiomass) %>%
     left_join(biomass_unit, by = c("op_id"))
+ 
+  # Transform quarter in numeric variable:
+  # I remove non-numeric variables because there are interesting since they
+  # cover 6 months.
+  # operation in 2/3: april, may, june / july, august, september
+  # operation in 4/1: october, november, december / jan, fev, march
+  op_protocol[op_protocol$quarter %in% c("4/1", "2/3"), ]$quarter <- NA
+  op_protocol$quarter <- as.numeric(op_protocol$quarter)
+
+  # Get proper date format
+  op_protocol$date <-  mdy(op_protocol$date)
 
   usethis::use_data(op_protocol, overwrite = TRUE)
 
   return(op_protocol)
-
-
-
 }
 
 get_site_quali_quanti_protocol <- function(op_data = NULL, type = NULL) {

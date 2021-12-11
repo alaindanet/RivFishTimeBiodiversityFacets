@@ -1,0 +1,58 @@
+---
+title: "Filter sites and operation"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+## target knits Rmds in their own session, so load libraries here.
+source(here::here("start_rmd.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(op_protocol, site_protocol_quali, site_protocol_quanti))
+```
+
+- Keep good sampling month +- month 
+- Delete yearly duplicate
+ 
+
+```{r}
+interval(c(ymd("2001-01-01"), ymd("2001-02-01")), ymd("2002-01-01")) %>%
+    as.duration(.) %>%
+    as.numeric(., "month") 
+
+ti <- mutate(op_protocol, date = mdy(date))
+
+```
+
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
