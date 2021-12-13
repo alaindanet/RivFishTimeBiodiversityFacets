@@ -19,13 +19,55 @@ tar_load(c(op_protocol, site_protocol_quali, site_protocol_quanti))
 - Keep good sampling month +- month 
 - Delete yearly duplicate
  
+```{r}
+
+```
+- Some op have no date, but a month, option `convert_month_to_date` added to
+  `filter_op()` 
 
 ```{r}
-interval(c(ymd("2001-01-01"), ymd("2001-02-01")), ymd("2002-01-01")) %>%
-    as.duration(.) %>%
-    as.numeric(., "month") 
+op_protocol %>%
+  filter(is.na(date), !is.na(month))
+op_protocol %>%
+  filter(is.na(month), is.na(quarter))
+```
 
-ti <- mutate(op_protocol, date = mdy(date))
+```{r}
+test_filter <- filter_op(
+      op_protocol = op_protocol,
+      selected_protocol = NULL,
+      nb_sampling = 5,
+      extent_month = 1.5,
+      return_no_filtered = TRUE,
+      convert_month_to_date = TRUE
+      )
+```
+
+```{r}
+test_filter %>%
+  ggplot(aes(x = (month_duration %% 12))) +
+  geom_histogram() +
+  geom_vline(xintercept = c(12 - 2, 2)) +
+  geom_vline(xintercept = c(12 - 1, 1), color = "red") +
+  geom_vline(xintercept = c(12 - 1.5, 1.5), color = "blue")
+```
+
+```{r}
+filtered <- test_filter %>%
+  filter(month_check | (is.na(month) & is.na(year) & quarter_check))
+```
+
+# Summary of analysis 
+
+- Show the representativity of the site selection:
+  - map
+  - histogram
+  - lise Lise paper
+
+
+
+```{r}
+
 
 ```
 

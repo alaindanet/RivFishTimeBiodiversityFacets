@@ -32,8 +32,8 @@ tar_plan(
   tar_target(filtered_op_protocol, filter_op(
       op_protocol = op_protocol,
       selected_protocol = NULL,
-      nb_sampling = 6,
-      extent_month = 1.5
+      nb_sampling = 5,
+      extent_month = 2
     )),
 
   tar_render(intro, here("vignettes/intro.Rmd")),
