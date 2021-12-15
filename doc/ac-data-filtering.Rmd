@@ -59,16 +59,198 @@ filtered <- test_filter %>%
 
 # Summary of analysis 
 
-- Show the representativity of the site selection:
-  - map
-  - histogram
-  - lise Lise paper
+```{r}
+tar_load(filtered_op_protocol)
+```
+
+```{r}
+tabyl_df <- function(x = NULL, group = NULL) {
+
+  gr_sym <- rlang::sym(group)
+
+  x %>%
+    tabyl(!!gr_sym) %>%
+    arrange(desc(n)) %>%
+    adorn_totals("row") %>%
+    adorn_pct_formatting(digits = 1)
+
+}
+```
+
+
+```{r}
+tabyl_df(filtered_op_protocol, "protocol")
+```
+
+
+```{r}
+tabyl_df(filtered_op_protocol, "unitabundance")
+```
+
+```{r}
+tar_load(filtered_dataset)
+map(filtered_dataset, colnames)
+tar_load(c(site_desc_loc, measurement))
+get_filtered_dataset(
+      op_protocol = filtered_op_protocol,
+      type = "all",
+      measurement = measurement,
+      site_desc_loc = site_desc_loc,
+      add_var_from_protocol = c("siteid", "year")
+      )
+```
+
+- No much site in South America and Africa
+
+```{r}
+loc <- filtered_dataset$location %>%
+  left_join(filtered_dataset$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+
+
+```{r, eval = TRUE}
+loc2 <- st_set_geometry(loc, NULL)
+col_chr <- map_lgl(loc2, is.character)
+loc2[, col_chr] <- map(loc2[, col_chr],
+  ~stri_conv(.x, from = "ISO-8859-1", to = "UTF-8"))
+loc2$geometry  <- st_geometry(loc)
+loc2 <- st_as_sf(loc2)
+mapView(loc2)
+```
+
+
+```{r}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = loc, aes(color = protocol), shape = 1)
+```
+
+```{r}
+loc %>%
+  ggplot(aes(x = protocol, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Protocol", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+
+```{r}
+loc %>%
+  ggplot(aes(x = unitabundance, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Abundance unit", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r}
+site_year <- filtered_dataset$site_quanti %>%
+  filter(variable == "year") %>%
+  left_join(filtered_dataset$location, by = "siteid") %>%
+  mutate(
+    span = max - min,
+    completeness = n / (span + 1),
+    cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
+      include.lowest = TRUE
+    ),
+    cat_completeness = cut(
+      completeness, c(0, .1, .25, .5, .75, 1), right = TRUE,
+      include.lowest = TRUE
+    )
+    )
+```
+
+```{r}
+site_year %>%
+  ggplot(aes(x = max - min)) +
+  geom_histogram() +
+  labs(x = "Year span (years)", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+```{r}
+site_year %>%
+  ggplot(aes(x = cat_completeness, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Completness (nb sampling years / year span)", y = "Number of sites")
+```
+
+
+# The super map
+
+```{r}
+site_richness <- filtered_dataset$measurement %>%
+  left_join(select(filtered_op_protocol, siteid, op_id), by = "op_id") %>%
+  group_by(siteid) %>%
+  summarise(tot_nb_species = length(unique(species)))
+
+
+op_richness_summary <-
+  filtered_dataset$abun_rich_op %>%
+  left_join(select(filtered_op_protocol, siteid, op_id), by = "op_id") %>%
+  group_by(siteid) %>%
+  summarise(enframe(summary_distribution(species_nb)), .groups = "drop") %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  rename(median_richness = median)
+```
+
+```{r}
+plot_abun_richness_trends <- filtered_dataset$abun_rich_op %>%
+  left_join(select(filtered_op_protocol, siteid, op_id, year), by = "op_id") %>%
+  group_by(siteid) %>%
+  nest() %>%
+  ungroup() %>%
+  mutate(
+    p_abun = map2(data, siteid,
+      ~plot_community_data(
+        dataset = .x, y = "total_abundance", x = "year", title = .y)),
+    p_rich = map2(data, siteid,
+      ~plot_community_data(
+        dataset = .x, y = "species_nb", x = "year", title = .y),
+    )
+  )
+```
 
 
 
 ```{r}
+var_map_view <- c("siteid", "protocol", "unitabundance", "unitbiomass", "min",
+  "max", "completeness", "tot_nb_richness", "median_richness")
+loc2 <- loc %>%
+  left_join(op_richness_summary, by = "siteid") %>%
+  select(any_of(var_map_view)) %>%
+  left_join(site_richness, by = "siteid") %>%
+  select(any_of(var_map_view)) %>%
+  left_join(select(plot_abun_richness_trends, siteid, p_abun), by = "siteid")
+```
 
+```{r}
+library(leafpop)
+```
 
+```{r}
+dir_plot <- here("doc", "fig", "raw_data")
+dir.create(dir_plot)
+library(furrr)
+plan(multisession, workers = 3)
+future_walk2(plot_abun_richness_trends$p_abun, plot_abun_richness_trends$siteid,
+  ~save_plot(
+    filename = paste0(dir_plot, "/tot_abun_site_", .y, ".png"),
+    .x)
+
+)
+```
+
+- Too long:
+
+```{r, eval=TRUE}
+mask_row <- sample(1:nrow(loc2), 50)
+mapView(loc2[mask_row,], zcol = "protocol",
+  popup = popupGraph(loc2[mask_row,]$p_abun)
+)
 ```
 
 

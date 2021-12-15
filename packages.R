@@ -17,6 +17,9 @@ library("rnaturalearthdata")
 
 library(cowplot)
 
+#clean dataset
+library(janitor)
+
 # Turnover
 library(codyn)
 
@@ -30,4 +33,5 @@ conflict_prefer("discard", "scales")
 conflict_prefer("extract", "tidyr")
 conflict_prefer("group_rows", "dplyr")
 conflict_prefer("lag", "stats")
+
 library(rmarkdown)

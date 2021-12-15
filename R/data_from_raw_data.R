@@ -2,7 +2,7 @@
 #'
 #' get_site_desc_loc(): Keep unique values for site location
 #'
-get_site_desc_loc <- function(ts_data = NULL) {
+get_site_desc_loc <- function(ts_data = NULL, save_data = TRUE) {
 
   # Get unique values for each site
   site_desc_loc <- ts_data %>%
@@ -11,11 +11,13 @@ get_site_desc_loc <- function(ts_data = NULL) {
       .funs = ~get_unique_values_c(x = .x, na.omit = FALSE)) %>%
     ungroup()
 
-  usethis::use_data(site_desc_loc, overwrite = TRUE)
+  if (save_data) {
+    usethis::use_data(site_desc_loc, overwrite = TRUE)
+  }
   return(site_desc_loc)
 }
 
-get_abun_rich_op <- function(ts_data = NULL) {
+get_abun_rich_op <- function(ts_data = NULL, save_data = TRUE) {
 
    abun_rich_op <- ts_data %>%
     group_by(op_id) %>%
@@ -25,12 +27,14 @@ get_abun_rich_op <- function(ts_data = NULL) {
       .groups = "drop"
     )
 
-  usethis::use_data(abun_rich_op, overwrite = TRUE)
+    if (save_data) {
+      usethis::use_data(abun_rich_op, overwrite = TRUE)
+    }
   return(abun_rich_op)
 }
 
 get_species_number_site <- function(
-  ts_data = NULL, species_number_by_op = NULL, op_protocol = NULL) {
+  ts_data = NULL, species_number_by_op = NULL, op_protocol = NULL, save_data = TRUE) {
 
   species_total_site <- ts_data %>%
     group_by(siteid) %>%
@@ -43,22 +47,26 @@ get_species_number_site <- function(
     pivot_wider(names_from = "name", values_from = "value") %>%
     left_join(species_total_site, by = "siteid")
 
-  usethis::use_data(species_number_site, overwrite = TRUE)
+    if (save_data) {
+      usethis::use_data(species_number_site, overwrite = TRUE)
+    }
   return(species_number_site)
 }
 
-get_species_status <- function(ts_data = NULL) {
+get_species_status <- function(ts_data = NULL, save_data = TRUE) {
 
   species_status <- ts_data %>%
     group_by(species) %>%
     summarise(status = get_unique_values_c(speciesstatus))
 
-  usethis::use_data(species_status, overwrite = TRUE)
+    if (save_data) {
+      usethis::use_data(species_status, overwrite = TRUE)
+    }
   return(species_status)
 
 }
 
-get_op_protocol <- function(ts_data = NULL) {
+get_op_protocol <- function(ts_data = NULL, save_data = TRUE) {
 
   quali_protocol <- ts_data %>%
     group_by(siteid, op_id) %>%
@@ -94,12 +102,14 @@ get_op_protocol <- function(ts_data = NULL) {
   # Get proper date format
   op_protocol$date <-  mdy(op_protocol$date)
 
-  usethis::use_data(op_protocol, overwrite = TRUE)
+  if (save_data) {
+    usethis::use_data(op_protocol, overwrite = TRUE)
+  }
 
   return(op_protocol)
 }
 
-get_site_quali_quanti_protocol <- function(op_data = NULL, type = NULL) {
+get_site_quali_quanti_protocol <- function(op_data = NULL, type = NULL, save_data = TRUE) {
 
   stopifnot(type %in% c("quali", "quanti"))
 
@@ -111,7 +121,9 @@ get_site_quali_quanti_protocol <- function(op_data = NULL, type = NULL) {
         get_unique_values_c, na.omit = FALSE) %>%
       ungroup()
 
+  if (save_data) {
     usethis::use_data(site_protocol_quali, overwrite = TRUE)
+  }
     return(site_protocol_quali)
 
   } else {
@@ -125,16 +137,21 @@ get_site_quali_quanti_protocol <- function(op_data = NULL, type = NULL) {
       summarise(enframe(summary_distribution(value, na.rm = TRUE)), .groups = "drop") %>%
       pivot_wider(names_from = "name", values_from = "value")
 
+  if (save_data) {
     usethis::use_data(site_protocol_quanti, overwrite = TRUE)
+  }
     return(site_protocol_quanti)
   }
 }
 
-get_abundance_biomass_data <- function(ts_data = NULL) {
+get_abundance_biomass_data <- function(ts_data = NULL, save_data = TRUE) {
 
   measurement <- ts_data %>%
     select(op_id, species, abundance, biomass)
-  usethis::use_data(measurement, overwrite = TRUE)
+
+  if (save_data) {
+    usethis::use_data(measurement, overwrite = TRUE)
+  }
 
   return(measurement)
 
@@ -143,7 +160,7 @@ get_abundance_biomass_data <- function(ts_data = NULL) {
 get_toy_dataset <- function(
   measurement = NULL,
   op_protocol = NULL,
-  site_protocol_quanti = NULL, seed = 123) {
+  site_protocol_quanti = NULL, seed = 123, save_data = TRUE) {
 
   site_id_no_na_month <- site_protocol_quanti %>%
     filter(n_na == 0, variable == "month") %>%
@@ -160,7 +177,9 @@ get_toy_dataset <- function(
     left_join(op_protocol, by = "op_id") %>%
     filter(siteid %in% siteid_mask)
 
-  usethis::use_data(toy_dataset, overwrite =TRUE)
+  if (save_data) {
+    usethis::use_data(toy_dataset, overwrite =TRUE)
+  }
   return(toy_dataset)
 
 }

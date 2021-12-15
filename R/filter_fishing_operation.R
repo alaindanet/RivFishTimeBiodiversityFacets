@@ -112,6 +112,8 @@ quarter_filter <- function(quar = NULL, mode_quar = NULL) {
 #'
 #' When precise date is absent but month and year are present, we can replace
 #' missing date by "%year-%month-15" (convert_month_to_date).
+#'
+#' NA sampling protocol and unit of abundance are removed
 filter_op <- function(
     op_protocol = NULL,
     selected_protocol = NULL,
@@ -143,6 +145,11 @@ filter_op <- function(
   mask_month_quarter <- !is.na(op_protocol$month) &
     !is.na(op_protocol$quarter)
   op_protocol <- op_protocol[mask_month_quarter, ]
+  # Remove NA unit of abundance or protocol
+  mask_na_protocol_unit <- !is.na(op_protocol$protocol) |
+    !is.na(op_protocol$unitabundance)
+  op_protocol <- op_protocol[mask_na_protocol_unit, ]
+
 
 
   # get time of fishing
@@ -235,6 +242,11 @@ filter_op <- function(
       ) %>%
       unnest(cols = c(data)) %>%
       ungroup()
+
+    var_to_drop <- c("med_month", "mode_quarter", "med_date", "month_duration",
+      "month_check", "quarter_check")
+    output <- output %>%
+      select(- all_of(var_to_drop))
 
     return(output)
 }
