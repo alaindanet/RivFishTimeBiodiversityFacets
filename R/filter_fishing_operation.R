@@ -61,6 +61,9 @@ month_filter_c <- compiler::cmpfun(month_filter)
 #'choose_from_multiple(x = c(NA,NA,NA), quarter = c(1,1,2), mode_quarter = NA)
 #'#NA
 #'choose_from_multiple(x = c(NA,NA,NA), quarter = c(1,NA,2), mode_quarter = 2)
+#'choose_from_multiple( x = c(1, 12.1))
+#'choose_from_multiple(x = c(NA, 12.1))
+#'choose_from_multiple(x = c(.09, 12.1))
 choose_from_multiple <- function (x = NULL, quarter = NULL, mode_quarter = NULL) {
 
   if (length(x) <= 1 & length(quarter) <= 1) {
@@ -73,11 +76,11 @@ choose_from_multiple <- function (x = NULL, quarter = NULL, mode_quarter = NULL)
       c(abs(nb_month), abs(nb_month - 12))
       )
 
-    if (output %% length(nb_month) == 0) {
-      return(output)
+    if (output > length(nb_month)) {
+      return(output - length(nb_month))
     } else {
 
-    return(output %% length(nb_month))
+    return(output)
     }
 
   }
@@ -151,102 +154,116 @@ filter_op <- function(
   op_protocol <- op_protocol[mask_na_protocol_unit, ]
 
 
+  # Keep constant protocol by site
+  op_protocol <- op_protocol %>%
+    nest_by(siteid) %>%
+    mutate(data = list(filter(data, protocol == getmode(protocol)))) %>%
+    ungroup() %>%
+    unnest(cols = c(data))
 
-  # get time of fishing
+  ## Check unique protocol by site 
+  unique_protocol_site <- op_protocol %>%
+    nest_by(siteid) %$%
+    map_chr(data, ~get_unique_values_c(.x$protocol))
+  stopifnot(all(unique_protocol_site != "no_unique"))
+
+  # Filter samplings based on the month 
+
+  ## get time of fishing
   timing_fishing <- op_protocol %>%
     group_by(siteid) %>%
     summarise(
       med_month = median(month, na.rm = TRUE),
-      mode_quarter = getmode(quarter)
-      ) %>%
-    mutate(
-      med_date = ymd(paste0("2020-", round(med_month), "-15")),
-      mode_quarter = as.integer(mode_quarter)
-    )
+      mode_quarter = getmode(quarter)) %>%
+    mutate( med_date = ymd(paste0("2020-", round(med_month), "-15")),
+      mode_quarter = as.integer(mode_quarter))
 
-
-  set_mask_filtering <- op_protocol %>%
-    nest_by(siteid) %>%
-    left_join(timing_fishing, by = "siteid") %>%
-    mutate(
-      month_duration = list(
-        interval(ymd(data$date), med_date) %>%
-          as.duration %>%
-          as.numeric(., "month")
-      )
-      ) %>%
-    unnest(cols = c(data, month_duration)) %>%
-    ungroup() %>%
-    mutate(
-      month_check = month_filter(
-        x = month_duration,
-        range_x = extent_month,
-        month_int_decimal = 1
-        ),
-      quarter_check = map2_lgl(
-        quarter, mode_quarter,
-        ~quarter_filter(quar = .x, mode_quar = .y)
-      )
-    )
-
-    if (return_no_filtered) {
-      return(set_mask_filtering)
-    }
-
-    output <- set_mask_filtering %>%
-      filter(month_check | is.na(month) & quarter_check)
-
-    # check quarter works
-    mask_check <-
-      is.na(output$month) &
-      !is.na(output$quarter) &
-      !is.na(output$mode_quarter) &
-      (output$quarter != output$mode_quarter)
-    stopifnot(all(mask_check == FALSE))
-
-    # Protocol selection
-    if (!is.null(selected_protocol)) {
-      output <- output %>%
-        filter(protocol %in% selected_protocol)
-    }
-
-    # Abundance Unit selection
-    if (!is.null(selected_abun_unit)) {
-      output <- output %>%
-        filter(unitabundance %in% selected_abun_unit)
-    }
-
-    # Number of sampling
-    if (!is.null(nb_sampling)) {
-      summary_sampling <- output %>%
-        group_by(siteid) %>%
-        summarise(n = n())
-
-      mask_nb_sampling <- output$siteid %in%
-        summary_sampling[summary_sampling$n >= nb_sampling, ]$siteid
-
-      output <- output[mask_nb_sampling, ]
-    }
-
-    # Select one sampling per site and year
-    output <- output %>%
-      nest_by(siteid, year) %>%
+    ## Compute difference between sampling and median + mask
+    set_mask_filtering <- op_protocol %>%
+      nest_by(siteid) %>%
+      left_join(timing_fishing, by = "siteid") %>%
       mutate(
-        data = list(
-          data[choose_from_multiple(
-            x = data[["month_duration"]],
-            quarter = data[["quarter"]],
-            mode_quarter = data[["mode_quarter"]]
-            ), ]
+        month_duration = list(
+          interval(ymd(data$date), med_date) %>%
+            as.duration %>%
+            as.numeric(., "month")
         )
-      ) %>%
-      unnest(cols = c(data)) %>%
-      ungroup()
+        ) %>%
+      unnest(cols = c(data, month_duration)) %>%
+      ungroup() %>%
+      mutate(
+        month_check = month_filter(
+          x = month_duration,
+          range_x = extent_month,
+          month_int_decimal = 1
+          ),
+        quarter_check = map2_lgl(
+          quarter, mode_quarter,
+          ~quarter_filter(quar = .x, mode_quar = .y)
+        )
+      )
 
-    var_to_drop <- c("med_month", "mode_quarter", "med_date", "month_duration",
-      "month_check", "quarter_check")
-    output <- output %>%
-      select(- all_of(var_to_drop))
+      if (return_no_filtered) {
+        return(set_mask_filtering)
+      }
 
-    return(output)
+      output <- set_mask_filtering %>%
+        filter(month_check | is.na(month) & quarter_check)
+
+      # check quarter works
+      mask_check <-
+        is.na(output$month) &
+        !is.na(output$quarter) &
+        !is.na(output$mode_quarter) &
+        (output$quarter != output$mode_quarter)
+      stopifnot(all(mask_check == FALSE))
+
+      # Protocol selection
+      if (!is.null(selected_protocol)) {
+        output <- output %>%
+          filter(protocol %in% selected_protocol)
+      }
+
+      # Abundance Unit selection
+      if (!is.null(selected_abun_unit)) {
+        output <- output %>%
+          filter(unitabundance %in% selected_abun_unit)
+      }
+
+
+      # Select one sampling per site and year
+      output <- output %>%
+        nest_by(siteid, year) %>%
+        mutate(
+          data = list(
+            data[choose_from_multiple(
+              x = data[["month_duration"]],
+              quarter = data[["quarter"]],
+              mode_quarter = data[["mode_quarter"]]
+              ), ]
+          )
+          ) %>%
+        unnest(cols = c(data)) %>%
+        ungroup()
+
+      # Number of sampling
+      if (!is.null(nb_sampling)) {
+        summary_sampling <- output %>%
+          group_by(siteid) %>%
+          summarise(n = n())
+
+        mask_nb_sampling <- output$siteid %in%
+          summary_sampling[summary_sampling$n >= nb_sampling, ]$siteid
+
+        output <- output[mask_nb_sampling, ]
+      }
+
+      var_to_drop <- c("med_month", "mode_quarter", "med_date", "month_duration",
+        "month_check", "quarter_check")
+      output <- output %>%
+        select(- all_of(var_to_drop))
+
+      stopifnot(all(!is.na(output$protocol)))
+
+      return(output)
 }

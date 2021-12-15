@@ -39,6 +39,116 @@ mask_siteid_protocol <- site_protocol_quali[
 mask_siteid <- mask_siteid_sampling[mask_siteid_sampling %in% mask_siteid_protocol]
 ```
 
+```{r, eval=FALSE}
+dir_plot <- here("doc", "fig", "raw_data")
+if (!dir.exists(dir_plot)) {
+  dir.create(dir_plot)
+}
+
+abun_rich_nested <- filtered_dataset$abun_rich_op %>%
+  nest_by(siteid)
+
+library(furrr)
+plan(multisession, workers = 3)
+future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
+  function (x, y, ...) {
+
+    png(paste0(dir_plot, "/species_nb_site_", y, ".png"), width = 500, height = 500*1/1.6)
+
+    p <- plot_community_data(
+        dataset = x, y = "species_nb", x = "year", title = y)
+
+    print(p)
+
+    dev.off()
+  })
+
+future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
+  function (x, y, ...) {
+
+    png(paste0(dir_plot, "/species_nb_site_", y, ".png"), width = 500, height = 500*1/1.6)
+
+    p <- plot_community_data(
+      dataset = x, y = "total_abundance", x = "year", title = y)
+
+    print(p)
+
+    dev.off()
+  })
+```
+
+```{r}
+var_map_view <- c("siteid", "protocol", "unitabundance", "unitbiomass", "min",
+  "max", "completeness", "tot_nb_richness", "median_richness")
+loc2 <- loc %>%
+  left_join(op_richness_summary, by = "siteid") %>%
+  select(any_of(var_map_view)) %>%
+  left_join(site_richness, by = "siteid") %>%
+  select(any_of(var_map_view)) %>%
+  left_join(select(plot_abun_richness_trends, siteid, p_abun), by = "siteid")
+```
+
+```{r}
+library(leafpop)
+```
+
+```{r}
+get_file_plot_in_tbl <- function(
+  directory = NULL,
+  str_file_to_match = NULL,
+  regex_pattern = NULL) {
+
+  file_plot_site <- list.files(directory, full.names = TRUE)
+  filtered_file_plot_site <- file_plot_site[
+    str_detect(file_plot_site, str_file_to_match)]
+
+  names(filtered_file_plot_site) <- str_extract(filtered_file_plot_site,
+    regex_pattern)
+  filtered_file_plot_site <- enframe(
+    filtered_file_plot_site,
+    name = "siteid",
+    value = "file"
+  )
+
+}
+
+abun_file_plot_site_tbl <- get_file_plot_in_tbl(
+  directory = dir_plot,
+  str_file_to_match = "tot_abun",
+  regex_pattern = "S\\d+"
+
+)
+
+richness_file_plot_site_tbl <- get_file_plot_in_tbl(
+  directory = dir_plot,
+  str_file_to_match = "species_nb",
+  regex_pattern = "S\\d+") %>%
+  rename(richness = file)
+
+```
+
+```{r}
+loc2 <- loc %>%
+  select(siteid, protocol) %>%
+  left_join(abun_file_plot_site_tbl, by = "siteid") %>%
+  left_join(richness_file_plot_site_tbl, by = "siteid")
+```
+
+- Abundance map:
+
+```{r}
+mapView(loc2, zcol = "protocol",
+  popup = popupImage(loc2$file)
+)
+```
+
+```{r}
+mapView(loc2, zcol = "protocol",
+  popup = popupImage(loc2$richness)
+)
+```
+
+
 ```{r}
 trends_data <- abun_rich_op %>%
   left_join(op_protocol, by = "op_id") %>%

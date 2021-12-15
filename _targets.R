@@ -9,7 +9,8 @@ tar_plan(
   tar_target(
     raw_data_file,
     here("inst", "extdata", "GlobalTimeSeries_database_1232021.csv"),
-    format = "file"),
+    format = "file",
+    error = "continue"),
   tar_target(timeseries, load_time_series_data(raw_data_file)),
   tar_target(site_desc_loc, get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
@@ -36,7 +37,7 @@ tar_plan(
       selected_abun_unit = NULL,
       nb_sampling = 5,
       extent_month = 2,
-      convert_month_to_date = FALSE,
+      convert_month_to_date = TRUE,
       return_no_filtered = FALSE
     )
     ),
