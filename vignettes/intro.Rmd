@@ -543,7 +543,7 @@ turnover[map_lgl(turnover$turnover, ~class(.x) != "try-error"),] %>%
   mutate(test2 = map(list(turnover, appearance, disappearance), ~.x %>% reduce(left_join, by
         = "year")))
 
-# Turnover to control for number of year between two time steps 
+# Turnover to control for number of year between two time steps
 turnover3 <- map(c("turnover", "appearance", "disappearance"),
   ~turnover[map_lgl(turnover$turnover, ~class(.x) != "try-error"), c("siteid", .x)] %>%
     ungroup() %>%

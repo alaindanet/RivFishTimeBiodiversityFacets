@@ -31,6 +31,6 @@ conflict_prefer("col_factor", "scales")
 conflict_prefer("discard", "scales")
 conflict_prefer("extract", "tidyr")
 conflict_prefer("group_rows", "dplyr")
-conflict_prefer("lag", "stats")
+conflict_prefer("lag", "dplyr")
 
 library(rmarkdown)

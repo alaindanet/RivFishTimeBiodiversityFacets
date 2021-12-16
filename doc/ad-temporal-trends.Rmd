@@ -2,7 +2,9 @@
 title: "Untitled Draft"
 author: "Report Author"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: html_document
+output: 
+  bookdown::html_document2:
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -11,21 +13,87 @@ source(here::here("start_rmd.R"))
 
 ```{r load-targets, include=FALSE}
 tar_load(filtered_dataset)
+tar_load(c(rigal_trends, var_rigal))
+```
+
+```{r}
+names(rigal_trends) <- var_rigal
+```
+
+
+
+
+# Polynomial 
+
+```{r}
+get_var_replacement <- function() {
+  c(
+  log_species_nb = "Log species richness",
+  species_nb = "Species richness",
+  log_total_abundance = "Log total abundance",
+  total_abundance = "Total abundance"
+  )
+}
+```
+
+- Classification:
+
+```{r}
+classification_station <- map2(rigal_trends, names(rigal_trends),
+  ~.x %>%
+  ggplot(aes(x = shape_class)) +
+  geom_bar() +
+  labs(x = "Trajectory classification", y = "Number of station",
+    title = get_var_replacement()[.y])
+)
+
+plot_grid(plotlist = classification_station)
+```
+
+- Liear trends:
+
+```{r}
+#3.3   Log-linear model:logYi=α+βXi+εiIn 
+
+#the log-linear model, the literal interpretation of the estimated
+#coefficientˆβis that a one-unitincrease inXwill produce an expected increase in
+#logYofˆβunits. 
+#In terms ofYitself, this
+#meansthat  the  expected  value  ofYis  multiplied  byeˆβ.   So  in  terms  of
+#effects  of  changes  inXonY(unlogged):•Each 1-unit increase inXmultiplies the
+#expected value ofYbyeˆβ.•To compute the effects onYof another change inXthan an
+#increase of one unit, call thischangec, we need to includecin the exponent.  The
+#effect of ac-unit increase inXis tomultiply the expected value ofYbyecˆβ. So the
+#effect for a 5-unit increase inXwould bee5ˆβ.•For small values ofˆβ,
+#approximatelyeˆβ≈1+ˆβ. We can use this for the following approxima-tion for a
+#quick interpretation of the coefficients:  100·ˆβis the expected percentage
+#changeinYfor a unit increase inX.  For instance forˆβ=.06,e.06≈1.06, so a 1-unit
+#change inXcorresponds to (approximately) an expected increase inYof 6%
 ```
 
 
 ```{r}
-trends_data <- filtered_dataset$abun_rich_op %>%
-  mutate(
-    log_total_abundance = log(total_abundance),
-    log_species_nb = log(species_nb)
-  )
-
-rigal_test <- get_rigal_trajectory_classification(
-  trends_data,
-  y_var = "log_total_abundance",
-  x_var = "year", site_id = "siteid")
+#https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
+hist_linear_plot <- map2(rigal_trends, names(rigal_trends),
+  ~.x %>%
+  ggplot(aes(x = (exp(linear_slope) - 1) * 100)) +
+  geom_histogram() +
+  labs(x = "Linear slope (% change per year)", y = "Number of station",
+    title = get_var_replacement()[.y]) +
+  ylim(c(0, 3000))
+)
+plot_grid(plotlist = hist_linear_plot)
 ```
+
+# Turnover
+
+```{r, eval=FALSE}
+test <- get_turnover(x = filtered_dataset$measurement)
+tar_load(c(turnover, turnover_types_chr))
+names(turnover) <- turnover_types_chr
+
+```
+
 
 
 ## Analysis

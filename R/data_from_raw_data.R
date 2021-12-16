@@ -149,6 +149,43 @@ get_abundance_biomass_data <- function(ts_data = NULL, save_data = TRUE) {
   measurement <- ts_data %>%
     select(op_id, species, abundance, biomass)
 
+
+  # Check for several records of the same species
+  bad_abundance <- measurement %>%
+    group_by(op_id, species) %>%
+    summarise(n = n(), .groups = "drop") %>%
+    filter(n > 1)
+  mask <- paste0("op_id == '", bad_abundance$op_id, "' & ",
+    "species == '", bad_abundance$species, "'", collapse = " | ")
+
+
+  check_df <- measurement %>%
+    filter(eval(parse(text = mask)))
+  if (nrow(check_df) > 0) {
+    warning("In the following samplings: ",
+      paste0(bad_abundance$op_id, collapse = ", "),
+      "\n one species had two records, I sum them since their abundance is low.\n",
+      print(check_df)
+    )
+
+    fixed_multiple_record <- check_df %>%
+      group_by(op_id, species) %>%
+      summarise(across(where(is.double), sum), .groups = "drop") %>%
+      ungroup()
+
+    # glue measurement without bad measurement and the fixed parts 
+    measurement <- rbind(
+      filter(measurement, !eval(parse(text = mask))),
+      fixed_multiple_record) %>%
+    arrange(op_id, species)
+  }
+
+  #bad_abundance <- filtered_dataset$measurement %>%
+  #group_by(siteid, year, species) %>%
+  #summarise(n = n()) %>%
+  #filter(n > 1)
+
+
   if (save_data) {
     usethis::use_data(measurement, overwrite = TRUE)
   }

@@ -35,8 +35,8 @@ tar_plan(
       op_protocol = op_protocol,
       selected_protocol = NULL,
       selected_abun_unit = NULL,
-      nb_sampling = 5,
-      extent_month = 2,
+      nb_sampling = 10,
+      extent_month = 1.5,
       convert_month_to_date = TRUE,
       return_no_filtered = FALSE
     )
@@ -55,8 +55,16 @@ tar_plan(
       filtered_dataset$abun_rich_op,
       y_var = var_rigal,
       x_var = "year", site_id = "siteid"),
-    pattern = map(var_rigal)
+    pattern = map(var_rigal),
+    iteration = "list"
     ),
+  tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
+  tar_target(turnover,
+      get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
+
+    pattern = map(turnover_types_chr),
+    iteration = "list"
+  ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
