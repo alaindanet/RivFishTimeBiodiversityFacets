@@ -48,10 +48,22 @@ tar_plan(
       site_desc_loc = site_desc_loc,
       add_var_from_protocol = c("siteid", "year")
       )),
+  # Temporal trends
+  tar_target(var_rigal, c("log_total_abundance", "log_species_nb")),
+  tar_target(rigal_trends,
+    get_rigal_trajectory_classification(
+      filtered_dataset$abun_rich_op,
+      y_var = var_rigal,
+      x_var = "year", site_id = "siteid"),
+    pattern = map(var_rigal)
+    ),
 
+  # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
   tar_render(report, here("doc/aa-research-questions.Rmd")),
   tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+  tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+  tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
   tar_render(meeting_slides, here("talk/meeting.Rmd")),
 
 )

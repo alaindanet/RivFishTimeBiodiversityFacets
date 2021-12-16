@@ -3,7 +3,8 @@ title: "Vizualise Raw data"
 author: "Report Author"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  bookdown::html_document2
+  bookdown::html_document2:
+    code_folding: hide 
 ---
 
 ```{r setup, include=FALSE}
@@ -39,8 +40,12 @@ mask_siteid_protocol <- site_protocol_quali[
 mask_siteid <- mask_siteid_sampling[mask_siteid_sampling %in% mask_siteid_protocol]
 ```
 
-```{r, eval=FALSE}
+```{r}
 dir_plot <- here("doc", "fig", "raw_data")
+```
+
+
+```{r, eval=FALSE}
 if (!dir.exists(dir_plot)) {
   dir.create(dir_plot)
 }
@@ -77,6 +82,34 @@ future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
   })
 ```
 
+# Maps
+
+```{r}
+library(mapview)
+library(leafpop)
+tar_load(filtered_dataset)
+```
+
+```{r}
+loc <- filtered_dataset$location %>%
+  left_join(filtered_dataset$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+```{r}
+site_richness <- filtered_dataset$measurement %>%
+  group_by(siteid) %>%
+  summarise(tot_nb_species = length(unique(species)))
+
+op_richness_summary <-
+  filtered_dataset$abun_rich_op %>%
+  group_by(siteid) %>%
+  summarise(enframe(summary_distribution(species_nb)), .groups = "drop") %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  rename(median_richness = median)
+```
+
 ```{r}
 var_map_view <- c("siteid", "protocol", "unitabundance", "unitbiomass", "min",
   "max", "completeness", "tot_nb_richness", "median_richness")
@@ -84,13 +117,14 @@ loc2 <- loc %>%
   left_join(op_richness_summary, by = "siteid") %>%
   select(any_of(var_map_view)) %>%
   left_join(site_richness, by = "siteid") %>%
-  select(any_of(var_map_view)) %>%
-  left_join(select(plot_abun_richness_trends, siteid, p_abun), by = "siteid")
+  select(any_of(var_map_view))
 ```
 
+
 ```{r}
-library(leafpop)
+mapView(loc2, zcol = "protocol")
 ```
+
 
 ```{r}
 get_file_plot_in_tbl <- function(
@@ -113,7 +147,7 @@ get_file_plot_in_tbl <- function(
 }
 
 abun_file_plot_site_tbl <- get_file_plot_in_tbl(
-  directory = dir_plot,
+  directory = "fig/raw_data",
   str_file_to_match = "tot_abun",
   regex_pattern = "S\\d+"
 
@@ -134,20 +168,27 @@ loc2 <- loc %>%
   left_join(richness_file_plot_site_tbl, by = "siteid")
 ```
 
-- Abundance map:
+- Abundance: [open the map](./map_abundance.html)
 
-```{r}
-mapView(loc2, zcol = "protocol",
+```{r, eval=FALSE}
+m <- mapView(loc2, zcol = "protocol",
   popup = popupImage(loc2$file)
 )
-```
-
-```{r}
-mapView(loc2, zcol = "protocol",
-  popup = popupImage(loc2$richness)
+mapshot(m, url = "map_abundance.html",
+  selfcontained = FALSE,
 )
 ```
 
+- Species richness: [open the map](./map_richness.html)
+
+```{r, eval=FALSE}
+m2 <- mapView(loc2, zcol = "protocol",
+  popup = popupImage(loc2$richness)
+)
+mapshot(m2, url = "map_richness.html",
+  selfcontained = FALSE
+)
+```
 
 ```{r}
 trends_data <- abun_rich_op %>%

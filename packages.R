@@ -11,7 +11,6 @@ library("scales")
 library("rmarkdown")
 
 library("sf")
-library("mapview")
 library("rnaturalearth")
 library("rnaturalearthdata")
 

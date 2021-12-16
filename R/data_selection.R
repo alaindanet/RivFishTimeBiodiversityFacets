@@ -36,14 +36,20 @@ get_filtered_dataset <- function(
   if (type %in% c("all", "measurement", "abun_rich_op")) {
     mask <- measurement$op_id %in% op_protocol$op_id
     output$measurement <- measurement[mask, ]
+
   }
 
   if (type %in% c("all", "abun_rich_op")) {
-
     output$abun_rich_op <- get_abun_rich_op(
       ts_data = output$measurement,
       save_data = FALSE
     )
+
+    output$abun_rich_op <- output$abun_rich_op %>%
+      mutate(
+        log_total_abundance = log(total_abundance),
+        log_species_nb = log(species_nb)
+      )
   }
 
   if (!is.null(add_var_from_protocol)) {

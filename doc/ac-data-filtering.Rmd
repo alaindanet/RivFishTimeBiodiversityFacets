@@ -16,15 +16,6 @@ source(here::here("start_rmd.R"))
 tar_load(c(op_protocol, site_protocol_quali, site_protocol_quanti))
 ```
 
-- Keep good sampling month +- month 
-- Delete yearly duplicate
- 
-```{r}
-
-```
-- Some op have no date, but a month, option `convert_month_to_date` added to
-  `filter_op()` 
-
 ```{r}
 op_protocol %>%
   filter(is.na(date), !is.na(month))
@@ -38,29 +29,36 @@ test_filter <- filter_op(
       selected_protocol = NULL,
       nb_sampling = 5,
       extent_month = 1.5,
-      return_no_filtered = FALSE,
+      return_no_filtered = TRUE,
       convert_month_to_date = TRUE
       )
 ```
 
 ```{r}
+ti <- tibble(x = c(1,2))
 test_filter %>%
   ggplot(aes(x = (month_duration %% 12))) +
   geom_histogram() +
-  geom_vline(xintercept = c(12 - 2, 2)) +
-  geom_vline(xintercept = c(12 - 1, 1), color = "red") +
-  geom_vline(xintercept = c(12 - 1.5, 1.5), color = "blue")
-```
-
-```{r}
-filtered <- test_filter %>%
-  filter(month_check | (is.na(month) & is.na(year) & quarter_check))
+  geom_vline(data = ti, aes(xintercept = c(12 - 2, 2), color = "2 month")) +
+  geom_vline(data = ti, aes(xintercept = c(12 - 1, 1), color = "1 month")) +
+  geom_vline(data = ti, aes(xintercept = c(12 - 1.5, 1.5), color = "1.5 month")) +
+  scale_color_manual(name = "Number of month",
+    values = c(
+      "1 month" = "red",
+      "1.5 month" = "blue",
+      "2 month" = "black"
+    )) +
+  labs(x = "Number of month ",
+    title = "Difference of sampling time between the median time and each
+    sampling",
+    y = "Frequency")
 ```
 
 # Summary of analysis 
 
 ```{r}
 tar_load(filtered_op_protocol)
+tar_load(filtered_dataset)
 ```
 
 ```{r}
@@ -79,18 +77,15 @@ tabyl_df <- function(x = NULL, group = NULL) {
 
 
 ```{r}
-tabyl_df(filtered_op_protocol, "protocol")
+tabyl_df(filtered_dataset$site_quali, "protocol") %>%
+  kable()
 ```
 
 
 ```{r}
-tabyl_df(filtered_op_protocol, "unitabundance")
+tabyl_df(filtered_dataset$site_quali, "unitabundance") %>%
+  kable()
 ```
-
-```{r}
-tar_load(filtered_dataset)
-```
-
 
 - No much site in South America and Africa
 
@@ -102,17 +97,12 @@ loc <- filtered_dataset$location %>%
 ```
 
 
-
 ```{r}
-mapView(loc, zcol = c("protocol"))
-```
-
-
-```{r, eval=FALSE}
 world <- ne_countries(scale = "medium", returnclass = "sf")
 ggplot(data = world) +
     geom_sf() +
-    geom_sf(data = loc, aes(color = protocol), shape = 1)
+    geom_sf(data = loc, aes(color = protocol), shape = 1) +
+    theme(legend.position = "bottom")
 ```
 
 ```{r}
@@ -151,9 +141,18 @@ site_year <- filtered_dataset$site_quanti %>%
 
 ```{r}
 site_year %>%
-  ggplot(aes(x = max - min)) +
+  ggplot(aes(x = min)) +
   geom_histogram() +
-  labs(x = "Year span (years)", y = "Number of sites") +
+  labs(x = "Baseline year", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+
+```{r}
+site_year %>%
+  ggplot(aes(x = cat_span, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Year span (year)", y = "Number of sites") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
 
@@ -161,35 +160,13 @@ site_year %>%
 site_year %>%
   ggplot(aes(x = cat_completeness, fill = ecoregion)) +
   geom_bar() +
-  labs(x = "Completness (nb sampling years / year span)", y = "Number of sites")
+  labs(
+    x = "Completeness of sampling (nb sampling / year span )",
+    y = "Number of sites"
+  )
 ```
-
-
-# The super map
 
 ```{r}
-site_richness <- filtered_dataset$measurement %>%
-  left_join(select(filtered_op_protocol, siteid, op_id), by = "op_id") %>%
-  group_by(siteid) %>%
-  summarise(tot_nb_species = length(unique(species)))
-
-op_richness_summary <-
-  filtered_dataset$abun_rich_op %>%
-  left_join(select(filtered_op_protocol, siteid, op_id), by = "op_id") %>%
-  group_by(siteid) %>%
-  summarise(enframe(summary_distribution(species_nb)), .groups = "drop") %>%
-  pivot_wider(names_from = "name", values_from = "value") %>%
-  rename(median_richness = median)
-```
-
-
-- Too long:
-
-```{r, eval=TRUE}
-mask_row <- sample(1:nrow(loc2), 50)
-mapView(loc2[mask_row,], zcol = "protocol",
-  popup = popupGraph(loc2[mask_row,]$p_abun)
-)
 ```
 
 

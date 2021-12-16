@@ -1,0 +1,55 @@
+---
+title: "Untitled Draft"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(filtered_dataset)
+```
+
+
+```{r}
+trends_data <- filtered_dataset$abun_rich_op %>%
+  mutate(
+    log_total_abundance = log(total_abundance),
+    log_species_nb = log(species_nb)
+  )
+
+rigal_test <- get_rigal_trajectory_classification(
+  trends_data,
+  y_var = "log_total_abundance",
+  x_var = "year", site_id = "siteid")
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
