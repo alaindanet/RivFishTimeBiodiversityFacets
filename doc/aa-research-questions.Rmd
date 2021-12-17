@@ -6,8 +6,9 @@ output:
 bibliography: bibliography.bib
 ---
 
-```{r}
-library(knitr)
+```{r setup, include=FALSE}
+## target knits Rmds in their own session, so load libraries here.
+source(here::here("start_rmd.R"))
 ```
 
 - Database to add: 
@@ -227,6 +228,120 @@ are equal: $p_{i,t} = 1/n$ for all $i$".
 
 - NA = 0 or missing values to interpolate ? It is 0 if a monitoring took place
   and that the species was missing
+
+## Quantity index 
+
+### Rarefaction
+
+- @chao_coverage-based_2012: A temperate-zone tree community with 10 species might be completely
+  characterized by a sample of 100 individuals, but the same size sample would
+  greatly underestimate the richness of a tropical rain forest with 300 tree
+  species. If we compared the richnesses of these two communities using samples
+  standardized to 100 individuals, the richnesses we obtain would not give a
+  meaningful idea of the real degree of difference between the communities'
+  richnesses.
+
+### Coverage-based species richness [@chao_coverage-based_2012]
+
+- Ecologists often do rarefaction analysis but this can be really bad estimation
+  and also constrains ecologists to throw data [@chao_coverage-based_2012] 
+
+- There are theoretical expectations on the link between species richness,
+  sample size and distribution of species abundance, which is used for rarefaction:
+  - $E(S_m)$ = \sum_{i=1}^S [1 - (1 - p_i)^m] = S - \sum_{i=1}^S (1 - p_i)^m
+
+- But instead, it is better to relate on the coverage of a sample rather than its size. 
+  Coverage is a measure of sampling completeness. Completeness is the proportion
+  of individuals in the community that belongs to the species present in the sample.
+  $1 - C = C_d$, $C_d$ being the coverage deficit.
+
+```{r}
+x <- c(rep(.3, 1), rep(.1, 1), rep(.05, 3), rep(.01, 45))
+
+# we sample 20 indiv randomly, imagine that we add the 12
+#most abundant species:
+
+sample1 <- x[1:12]
+# proportion of individuals in the community that belongs to species that were
+# represented in the sample:
+coverage <- sum(sample1)
+# proportion of individuals in the community that belongs to species that were
+# NOT represented in the sample:
+deficit_coverage <- 1 - coverage
+```
+
+- There is a theoretical relationship between the coverage (completeness),
+  species relative abundance and sample size: 
+  $E(C_m) = \sum_{i=1}^S p_i[1 - (1 - p_i)^m] = 1 - \sum_{i=1}^S p_i(1 - p_i)^m $
+
+- Coverage can be estimated [@chao_coverage-based_2012] and then individual
+  sample can be compared by bringing them to the same coverage, by rarefaction
+  or extrapolation (should not go more than double than the sample size).
+
+```{r}
+# Polynome
+tar_load(rigal_trends)
+ti <- rigal_trends[[1]]
+ti %>%
+  filter(direction == "stable", linear_slope_pvalue < 0.05) %>%
+  ggplot(aes(x = (exp(linear_slope) - 1) * 100)) +
+  geom_histogram() +
+  facet_grid(cols = vars(shape_class))
+```
+
+
+
+### Hill numbers
+
+- Chao: [iNEXT](https://github.com/JohnsonHsieh/iNEXT), [BES paper](https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12613) 
+
+```{r}
+library(iNEXT)
+data(spider)
+```
+
+```{r}
+div_spider <- iNEXT(spider, q = c(0, 1, 2), datatype = "abundance")
+```
+
+- Hill numbers 0 (species richness), 1 (shannon), 2 (simpson)
+
+```{r}
+ggiNEXT(div_spider, type = 1, facet.var = "site")
+```
+
+- Coverage based rarefaction/extrolation: 
+
+```{r}
+ggiNEXT(div_spider, type = 3, facet.var = "site")
+```
+
+```{r}
+tar_load(filtered_dataset)
+fish <- filtered_dataset$measurement %>%
+  filter(
+    siteid == unique(siteid)[1],
+    year == 2007
+  )
+div_fish <- iNEXT(fish$abundance, q = c(0, 1, 2), datatype = "abundance")
+```
+
+```{r}
+test <- filtered_dataset$measurement %>%
+  filter(op_id %in% unique(op_id)[1:2])
+ti <- get_chao_hillnb(
+  x = test,
+  coverage = .985,
+  confidence_int = NULL)
+```
+
+- Coverage based rarefaction/extrolation: 
+
+```{r}
+ggiNEXT(div_spider, type = 3, facet.var = "site")
+```
+
+
 
 ## Compositional changes 
 

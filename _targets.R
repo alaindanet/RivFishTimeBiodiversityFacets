@@ -68,6 +68,13 @@ tar_plan(
   tar_target(hillebrand,
     get_hillebrand_turnover(x = filtered_dataset$measurement)
   ),
+  tar_target(chao_hillnb,
+    get_chao_hillnb(
+      x = filtered_dataset$measurement,
+      coverage = .985,
+      confidence_int = NULL)
+    ),
+
 
 
   # Report
