@@ -65,6 +65,10 @@ tar_plan(
     pattern = map(turnover_types_chr),
     iteration = "list"
   ),
+  tar_target(hillebrand,
+    get_hillebrand_turnover(x = filtered_dataset$measurement)
+  ),
+
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

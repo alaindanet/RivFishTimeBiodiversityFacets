@@ -88,10 +88,7 @@ plot_grid(plotlist = hist_linear_plot)
 # Turnover
 
 ```{r, eval=FALSE}
-test <- get_turnover(x = filtered_dataset$measurement)
-tar_load(c(turnover, turnover_types_chr))
-names(turnover) <- turnover_types_chr
-
+tar_load(hillebrand)
 ```
 
 
