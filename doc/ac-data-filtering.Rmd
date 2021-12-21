@@ -64,21 +64,6 @@ tar_load(filtered_dataset)
 ```
 
 ```{r}
-tabyl_df <- function(x = NULL, group = NULL) {
-
-  gr_sym <- rlang::sym(group)
-
-  x %>%
-    tabyl(!!gr_sym) %>%
-    arrange(desc(n)) %>%
-    adorn_totals("row") %>%
-    adorn_pct_formatting(digits = 1)
-
-}
-```
-
-
-```{r}
 tabyl_df(filtered_dataset$site_quali, "protocol") %>%
   kable()
 ```
@@ -168,6 +153,95 @@ site_year %>%
   )
 ```
 
+# Diversity
+
+```{r}
+tar_load(c(chao_hillnb, hillebrand, filtered_dataset))
+```
+
+```{r}
+var_chao <- c("chao_richness", "chao_shannon", "chao_simpson")
+chao_summary <- map_dfr(chao_hillnb[, var_chao],
+  ~summary_distribution(.x, na.rm = TRUE), .id = "variable"
+  )
+
+chao_summary %>%
+  kable()
+```
+
+```{r}
+chao_hillnb[, var_chao] %>%
+  pivot_longer(., cols = c(var_chao)) %>%
+  ggplot(aes(x = value)) +
+  geom_histogram() +
+  facet_grid(cols = vars(name), scales = "free_x")
+```
+
+- Chao methods on abundance density seems to fail
+  - Update: fixed
+```{r}
+chao_hillnb %>%
+  filter(chao_shannon == c("-Inf", "Inf"))
+chao_hillnb[42923, ]
+
+mask_minus_inf <- chao_hillnb[chao_hillnb$chao_shannon == "-Inf", ]$op_id
+ti <- filtered_dataset$measurement %>%
+  filter(op_id == na.omit(mask_minus_inf)[1])
+
+rec <- adjust_abun_chao(ti$abundance)
+invChat.Ind_c(ti$abundance, C = .985, conf = NULL)
+invChat.Ind_c(as.integer(round(ti$abundance)), C = .985, conf = NULL)
+invChat.Ind_c(rec, C = .985, conf = NULL)
+invChat.Ind_c(as.integer(round(rec)), C = .985, conf = NULL)
+vegan::diversity(ti$abundance)
+Dqhat.Ind
+
+
+mask_inf <- chao_hillnb[chao_hillnb$chao_shannon == "Inf", ]$op_id
+
+ti <- filtered_dataset$measurement %>%
+  filter(op_id %in% na.omit(mask_inf)[2])
+
+log(1)
+invChat.Ind_c(ti$abundance %>% round, C = .985, conf = NULL)
+invChat.Ind_c(ti$abundance, C = .985, conf = NULL)
+vegan::diversity(ti$abundance)
+```
+
+```{r}
+tar_load(filtered_op_protocol)
+filtered_op_protocol %>%
+  filter(op_id %in% na.omit(mask_inf)[2]) %>%
+  tabyl(., "unitabundance")
+```
+
+```{r}
+chao_hillnb %>%
+  filter(chao_shannon == "Inf")
+any(chao_hillnb$chao_shannon == "Inf" & chao_hillnb$method == "interpolated")
+any(chao_hillnb$chao_shannon == "Inf" & chao_hillnb$method != "interpolated")
+
+ti <- filtered_dataset$measurement %>%
+  filter(op_id == "nfp136")
+
+chao_hillnb[4230, ]
+invChat.Ind_c((ti$abundance), C = .985, conf = NULL)
+invChat.Ind_c((ti$abundance) * 100, C = .985, conf = NULL)
+
+```
+- On va multiplier les densité d'abondances par 100 pour les calculs de chao
+  - ça va pas affecter négativement le chao car il n'est pas basé sur l'effort
+    d'échantillonnage
+  - ça fait sens
+  - ça augmente le nombre de singleton mais au augmentant au minimum le nombre
+    d'individus total dans la communauté
+
+```{r}
+filtered_dataset$measurement %>%
+  filter(abundance < 0.01)
+```
+
+
 # Spatial assessment
 
 ```{r}
@@ -199,7 +273,7 @@ A <- inla.spde.make.A(mesh = mesh, loc = coo)
 
 - With all data:
 
-```{r, eval=FALSE}
+```{r, eval=TRUE}
 loc <- filtered_dataset$location
 coords_loc <- cbind(loc$longitude, loc$latitude)
 

@@ -1,0 +1,382 @@
+---
+title: "Untitled Draft"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+```
+
+```{r}
+library(INLA)
+library(inlatools)
+library(inlabru)
+library(spaMM)
+```
+
+
+```{r load-targets, include=FALSE}
+tar_load(c(filtered_dataset))
+```
+
+```{r}
+site_il <- filtered_dataset$location %>%
+  filter(region == "ILLINOIS")
+fish_il <- filtered_dataset$measurement %>%
+  filter(siteid %in% site_il$siteid)
+il_dataset <- fish_il %>%
+  left_join(site_il, by = "siteid")
+```
+
+```{r}
+m0 <- inla(abundance ~ 1, data = il_dataset)
+m0_1 <- inla(abundance ~ 1, family = "poisson", data = il_dataset)
+m1 <- inla(abundance ~ year, family = "poisson", data = il_dataset)
+m1_1 <- inla(abundance ~ as.factor(year), family = "poisson", data = il_dataset)
+
+```
+
+```{r}
+p <- map(unique(unique(il_dataset$siteid)),
+  ~plot_temporal_population(com = filter(il_dataset, siteid == .x))
+)
+plot_grid(plotlist = p[1:4])
+plot_grid(plotlist = p[5:8])
+plot_grid(plotlist = p[9:12])
+```
+
+```{r}
+il_abun_rich <- filtered_dataset$abun_rich_op %>%
+  filter(siteid %in% site_il$siteid)
+```
+```{r}
+a1 <- inla(total_abundance ~ year,
+  family = "poisson",
+  control.family=list(link='log'),
+  data = il_abun_rich)
+```
+
+```{r}
+get_data_pred_inla <- function(dataset = NULL, predictor = NULL, y = NULL) {
+
+  fitted <- dataset[, c(y, predictor)]
+  fitted[[y]] <- NA
+  l <- map(predictor, ~seq(min(dataset[[.x]]), max(dataset[[.x]]), len = 100))
+  names(l) <- predictor
+  l[[y]] <- NA
+  newdata <- expand.grid(l)
+  dat_pred <- bind_rows(dataset, fitted, newdata)
+  list(
+    dat_pred = dat_pred,
+    newdata = newdata,
+    fitted = fitted,
+    rows = (nrow(dataset) + nrow(fitted)+1):nrow(dat_pred)
+  )
+}
+test <- get_data_pred_inla(dataset = il_abun_rich, predictor = "year", y =
+  "total_abundance")
+```
+```{r}
+a1 <- inla(total_abundance ~ year,
+  family = "poisson",
+  control.family = list(link='log'),
+  control.predictor = list(link=1, compute=TRUE),
+  data = test$dat_pred)
+summary(a1)
+```
+```{r}
+newdata <- cbind(
+  test$newdata,
+  a1$summary.fitted.values[test$rows,])
+newdata <- rename(newdata, "lower" = "0.025quant", "upper"="0.975quant")
+
+ggplot(newdata, aes(y = mean, x = year)) +
+        geom_blank() +
+        geom_point(data = il_abun_rich, aes(y = total_abundance, x = year)) +
+        geom_ribbon(aes(ymin = lower-100, ymax = upper+100), fill = 'blue', alpha = 0.2) +
+        geom_line()
+```
+
+
+```{r}
+a2 <- inla(total_abundance ~ year,
+  family = "nbinomial",
+  control.family = list(link='log'),
+  control.predictor = list(link=1, compute=TRUE),
+  data = test$dat_pred)
+```
+```{r}
+newdata <- cbind(
+  test$newdata,
+  a2$summary.fitted.values[test$rows,])
+newdata <- rename(newdata, "lower" = "0.025quant", "upper"="0.975quant")
+
+ggplot(newdata, aes(y = mean, x = year)) +
+        geom_blank() +
+        geom_point(data = il_abun_rich, aes(y = total_abundance, x = year)) +
+        geom_ribbon(aes(ymin = lower, ymax = upper), fill = 'blue', alpha = 0.2) +
+        geom_line()
+```
+
+```{r}
+a3 <- inla(total_abundance ~ year + f(siteid, model = "iid"),
+  family = "nbinomial",
+  control.family = list(link = "log"),
+  control.predictor = list(link = 1, compute = TRUE),
+  control.compute = list(cpo = TRUE, dic = TRUE, config = TRUE),
+  data = test$dat_pred)
+plot(a3)
+```
+- inlatools checks:
+
+```{r}
+check <- distribution_check(a3, nsim = 100)
+plot(check)
+disp <- dispersion_check(a3)
+plot(disp)
+```
+
+
+```{r}
+post <- inla.posterior.sample(n = 100, result = a3)
+
+relevant <- grep("^Predictor:", rownames(post[[1]]$latent))
+eta <- map_dfc(post, "latent")[relevant, , drop = FALSE]
+
+relevant <- grep(
+  "size for the nbinomial observations",
+  names(post[[1]]$hyperpar)
+)
+size <- inla.hyperpar.sample(n = 100, result = a3)[, relevant] #nolint
+simulated_values <- as_tibble(mutate_all(
+  exp(eta),
+  function(mu) {
+    rnbinom(n = length(mu), mu = mu, size = size)
+  }
+  ))
+
+library(DHARMa)
+relevant_data <- !is.na(test$dat_pred$total_abundance)
+sim <- createDHARMa(
+  simulatedResponse = as.matrix(simulated_values)[relevant_data,],
+  observedResponse = test$dat_pred$total_abundance[relevant_data],
+  fittedPredictedResponse = a3$summary.fitted.values$mean[relevant_data],
+  integerResponse = T)
+plot(sim, asFactor = T)
+```
+
+
+```{r}
+a3_spamm <- fitme(
+  total_abundance ~ year + (1|siteid),
+  data = test$dat_pred,
+  family = "negbin")
+#1/1.457
+```
+```{r}
+simulationOutput <- simulateResiduals(fittedModel = a3_spamm)
+plot(simulationOutput, asFactor = T)
+testZeroInflation(simulationOutput)
+testDispersion(simulationOutput)
+```
+
+
+```{r}
+m2 <- inla(abundance ~ year:species,
+  family = "poisson",
+  control.family=list(link='log'),
+  data = il_dataset)
+summary(m2)
+time_effect <- round(m2$summary.fixed, 4) %>%
+  as_tibble(., rownames = "effect")
+exp(time_effect$mean)
+```
+
+#
+
+```{r}
+tar_load(c(analysis_dataset))
+```
+
+
+```{r}
+```
+
+```{r}
+analysis_dataset %>%
+  ggplot(aes(x = year, y = log(total_abundance_int))) +
+  geom_point() +
+  geom_smooth(method = "auto")
+```
+
+```{r}
+analysis_dataset %>%
+  ggplot(aes(x = total_abundance_int)) +
+  geom_histogram()
+```
+
+```{r}
+inla_b0 <- inla(
+  total_abundance_int ~
+    year +
+    unitabundance +
+    f(siteid, model = "iid") +
+    f(span, year, model = "iid"),
+  family = "nbinomial",
+  control.family = list(link = "log"),
+  control.predictor = list(link = 1, compute = TRUE),
+  control.compute = list(cpo = TRUE, dic = TRUE, config = TRUE),
+  data = analysis_dataset
+  )
+```
+
+```{r}
+check <- distribution_check(inla_b0, nsim = 100)
+plot(check)
+disp <- dispersion_check(inla_b0)
+plot(disp)
+```
+
+```{r}
+inla_rich <- inla(
+  species_nb ~
+    year +
+    f(siteid, model = "iid") +
+    f(span, year, model = "iid"),
+  family = "nbinomial",
+  control.family = list(link = "log"),
+  control.predictor = list(link = 1, compute = TRUE),
+  control.compute = list(
+    cpo = TRUE,
+    dic = TRUE,
+    config = TRUE,
+    return.marginals.predictor = TRUE),
+  data = analysis_dataset
+  )
+```
+
+```{r}
+get_simulated_values_negbinom <- function(inla_obj = NULL, nsim = 100) {
+
+  post <- inla.posterior.sample(n = nsim, result = inla_obj)
+
+
+  relevant <- grep("^Predictor:", rownames(post[[1]]$latent))
+  eta <- map_dfc(post, "latent")[relevant, , drop = FALSE]
+
+  relevant <- grep(
+    "size for the nbinomial observations",
+    names(post[[1]]$hyperpar)
+  )
+  size <- inla.hyperpar.sample(n = 100, result = inla_obj)[, relevant] #nolint
+  simulated_values <- as_tibble(mutate_all(
+      exp(eta),
+      function(mu) {
+        rnbinom(n = length(mu), mu = mu, size = size)
+      }
+      ))
+
+  return(simulated_values)
+}
+get_dharma_inla_negbinom <- function(inla_obj = NULL, nsim = 100, raw_data =
+  NULL, resp_var = NULL) {
+
+  sim <- get_simulated_values_negbinom(inla_obj = inla_rich, nsim = nsim)
+
+  relevant_data <- !is.na(raw_data[[resp_var]])
+  output <- createDHARMa(
+    simulatedResponse = as.matrix(sim)[relevant_data,],
+    observedResponse = raw_data[[resp_var]][relevant_data],
+    fittedPredictedResponse =
+      inla_obj$summary.fitted.values$mean[relevant_data],
+    integerResponse = T)
+
+  return(output)
+
+}
+
+debugonce(get_dharma_inla_negbinom)
+get_dharma_inla_negbinom(inla_obj = inla_rich, nsim = 100, raw_data =
+  analysis_dataset, resp_var = "species_nb")
+```
+
+```{r}
+plot(inla_rich, plot.prior = TRUE)
+```
+
+
+```{r}
+check <- distribution_check(inla_rich, nsim = 100)
+plot(check)
+disp <- dispersion_check(inla_rich)
+plot(disp)
+```
+
+```{r}
+tar_load(c(rigal_trends, var_rigal))
+names(rigal_trends) <- var_rigal
+summary(rigal_trends$log_total_abundance$first_order_coefficient)
+```
+
+
+```{r}
+b0 <- fitme(
+  total_abundance_int ~
+    year +
+    unitabundance +
+    (1 | ecoregion / siteid) +
+    (year | first_year),
+  data = analysis_dataset,
+  family = "negbin"
+)
+```
+
+```{r}
+simulationOutput <- simulateResiduals(fittedModel = b0)
+plot(simulationOutput, asFactor = T)
+testZeroInflation(simulationOutput)
+testDispersion(simulationOutput)
+
+par(mfrow = c(1,2))
+plotResiduals(simulationOutput, analysis_dataset$year)
+plotResiduals(simulationOutput, analysis_dataset$unitabundance)
+```
+
+- Zero inflated:
+
+```{r}
+tb0 <- fitme(
+ total_abundance_int ~ year + unitabundance + (1 | ecoregion / siteid),
+  data = analysis_dataset,
+  family = Tnegbin(trunc = 0L, link = "log")
+)
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

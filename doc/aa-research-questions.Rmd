@@ -83,7 +83,7 @@ knitr::include_graphics(
 
 - Check the utility functions of `codyn`:
 
-```{r}
+```{r, eval = FALSE}
 source("https://raw.githubusercontent.com/NCEAS/codyn/master/R/utilities.R")
 check_single_onerep
 ```
@@ -301,7 +301,7 @@ data(spider)
 ```
 
 ```{r}
-div_spider <- iNEXT(spider, q = c(0, 1, 2), datatype = "abundance")
+div_spider <- iNEXT::iNEXT(spider, q = c(0, 1, 2), datatype = "abundance")
 ```
 
 - Hill numbers 0 (species richness), 1 (shannon), 2 (simpson)
@@ -323,7 +323,7 @@ fish <- filtered_dataset$measurement %>%
     siteid == unique(siteid)[1],
     year == 2007
   )
-div_fish <- iNEXT(fish$abundance, q = c(0, 1, 2), datatype = "abundance")
+div_fish <- iNEXT::iNEXT(fish$abundance, q = c(0, 1, 2), datatype = "abundance")
 ```
 
 ```{r}
@@ -450,6 +450,7 @@ ggiNEXT(div_spider, type = 3, facet.var = "site")
 ### Can we change individual density to raw counts ? 
 
 ```{r}
+tar_load(filtered_op_protocol)
 tabyl_df(filtered_op_protocol, group = "unitabundance")
 ```
 

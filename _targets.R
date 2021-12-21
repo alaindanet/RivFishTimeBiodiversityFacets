@@ -2,6 +2,7 @@ source("./packages.R")
 
 ## Load your R files
 lapply(list.files(here("R"), full.names = TRUE), source)
+plan(multisession, workers = 3)
 
 ## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
@@ -65,6 +66,10 @@ tar_plan(
     pattern = map(turnover_types_chr),
     iteration = "list"
   ),
+  tar_target(turnover_c,
+    turnover %>%
+      reduce(left_join, by = c("siteid", "year"))
+  ),
   tar_target(hillebrand,
     get_hillebrand_turnover(x = filtered_dataset$measurement)
   ),
@@ -72,10 +77,18 @@ tar_plan(
     get_chao_hillnb(
       x = filtered_dataset$measurement,
       coverage = .985,
-      confidence_int = NULL)
+      confidence_int = NULL,
+      adjust_abun_density = TRUE)
     ),
 
-
+  tar_target(analysis_dataset,
+    get_analysis_dataset(
+      filtered_dataset = filtered_dataset,
+      chao_hillnb = chao_hillnb,
+      hillebrand = hillebrand,
+      turnover_c = turnover_c
+    )
+    ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

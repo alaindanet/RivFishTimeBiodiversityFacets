@@ -63,3 +63,16 @@ summary_distribution <-
     output <- c(quant, other_desc)
     return(output)
 }
+
+#' Wrapper over tabyl()
+tabyl_df <- function(x = NULL, group = NULL) {
+
+  gr_sym <- rlang::sym(group)
+
+  x %>%
+    tabyl(!!gr_sym) %>%
+    arrange(desc(n)) %>%
+    adorn_totals("row") %>%
+    adorn_pct_formatting(digits = 1)
+
+}

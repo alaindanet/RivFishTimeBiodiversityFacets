@@ -34,3 +34,6 @@ conflict_prefer("group_rows", "dplyr")
 conflict_prefer("lag", "dplyr")
 
 library(rmarkdown)
+
+# parallel
+library(future)

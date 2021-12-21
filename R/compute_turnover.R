@@ -3,8 +3,8 @@ get_turnover <- function(x = NULL, type = "total") {
   x <- x %>%
     nest_by(siteid)
 
-  x$turnover <- map(x$data,
-    ~try(turnover(
+  x$turnover <- furrr::future_map(x$data,
+    ~try(codyn::turnover(
           df = .x,
           time.var = "year",
           species.var = "species",
@@ -19,23 +19,9 @@ get_turnover <- function(x = NULL, type = "total") {
     select(-data) %>%
     unnest(cols = c(turnover))
 
-  new_var <- paste0(type, "_by_year")
+  output <- variable_by_year(x = x, variable = type)
 
-   x <- x %>%
-    group_by(siteid) %>%
-    mutate(
-      !!sym(new_var) := !!sym(type) / (year - dplyr::lag(year, order_by = year)),
-      check_1st_year_na = if_else(is.na(!!sym(new_var)), year == min(year), NA),
-      !!sym(new_var) := if_else(is.na(!!sym(new_var)), !!sym(type) / (year - first_year), !!sym(new_var)),
-    ) %>%
-    ungroup()
-  # Check my assumption of the second if_else
-  stopifnot(all(na.omit(x$check_1st_year_na) == TRUE))
-
-  x <- x %>%
-    select(-check_1st_year_na, -first_year)
-
-  return(x)
+  return(output)
 }
 
 #' Wrapper for targets
@@ -50,10 +36,11 @@ get_hillebrand_turnover <- function(x = NULL)  {
     ungroup()
 
   x  <- x %>%
-    nest_by(siteid)
+    nest_by(siteid) %>%
+    mutate(first_year = min(data$year))
 
-  # By site, sort increasing year and build t1 and t2 
-  output <- map(x$data, function(site) {
+  # By site, sort increasing year and build t1 and t2
+  output <- furrr::future_map(x$data, function(site) {
 
     site <- site %>%
       arrange(year) %>%
@@ -78,6 +65,8 @@ get_hillebrand_turnover <- function(x = NULL)  {
       ungroup() %>%
       select(-data) %>%
       unnest(cols = c(hillebrand))
+
+    out <- variable_by_year(x = out, variable = "hillebrand")
 
     return(out)
 
@@ -117,4 +106,38 @@ compute_abundance_turnover_two_timesteps <- function(t1 = NULL, t2 = NULL) {
   ser <- numerator / denominator
 
     return(ser)
+}
+
+#' Compute by year variable (used for turnover)
+#'
+variable_by_year <- function(x = NULL, variable = NULL) {
+
+  var_sym <- variable
+  new_var <- paste0(variable, "_by_year")
+
+  if (!is.numeric(x$year)) {
+    x$year <- as.numeric(x$year)
+  }
+
+  x <- x  %>%
+    group_by(siteid) %>%
+    arrange(siteid, year) %>%
+    mutate(
+      !!sym(new_var) := !!sym(var_sym) / (year - dplyr::lag(year, order_by
+          = year)),
+      check_1st_year_na = if_else(is.na(!!sym(new_var)), year == min(year), NA),
+      !!sym(new_var) := if_else(
+        is.na(!!sym(new_var)),
+        !!sym(var_sym) / (year - first_year),
+        !!sym(new_var)
+      )
+      ) %>%
+    ungroup()
+  # Check my assumption of the second if_else
+  stopifnot(all(na.omit(x$check_1st_year_na) == TRUE))
+
+  x <- x %>%
+    select(-check_1st_year_na, -first_year)
+
+  return(x)
 }
