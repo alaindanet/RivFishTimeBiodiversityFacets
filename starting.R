@@ -82,5 +82,6 @@ use_rmd("ab-raw-data")
 use_rmd("ac-data-filtering")
 use_rmd("ad-temporal-trends")
 
+use_rmd("ae-modelling-temporal-trends")
 
 

@@ -10,6 +10,8 @@ output:
 ```{r setup, include=FALSE}
 ## target knits Rmds in their own session, so load libraries here.
 source(here::here("start_rmd.R"))
+library(INLA)
+library(inlabru)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -166,8 +168,58 @@ site_year %>%
   )
 ```
 
+# Spatial assessment
+
 ```{r}
+site_il <- filtered_dataset$location %>%
+  filter(region == "ILLINOIS")
+fish_il <- filtered_dataset$measurement %>%
+  filter(siteid %in% site_il$siteid)
+il_dataset <- fish_il %>%
+  left_join(site_il, by = "siteid")
 ```
+
+```{r}
+coo <- cbind(il_dataset$longitude, il_dataset$latitude)
+mesh <- inla.mesh.2d(
+  loc = coo, max.edge = c(1, 10),
+  cutoff = 0.01
+)
+plot(mesh)
+points(coo, col = "red")
+```
+
+```{r}
+spde <- inla.spde2.matern(mesh = mesh, alpha = 2, constr = TRUE)
+# Build index
+indexs <- inla.spde.make.index("s", spde$n.spde)
+# Project gaussian random field to vertices
+A <- inla.spde.make.A(mesh = mesh, loc = coo)
+```
+
+- With all data:
+
+```{r, eval=FALSE}
+loc <- filtered_dataset$location
+coords_loc <- cbind(loc$longitude, loc$latitude)
+
+mesh <- inla.mesh.2d(
+  loc = coords_loc, max.edge = c(1, 15),
+  cutoff = 0.01
+)
+plot(mesh)
+points(coords_loc, col = "red")
+```
+
+```{r}
+spde_loc <- inla.spde2.matern(mesh = mesh, alpha = 2, constr = TRUE)
+# Build index
+indexs_loc <- inla.spde.make.index("s", spde_loc$n.spde)
+# Project gaussian random field to vertices
+A <- inla.spde.make.A(mesh = mesh, loc = coords_loc)
+```
+
+
 
 
 

@@ -404,6 +404,8 @@ ggiNEXT(div_spider, type = 3, facet.var = "site")
 
 ### Community abundance and species richness
 
+- [vanklink script](https://github.com/roelvanklink/Final-insect-abundance-changes/blob/master/Full%20INLA%20analysis%20FINAL%20cleaned%2020191230.R)
+
 #### Temporal biais
 
 - Sampling effort
@@ -441,5 +443,69 @@ ggiNEXT(div_spider, type = 3, facet.var = "site")
   - Spatial autocorrelation: SPDE (inla or spaMM)
   - temporal autocorrelation: AR1
 
+# Meetings
+
+## 17 december 2021 
+
+### Can we change individual density to raw counts ? 
+
+```{r}
+tabyl_df(filtered_op_protocol, group = "unitabundance")
+```
+
+```{r}
+check_ind100m2 <- filtered_op_protocol$unitabundance == "Ind.100m2" &
+  is.na(filtered_op_protocol$sampledlength_m)
+length(which(check_ind100m2))
+length(which(check_ind100m2)) / length(check_ind100m2)
+```
+
+```{r}
+na_sampling_effort <- filtered_op_protocol %>%
+  nest_by(unitabundance) %>%
+  mutate(
+    na_sampling_effort = length(which(is.na(data$sampledlength_m))),
+    percent_na_sampling_effort =
+      length(which(is.na(data$sampledlength_m))) /
+      nrow(data)
+  ) %>%
+  select(-data)
+```
+```{r}
+na_sampling_effort %>%
+  kable()
+```
+
+- looks not possible since we miss a lot of sampling effort
+
+### Baseline reference
+
+No simple solution:  
+
+- average first years ?
+
+### Can we resume polynomial equation by first order coefficents ? 
+
+- No! the formula of "positive" parabol for example has a negative first order
+  coefficent. 
+
+```{r}
+dfd <- tibble(
+  x = seq(-5, 6),
+  y = x^2 - x
+)
+lm(y ~ x + I(x^2), data = dfd)
+plot(y~x, dfd)
+abline(lm(y ~ x + I(x^2), data = dfd), col = "red")
+title("second order equation")
+```
+
+- actually, we can do it if we do a first order modelling
+
+```{r}
+plot(y~x, dfd)
+abline(lm(y ~ x, data = dfd), col = "red")
+title("first order equation")
+```
 
 # References {-}
