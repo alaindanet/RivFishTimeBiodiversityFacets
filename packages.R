@@ -21,6 +21,8 @@ library(janitor)
 
 # Turnover
 library(codyn)
+library(vegan)
+
 
 conflict_prefer("filter", "dplyr")
 

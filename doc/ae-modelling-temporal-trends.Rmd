@@ -1,6 +1,6 @@
 ---
-title: "Untitled Draft"
-author: "Report Author"
+title: "Modelling temporal trends"
+author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: html_document
 ---

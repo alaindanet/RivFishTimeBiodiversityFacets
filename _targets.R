@@ -49,17 +49,7 @@ tar_plan(
       site_desc_loc = site_desc_loc,
       add_var_from_protocol = c("siteid", "year")
       )),
-  # Temporal trends
-  tar_target(var_temporal_trends,
-    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson")),
-  tar_target(rigal_trends,
-    get_rigal_trajectory_classification(
-      analysis_dataset,
-      y_var = var_temporal_trends,
-      x_var = "year", site_id = "siteid"),
-    pattern = map(var_temporal_trends),
-    iteration = "list"
-    ),
+  # Community structure
   tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
   tar_target(turnover,
       get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
@@ -79,6 +69,11 @@ tar_plan(
       coverage = .985,
       confidence_int = NULL,
       adjust_abun_density = TRUE)
+    ),
+  tar_target(hillnb,
+    get_hillnb(
+      x = filtered_dataset$measurement,
+      dataset = analysis_dataset),
     ),
 
   tar_target(analysis_dataset,
@@ -103,6 +98,17 @@ tar_plan(
 #    pattern = map(biodiv_facets),
 #    iteration = "list"
 #  ),
+  # Temporal trends
+  tar_target(var_temporal_trends,
+    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson")),
+  tar_target(rigal_trends,
+    get_rigal_trajectory_classification(
+      analysis_dataset,
+      y_var = var_temporal_trends,
+      x_var = "year", site_id = "siteid"),
+    pattern = map(var_temporal_trends),
+    iteration = "list"
+    ),
 
 
   # Report
@@ -110,6 +116,7 @@ tar_plan(
   tar_render(report, here("doc/aa-research-questions.Rmd")),
   tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
   tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+  tar_render(community_structure, "doc/aca-community-structure.Rmd"),
   tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
   tar_render(meeting_slides, here("talk/meeting.Rmd")),
 

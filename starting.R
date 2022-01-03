@@ -84,4 +84,5 @@ use_rmd("ad-temporal-trends")
 
 use_rmd("ae-modelling-temporal-trends")
 
+use_rmd("aca-community-structure")
 

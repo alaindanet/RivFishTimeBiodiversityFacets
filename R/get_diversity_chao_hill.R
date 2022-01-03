@@ -66,6 +66,8 @@ get_chao_hillnb <- function(
   )
   # End sanatizer
 
+  chao$chao_evenness <- chao$chao_shannon / log(chao$chao_richness)
+
   return(tibble::as_tibble(chao))
 }
 
@@ -78,3 +80,72 @@ adjust_abun_chao <- function(x = NULL) {
     return(x)
   }
 }
+
+#' Get hillnumber from vegan package
+get_hillnb <- function(x = NULL, dataset = NULL) {
+
+  mat_com <- x %>%
+    select(siteid, year, species, abundance) %>%
+    nest_by(siteid) %>%
+    mutate(mat = list(
+        pivot_wider(data,
+          names_from = "species",
+          values_from = "abundance") %>%
+        arrange(year)
+    )
+    )
+    # Make matrices
+    matrix_row_names <- function(x = NULL, var_row_names = NULL) {
+      y <- x[, !colnames(x) %in% var_row_names]
+      out <- as.matrix(y)
+      rownames(out) <- x[[var_row_names]]
+      return(out)
+    }
+    mat_com <- mat_com %>%
+      mutate(mat = list(matrix_row_names(mat, "year")))
+
+    # NA to 0
+    mat_com  <- mat_com %>%
+      ungroup() %>%
+      mutate(mat0 = map(mat, function (x) {
+          x[is.na(x)] <- 0
+          return(x)
+    }
+    )
+      )
+
+      div_vector <- mat_com %>%
+        mutate(
+          species_nb = map(mat0, ~specnumber(.x)),
+          shannon = map(mat0, ~diversity(.x)),
+          simpson = map(mat0, ~diversity(.x, "simpson")),
+          inv_simpson = map(mat0, ~diversity(.x, "invsimpson")),
+          evenness = map2(shannon, species_nb, ~ .x / log(.y))
+          ) %>%
+      select(siteid, species_nb, shannon, simpson, inv_simpson, evenness)
+
+    div_df <- div_vector %>%
+      pivot_longer(cols = !siteid,
+        names_to = "variable",
+        values_to = "diversity"
+        ) %>%
+    mutate(diversity = map2(variable, diversity,
+        ~enframe(.y, name = "year", value = .x))
+      ) %>%
+    pivot_wider(names_from = "variable", values_from = "diversity")
+
+  div_df  <- div_df %>%
+    mutate(merged = pmap(list(species_nb, shannon, simpson, inv_simpson, evenness), function(a, b, c, d, e) {
+        Reduce(function(...) merge(..., by='year', all.x=TRUE), list(a,b,c, d, e))
+        }))
+
+  div <- div_df %>%
+    select(siteid, merged) %>%
+    unnest(cols = merged) %>%
+    mutate(year = as.numeric(year)) %>%
+    left_join(select(dataset, op_id, siteid, year),
+      by = c("siteid", "year"))
+
+    return(div)
+}
+

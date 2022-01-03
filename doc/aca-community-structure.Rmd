@@ -1,0 +1,123 @@
+---
+title: "Community structure"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+```
+```{r}
+library(vegan)
+```
+
+
+```{r load-targets, include=FALSE}
+tar_load(c(filtered_dataset, analysis_dataset))
+```
+
+# Diversity
+
+## Hill numbers
+
+### Test on the BCI dataset
+
+```{r}
+data(BCI)
+H <- diversity(BCI)
+simp <- diversity(BCI, "simpson")
+invsimp <- diversity(BCI, "inv")
+bci_div <- tibble(
+  species_nb = specnumber(BCI),
+  shannon = H,
+  simp = simp,
+  inv_simp = invsimp,
+  evenness = H / log(species_nb)
+)
+```
+
+```{r}
+kable(bci_div)
+```
+
+
+### Test on my dataset
+
+```{r}
+tar_load(c(hillnb, chao_hillnb))
+
+colnames(chao_hillnb) <- str_replace(colnames(chao_hillnb), "chao_", "") 
+chao_hillnb <- chao_hillnb %>%
+  mutate(type = "chao") %>%
+  select(op_id, richness:last_col())
+
+hillnb <- hillnb %>%
+  rename(richness = species_nb) %>%
+  mutate(type = "classic") %>%
+  select(op_id, type, richness, shannon, simpson, evenness)
+
+div <- rbind(chao_hillnb, hillnb)
+```
+
+- Chao indices leads to higher values of evenness, shannon and simpson
+
+```{r}
+div %>%
+  pivot_longer(cols = c(richness:evenness), names_to = "facet", values_to =
+    "diversity") %>%
+ggplot(aes(y = diversity, x = type)) +
+geom_violin() +
+facet_grid(rows = vars(facet), scales = "free_y")
+```
+
+
+
+###
+
+
+
+## Chao
+
+### Test 
+
+```{r}
+test <- filtered_dataset$measurement %>%
+  filter(op_id %in% unique(op_id)[1:2])
+ti <- get_chao_hillnb(
+  x = test,
+  coverage = .985,
+  confidence_int = NULL)
+```
+
+###
+
+```{r}
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
