@@ -39,7 +39,34 @@ get_chao_hillnb <- function(
   colnames(chao)[colnames(chao) %in% c("q = 0", "q = 1", "q = 2")] <-
     c("chao_richness", "chao_shannon", "chao_simpson")
 
-  return(as_tibble(chao))
+  # Sanatizer
+
+  ## na simpson bc of species richness = 0:
+  stopifnot(all(chao[is.na(chao$chao_simpson), ]$chao_richness == 1))
+  ### Simpson = 0
+  if (any(is.na(chao$chao_simpson))) {
+    chao[is.na(chao$chao_simpson), ]$chao_simpson <- 0
+  }
+
+  ## na shannon bc all abundances are equals
+  ### abundance
+  abun_equal <- furrr::future_map_dfr(
+    chao_data,
+    ~c(n_unique = length(unique(.x))),
+    .id = "op_id"
+  )
+
+  stopifnot(
+    all(abun_equal[is.na(chao$chao_shannon), ]$n_unique == 1)
+  )
+#When all abundances are equal and since hill numbers are computed with the
+  #natural logarythm, shannon should be equal to ln($D^0$)
+  chao[is.na(chao$chao_shannon), ]$chao_shannon <- log(
+    chao[is.na(chao$chao_shannon), ]$chao_richness
+  )
+  # End sanatizer
+
+  return(tibble::as_tibble(chao))
 }
 
 #' Ajust some abundance for chao computation 

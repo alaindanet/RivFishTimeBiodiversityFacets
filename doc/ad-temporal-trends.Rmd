@@ -12,14 +12,90 @@ source(here::here("start_rmd.R"))
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(filtered_dataset)
+tar_load(c(filtered_dataset, analysis_dataset))
 tar_load(c(rigal_trends, var_rigal))
 ```
 
 ```{r}
-names(rigal_trends) <- var_rigal
+simple_lm <- map(var_rigal,
+  ~analysis_dataset %>%
+    nest_by(siteid) %>%
+    mutate(
+      model = list(lm(as.formula(paste0(.x, " ~ year ")), data = data)),
+      res_mod = list(broom::glance(model)),
+      coef_mod = list(broom::tidy(model))
+    )
+)
+names(simple_lm) <- var_rigal
+
+slope <- map_dfr(simple_lm, ~.x %>%
+select(siteid, coef_mod) %>%
+unnest(cols = c(coef_mod)) %>%
+filter(term == "year") %>%
+ungroup(), .id = "response"
+)
 ```
 
+```{r}
+slope_df <- slope %>%
+  select(siteid, response, estimate) %>%
+  pivot_wider(names_from = "response", values_from = "estimate")
+```
+```{r}
+cor_slope <- slope_df %>%
+  select(-siteid) %>%
+  cor(.)
+cor_slope
+corrplot::corrplot(cor_slope, type = "lower", tl.srt = 30)
+```
+
+```{r}
+ti <- expand.grid(
+  resp1 = unique(slope$response),
+  resp2 = unique(slope$response)
+  ) %>%
+  filter(resp2 != resp1) %>%
+  mutate_all(as.character) %>%
+  arrange(resp1)
+
+test <- map2(ti$resp1, ti$resp2,
+  function(x, y) {
+    bi <- slope %>%
+      filter(response %in% c(x, y)) %>%
+      select(siteid, response, estimate) %>%
+      pivot_wider(names_from = "response", values_from = "estimate")
+
+    return(bi)
+  }
+)
+
+p <- map(test, function(x) {
+  l <- colnames(x)
+  x %>%
+    ggplot(aes(y = !!sym(l[2]), x = !!sym(l[3]))) +
+    geom_point() +
+    geom_smooth(method = "lm") +
+    labs(y = l[2], x = l[3])
+})
+p
+plot_grid(plotlist = p)
+```
+
+- Trends of total abundance are linked to the one of species richness but not to
+  shannon and simpson, suggesting that the trends of abundance are more link to
+  trends of rare species
+
+```{r}
+names(rigal_trends) <- var_rigal
+
+p <- map2(rigal_trends, names(rigal_trends),
+  ~.x %>%
+    ggplot(aes(x = first_order_coefficient)) +
+    geom_histogram() +
+    labs(title = .y)
+)
+plot_grid(plotlist = p)
+```
 
 
 

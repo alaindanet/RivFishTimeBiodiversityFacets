@@ -179,7 +179,83 @@ chao_hillnb[, var_chao] %>%
 
 - Chao methods on abundance density seems to fail
   - Update: fixed
+
 ```{r}
+stopifnot(all(chao_summary$n_na == 0))
+```
+
+- However, chao shannon is NA when all abundances are equal
+  - When all abundances are equal and since hill numbers are computed with the
+    natural logarythm, shannon should be equal to ln($D^0$), $D^O$ being the
+    species richness
+  - Let's replace equal abundances NA's shannon by ln(chao richness) 
+
+```{r, eval=FALSE}
+chao_hillnb %>%
+  filter(is.na(chao_shannon))
+
+mask_na <- chao_hillnb[is.na(chao_hillnb$chao_shannon), ]$op_id
+ti <- filtered_dataset$measurement %>%
+  filter(op_id == na.omit(mask_na)[4])
+ti <- filtered_dataset$measurement %>%
+  group_by(op_id) %>%
+  mutate(abundance = round(adjust_abun_chao(abundance))) %>%
+  ungroup() %>%
+  nest_by(op_id)
+tid <- map(ti$data, "abundance")
+names(tid) <- ti$op_id 
+mesure <- furrr::future_map_dfr(
+  tid, ~c(n_unique = length(unique(.x))),
+    .id = "op_id"
+    )
+mesure[is.na(chao_hillnb$chao_shannon), ]$n_unique == 1
+
+
+vegan::diversity(round(adjust_abun_chao(ti$abundance)))
+invChat.Ind_c(round(adjust_abun_chao(ti$abundance)), C = .985, conf = NULL)
+
+shannon_na_unique_abun <- filtered_dataset$measurement %>%
+  filter(op_id %in% na.omit(mask_na)) %>%
+  group_by(op_id) %>%
+  mutate(abun_adjusted = round(adjust_abun_chao(abundance))) %>%
+  summarise(
+    n_unique = length(unique(abundance)),
+    n_ajust = length(unique(abun_adjusted))
+  )
+```
+
+- Same thing with Chao, simpson should be 0 when one species only.
+
+```{r, eval=FALSE}
+chao_hillnb %>%
+  filter(is.na(chao_simpson))
+
+
+mask_na <- chao_hillnb[is.na(chao_hillnb$chao_simpson), ]$op_id
+ti <- filtered_dataset$measurement %>%
+  filter(op_id == na.omit(mask_na)[4])
+
+
+vegan::diversity(round(adjust_abun_chao(ti$abundance)), index = "simpson")
+invChat.Ind_c(round(adjust_abun_chao(ti$abundance)), C = .985, conf = NULL)
+
+filtered_dataset$measurement %>%
+  filter(op_id %in% na.omit(mask_na))
+
+simpson_na_unique_abun <- filtered_dataset$measurement %>%
+  filter(op_id %in% na.omit(mask_na)) %>%
+  group_by(op_id) %>%
+  mutate(abun_adjusted = round(adjust_abun_chao(abundance))) %>%
+  summarise(
+    n = n(),
+    n_unique = length(unique(abundance)),
+    n_ajust = length(unique(abun_adjusted))
+  )
+```
+
+
+
+```{r, eval=FALSE}
 chao_hillnb %>%
   filter(chao_shannon == c("-Inf", "Inf"))
 chao_hillnb[42923, ]
@@ -193,7 +269,6 @@ invChat.Ind_c(ti$abundance, C = .985, conf = NULL)
 invChat.Ind_c(as.integer(round(ti$abundance)), C = .985, conf = NULL)
 invChat.Ind_c(rec, C = .985, conf = NULL)
 invChat.Ind_c(as.integer(round(rec)), C = .985, conf = NULL)
-vegan::diversity(ti$abundance)
 Dqhat.Ind
 
 
@@ -202,20 +277,12 @@ mask_inf <- chao_hillnb[chao_hillnb$chao_shannon == "Inf", ]$op_id
 ti <- filtered_dataset$measurement %>%
   filter(op_id %in% na.omit(mask_inf)[2])
 
-log(1)
 invChat.Ind_c(ti$abundance %>% round, C = .985, conf = NULL)
 invChat.Ind_c(ti$abundance, C = .985, conf = NULL)
 vegan::diversity(ti$abundance)
 ```
 
-```{r}
-tar_load(filtered_op_protocol)
-filtered_op_protocol %>%
-  filter(op_id %in% na.omit(mask_inf)[2]) %>%
-  tabyl(., "unitabundance")
-```
-
-```{r}
+```{r, eval=FALSE}
 chao_hillnb %>%
   filter(chao_shannon == "Inf")
 any(chao_hillnb$chao_shannon == "Inf" & chao_hillnb$method == "interpolated")
@@ -227,20 +294,14 @@ ti <- filtered_dataset$measurement %>%
 chao_hillnb[4230, ]
 invChat.Ind_c((ti$abundance), C = .985, conf = NULL)
 invChat.Ind_c((ti$abundance) * 100, C = .985, conf = NULL)
-
 ```
-- On va multiplier les densité d'abondances par 100 pour les calculs de chao
+
+- On va multiplier les densité d'abondances par le minimum pour que l'abondance minimal soit de 1 pour les calculs de chao
   - ça va pas affecter négativement le chao car il n'est pas basé sur l'effort
     d'échantillonnage
   - ça fait sens
   - ça augmente le nombre de singleton mais au augmentant au minimum le nombre
     d'individus total dans la communauté
-
-```{r}
-filtered_dataset$measurement %>%
-  filter(abundance < 0.01)
-```
-
 
 # Spatial assessment
 

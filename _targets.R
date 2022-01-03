@@ -50,19 +50,19 @@ tar_plan(
       add_var_from_protocol = c("siteid", "year")
       )),
   # Temporal trends
-  tar_target(var_rigal, c("log_total_abundance", "log_species_nb")),
+  tar_target(var_temporal_trends,
+    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson")),
   tar_target(rigal_trends,
     get_rigal_trajectory_classification(
-      filtered_dataset$abun_rich_op,
-      y_var = var_rigal,
+      analysis_dataset,
+      y_var = var_temporal_trends,
       x_var = "year", site_id = "siteid"),
-    pattern = map(var_rigal),
+    pattern = map(var_temporal_trends),
     iteration = "list"
     ),
   tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
   tar_target(turnover,
       get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
-
     pattern = map(turnover_types_chr),
     iteration = "list"
   ),
@@ -89,6 +89,21 @@ tar_plan(
       turnover_c = turnover_c
     )
     ),
+  # statistic
+  tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
+      "chao_richness", "chao_shannon", "chao_simpson")),
+#  tar_target(spamm_com_models,
+#    run_save_spamm_model(
+#      resp_var = biodiv_facets,
+#      rhs_formula = "year + unitabundance + (1 | ecoregion / siteid) + (year |
+#      first_year)",
+#      dataset = analysis_dataset,
+#      family = "negbin"
+#    ),
+#    pattern = map(biodiv_facets),
+#    iteration = "list"
+#  ),
+
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

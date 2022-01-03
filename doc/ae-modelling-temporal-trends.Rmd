@@ -202,6 +202,43 @@ tar_load(c(analysis_dataset))
 
 
 ```{r}
+# To continue
+il_dataset
+model_com <- map(
+  c("total_abundance_int",
+    "species_nb",
+    "chao_richness",
+    "chao_shannon",
+    "chao_simpson"),
+  ~spaMM::fitme(
+    as.formula(paste0(.x, "~
+        year +
+        unitabundance +
+        (1 | ecoregion / siteid) +
+        (year | first_year)")),
+  data = analysis_dataset,
+  family = "negbin"
+)
+
+
+)
+usethis::use_data(model_com)
+library(datasets)
+
+mtcars
+y <- "test"
+library(rlang)
+
+rm("mtcars")
+load(here("data", paste0(y, ".rda")))
+usethis::use_data(bquote(y))
+usethis::use_data(UQ(y))
+unquote(y)
+!!sym(y)
+UQ(enquo(y))
+
+test
+
 ```
 
 ```{r}
@@ -322,7 +359,17 @@ summary(rigal_trends$log_total_abundance$first_order_coefficient)
 
 
 ```{r}
-b0 <- fitme(
+b0 <- spaMM::fitme(
+  total_abundance_int ~
+    year +
+    unitabundance +
+    (1 | ecoregion / siteid) +
+    (year | first_year),
+  data = analysis_dataset,
+  family = "negbin"
+)
+
+b0 <- spaMM::fitme(
   total_abundance_int ~
     year +
     unitabundance +
