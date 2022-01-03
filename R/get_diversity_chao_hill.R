@@ -146,6 +146,11 @@ get_hillnb <- function(x = NULL, dataset = NULL) {
     left_join(select(dataset, op_id, siteid, year),
       by = c("siteid", "year"))
 
+    # Fix when species number = 1
+    for (i in c("shannon", "simpson", "inv_simpson", "evenness")) {
+      div[div$species_nb == 1, ][[i]] <- 0
+    }
+
     return(div)
 }
 
