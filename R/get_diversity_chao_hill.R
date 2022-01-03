@@ -41,7 +41,7 @@ get_chao_hillnb <- function(
 
   # Sanatizer
 
-  ## na simpson bc of species richness = 0:
+  ## na simpson bc of species richness = 1:
   stopifnot(all(chao[is.na(chao$chao_simpson), ]$chao_richness == 1))
   ### Simpson = 0
   if (any(is.na(chao$chao_simpson))) {
@@ -64,9 +64,23 @@ get_chao_hillnb <- function(
   chao[is.na(chao$chao_shannon), ]$chao_shannon <- log(
     chao[is.na(chao$chao_shannon), ]$chao_richness
   )
+
+  # Values of shannon and simpson when richness = 1
+  #> diversity(c(10), "shannon")
+  #[1] 0
+  #> diversity(c(10), "invsimpson")
+  #[1] 1
+  #> diversity(c(10), "simpson")
+  #[1] 0
+  chao[chao$chao_richness == 1, ]$chao_shannon <- 0
+  chao[chao$chao_richness == 1, ]$chao_simpson <- 0
+
   # End sanatizer
 
+  # Evenness
   chao$chao_evenness <- chao$chao_shannon / log(chao$chao_richness)
+  ## Sanatizer
+  chao[chao$chao_richness == 1, ]$chao_evenness <- 0
 
   return(tibble::as_tibble(chao))
 }
@@ -147,9 +161,11 @@ get_hillnb <- function(x = NULL, dataset = NULL) {
       by = c("siteid", "year"))
 
     # Fix when species number = 1
-    for (i in c("shannon", "simpson", "inv_simpson", "evenness")) {
+    for (i in c("shannon", "simpson", "evenness")) {
       div[div$species_nb == 1, ][[i]] <- 0
     }
+    div[div$species_nb == 1, ][["inv_simpson"]] <- 1
+ 
 
     return(div)
 }

@@ -71,6 +71,33 @@ geom_violin() +
 facet_grid(rows = vars(facet), scales = "free_y")
 ```
 
+- Look at infinit values:
+
+```{r}
+hillnb %>%
+  filter(is.na(shannon))
+
+# Fix for richness = 1
+for (i in c("shannon", "simpson", "evenness")) {
+  hillnb[hillnb$richness == 1, ][[i]] <- 0
+}
+
+
+hillnb %>%
+  filter(is.na(shannon))
+
+
+```
+```{r}
+chao_hillnb %>%
+  filter(evenness == "Inf")
+diversity(c(10), "inv")
+diversity(c(10))
+diversity(c(10), "simpson")
+diversity(c(10)) / log(1)
+log(1)
+```
+
 
 
 ###
