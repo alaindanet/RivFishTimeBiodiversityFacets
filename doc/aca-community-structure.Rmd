@@ -60,7 +60,35 @@ hillnb <- hillnb %>%
 div <- rbind(chao_hillnb, hillnb)
 ```
 
-- Chao indices leads to higher values of evenness, shannon and simpson
+```{r}
+div_summary <- div %>%
+  group_by(type) %>%
+  summarise(
+    across(
+      where(is.double),
+      ~list(
+        enframe(
+          summary_distribution(x = .x)
+        )
+      )
+    )
+    ) %>%
+  pivot_longer(cols = c(richness:evenness), names_to = "facet", values_to =
+    "biodiversity") %>%
+  unnest(cols = "biodiversity") %>%
+  pivot_wider(names_from = "name", values_from = "value")
+```
+
+```{r}
+div_summary %>%
+  kable(.,
+    caption = "Summary of diversity indices distribution",
+    label = "tab:div-comp"
+  )
+```
+
+- Chao indices leads to higher values of evenness, shannon and simpson, in
+  average and also to more spread values 
 
 ```{r}
 div %>%
@@ -71,38 +99,39 @@ geom_violin() +
 facet_grid(rows = vars(facet), scales = "free_y")
 ```
 
-- Look at infinit values:
+- Look at infinit values (now fixed, it was for richness == 1)
 
-```{r}
-hillnb %>%
-  filter(is.na(shannon))
+- Computed on chao estimations of shannon and richness, most values pielou evenness are
+  above one:
 
-# Fix for richness = 1
-for (i in c("shannon", "simpson", "evenness")) {
-  hillnb[hillnb$richness == 1, ][[i]] <- 0
-}
-
-
-hillnb %>%
-  filter(is.na(shannon))
-
-
-```
 ```{r}
 chao_hillnb %>%
-  filter(evenness == "Inf")
-diversity(c(10), "inv")
-diversity(c(10))
-diversity(c(10), "simpson")
-diversity(c(10)) / log(1)
-log(1)
+  filter(evenness > 1) %>%
+  kable
 ```
 
+### Relationships between Chao and classic number
 
+- Species richness: in Chao we see interpolation and extrapolation to put everyone on
+  the level (exemple: community with 70 species had 55 species equivalent
+  according to Chao).
 
-###
-
-
+```{r}
+old_par <- par()
+div <- div %>%
+  arrange(op_id, type)
+par(mfrow = c(2, 2))
+for (i in c("richness", "shannon", "simpson", "evenness")) {
+  plot(
+    div[div$type == "chao", ][[i]] ~ div[div$type == "classic", ][[i]],
+    ylab = "Chao",
+    xlab = "Classic"
+  )
+  abline(1, 1)
+  title(i)
+}
+par(old_par)
+```
 
 ## Chao
 
