@@ -141,3 +141,78 @@ variable_by_year <- function(x = NULL, variable = NULL) {
 
   return(x)
 }
+
+#' From vegdist object to temporal diversity
+#'
+#' From vegdist object to similarity index from the reference year to the other
+#'
+get_temporal_vegdist <- function(vegdist_obj = NULL, drop_first_year = TRUE) {
+
+  x <- as.matrix(vegdist_obj)
+
+  min_year <- as.character(min(as.numeric(colnames(x))))
+  out <- x[, min_year]
+
+  if (drop_first_year) {
+   out <- out[names(out) != min_year]
+  }
+
+  return(out)
+}
+
+#' Get temporal turnover from first year with vegdist
+#'
+#' Wrapper around vegdist
+#'
+#' @examples
+#' tar_load(com_mat_site)
+#' get_vegdist_temporal_turnover(com_mat_site$mat[[1]], method = "jaccard")
+get_vegdist_temporal_turnover <- function(
+  mat = NULL,
+  method = NULL,
+  return_tibble = TRUE,
+  drop_first_year = TRUE
+  ) {
+
+  dist_obj <- vegan::vegdist(mat, method = method)
+
+  dist_to_reference_year <- get_temporal_vegdist(
+    vegdist_obj = dist_obj,
+    drop_first_year = drop_first_year
+  )
+
+
+  if (return_tibble) {
+    dist_to_reference_year <-
+      enframe(dist_to_reference_year, name = "year", value = method)
+    dist_to_reference_year$year <- as.numeric(dist_to_reference_year$year)
+  }
+
+  return(dist_to_reference_year)
+
+}
+
+
+#' Target function for vegdist turnover
+#'
+#'
+target_vegdist_turnover <- function(
+  dataset = NULL,
+  method = NULL,
+  return_tibble = TRUE,
+  drop_first_year = TRUE
+  ) {
+
+  dataset[[method]] <- furrr::future_map(
+    dataset[["mat"]],
+    get_vegdist_temporal_turnover,
+    method = method,
+    return_tibble = return_tibble,
+    drop_first_year = drop_first_year
+  )
+
+  dataset[, c("siteid", method)] %>%
+    unnest(cols = !!sym(method))
+
+}
+

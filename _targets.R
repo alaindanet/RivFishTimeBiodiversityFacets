@@ -50,6 +50,21 @@ tar_plan(
       add_var_from_protocol = c("siteid", "year")
       )),
   # Community structure
+  tar_target(com_mat_site, get_site_community_matrix(x = filtered_dataset$measurement)),
+  tar_target(vegdist_index, c("jaccard", "horn", "chao")),
+  tar_target(
+    vegdist_turnover,
+    target_vegdist_turnover(
+      dataset = com_mat_site,
+      method = vegdist_index,
+      return_tibble = TRUE,
+      drop_first_year = TRUE
+      ),
+    pattern = map(vegdist_index),
+    iteration = "list"),
+  tar_target(vegdist_turnover_c,
+    reduce(vegdist_turnover, left_join, by = c("siteid", "year"))
+    ),
   tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
   tar_target(turnover,
       get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
@@ -57,8 +72,7 @@ tar_plan(
     iteration = "list"
   ),
   tar_target(turnover_c,
-    turnover %>%
-      reduce(left_join, by = c("siteid", "year"))
+    turnover %>% reduce(left_join, by = c("siteid", "year"))
   ),
   tar_target(hillebrand,
     get_hillebrand_turnover(x = filtered_dataset$measurement)
@@ -81,7 +95,8 @@ tar_plan(
       filtered_dataset = filtered_dataset,
       chao_hillnb = chao_hillnb,
       hillebrand = hillebrand,
-      turnover_c = turnover_c
+      turnover_c = turnover_c,
+      vegdist_turnover_c = vegdist_turnover_c
     )
     ),
   # statistic
@@ -100,7 +115,7 @@ tar_plan(
 #  ),
   # Temporal trends
   tar_target(var_temporal_trends,
-    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson")),
+    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson", "jaccard", "horn", "chao")),
   tar_target(rigal_trends,
     get_rigal_trajectory_classification(
       analysis_dataset,

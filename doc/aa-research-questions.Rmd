@@ -372,6 +372,17 @@ ggiNEXT(div_spider, type = 3, facet.var = "site")
       - Linked to Bray-Curtis decomposition: species richness and heterogeneity
   - See [BAT R package](https://cran.r-project.org/web/packages/BAT/index.html) [@cardoso_bat_2015]
 
+- [@dornelas_assemblage_2014]:
+  - Indices (vegdist):
+    - Jaccard similarity index
+    - Morisita-Horn
+    - Chao community similarity index
+    - pearson correlation of species abundances
+  - Null models:
+    - MacArthur & Wilson
+    - Hubbell model  (see [untb package](https://cran.r-project.org/web/packages/untb/index.html))
+
+
 ## Species traits
 
 - Species traits:

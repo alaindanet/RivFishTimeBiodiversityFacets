@@ -171,7 +171,7 @@ get_rigal_trajectory_classification <- function(
   output <- data.frame(data_to_analyse[[site_id]])
   colnames(output) <- site_id
 
-  classification <- purrr::map(data_to_analyse$data,
+  classification <- furrr::future_map(data_to_analyse$data,
     ~try(class.trajectory(Y = .x[[y_var]], X = .x[[x_var]]))
   )
 

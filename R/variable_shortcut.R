@@ -11,3 +11,15 @@ get_var_protocol <- function () {
     "protocol_detail", "sampledlength_m", "unitabundance",
     "unitbiomass", "watertemp_c")
 }
+
+get_var_replacement <- function() {
+  c(
+  log_species_nb = "Log species richness",
+  species_nb = "Species richness",
+  log_total_abundance = "Log total abundance",
+  total_abundance = "Total abundance",
+  chao_richness = "Chao species richness",
+  chao_shannon = "Chao shannon",
+  chao_simpson = "Chao simpson"
+  )
+}

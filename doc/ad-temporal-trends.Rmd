@@ -1,6 +1,6 @@
 ---
-title: "Untitled Draft"
-author: "Report Author"
+title: "Temporal trends"
+author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   bookdown::html_document2:
@@ -26,7 +26,6 @@ test <- analysis_dataset %>%
 test$data[[1]] %>%
   arrange(year) %>%
   mutate(lag1 = lag(species_nb))
-  arima( ~ year + , .)
 ti <- c(1,2,3)
 lag(ti)
 ```
@@ -96,7 +95,6 @@ p <- map(test, function(x) {
     geom_smooth(method = "lm") +
     labs(y = l[2], x = l[3])
 })
-p
 plot_grid(plotlist = p)
 ```
 
@@ -105,7 +103,7 @@ plot_grid(plotlist = p)
   trends of rare species
 
 ```{r}
-names(rigal_trends) <- var_temporal_trends 
+names(rigal_trends) <- var_temporal_trends
 
 p <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
@@ -126,18 +124,29 @@ rigal_trends_df <-  map2_dfr(
   select(variable, siteid, linear_slope) %>%
   pivot_wider(names_from = "variable", values_from = "linear_slope") %>%
   mutate(type = "rigal")
-
-trends_comp <- rbind(rigal_trends_df, slope_df %>% mutate(type = "simple_lm")) 
-
 ```
+
+```{r}
+slope_comp <- list()
+slope_comp$rigal <- rigal_trends_df[order(rigal_trends_df$siteid), ]
+slope_comp$simple_lm <- slope_df[order(slope_df$siteid), ]
+stopifnot(all(slope_comp$rigal$siteid == slope_comp$simple_lm$siteid))
+slope_comp$diff <- tibble(
+  siteid = slope_comp$rigal$siteid)
+for (i in var_temporal_trends) {
+  slope_comp$diff[[i]] <- slope_comp$rigal[[i]] - slope_comp$simple_lm[[i]]
+}
+```
+
+- All good !
 
 ```{r}
 old_par <- par()
 par(mfrow = c(3, 2))
 for (i in var_temporal_trends) {
   plot(
-    trends_comp[trends_comp$type == "rigal", ][[i]] ~
-      trends_comp[trends_comp$type == "simple_lm", ][[i]],
+    slope_comp$rigal[[i]] ~
+      slope_comp$simple_lm[[i]],
     ylab = "Rigal (polynomial degree 2)",
     xlab = "Simple LM"
   )
@@ -147,20 +156,54 @@ for (i in var_temporal_trends) {
 par(old_par)
 ```
 
+```{r}
+# Compare Rigal and simple lm for few sites
+plot_rigal_raw_data <- function(
+  site = NULL,
+  response = NULL,
+  dataset = NULL,
+  rigal_trends = NULL
+  ) {
 
+  raw_data <- dataset %>%
+    filter(siteid == site)
+  rigal_resp <- rigal_trends[[response]]
+  rigal_resp_site <- rigal_resp[rigal_resp$siteid == site, ]
+  plot(raw_data[[response]]~raw_data[["year"]], ylab = response, xlab = "Year")
+  abline(rigal_resp_site$intercept, rigal_resp_site$linear_slope, col
+  = "red")
+  abline(lm(raw_data[[response]]~raw_data[["year"]]), col = "green")
+  title(main = site)
+}
+```
+
+```{r}
+plot_rigal_raw_data(site = "S2672", response = "log_total_abundance", dataset =
+analysis_dataset, rigal_trends = rigal_trends)
+```
+
+
+```{r}
+slope_comp$diff <- slope_comp$diff %>%
+  arrange(desc(abs(log_total_abundance)))
+```
+
+```{r}
+old_par <- par()
+par(mfrow = c(3, 2))
+for (i in slope_comp$diff[1:6,]$siteid) {
+  plot_rigal_raw_data(
+    site = i,
+    response = "log_total_abundance",
+    dataset = analysis_dataset,
+    rigal_trends = rigal_trends
+  )
+}
+par(old_par)
+```
 
 # Polynomial 
 
-```{r}
-get_var_replacement <- function() {
-  c(
-  log_species_nb = "Log species richness",
-  species_nb = "Species richness",
-  log_total_abundance = "Log total abundance",
-  total_abundance = "Total abundance"
-  )
-}
-```
 
 - Classification:
 
@@ -170,13 +213,14 @@ classification_station <- map2(rigal_trends, names(rigal_trends),
   ggplot(aes(x = shape_class)) +
   geom_bar() +
   labs(x = "Trajectory classification", y = "Number of station",
-    title = get_var_replacement()[.y])
+    title = get_var_replacement()[.y]) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 )
 
 plot_grid(plotlist = classification_station)
 ```
 
-- Liear trends:
+- Linear trends:
 
 ```{r}
 #3.3   Log-linear model:logYi=α+βXi+εiIn 

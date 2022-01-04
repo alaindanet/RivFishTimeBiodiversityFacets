@@ -117,9 +117,13 @@ chao_hillnb %>%
   according to Chao).
 
 ```{r}
-old_par <- par()
 div <- div %>%
   arrange(op_id, type)
+stopifnot(all(div[div$type == "chao", ]$op_id == div[div$type == "classic", ]$op_id))
+```
+
+```{r}
+old_par <- par()
 par(mfrow = c(2, 2))
 for (i in c("richness", "shannon", "simpson", "evenness")) {
   plot(
@@ -146,9 +150,44 @@ ti <- get_chao_hillnb(
   confidence_int = NULL)
 ```
 
-###
+```{r}
+test <- com_mat_site$mat[[1]]
+```
+
+
+# Vegdist turnover
 
 ```{r}
+tar_load(c(com_mat_site, vegdist_turnover_c))
+get_vegdist_temporal_turnover(com_mat_site$mat[[1]], method = "jaccard")
+```
+
+```{r}
+trend_vegdist <- vegdist_turnover_c %>%
+  pivot_longer(
+    cols = c(jaccard:chao),
+    names_to = "variable",
+    values_to = "similarity") %>%
+  nest_by(siteid, variable) %>%
+  mutate(
+    model = list(lm(similarity ~ year, data)),
+    coef = list(broom::tidy(model))
+  )
+```
+
+```{r}
+trend_vegdist %>%
+  select(siteid, variable, coef) %>%
+  unnest(cols = coef) %>%
+  filter(term == "year") %>%
+  ggplot(aes(x = estimate)) +
+  geom_histogram() +
+  facet_grid(cols = vars(variable)) +
+  labs(y = "Count", x = "Slope of similarity vs year")
+```
+
+```{r}
+
 ```
 
 
