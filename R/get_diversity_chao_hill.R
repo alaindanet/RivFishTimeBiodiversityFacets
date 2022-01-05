@@ -39,8 +39,6 @@ get_chao_hillnb <- function(
   colnames(chao)[colnames(chao) %in% c("q = 0", "q = 1", "q = 2")] <-
     c("chao_richness", "chao_shannon", "chao_simpson")
 
-  # Evenness
-  chao$chao_evenness <- chao$chao_shannon / log(chao$chao_richness)
 
   # Sanatizer
 
@@ -68,6 +66,9 @@ get_chao_hillnb <- function(
     chao[is.na(chao$chao_shannon), ]$chao_richness
   )
 
+  # Evenness
+  chao$chao_evenness <- chao$chao_shannon / log(chao$chao_richness)
+
   # Values of shannon and simpson when richness = 1
   #> diversity(c(10), "shannon")
   #[1] 0
@@ -80,6 +81,7 @@ get_chao_hillnb <- function(
     chao[chao$chao_richness == 1, ]$chao_simpson <- 0
     chao[chao$chao_richness == 1, ]$chao_evenness <- 0
   }
+
   # End sanatizer
 
   return(tibble::as_tibble(chao))

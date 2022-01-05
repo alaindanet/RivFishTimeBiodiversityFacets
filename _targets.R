@@ -66,16 +66,39 @@ tar_plan(
     reduce(vegdist_turnover, left_join, by = c("siteid", "year"))
     ),
   tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
-  tar_target(turnover,
+  tar_target(turnover_time_to_time,
       get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
     pattern = map(turnover_types_chr),
     iteration = "list"
   ),
-  tar_target(turnover_c,
+  tar_target(turnover_time_to_time_c,
     turnover %>% reduce(left_join, by = c("siteid", "year"))
   ),
-  tar_target(hillebrand,
+  tar_target(hillebrand_time_to_time,
     get_hillebrand_turnover(x = filtered_dataset$measurement)
+  ),
+  tar_target(hillebrand,
+    target_custom_temporal_turnover(
+      dataset = com_mat_site,
+      fun = compute_hillebrand,
+      var_name = "hillebrand",
+      return_tibble = TRUE,
+      drop_first_year = TRUE
+    )
+  ),
+  tar_target(turnover,
+    target_custom_temporal_turnover(
+      dataset = com_mat_site,
+      fun = compute_codyn_turnover,
+      var_name = turnover_types_chr,
+      return_tibble = TRUE,
+      drop_first_year = TRUE,
+      type = turnover_types_chr
+      ),
+    pattern = map(turnover_types_chr),
+    iteration = "list"),
+  tar_target(turnover_c,
+    turnover %>% reduce(left_join, by = c("siteid", "year"))
   ),
   tar_target(chao_hillnb,
     get_chao_hillnb(

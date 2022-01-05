@@ -37,6 +37,12 @@ get_site_community_matrix <- function(x = NULL) {
       ) %>%
       select(siteid, mat)
 
+    # Relative abundaces 
+    mat_com$mat_rel <- map(mat_com$mat, ~ .x / rowSums(.x))
+    check_mat <- map_lgl(mat_com$mat_rel,
+      ~all(round(rowSums(.x), 5) == 1))
+    stopifnot(all(check_mat))
+
     return(mat_com)
 
 }

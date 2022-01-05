@@ -47,10 +47,14 @@ kable(bci_div)
 ```{r}
 tar_load(c(hillnb, chao_hillnb))
 
-colnames(chao_hillnb) <- str_replace(colnames(chao_hillnb), "chao_", "") 
+colnames(chao_hillnb) <- str_replace(colnames(chao_hillnb), "chao_", "")
 chao_hillnb <- chao_hillnb %>%
   mutate(type = "chao") %>%
   select(op_id, richness:last_col())
+
+chao_hillnb %>%
+  filter(is.na(evenness)) %>%
+  mutate(evenness2 = shannon / log(richness))
 
 hillnb <- hillnb %>%
   rename(richness = species_nb) %>%
@@ -150,9 +154,6 @@ ti <- get_chao_hillnb(
   confidence_int = NULL)
 ```
 
-```{r}
-test <- com_mat_site$mat[[1]]
-```
 
 
 # Vegdist turnover
@@ -187,8 +188,52 @@ trend_vegdist %>%
 ```
 
 ```{r}
-
+ti <- com_mat_site$mat[[1]]
+tir <- ti / rowSums(ti)
 ```
+
+```{r}
+compute_codyn_turnover(x = ti[1, ], y = ti[1, ])
+compute_codyn_turnover(x = ti[2, ], y = ti[1, ], type = "appearance")
+compute_codyn_turnover(x = ti[2, ], y = ti[1, ], type = "disappearance")
+compute_codyn_turnover(x = ti[1, ], y = ti[2, ])
+```
+
+```{r}
+compute_dist(mat = tir, fun = compute_hillebrand)
+compute_dist(mat = tir, fun = compute_codyn_turnover, type = "appearance")
+compute_dist(mat = tir, fun = compute_codyn_turnover, type = "disappearance")
+compute_dist(mat = tir, fun = compute_codyn_turnover, type = "total")
+```
+
+```{r}
+map_dfr(com_mat_site$mat_rel[1:4],
+  ~get_custom_temporal_turnover(mat = .x, fun = compute_hillebrand)
+)
+```
+```{r}
+
+target_custom_temporal_turnover(
+  dataset = com_mat_site,
+  fun = compute_hillebrand,
+  var_name = "hillebrand",
+  return_tibble = TRUE,
+  drop_first_year = TRUE
+)
+
+target_custom_temporal_turnover(
+  dataset = com_mat_site,
+  fun = compute_codyn_turnover,
+  var_name = "appearance",
+  return_tibble = TRUE,
+  drop_first_year = TRUE,
+  type = "appearance"
+)
+```
+
+
+
+
 
 
 ## Analysis

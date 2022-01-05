@@ -493,8 +493,8 @@ na_sampling_effort %>%
 ### Baseline reference
 
 No simple solution:  
-
-- average first years ?
+  - average first years ?
+  - take first year
 
 ### Can we resume polynomial equation by first order coefficents ? 
 

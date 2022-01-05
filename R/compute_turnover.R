@@ -105,7 +105,7 @@ compute_abundance_turnover_two_timesteps <- function(t1 = NULL, t2 = NULL) {
 
   ser <- numerator / denominator
 
-    return(ser)
+  return(ser)
 }
 
 #' Compute by year variable (used for turnover)
@@ -216,3 +216,90 @@ target_vegdist_turnover <- function(
 
 }
 
+
+compute_dist <- function(mat = NULL, fun = NULL, ...) {
+
+  dist_mat <- matrix(NA,
+    nrow = nrow(mat),
+    ncol = nrow(mat),
+    dimnames = list(row.names(mat), row.names(mat))
+  )
+
+  for (i in seq_len(nrow(dist_mat))) {
+    for (j in seq_len(nrow(dist_mat))) {
+      dist_mat[i, j] <- fun(x = mat[i, ], y = mat[j, ], ...)
+    }
+  }
+  return(dist_mat)
+}
+compute_hillebrand <- function(x = NULL, y = NULL) {
+  numerator <- sum((x - y)^2)
+  denominator <- sum(x^2) + sum(y^2) - sum(x * y)
+
+  numerator / denominator
+}
+compute_codyn_turnover <- function(x = NULL, y = NULL, type = NULL) {
+
+  x_sp <- names(x)[x > 0]
+  y_sp <- names(y)[y > 0]
+
+  appearance <- sum(!y_sp %in% x_sp)
+  disappearance <- sum(!x_sp %in% y_sp)
+  nb_sp <- length(x)
+  stopifnot(length(x) == length(y))
+
+  if (type == "total") {
+    (appearance + disappearance) / nb_sp
+  } else if (type == "appearance") {
+    appearance / nb_sp
+  } else if (type == "disappearance") {
+    disappearance / nb_sp
+  } else {
+    stop("wrong type supplied")
+  }
+}
+
+get_custom_temporal_turnover <- function(
+  mat = NULL,
+  fun = NULL,
+  var_name = "value",
+  return_tibble = TRUE,
+  drop_first_year = TRUE,
+  ...
+  ) {
+
+  dist_obj <- compute_dist(mat = mat, fun = fun, ...)
+
+  dist_to_reference_year <- get_temporal_vegdist(
+    vegdist_obj = dist_obj,
+    drop_first_year = drop_first_year
+  )
+
+
+  if (return_tibble) {
+    dist_to_reference_year <-
+      enframe(dist_to_reference_year, name = "year", value = var_name)
+    dist_to_reference_year$year <- as.numeric(dist_to_reference_year$year)
+  }
+  return(dist_to_reference_year)
+}
+target_custom_temporal_turnover <- function(
+  dataset = NULL,
+  fun = NULL,
+  var_name = NULL,
+  return_tibble = TRUE,
+  drop_first_year = TRUE,
+  ...
+  ) {
+
+  dataset$value <- furrr::future_map(
+    dataset$mat_rel, get_custom_temporal_turnover,
+      fun = fun,
+      var_name = var_name,
+      return_tibble = return_tibble,
+      drop_first_year = drop_first_year, ...)
+
+  dataset[, c("siteid", "value")] %>%
+    unnest(cols = value)
+
+}
