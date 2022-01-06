@@ -110,7 +110,7 @@ tar_plan(
   tar_target(hillnb,
     get_hillnb(
       x = filtered_dataset$measurement,
-      dataset = analysis_dataset),
+      dataset = filtered_op_protocol),
     ),
 
   tar_target(analysis_dataset,
@@ -119,7 +119,8 @@ tar_plan(
       chao_hillnb = chao_hillnb,
       hillebrand = hillebrand,
       turnover_c = turnover_c,
-      vegdist_turnover_c = vegdist_turnover_c
+      vegdist_turnover_c = vegdist_turnover_c,
+      hillnb = hillnb
     )
     ),
   # statistic
@@ -140,7 +141,7 @@ tar_plan(
   tar_target(var_temporal_trends,
     c("total_abundance", "log_total_abundance", "species_nb", "log_species_nb", "chao_richness",
       "chao_shannon", "chao_simpson", "chao_evenness", "jaccard", "horn", "chao", "hillebrand",
-      "total", "appearance", "disappearance", "evenness", "shannon", "simpson",
+      "total", "appearance", "disappearance", "evenness", "shannon", "simpson"
       )),
   tar_target(rigal_trends,
     get_rigal_trajectory_classification(
