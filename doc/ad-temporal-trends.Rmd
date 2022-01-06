@@ -67,8 +67,18 @@ cor_slope <- slope_df %>%
   select(-siteid) %>%
   cor(.)
 cor_slope
-corrplot::corrplot(cor_slope, type = "lower", tl.srt = 30)
+
+png(here("doc", "fig", "p_cor_slope.png"))
+corrplot::corrplot(cor_slope[c("chao_richness", "species_nb", "log_species_nb",
+      "total_abundance", "log_total_abundance"), ], type = "upper", tl.srt = 45, diag = FALSE)
+dev.off()
+
+png(here("doc", "fig", "p_cor_slope_tot.png"))
+corrplot::corrplot(cor_slope, type = "upper", tl.srt = 35, diag = FALSE)
+dev.off()
 ```
+
+- Change NA slope by 0
 
 ```{r}
 ti <- expand.grid(
@@ -86,8 +96,9 @@ test <- map2(ti$resp1, ti$resp2,
   function(x, y) {
     bi <- slope %>%
       filter(response %in% c(x, y)) %>%
-      select(siteid, response, estimate) %>%
-      pivot_wider(names_from = "response", values_from = "estimate")
+      mutate(linear_slope = ifelse(is.na(linear_slope), 0, linear_slope)) %>%
+      select(siteid, response, linear_slope) %>%
+      pivot_wider(names_from = "response", values_from = "linear_slope")
 
     return(bi)
   }
@@ -104,6 +115,7 @@ p <- map(test, function(x) {
 names(p) <- map_chr(test, ~colnames(.x)[2])
 
 plot_grid(plotlist = p[names(p) %in% "total_abundance"])
+plot_grid(plotlist = p[names(p) %in% "species_nb"])
 ```
 
 - Trends of total abundance are linked to the one of species richness but not to
@@ -221,18 +233,55 @@ classification_station <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
   ggplot(aes(x = shape_class)) +
   geom_bar() +
-  labs(x = "Trajectory classification", y = "Number of station",
+  labs(x = "Trajectory classification", y = "Nb station",
     title = get_var_replacement()[.y]) +
   theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust=1))
 )
 
+
 plot_grid(plotlist = classification_station)
+p_classif_abun_rich <- plot_grid(
+  plotlist = classification_station[
+    names(classification_station)[str_detect(names(classification_station),
+  "abundance|richness|species")]])
+save_plot(
+  here("doc", "fig", "classif_trends_abun_rich.png"),
+  p_classif_abun_rich
+)
+p_classif_hill_evenness <- plot_grid(
+  plotlist = classification_station[
+    names(classification_station)[str_detect(names(classification_station),
+  "shannon|simpson|evennes")]])
+save_plot(
+  here("doc", "fig", "classif_trends_hill_evenness.png"),
+  p_classif_hill_evenness
+)
+p_classif_turnover <- plot_grid(
+  plotlist = classification_station[
+    names(classification_station)[names(classification_station) %in%
+      c("jaccard", "horn", "chao", "hillebrand", "total", "appearance",
+        "disappearance")]])
+save_plot(
+  here("doc", "fig", "classif_trends_classif_hill_evenness.png"),
+  p_classif_turnover
+)
 ```
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
+  .id = "response"
+)
+ti %>%
+  filter(direction != "Total") %>%
+  select(response, direction, percent) %>%
+  pivot_wider(names_from = "direction", values_from = "percent")
+```
+
 
 - Linear trends:
 
 ```{r}
-#3.3   Log-linear model:logYi=α+βXi+εiIn 
+#3.3   Log-linear model:logYi=α+βXi+εiIn
 
 #the log-linear model, the literal interpretation of the estimated
 #coefficientˆβis that a one-unitincrease inXwill produce an expected increase in
@@ -255,14 +304,41 @@ plot_grid(plotlist = classification_station)
 #https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
 hist_linear_plot <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
-  ggplot(aes(x = (exp(linear_slope) - 1) * 100)) +
+  ggplot(aes(x = linear_slope)) +
   geom_histogram() +
-  labs(x = "Linear slope (% change per year)", y = "Number of station",
+  labs(x = "Linear slope", y = "Number of station",
     title = get_var_replacement()[.y]) +
-  ylim(c(0, 3000))
+  ylim(c(0, 1000))
 )
 plot_grid(plotlist = hist_linear_plot)
 ```
+```{r}
+type_response <- list(
+  abun_rich = str_detect(names(classification_station),
+    "abundance|richness|species"),
+  hill_evenness = str_detect(names(classification_station),
+    "shannon|simpson|evennes"),
+  turnover = names(classification_station) %in%
+    c("jaccard", "horn", "chao", "hillebrand", "total", "appearance",
+      "disappearance")
+)
+
+map2(type_response, names(type_response),
+  function(x, y) {
+  p <- plot_grid(
+    plotlist = hist_linear_plot[
+      names(hist_linear_plot)[x]
+      ]
+  )
+  save_plot(
+    here("doc", "fig", paste0("hist_linear_slope_", y, ".png")),
+    p
+  )
+
+  }
+)
+```
+
 
 # Turnover
 

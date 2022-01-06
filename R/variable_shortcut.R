@@ -18,8 +18,20 @@ get_var_replacement <- function() {
   species_nb = "Species richness",
   log_total_abundance = "Log total abundance",
   total_abundance = "Total abundance",
+  total_abundance = "Total abundance",
   chao_richness = "Chao species richness",
   chao_shannon = "Chao shannon",
-  chao_simpson = "Chao simpson"
+  chao_simpson = "Chao simpson",
+  chao_evenness = "Chao evenness",
+  evenness = "Evenness",
+  jaccard = "Jaccard",
+  horn = "Horn",
+  "chao" = "Chao",
+  hillebrand = "Turnover abundance",
+  total  = "Total turnover",
+  appearance = "Appearance",
+  disappearance = "Disappearance",
+  shannon = "Shannon",
+  simpson = "Simpson"
   )
 }

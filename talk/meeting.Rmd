@@ -11,13 +11,21 @@ bibliography: "../doc/bibliography.bib"
 
 
 ```{r dsetup, results = "hide", echo = FALSE, message = FALSE}
+source(here::here("start_rmd.R"))
 knitr::opts_chunk$set(
   fig.align='center',
   tidy=FALSE,
   comment="R>> ",
-  size = 'small'
+  size = 'small',
+  echo = FALSE
 )
 ```
+
+```{r}
+tar_load(c(rigal_trends, var_temporal_trends))
+names(rigal_trends) <- var_temporal_trends
+```
+
 
 # Introduction
 
@@ -174,8 +182,6 @@ over only.
 
 ## LPI 
 
-
-
 - $d_{i,j,t} = \log_{10}(\dfrac{N_{i,j,t}}{N_{i,j,t-1}}) = \log_{10}N_{i,j,t} - \log_{10}N_{i,j,t-1}$
 
 
@@ -219,16 +225,180 @@ $N_t = N_p (\dfrac{N_s}{N_p})^{\dfrac{t-s}{s-p}}$
   - no differences if units are abundance, biomass, density
   - combine trends of really different survey 
 
+# Methods
 
-# For next time 
+## Selection of sites and protocol 
+
+- Homogeneous protocol
+- Keep sampling within 3 months relative to the median month of sampling of the
+  site
+- Sites followed at least 10 years
+
+## Community metrics
+
+- Raw metrics: 
+  - Species richness, total abundance
+  - Shannon (H), Simpson
+  - Evenness: pielou $J = \dfrac{H}{log(S)}$
+
+- Coverage based metrics [@chao_coverage-based_2012]:
+  - Richness, Shannon, Simpson
+
+## Community metrics
+
+- Turnover (relative to first year of sampling):
+  - Jaccard: $\dfrac{S_c}{S_{tot}}$
+  - Chao and Horn (cf @dornelas_assemblage_2014):
+  - Hillebrand: $SER_a = \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}$
+  - Total (Hillebrand based on p/a): $T = \dfrac{S_a + S_d}{S_{tot}}$
+  - Appearance: $A = \dfrac{S_a}{S_{tot}}$
+  - Disappearance: $D = \dfrac{S_d}{S_{tot}}$
+
+## Temporal trends 
+
+- By site:
+  - $Y_i = \alpha + \Beta X_i + \epsilon_i$
+    - $X_i$: year
+    - $\alpha$: "year 0"
+    - $\Beta$: temporal trends 
+
+- Modelling the trends of all sites at once: to discuss later
+  - problems: time to convergence, RAM of my laptop (spaMM, INLA)
  
-##
+# Exploratory analysis
+
+## Maps
+
+- [Abundance trends](file:///home/alain/Documents/post-these/isu/RivFishTimeBiodiversityFacets/doc/map_abundance.html)
+- [Richness trends](file:///home/alain/Documents/post-these/isu/RivFishTimeBiodiversityFacets/doc/map_richness.html)
+
+## Comparison Chao classic indices 
+
+```{r, out.width="50%"}
+knitr::include_graphics(here("doc", "fig", "index_chao_classic_comparison.png"))
+```
+
+## Turnover similarity
+
+```{r}
+knitr::include_graphics(here("doc", "fig", "slope_hist_vegdist.png"))
+```
+
+# Trends 
+
+## Species richness 
+
+```{r}
+knitr::include_graphics(here("doc", "fig", "hist_linear_slope_abun_rich.png"))
+```
+
+## Hill numbers & evenness 
+
+```{r}
+knitr::include_graphics(
+  here("doc", "fig", "hist_linear_slope_hill_evenness.png")
+)
+```
+
+## Turnover
+
+```{r}
+mean_jaccard <- mean(rigal_trends$jaccard$linear_slope, na.rm = TRUE)
+```
+Mean jaccard slope: `r round(mean_jaccard, 3)` (-0.01 in
+@dornelas_assemblage_2014)
+
+```{r, out.width="80%"}
+knitr::include_graphics(
+  here("doc", "fig", "hist_linear_slope_turnover.png")
+)
+```
+
+<div class="notes">
+
+multiply by 100 signify % species change by year for jaccard, turnover
+abundance, total, appearance, disappearance 
+
+- Positive trends: later step more similar to reference than earlier steps
+  - Recovery from disturbance just after baseline ?
+  - Cyclic variation ?
+
+</div>
+
+## Trajectories classification 
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
+  .id = "response"
+)
+dir_var <- ti %>%
+  filter(direction != "Total") %>%
+  select(response, direction, percent) %>%
+  pivot_wider(names_from = "direction", values_from = "percent") 
+
+dir_var %>%
+  kable(.) %>%
+  kable_styling(
+    full_width = F,
+    bootstrap_options = c("striped", "hover", "condensed"),
+    font_size = 16.5
+    ) %>%
+  row_spec(0, font_size = 16) %>%
+  scroll_box(width = "500px", height = "500px")
+```
+
+<div class="notes">
+
+Lot of stable sites, is it due to bad lack of data ? 
+
+To be tested, may be with Illinois dataset (site by site estimation vs global
+estimation)
+
+</div>
+
+## Link between temporal trends
+
+```{r, out.width="80%"}
+knitr::include_graphics(
+  here("doc", "fig", "p_cor_slope.png")
+)
+```
+
+<div class="notes">
+
+- Total abundance trends linked to richness only 
+- Species richness linked to appearance and disappearance, evenness and shannon 
+- Coverage-based richnness almost equal to species richness
+
+</div>
+
+## {data-background=file:///home/alain/Documents/post-these/isu/RivFishTimeBiodiversityFacets/doc/fig/p_cor_slope.png data-background-size=cover}
+
+## {data-background=file:///home/alain/Documents/post-these/isu/RivFishTimeBiodiversityFacets/doc/fig/p_cor_slope_tot.png data-background-size=cover}
 
 
-- Homogenize temporal series:
-  - timing of fishing 
+# Next steps 
+ 
+## Biodiversity 
 
+- Continue to explore the relationships between temporal trends
+- Neutral model for turnover [untb package](https://cran.r-project.org/web/packages/untb/index.html) [@dornelas_assemblage_2014] 
+- Functional composition:
+  - Trophic level
+  - CTI
+  - Life history
+- Phylogeny
+
+## Environment
+
+- Temperature
+- Land-use
   
+## Modelling
+
+- Test (Illinois or France) global modelling of trajectories instead of site by
+  site
+- Think about cluster availability for heavy modelling
 
 <div class="notes">
 

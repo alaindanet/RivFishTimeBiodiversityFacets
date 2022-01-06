@@ -88,6 +88,7 @@ div_summary %>%
     caption = "Summary of diversity indices distribution",
     label = "tab:div-comp"
   )
+
 ```
 
 - Chao indices leads to higher values of evenness, shannon and simpson, in
@@ -127,6 +128,7 @@ stopifnot(all(div[div$type == "chao", ]$op_id == div[div$type == "classic", ]$op
 
 ```{r}
 old_par <- par()
+png(here("doc", "fig", "index_chao_classic_comparison.png"))
 par(mfrow = c(2, 2))
 for (i in c("richness", "shannon", "simpson", "evenness")) {
   plot(
@@ -137,6 +139,7 @@ for (i in c("richness", "shannon", "simpson", "evenness")) {
   abline(1, 1)
   title(i)
 }
+dev.off()
 par(old_par)
 ```
 
@@ -165,11 +168,16 @@ trend_vegdist_slope <- map_dfr(trend_vegdist,
 ```
 
 ```{r}
-trend_vegdist_slope %>%
+p_trend_vegdist_slope <- trend_vegdist_slope %>%
   ggplot(aes(x = linear_slope)) +
   geom_histogram() +
   facet_grid(cols = vars(response)) +
   labs(y = "Count", x = "Slope of similarity vs year")
+p_trend_vegdist_slope
+save_plot(
+  here("doc", "fig", "slope_hist_vegdist.png"),
+  p_trend_vegdist_slope
+)
 ```
 
 
