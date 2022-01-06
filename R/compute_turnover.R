@@ -192,7 +192,6 @@ get_vegdist_temporal_turnover <- function(
 
 }
 
-
 #' Target function for vegdist turnover
 #'
 #'
@@ -216,7 +215,22 @@ target_vegdist_turnover <- function(
 
 }
 
-
+#' Compute distance matrix
+#'
+#'
+#'
+#' @param mat community matrix
+#' @param fun function to compute distance
+#' @value a matrix of distance with the column as "the reference" from which the
+#' distance is computed
+#'
+#' @examples
+#' ti <- matrix(c(1,0,1,1), nrow = 2, byrow = TRUE, dimnames = list(NULL, c("pika", "sala")))
+#' tir <- ti / rowSums(ti)
+#' compute_dist(mat = tir, fun = compute_hillebrand)
+#' compute_dist(mat = tir, fun = compute_codyn_turnover, type = "appearance")
+#' compute_dist(mat = tir, fun = compute_codyn_turnover, type = "disappearance")
+#' compute_dist(mat = tir, fun = compute_codyn_turnover, type = "total")
 compute_dist <- function(mat = NULL, fun = NULL, ...) {
 
   dist_mat <- matrix(NA,
@@ -227,7 +241,7 @@ compute_dist <- function(mat = NULL, fun = NULL, ...) {
 
   for (i in seq_len(nrow(dist_mat))) {
     for (j in seq_len(nrow(dist_mat))) {
-      dist_mat[i, j] <- fun(x = mat[i, ], y = mat[j, ], ...)
+      dist_mat[i, j] <- fun(x = mat[j, ], y = mat[i, ], ...)
     }
   }
   return(dist_mat)
@@ -238,11 +252,22 @@ compute_hillebrand <- function(x = NULL, y = NULL) {
 
   numerator / denominator
 }
+
+#' Compute the turnover of species
+#'
+#' @examples
+#' ti <- matrix(c(1,0,1,1), nrow = 2, byrow = TRUE, dimnames = list(NULL, c("pika", "sala")))
+#' compute_codyn_turnover(x = ti[1, ], y = ti[2, ], type = "appearance")
+#' compute_codyn_turnover(x = ti[1, ], y = ti[2, ], type = "disappearance")
+#' ti[2,1] <- 0
+#' compute_codyn_turnover(x = ti[1, ], y = ti[2, ], type = "appearance")
+#' compute_codyn_turnover(x = ti[1, ], y = ti[2, ], type = "disappearance")
 compute_codyn_turnover <- function(x = NULL, y = NULL, type = NULL) {
 
   x_sp <- names(x)[x > 0]
   y_sp <- names(y)[y > 0]
 
+  # Number of species that are in t2 but not in t1
   appearance <- sum(!y_sp %in% x_sp)
   disappearance <- sum(!x_sp %in% y_sp)
   nb_sp <- length(x)

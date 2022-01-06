@@ -16,51 +16,54 @@ tar_load(c(filtered_dataset, analysis_dataset))
 tar_load(c(rigal_trends, var_temporal_trends))
 ```
 
-```{r}
-test <- analysis_dataset %>%
-  select(all_of(c("siteid", "year", var_temporal_trends))) %>%
-  nest_by(siteid) %>%
-  mutate(data = list(mutate(data, lag1 = lag(species_nb))))
-
-
-test$data[[1]] %>%
-  arrange(year) %>%
-  mutate(lag1 = lag(species_nb))
-ti <- c(1,2,3)
-lag(ti)
-```
-
 
 ```{r}
-simple_lm <- map(var_temporal_trends,
-  ~analysis_dataset %>%
-    nest_by(siteid) %>%
-    mutate(
-      model = list(lm(as.formula(paste0(.x, " ~ year ")), data = data)),
-      res_mod = list(broom::glance(model)),
-      coef_mod = list(broom::tidy(model))
-    )
-)
-names(simple_lm) <- var_temporal_trends
-
+tar_load(rigal_trends)
+names(rigal_trends) <- var_temporal_trends
 ```
 ```{r}
-slope <- map_dfr(simple_lm, ~.x %>%
-  select(siteid, coef_mod) %>%
-  unnest(cols = c(coef_mod)) %>%
-  filter(term == "year") %>%
-  ungroup(), .id = "response"
+slope <- map_dfr(rigal_trends, ~.x %>%
+  select(siteid, linear_slope),
+.id = "response"
 )
 ```
-
 
 ```{r}
 slope_df <- slope %>%
-  select(siteid, response, estimate) %>%
-  pivot_wider(names_from = "response", values_from = "estimate")
+  pivot_wider(names_from = "response", values_from = "linear_slope")
 ```
+
+- NA in slopes:
+
+```{r}
+summary_slope <- slope %>%
+  group_by(response) %>%
+  summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
+  unnest(cols = summ) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+summary_slope %>%
+  kable()
+```
+
+```{r}
+na_siteid_slope <- unique(slope[is.na(slope$linear_slope), ]$siteid)
+
+sd_num <- analysis_dataset %>%
+  group_by(siteid) %>%
+  summarise(across(where(is.numeric), ~(sd(.x))))
+
+sd_num %>%
+  filter(siteid %in% na_siteid_slope) %>%
+  summary(.)
+
+analysis_dataset %>%
+  filter(siteid %in% na_siteid_slope[5])
+```
+
+
 ```{r}
 cor_slope <- slope_df %>%
+  mutate(across(where(is.numeric), ~ifelse(is.na(.x), 0, .x))) %>%
   select(-siteid) %>%
   cor(.)
 cor_slope
@@ -73,6 +76,9 @@ ti <- expand.grid(
   resp2 = unique(slope$response)
   ) %>%
   filter(resp2 != resp1) %>%
+  filter(
+    resp1 %in% c("chao_richness", "species_nb", "log_species_nb",
+      "total_abundance", "log_total_abundance")) %>%
   mutate_all(as.character) %>%
   arrange(resp1)
 
@@ -90,24 +96,27 @@ test <- map2(ti$resp1, ti$resp2,
 p <- map(test, function(x) {
   l <- colnames(x)
   x %>%
-    ggplot(aes(y = !!sym(l[2]), x = !!sym(l[3]))) +
+    ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
     geom_point() +
     geom_smooth(method = "lm") +
-    labs(y = l[2], x = l[3])
+    labs(x = l[2], y = l[3])
 })
-plot_grid(plotlist = p)
+names(p) <- map_chr(test, ~colnames(.x)[2])
+
+plot_grid(plotlist = p[names(p) %in% "total_abundance"])
 ```
 
 - Trends of total abundance are linked to the one of species richness but not to
   shannon and simpson, suggesting that the trends of abundance are more link to
-  trends of rare species
+  trends of rare species. Logic: gain and loss of species should concern rare
+  species.
 
 ```{r}
 names(rigal_trends) <- var_temporal_trends
 
 p <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
-    ggplot(aes(x = first_order_coefficient)) +
+    ggplot(aes(x = linear_slope)) +
     geom_histogram() +
     labs(title = .y)
 )

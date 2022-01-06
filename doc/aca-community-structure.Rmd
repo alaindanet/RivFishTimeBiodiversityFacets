@@ -14,7 +14,6 @@ library(vegan)
 
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, analysis_dataset))
 ```
 
 # Diversity
@@ -145,7 +144,7 @@ par(old_par)
 
 ### Test 
 
-```{r}
+```{r, eval=FALSE}
 test <- filtered_dataset$measurement %>%
   filter(op_id %in% unique(op_id)[1:2])
 ti <- get_chao_hillnb(
@@ -154,86 +153,24 @@ ti <- get_chao_hillnb(
   confidence_int = NULL)
 ```
 
-
-
 # Vegdist turnover
 
 ```{r}
-tar_load(c(com_mat_site, vegdist_turnover_c))
+tar_load(c(com_mat_site, rigal_trends, var_temporal_trends))
 get_vegdist_temporal_turnover(com_mat_site$mat[[1]], method = "jaccard")
+names(rigal_trends) <- var_temporal_trends
+trend_vegdist <- rigal_trends[names(rigal_trends) %in% c("jaccard", "horn", "chao")]
+trend_vegdist_slope <- map_dfr(trend_vegdist,
+  ~.x[, c("siteid", "linear_slope")], .id = "response")
 ```
 
 ```{r}
-trend_vegdist <- vegdist_turnover_c %>%
-  pivot_longer(
-    cols = c(jaccard:chao),
-    names_to = "variable",
-    values_to = "similarity") %>%
-  nest_by(siteid, variable) %>%
-  mutate(
-    model = list(lm(similarity ~ year, data)),
-    coef = list(broom::tidy(model))
-  )
-```
-
-```{r}
-trend_vegdist %>%
-  select(siteid, variable, coef) %>%
-  unnest(cols = coef) %>%
-  filter(term == "year") %>%
-  ggplot(aes(x = estimate)) +
+trend_vegdist_slope %>%
+  ggplot(aes(x = linear_slope)) +
   geom_histogram() +
-  facet_grid(cols = vars(variable)) +
+  facet_grid(cols = vars(response)) +
   labs(y = "Count", x = "Slope of similarity vs year")
 ```
-
-```{r}
-ti <- com_mat_site$mat[[1]]
-tir <- ti / rowSums(ti)
-```
-
-```{r}
-compute_codyn_turnover(x = ti[1, ], y = ti[1, ])
-compute_codyn_turnover(x = ti[2, ], y = ti[1, ], type = "appearance")
-compute_codyn_turnover(x = ti[2, ], y = ti[1, ], type = "disappearance")
-compute_codyn_turnover(x = ti[1, ], y = ti[2, ])
-```
-
-```{r}
-compute_dist(mat = tir, fun = compute_hillebrand)
-compute_dist(mat = tir, fun = compute_codyn_turnover, type = "appearance")
-compute_dist(mat = tir, fun = compute_codyn_turnover, type = "disappearance")
-compute_dist(mat = tir, fun = compute_codyn_turnover, type = "total")
-```
-
-```{r}
-map_dfr(com_mat_site$mat_rel[1:4],
-  ~get_custom_temporal_turnover(mat = .x, fun = compute_hillebrand)
-)
-```
-```{r}
-
-target_custom_temporal_turnover(
-  dataset = com_mat_site,
-  fun = compute_hillebrand,
-  var_name = "hillebrand",
-  return_tibble = TRUE,
-  drop_first_year = TRUE
-)
-
-target_custom_temporal_turnover(
-  dataset = com_mat_site,
-  fun = compute_codyn_turnover,
-  var_name = "appearance",
-  return_tibble = TRUE,
-  drop_first_year = TRUE,
-  type = "appearance"
-)
-```
-
-
-
-
 
 
 ## Analysis

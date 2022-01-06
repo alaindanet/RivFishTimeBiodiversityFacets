@@ -138,12 +138,41 @@ tar_plan(
 #  ),
   # Temporal trends
   tar_target(var_temporal_trends,
-    c("log_total_abundance", "species_nb", "log_species_nb", "chao_richness", "chao_shannon", "chao_simpson", "jaccard", "horn", "chao")),
+    c("total_abundance", "log_total_abundance", "species_nb", "log_species_nb", "chao_richness",
+      "chao_shannon", "chao_simpson", "chao_evenness", "jaccard", "horn", "chao", "hillebrand",
+      "total", "appearance", "disappearance", "evenness", "shannon", "simpson",
+      )),
   tar_target(rigal_trends,
     get_rigal_trajectory_classification(
       analysis_dataset,
       y_var = var_temporal_trends,
       x_var = "year", site_id = "siteid"),
+    pattern = map(var_temporal_trends),
+    iteration = "list"
+    ),
+  tar_target(simple_lm,
+      analysis_dataset %>%
+        nest_by(siteid) %>%
+        mutate(
+          model = list(lm(
+              as.formula(paste0(var_temporal_trends, " ~ year ")), data = data)
+            ),
+          coef_mod = list(broom::tidy(model))
+        ) %>%
+        select(-data),
+    pattern = map(var_temporal_trends),
+    iteration = "list"
+    ),
+  tar_target(simple_lm_coef,
+      analysis_dataset %>%
+        nest_by(siteid) %>%
+        mutate(
+          model = list(lm(
+              as.formula(paste0(var_temporal_trends, " ~ year ")), data = data)
+            ),
+          coef_mod = list(broom::tidy(model))
+        ) %>%
+        select(-data),
     pattern = map(var_temporal_trends),
     iteration = "list"
     ),
