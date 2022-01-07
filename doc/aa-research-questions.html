@@ -615,7 +615,7 @@ and that the species was missing</li>
 <div id="rarefaction" class="section level3">
 <h3><span class="header-section-number">4.2.1</span> Rarefaction</h3>
 <ul>
-<li><span class="citation">(<span class="citeproc-not-found" data-reference-id="chao_coverage-based_2012"><strong>???</strong></span>)</span>: A temperate-zone tree community with 10 species might be completely
+<li><span class="citation">Chao and Jost (2012)</span>: A temperate-zone tree community with 10 species might be completely
 characterized by a sample of 100 individuals, but the same size sample would
 greatly underestimate the richness of a tropical rain forest with 300 tree
 species. If we compared the richnesses of these two communities using samples
@@ -625,10 +625,10 @@ richnesses.</li>
 </ul>
 </div>
 <div id="coverage-based-species-richness-chao_coverage-based_2012" class="section level3">
-<h3><span class="header-section-number">4.2.2</span> Coverage-based species richness <span class="citation">(<span class="citeproc-not-found" data-reference-id="chao_coverage-based_2012"><strong>???</strong></span>)</span></h3>
+<h3><span class="header-section-number">4.2.2</span> Coverage-based species richness <span class="citation">(Chao and Jost 2012)</span></h3>
 <ul>
 <li><p>Ecologists often do rarefaction analysis but this can be really bad estimation
-and also constrains ecologists to throw data <span class="citation">(<span class="citeproc-not-found" data-reference-id="chao_coverage-based_2012"><strong>???</strong></span>)</span></p></li>
+and also constrains ecologists to throw data <span class="citation">(Chao and Jost 2012)</span></p></li>
 <li>There are theoretical expectations on the link between species richness,
 sample size and distribution of species abundance, which is used for rarefaction:
 <ul>
@@ -655,7 +655,7 @@ deficit_coverage &lt;- 1 - coverage</code></pre>
 <li><p>There is a theoretical relationship between the coverage (completeness),
 species relative abundance and sample size:
 $E(C_m) = <em>{i=1}^S p_i[1 - (1 - p_i)^m] = 1 - </em>{i=1}^S p_i(1 - p_i)^m $</p></li>
-<li><p>Coverage can be estimated <span class="citation">(<span class="citeproc-not-found" data-reference-id="chao_coverage-based_2012"><strong>???</strong></span>)</span> and then individual
+<li><p>Coverage can be estimated <span class="citation">(Chao and Jost 2012)</span> and then individual
 sample can be compared by bringing them to the same coverage, by rarefaction
 or extrapolation (should not go more than double than the sample size).</p></li>
 </ul>
@@ -844,9 +844,9 @@ points, i.e. low degree of freedom. <span class="citation">(<span class="citepr
 <div id="biais" class="section level4">
 <h4><span class="header-section-number">5.2.2.1</span> Biais</h4>
 <ul>
-<li>species detectability <span class="citation">(<span class="citeproc-not-found" data-reference-id="gotelli_detecting_2010"><strong>???</strong></span>)</span> but see this <a href="https://dynamicecology.wordpress.com/2014/09/15/detection-probabilities-statistical-machismo-and-estimator-theory/">McGill’s
+<li>species detectability <span class="citation">(Gotelli et al. 2010)</span> but see this <a href="https://dynamicecology.wordpress.com/2014/09/15/detection-probabilities-statistical-machismo-and-estimator-theory/">McGill’s
 post</a>
-Finally, I believe that <span class="citation">(<span class="citeproc-not-found" data-reference-id="gotelli_detecting_2010"><strong>???</strong></span>)</span> did not model detection
+Finally, I believe that <span class="citation">Gotelli et al. (2010)</span> did not model detection
 probability at all, it took one afternoon to understand that 😅</li>
 <li>sampling effort</li>
 </ul>
@@ -1020,6 +1020,9 @@ title(&quot;first order equation&quot;)</code></pre>
 <div id="ref-cardoso_bat_2015">
 <p>Cardoso, Pedro, François Rigal, and José C. Carvalho. 2015. “BAT – Biodiversity Assessment Tools, an R Package for the Measurement and Estimation of Alpha and Beta Taxon, Phylogenetic and Functional Diversity.” <em>Methods in Ecology and Evolution</em> 6 (2): 232–36. <a href="https://doi.org/10.1111/2041-210X.12310" class="uri">https://doi.org/10.1111/2041-210X.12310</a>.</p>
 </div>
+<div id="ref-chao_coverage-based_2012">
+<p>Chao, Anne, and Lou Jost. 2012. “Coverage-Based Rarefaction and Extrapolation: Standardizing Samples by Completeness Rather Than Size.” <em>Ecology</em> 93 (12): 2533–47. <a href="https://doi.org/10.1890/11-1952.1" class="uri">https://doi.org/10.1890/11-1952.1</a>.</p>
+</div>
 <div id="ref-collen_monitoring_2009">
 <p>Collen, Ben, Jonathan Loh, Sarah Whitmee, Louise McRAE, Rajan Amin, and Jonathan E. M. Baillie. 2009. “Monitoring Change in Vertebrate Abundance: The Living Planet Index.” <em>Conservation Biology</em> 23 (2): 317–27. <a href="https://doi.org/10.1111/j.1523-1739.2008.01117.x" class="uri">https://doi.org/10.1111/j.1523-1739.2008.01117.x</a>.</p>
 </div>
@@ -1028,6 +1031,9 @@ title(&quot;first order equation&quot;)</code></pre>
 </div>
 <div id="ref-dornelas_assemblage_2014">
 <p>Dornelas, Maria, Nicholas J. Gotelli, Brian McGill, Hideyasu Shimadzu, Faye Moyes, Caya Sievers, and Anne E. Magurran. 2014. “Assemblage Time Series Reveal Biodiversity Change but Not Systematic Loss.” <em>Science</em> 344 (6181): 296–99. <a href="https://doi.org/10.1126/science.1248484" class="uri">https://doi.org/10.1126/science.1248484</a>.</p>
+</div>
+<div id="ref-gotelli_detecting_2010">
+<p>Gotelli, Nicholas J., Robert M. Dorazio, Aaron M. Ellison, and Gary D. Grossman. 2010. “Detecting Temporal Trends in Species Assemblages with Bootstrapping Procedures and Hierarchical Models.” <em>Philosophical Transactions of the Royal Society B: Biological Sciences</em> 365 (1558): 3621–31. <a href="https://doi.org/10.1098/rstb.2010.0262" class="uri">https://doi.org/10.1098/rstb.2010.0262</a>.</p>
 </div>
 <div id="ref-martin_mapping_2012">
 <p>Martin, Laura J, Bernd Blossey, and Erle Ellis. 2012. “Mapping Where Ecologists Work: Biases in the Global Distribution of Terrestrial Ecological Observations.” <em>Frontiers in Ecology and the Environment</em> 10 (4): 195–201. <a href="https://doi.org/10.1890/110154" class="uri">https://doi.org/10.1890/110154</a>.</p>

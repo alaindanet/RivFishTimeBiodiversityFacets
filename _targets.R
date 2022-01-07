@@ -153,31 +153,25 @@ tar_plan(
     ),
   tar_target(simple_lm,
       analysis_dataset %>%
-        nest_by(siteid) %>%
-        mutate(
-          model = list(lm(
-              as.formula(paste0(var_temporal_trends, " ~ year ")), data = data)
-            ),
-          coef_mod = list(broom::tidy(model))
-        ) %>%
+        select(all_of(c("siteid", "year", var_temporal_trends))) %>%
+        group_by(siteid) %>%
+        nest() %>%
+        mutate(model = purrr::map(
+            data,
+            ~lm(as.formula(paste0(var_temporal_trends, " ~ year ")), data = .x)
+      )
+          ) %>%
         select(-data),
     pattern = map(var_temporal_trends),
     iteration = "list"
     ),
   tar_target(simple_lm_coef,
-      analysis_dataset %>%
-        nest_by(siteid) %>%
-        mutate(
-          model = list(lm(
-              as.formula(paste0(var_temporal_trends, " ~ year ")), data = data)
-            ),
-          coef_mod = list(broom::tidy(model))
-        ) %>%
-        select(-data),
-    pattern = map(var_temporal_trends),
+      simple_lm %>%
+        mutate(coef_mod = purrr::map(model, broom::tidy)) %>%
+        select(-model),
+    pattern = map(simple_lm),
     iteration = "list"
     ),
-
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
