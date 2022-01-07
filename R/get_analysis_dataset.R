@@ -15,7 +15,7 @@ get_analysis_dataset <- function(
     left_join(turnover_c, by = c("siteid", "year")) %>%
     left_join(vegdist_turnover_c, by = c("siteid", "year")) %>%
     mutate(total_abundance_int = as.integer(total_abundance)) %>%
-    left_join(select(hillnb, -species_nb), by = c("siteid", "year"))
+    left_join(select(hillnb, -species_nb, -op_id), by = c("siteid", "year"))
 
 
   year_stat_site <- filtered_dataset$site_quanti %>%

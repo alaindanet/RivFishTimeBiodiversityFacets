@@ -21,7 +21,6 @@ get_filtered_dataset <- function(
     )
   }
 
-
   if (type %in% c("all", "quanti")) {
     output$site_quanti <- get_site_quali_quanti_protocol(op_data = op_protocol,
       type = "quanti",
@@ -32,7 +31,7 @@ get_filtered_dataset <- function(
     mask <- site_desc_loc$siteid %in% op_protocol$siteid
     output$location <- site_desc_loc[mask, ]
     # Remove NZ: opportunistic fishing operation 
-    mask <- output$country != "New Zealand" 
+    mask <- output$location$country != "New Zealand"
     output$location <- output$location[mask, ]
   }
 

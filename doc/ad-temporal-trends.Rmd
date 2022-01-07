@@ -33,6 +33,8 @@ slope_df <- slope %>%
   pivot_wider(names_from = "response", values_from = "linear_slope")
 ```
 
+# Check trends
+
 - NA in slopes:
 
 ```{r}
@@ -59,6 +61,8 @@ sd_num %>%
 analysis_dataset %>%
   filter(siteid %in% na_siteid_slope[5])
 ```
+
+# Relationships among temporal trends
 
 
 ```{r}
@@ -339,12 +343,50 @@ map2(type_response, names(type_response),
 )
 ```
 
+## Spatialization of temporal trends
 
-# Turnover
-
-```{r, eval=FALSE}
-tar_load(hillebrand)
+```{r}
+rigal_trends_df_loc <-
+  rigal_trends_df %>%
+  left_join(
+    select(filtered_dataset$location, siteid, ecoregion, country),
+    by = c("siteid"))
 ```
+
+- No obvious geographic patterns 
+
+```{r}
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = log_species_nb, fill = ecoregion)) +
+  geom_boxplot()
+
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = log_total_abundance, fill = ecoregion)) +
+  geom_boxplot()
+
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = total, fill = ecoregion)) +
+  geom_boxplot()
+
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = jaccard, fill = ecoregion)) +
+  geom_boxplot()
+```
+
+```{r}
+rigal_trends_df %>%
+  summarise(across(where(is.numeric), median, na.rm = T)) %>%
+  unlist()
+
+median(exp(rigal_trends_df$log_total_abundance) - 1)  * 100
+sd(exp(rigal_trends_df$log_total_abundance) - 1) * 100
+median(exp(na.omit(rigal_trends_df$log_species_nb))  - 1) * 100
+sd(exp(na.omit(rigal_trends_df$log_species_nb)) - 1) * 100
+```
+
+
+
+
 
 
 

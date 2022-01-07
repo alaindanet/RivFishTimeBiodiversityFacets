@@ -126,6 +126,15 @@ site_year <- filtered_dataset$site_quanti %>%
     )
 ```
 
+```{r, results="hide"}
+map_dfr(c("span", "completeness", "min", "median", "max"),
+  ~tibble(
+    variable = .x, 
+    median = median(site_year[[.x]]))
+)
+```
+
+
 ```{r}
 site_year %>%
   ggplot(aes(x = min)) +

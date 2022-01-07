@@ -32,6 +32,7 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
   linear.model <- lm(Y~X)
 
   orthogonal_polynomial <- lm(Y~poly(X,2, raw=F))
+
   # After getting Y = gamma*chi + delta*X' + epsilon with orthogonal polynomial
   # we have to perform a variable change to obtain relevant values in the X interval 
   # for first_order_coefficient, second_order_coefficient and intercept,
@@ -48,13 +49,20 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
   eta  <-  1/lm((orthogonal_polynomial$model[, 2][, 1])^2~orthogonal_polynomial$model[, 2][, 2])$coef[2]
   theta  <-  (-lm((orthogonal_polynomial$model[, 2][, 1])^2~orthogonal_polynomial$model[, 2][, 2])$coef[1])*eta
 
-  Y2<-Y*(max(X)-min(X))/(max(Y)-min(Y))
+  if(max(Y)-min(Y) != 0) {
+    Y2<-Y*(max(X)-min(X)) / (max(Y)-min(Y))
+  } else {
+    Y2<-Y*0
+  }
   # p2 and p3 are relevant when Y and X amplitudes are equivalent,
   # in particular when studying scaled-to-1 indices, Y and X amplitudes
   # may be very different, so we scaled the amplitudes to calculate p2 and p3 
   polynomial_orthonormal_basis<-lm(Y2~poly(X,2, raw=T))$coefficients
 
-  if(summary(orthogonal_polynomial)$coefficients[3, 4] <= 0.05){                                     # non linear case
+  # Check second_order_coefficient is significant:
+  poly2_slope_pvalue <- summary(orthogonal_polynomial)$coefficients[3, 4]
+  ## Handle the case where all number are equals and pvalue is NaN 
+  if(!is.nan(poly2_slope_pvalue) & poly2_slope_pvalue <= 0.05){                                     # non linear case
     classification <- data.frame(
       first_order_coefficient = (delta+2*beta*gammab*eta)*alpha,
       first_order_pvalue = summary(orthogonal_polynomial)$coefficients[2, 4],
@@ -101,13 +109,13 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
   classification$derivated_curvature  <-  -12*(classification$second_order_coefficient^2)*(2*classification$second_order_coefficient*classification$x_m+classification$first_order_coefficient)*(classification$second_order_coefficient/abs(classification$second_order_coefficient))/
     ((1+(2*classification$second_order_coefficient*classification$x_m+classification$first_order_coefficient)^2)^(2.5))
 
-  if(classification$second_order_pvalue>0.05){classification$derivated_curvature <- NA}
+  if(classification$second_order_pvalue>0.05 | is.nan(classification$second_order_pvalue)){classification$derivated_curvature <- NA}
 
   classification$direction <- NA                                                                    # classify the direction
   classification$direction[which(classification$derivative > 0)] <- "increase"
   classification$direction[which(classification$derivative < 0)] <- "decrease"
   classification$direction[which(is.na(classification$derivative))] <- "stable"
-  classification$direction[which(as.numeric(classification$first_order_pvalue)>0.05 & as.numeric(classification$second_order_pvalue)>0.05)] <- "stable"
+  classification$direction[which(as.numeric(classification$first_order_pvalue)>0.05 & (as.numeric(classification$second_order_pvalue)>0.05 |is.nan(classification$second_order_pvalue)))] <- "stable"
 
   classification$acceleration <- NA                                                                 # classify the acceleration
   classification$acceleration[which(classification$derivated_curvature < 0)] <- "accelerated"
