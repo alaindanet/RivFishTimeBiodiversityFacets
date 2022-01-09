@@ -146,9 +146,11 @@ variable_by_year <- function(x = NULL, variable = NULL) {
 #'
 #' From vegdist object to similarity index from the reference year to the other
 #'
-get_temporal_vegdist <- function(vegdist_obj = NULL, drop_first_year = TRUE) {
+get_temporal_vegdist <- function(
+  dist_mat = NULL,
+  drop_first_year = TRUE) {
 
-  x <- as.matrix(vegdist_obj)
+  x <- dist_mat
 
   min_year <- as.character(min(as.numeric(colnames(x))))
   out <- x[, min_year]
@@ -160,9 +162,10 @@ get_temporal_vegdist <- function(vegdist_obj = NULL, drop_first_year = TRUE) {
   return(out)
 }
 
-#' Get temporal turnover from first year with vegdist
+#' Get temporal similarity from first year with vegdist
 #'
 #' Wrapper around vegdist
+#' compute 1 - as.matrix(vegdist) to have similarity instead of disimilarity
 #'
 #' @examples
 #' tar_load(com_mat_site)
@@ -174,10 +177,10 @@ get_vegdist_temporal_turnover <- function(
   drop_first_year = TRUE
   ) {
 
-  dist_obj <- vegan::vegdist(mat, method = method)
+  dist_obj <- 1 - as.matrix(vegan::vegdist(mat, method = method))
 
   dist_to_reference_year <- get_temporal_vegdist(
-    vegdist_obj = dist_obj,
+    dist_mat = dist_obj,
     drop_first_year = drop_first_year
   )
 
@@ -246,11 +249,17 @@ compute_dist <- function(mat = NULL, fun = NULL, ...) {
   }
   return(dist_mat)
 }
-compute_hillebrand <- function(x = NULL, y = NULL) {
+compute_hillebrand <- function(x = NULL, y = NULL, similarity = TRUE) {
   numerator <- sum((x - y)^2)
   denominator <- sum(x^2) + sum(y^2) - sum(x * y)
 
-  numerator / denominator
+  index <- numerator / denominator
+
+  if (similarity) {
+    index <- 1 - index
+  }
+
+  return(index)
 }
 
 #' Compute the turnover of species
@@ -283,7 +292,6 @@ compute_codyn_turnover <- function(x = NULL, y = NULL, type = NULL) {
     stop("wrong type supplied")
   }
 }
-
 get_custom_temporal_turnover <- function(
   mat = NULL,
   fun = NULL,
@@ -296,7 +304,7 @@ get_custom_temporal_turnover <- function(
   dist_obj <- compute_dist(mat = mat, fun = fun, ...)
 
   dist_to_reference_year <- get_temporal_vegdist(
-    vegdist_obj = dist_obj,
+    dist_mat = dist_obj,
     drop_first_year = drop_first_year
   )
 

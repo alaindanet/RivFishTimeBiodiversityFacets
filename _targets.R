@@ -83,7 +83,8 @@ tar_plan(
       fun = compute_hillebrand,
       var_name = "hillebrand",
       return_tibble = TRUE,
-      drop_first_year = TRUE
+      drop_first_year = TRUE,
+      similarity = TRUE
     )
   ),
   tar_target(turnover,
