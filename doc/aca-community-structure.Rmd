@@ -14,6 +14,7 @@ library(vegan)
 
 
 ```{r load-targets, include=FALSE}
+tar_load(filtered_dataset)
 ```
 
 # Diversity
@@ -158,6 +159,8 @@ ti <- get_chao_hillnb(
 
 # Vegdist turnover
 
+## Data
+
 ```{r}
 tar_load(c(com_mat_site, rigal_trends, var_temporal_trends))
 get_vegdist_temporal_turnover(com_mat_site$mat[[1]], method = "jaccard")
@@ -179,6 +182,121 @@ save_plot(
   p_trend_vegdist_slope
 )
 ```
+
+## NUll model (Unified Neutral theory of biodiversity)
+
+```{r}
+library(untb)
+
+data(butterflies)
+test <- untb(start = butterflies, prob=0, gens=100)
+
+rich_quant <- summary_distribution(filtered_dataset$abun_rich$species_nb)
+count_site <- filtered_dataset$site_quali %>%
+  filter(unitabundance == "Count") %>%
+  .[["siteid"]]
+tot_abun_quant <- summary_distribution(
+  filtered_dataset$abun_rich %>%
+    filter(siteid %in% count_site) %>%
+    .$total_abundance
+)
+
+null_mod <- get_untb_abun_mat(
+  start = sample(1:3, size = 64, replace = TRUE),
+  D = 0.1 * 64,
+  prob = 0.01,
+  gens = 1300
+)
+sparse <- Matrix::Matrix(null_mod$abun_mat, sparse=TRUE)
+object.size(sparse) * 10^-6
+object.size(null_mod$abun_mat) * 10^-6
+
+jaccard_test <-  1 - as.matrix(
+  vegdist(
+    null_mod$abun_mat[301:nrow(null_mod$abun_mat), ],
+    method = "jaccard"
+  )
+)
+
+lm(as.matrix(jaccard_test)[1,] ~ as.integer(names(as.matrix(jaccard_test)[1,])))
+```
+
+```{r}
+
+
+ex <- vegdist(neutral_com$sim[[1]], method = "jaccard")
+
+```
+
+```{r}
+neutral_com$temporal_jaccard <- map(
+  neutral_com$sim,
+  ~get_vegdist_temporal_turnover(
+  mat = .x,
+  method = "jaccard",
+  return_tibble = TRUE,
+  drop_first_year = TRUE
+  )
+)
+
+neutral_com %>%
+  mutate(
+    temporal_jaccard = list(
+      get_vegdist_temporal_turnover(
+        mat = sim,
+        method = "jaccard",
+        return_tibble = TRUE,
+        drop_first_year = TRUE
+      )
+    )
+  )
+
+neutral_com$temporal_jaccard <- map(
+  neutral_com$sim,
+  ~get_vegdist_temporal_turnover(
+    mat = .x,
+    method = "jaccard",
+    return_tibble = TRUE,
+    drop_first_year = TRUE
+  )
+)
+
+ti <- neutral_com %>%
+  ungroup() %>%
+  filter(
+    immigration == max(immigration),
+    death_rate == min(death_rate),
+    abun == max(abun)
+  )
+
+get_vegdist_temporal_turnover_c <- compiler::cmpfun(get_vegdist_temporal_turnover)
+tictoc::tic()
+get_vegdist_temporal_turnover_c(
+  mat = as.matrix(ti$sim[[3]][250:500, ]),
+  method = "jaccard",
+  return_tibble = TRUE,
+  drop_first_year = TRUE
+)
+tictoc::toc()
+2.003 * 540 / 60
+
+plan(multisession, workers = 3)
+tictoc::tic()
+furrr::future_map(
+  ti$sim,
+  ~get_vegdist_temporal_turnover_c(
+    mat = as.matrix(.x[250:500, ]),
+    method = "jaccard",
+    return_tibble = TRUE,
+    drop_first_year = TRUE
+  )
+)
+tictoc::toc()
+
+43.8 / 30
+```
+
+
 
 
 ## Analysis

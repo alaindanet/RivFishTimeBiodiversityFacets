@@ -50,6 +50,7 @@ tar_plan(
       add_var_from_protocol = c("siteid", "year")
       )),
   # Community structure
+  tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
   tar_target(com_mat_site, get_site_community_matrix(x = filtered_dataset$measurement)),
   tar_target(vegdist_index, c("jaccard", "horn", "chao")),
   tar_target(
