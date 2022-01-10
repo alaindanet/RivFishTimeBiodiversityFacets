@@ -79,3 +79,66 @@ get_filtered_dataset <- function(
   }
 
 }
+
+tar_avg_first_year_measurement <- function(
+  dataset = NULL,
+  nb_year_to_average = 3
+  ) {
+
+  output <- dataset %>%
+    nest_by(siteid) %>%
+    mutate(
+      data = list(
+        avg_first_year_measurement(
+          x = data,
+          nb_year_to_average = nb_year_to_average
+        )
+      )
+    )
+
+    output %>%
+      ungroup() %>%
+      unnest(cols = data)
+
+
+}
+
+avg_first_year_measurement <- function(
+  x = NULL,
+  nb_year_to_average = 3
+  ) {
+
+  stopifnot(all(na.omit(x$abundance) != 0) & all(na.omit(x$biomass) != 0))
+  new_df <- x %>%
+    pivot_wider(
+      names_from = species,
+      names_sep = ".",
+      values_from = c(abundance, biomass),
+      values_fill = 0
+      ) %>%
+  arrange(year)
+
+avg_first_year <- new_df %>%
+  slice(1:nb_year_to_average) %>%
+  summarise(across(where(is.numeric), mean))
+
+output <- rbind(
+  new_df[-c(1:nb_year_to_average), ],
+  mutate(avg_first_year, op_id = new_df[median(1:nb_year_to_average), ]$op_id)
+)
+
+output <- output %>%
+  pivot_longer(
+    cols = c(-op_id, -year),
+    names_to = c("variable", "species"),
+    names_sep = "([.])",
+    values_to = "value"
+    ) %>%
+pivot_wider(
+  names_from = "variable",
+  values_from = "value"
+  ) %>%
+filter(abundance != 0, biomass != 0)
+return(output)
+
+}

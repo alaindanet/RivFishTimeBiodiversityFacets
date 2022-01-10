@@ -25,6 +25,7 @@ library(vegan)
 
 
 conflict_prefer("filter", "dplyr")
+conflict_prefer("select", "dplyr")
 
 # For brms
 conflict_prefer("col_factor", "scales")

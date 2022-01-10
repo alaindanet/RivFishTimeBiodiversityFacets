@@ -49,6 +49,11 @@ tar_plan(
       site_desc_loc = site_desc_loc,
       add_var_from_protocol = c("siteid", "year")
       )),
+  tar_target(measurement_avg3y, tar_avg_first_year_measurement(
+      dataset = filtered_dataset$measurement,
+      nb_year_to_average = 3
+      )
+    ),
   # Community structure
   tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
   tar_target(neutral_turnover,
@@ -66,7 +71,16 @@ tar_plan(
       ) %>%
     select(-sim)
   ),
-  tar_target(com_mat_site, get_site_community_matrix(x = filtered_dataset$measurement)),
+  tar_target(com_mat_site,
+    get_site_community_matrix(x = filtered_dataset$measurement)
+    ),
+  tar_target(com_mat_site_avg3y,
+    get_site_community_matrix(
+      x = filtered_dataset$measurement,
+      average_first_year = TRUE,
+      nb_year_to_average = 3
+    )
+    ),
   tar_target(vegdist_index, c("jaccard", "horn", "chao")),
   tar_target(vegdist_turnover,
     target_vegdist_turnover(
