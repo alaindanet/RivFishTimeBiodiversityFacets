@@ -51,10 +51,24 @@ tar_plan(
       )),
   # Community structure
   tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
+  tar_target(neutral_turnover,
+    neutral_com %>%
+      mutate(
+       jaccard = purrr::map(
+         sim,
+         ~get_vegdist_temporal_turnover_c(
+           mat = as.matrix(.x[250:500, ]),
+           method = "jaccard",
+           return_tibble = TRUE,
+           drop_first_year = TRUE
+         )
+       )
+      ) %>%
+    select(-sim)
+  ),
   tar_target(com_mat_site, get_site_community_matrix(x = filtered_dataset$measurement)),
   tar_target(vegdist_index, c("jaccard", "horn", "chao")),
-  tar_target(
-    vegdist_turnover,
+  tar_target(vegdist_turnover,
     target_vegdist_turnover(
       dataset = com_mat_site,
       method = vegdist_index,

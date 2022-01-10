@@ -194,6 +194,7 @@ get_vegdist_temporal_turnover <- function(
   return(dist_to_reference_year)
 
 }
+get_vegdist_temporal_turnover_c <- compiler::cmpfun(get_vegdist_temporal_turnover)
 
 #' Target function for vegdist turnover
 #'

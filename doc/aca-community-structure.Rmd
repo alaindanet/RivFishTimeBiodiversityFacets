@@ -2,7 +2,10 @@
 title: "Community structure"
 author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: html_document
+output: 
+      bookdown::html_document2:
+        theme: "readable"
+        code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -38,7 +41,8 @@ bci_div <- tibble(
 ```
 
 ```{r}
-kable(bci_div)
+kable(bci_div) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 ```
 
 
@@ -88,7 +92,8 @@ div_summary %>%
   kable(.,
     caption = "Summary of diversity indices distribution",
     label = "tab:div-comp"
-  )
+  ) %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
 
 ```
 
@@ -112,7 +117,10 @@ facet_grid(rows = vars(facet), scales = "free_y")
 ```{r}
 chao_hillnb %>%
   filter(evenness > 1) %>%
-  kable
+  slice(1:30) %>%
+  kable %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  scroll_box(width = "100%", height = "400px")
 ```
 
 ### Relationships between Chao and classic number
@@ -141,6 +149,15 @@ for (i in c("richness", "shannon", "simpson", "evenness")) {
   title(i)
 }
 dev.off()
+for (i in c("richness", "shannon", "simpson", "evenness")) {
+  plot(
+    div[div$type == "chao", ][[i]] ~ div[div$type == "classic", ][[i]],
+    ylab = "Chao",
+    xlab = "Classic"
+  )
+  abline(1, 1)
+  title(i)
+}
 par(old_par)
 ```
 
@@ -183,7 +200,7 @@ save_plot(
 )
 ```
 
-## NUll model (Unified Neutral theory of biodiversity)
+## Null model (Unified Neutral theory of biodiversity)
 
 ```{r}
 library(untb)
@@ -221,82 +238,48 @@ jaccard_test <-  1 - as.matrix(
 lm(as.matrix(jaccard_test)[1,] ~ as.integer(names(as.matrix(jaccard_test)[1,])))
 ```
 
-```{r}
-
-
-ex <- vegdist(neutral_com$sim[[1]], method = "jaccard")
-
+```{r, eval=TRUE}
+tar_load(c(neutral_turnover))
 ```
-
 ```{r}
-neutral_com$temporal_jaccard <- map(
-  neutral_com$sim,
-  ~get_vegdist_temporal_turnover(
-  mat = .x,
-  method = "jaccard",
-  return_tibble = TRUE,
-  drop_first_year = TRUE
-  )
-)
-
-neutral_com %>%
+neutral_turnover <- neutral_turnover %>%
+  rowwise(rowid) %>%
   mutate(
-    temporal_jaccard = list(
-      get_vegdist_temporal_turnover(
-        mat = sim,
-        method = "jaccard",
-        return_tibble = TRUE,
-        drop_first_year = TRUE
-      )
-    )
-  )
+    model = list(lm(jaccard ~ year, jaccard)),
+    coef = list(broom::tidy(model))
+  ) %>%
+  ungroup()
+```
 
-neutral_com$temporal_jaccard <- map(
-  neutral_com$sim,
-  ~get_vegdist_temporal_turnover(
-    mat = .x,
-    method = "jaccard",
-    return_tibble = TRUE,
-    drop_first_year = TRUE
-  )
-)
-
-ti <- neutral_com %>%
-  ungroup() %>%
-  filter(
-    immigration == max(immigration),
-    death_rate == min(death_rate),
-    abun == max(abun)
-  )
-
-get_vegdist_temporal_turnover_c <- compiler::cmpfun(get_vegdist_temporal_turnover)
-tictoc::tic()
-get_vegdist_temporal_turnover_c(
-  mat = as.matrix(ti$sim[[3]][250:500, ]),
-  method = "jaccard",
-  return_tibble = TRUE,
-  drop_first_year = TRUE
-)
-tictoc::toc()
-2.003 * 540 / 60
-
-plan(multisession, workers = 3)
-tictoc::tic()
-furrr::future_map(
-  ti$sim,
-  ~get_vegdist_temporal_turnover_c(
-    mat = as.matrix(.x[250:500, ]),
-    method = "jaccard",
-    return_tibble = TRUE,
-    drop_first_year = TRUE
-  )
-)
-tictoc::toc()
-
-43.8 / 30
+```{r}
+neutral_turnover_trends <- neutral_turnover %>%
+  select(-jaccard, -model) %>%
+  unnest(coef) %>%
+  filter(term == "year")
 ```
 
 
+- Neutral community dynamics generally produce turnover through time:
+  (jaccard mean slope: `r round(mean(neutral_turnover_trends$estimate), 4)`)
+- Immigration increases turnover through time (jaccard decrease):
+  - when death rate is low
+- Higher death rate increases also turnover except when immigration is high
+
+```{r}
+neutral_turnover_trends %>%
+  ggplot(aes(y = estimate, x = as.factor(richness), color = as.factor(abun))) +
+  geom_boxplot() +
+  facet_grid(
+    rows = vars(death_rate), cols = vars(immigration),
+    labeller = labeller(.cols = label_both, .rows = label_both)
+    ) +
+  labs(x = "Species Richness", y = "Slope Jaccard vs Year", color = "Abundance")+
+  scale_y_continuous(sec.axis = sec_axis(~ . , name = "Death rate", breaks = NULL, labels = NULL)) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+```
 
 
 ## Analysis
