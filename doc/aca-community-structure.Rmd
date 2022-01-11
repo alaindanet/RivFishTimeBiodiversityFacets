@@ -174,15 +174,22 @@ ti <- get_chao_hillnb(
   confidence_int = NULL)
 ```
 
-# Vegdist turnover
+# Turnover
 
 ## Data
 
 ```{r}
-tar_load(c(com_mat_site, rigal_trends, var_temporal_trends))
-get_vegdist_temporal_turnover(com_mat_site$mat[[1]], method = "jaccard")
+tar_load(c(
+    rigal_trends,
+    var_temporal_trends,
+    turnover_types_chr,
+    vegdist_index
+  )
+)
 names(rigal_trends) <- var_temporal_trends
-trend_vegdist <- rigal_trends[names(rigal_trends) %in% c("jaccard", "horn", "chao")]
+trend_vegdist <- rigal_trends[
+  names(rigal_trends) %in% c(turnover_types_chr, vegdist_index, "hillebrand")
+  ]
 trend_vegdist_slope <- map_dfr(trend_vegdist,
   ~.x[, c("siteid", "linear_slope")], .id = "response")
 ```
@@ -191,7 +198,7 @@ trend_vegdist_slope <- map_dfr(trend_vegdist,
 p_trend_vegdist_slope <- trend_vegdist_slope %>%
   ggplot(aes(x = linear_slope)) +
   geom_histogram() +
-  facet_grid(cols = vars(response)) +
+  facet_wrap(~response) +
   labs(y = "Count", x = "Slope of similarity vs year")
 p_trend_vegdist_slope
 save_plot(
@@ -200,7 +207,27 @@ save_plot(
 )
 ```
 
+```{r}
+trend_vegdist_slope_summary <-
+  trend_vegdist_slope %>%
+  group_by(response) %>%
+  summarise(
+    summary_dist = list(
+      enframe(summary_distribution(linear_slope))
+    )
+    ) %>%
+  unnest(cols = summary_dist) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+
+trend_vegdist_slope_summary %>%
+  kable %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+
 ## Null model (Unified Neutral theory of biodiversity)
+
+- See `untb::untb()` and [neutral_model.R](https://github.com/alaindanet/RivFishTimeBiodiversityFacets/blob/main/R/neutral_model.R)
 
 ```{r}
 library(untb)
@@ -212,6 +239,7 @@ rich_quant <- summary_distribution(filtered_dataset$abun_rich$species_nb)
 count_site <- filtered_dataset$site_quali %>%
   filter(unitabundance == "Count") %>%
   .[["siteid"]]
+
 tot_abun_quant <- summary_distribution(
   filtered_dataset$abun_rich %>%
     filter(siteid %in% count_site) %>%
@@ -266,7 +294,7 @@ neutral_turnover_trends <- neutral_turnover %>%
 - Higher death rate increases also turnover except when immigration is high
 
 ```{r}
-neutral_turnover_trends %>%
+p <- neutral_turnover_trends %>%
   ggplot(aes(y = estimate, x = as.factor(richness), color = as.factor(abun))) +
   geom_boxplot() +
   facet_grid(
@@ -276,9 +304,27 @@ neutral_turnover_trends %>%
   labs(x = "Species Richness", y = "Slope Jaccard vs Year", color = "Abundance")+
   scale_y_continuous(sec.axis = sec_axis(~ . , name = "Death rate", breaks = NULL, labels = NULL)) +
   theme(legend.position = "bottom")
+p
+```
+
+- Empirical data are far more variable than neutral dynamics, but:
+  - also negative in average 
+  - neutral trends computed over 250 years, data over 10s years
+  - Data displays quite a lot of positive turnover
+
+
+```{r}
+p + geom_boxplot(
+  data = trend_vegdist_slope %>%
+    filter(response == "jaccard") %>%
+    mutate(abun = as.factor(0)),
+  aes(y = linear_slope, x = abun)) +
+labs(title = "Neutral model + empirical data", subtitle = "Abundance = 0, in red")
 ```
 
 ```{r}
+tar_load(com_mat_site)
+ti <- com_mat_site$mat[[1]]
 ```
 
 

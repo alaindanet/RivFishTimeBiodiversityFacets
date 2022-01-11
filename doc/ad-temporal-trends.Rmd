@@ -18,7 +18,6 @@ tar_load(c(rigal_trends, var_temporal_trends))
 
 
 ```{r}
-tar_load(rigal_trends)
 names(rigal_trends) <- var_temporal_trends
 ```
 ```{r}
@@ -35,7 +34,7 @@ slope_df <- slope %>%
 
 # Check trends
 
-- NA in slopes:
+- no NA in slopes since fix [rigal_classification](https://github.com/alaindanet/RivFishTimeBiodiversityFacets/commit/1c8b8c48e39abbe7644f2ab1ea1ec175b550c149):
 
 ```{r}
 summary_slope <- slope %>%
@@ -44,7 +43,9 @@ summary_slope <- slope %>%
   unnest(cols = summ) %>%
   pivot_wider(names_from = "name", values_from = "value")
 summary_slope %>%
-  kable()
+  mutate(response = get_var_replacement()[response]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```
 
 ```{r}
@@ -57,9 +58,99 @@ sd_num <- analysis_dataset %>%
 sd_num %>%
   filter(siteid %in% na_siteid_slope) %>%
   summary(.)
+```
 
-analysis_dataset %>%
-  filter(siteid %in% na_siteid_slope[5])
+- Tremendous trends in abundance:
+
+```{r}
+high_abundance_slope <- slope_df %>%
+  arrange(desc(abs(total_abundance)))
+high_abundance_slope
+site_desc_slope_total_abundance <-
+  high_abundance_slope %>%
+  .[["siteid"]]
+```
+
+- The most tremendous temporal trends in abundance are located in  
+  Illinois and France 
+
+
+
+```{r, out.width="100%"}
+ti <- filtered_dataset$location %>%
+  filter(siteid %in% site_desc_slope_total_abundance[1:20]) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 2154)
+
+sp::plot(ne_countries())
+sp::plot(st_geometry(ti), add = TRUE, col = "red", pch = 19)
+```
+
+
+```{r}
+filtered_dataset$abun_rich_op %>%
+  filter(siteid %in% site_desc_slope_total_abundance[1:20]) %>%
+  group_by(siteid) %>%
+  summarise(across(c("total_abundance", "species_nb"), list(median = median, mean = mean)))
+```
+
+```{r, out.width="100%"}
+p_high_slope_abun <- map(site_desc_slope_total_abundance[1:20],
+  ~plot_community_data(
+    analysis_dataset %>%
+    filter(siteid == .x) %>%
+    select(siteid, year, total_abundance),
+    y = "total_abundance", x = "year",
+  smoothing_method = "lm"))
+plot_grid(plotlist = p_high_slope_abun, ncol = 3)
+```
+
+
+
+```{r}
+s11735_com <- analysis_dataset %>%
+  filter(siteid == site_desc_slope_total_abundance[1]) %>%
+  arrange(year) %>%
+  select(siteid, year, total_abundance)
+s11735_com
+plot_community_data(s11735_com, y = "total_abundance", x = "year",
+  smoothing_method = "lm")
+```
+
+```{r}
+mean(s11735_com$total_abundance) -  sd(s11735_com$total_abundance)
+mean(s11735_com$total_abundance) +  5 * sd(s11735_com$total_abundance)
+```
+
+- Petit poissons [*Notropis
+  atherinoides*](https://en.wikipedia.org/wiki/Emerald_shiner) and
+  [*Notropis volucellus*](https://en.wikipedia.org/wiki/Mimic_shiner) have
+  several tremendous abundance.  Since those bursts happened four times, there
+  have little probability to be error in the data.
+
+```{r}
+s11735_pop <- filtered_dataset$measurement %>%
+  filter(siteid == site_desc_slope_total_abundance[1]) %>%
+  arrange(year) %>%
+  select(siteid, year, species, abundance)
+
+s11735_pop %>%
+  group_by(species) %>%
+  summarise(abun = sum(abundance)) %>%
+  arrange(desc(abun))
+
+plot_temporal_population(s11735_pop) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+s6466_com <- analysis_dataset %>%
+  filter(siteid == site_desc_slope_total_abundance[2]) %>%
+  arrange(year) %>%
+  select(siteid, year, total_abundance)
+s6466_com
+plot_community_data(s6466_com, y = "total_abundance", x = "year",
+  smoothing_method = "lm")
+
 ```
 
 # Relationships among temporal trends
@@ -67,9 +158,8 @@ analysis_dataset %>%
 
 ```{r}
 cor_slope <- slope_df %>%
-  mutate(across(where(is.numeric), ~ifelse(is.na(.x), 0, .x))) %>%
   select(-siteid) %>%
-  cor(.)
+  cor(., method = "spearman")
 cor_slope
 
 png(here("doc", "fig", "p_cor_slope.png"))
@@ -82,7 +172,13 @@ corrplot::corrplot(cor_slope, type = "upper", tl.srt = 35, diag = FALSE)
 dev.off()
 ```
 
-- Change NA slope by 0
+```{r}
+corrplot::corrplot(cor_slope[c("chao_richness", "species_nb", "log_species_nb",
+      "total_abundance", "log_total_abundance"), ], type = "upper", tl.srt = 45, diag = FALSE)
+
+corrplot::corrplot(cor_slope, type = "upper", tl.srt = 35, diag = FALSE)
+```
+
 
 ```{r}
 ti <- expand.grid(
@@ -100,7 +196,6 @@ test <- map2(ti$resp1, ti$resp2,
   function(x, y) {
     bi <- slope %>%
       filter(response %in% c(x, y)) %>%
-      mutate(linear_slope = ifelse(is.na(linear_slope), 0, linear_slope)) %>%
       select(siteid, response, linear_slope) %>%
       pivot_wider(names_from = "response", values_from = "linear_slope")
 
@@ -114,12 +209,16 @@ p <- map(test, function(x) {
     ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
     geom_point() +
     geom_smooth(method = "lm") +
-    labs(x = l[2], y = l[3])
+    labs(
+      x = get_var_replacement()[l[2]],
+      y = get_var_replacement()[l[3]]
+    )
 })
 names(p) <- map_chr(test, ~colnames(.x)[2])
 
-plot_grid(plotlist = p[names(p) %in% "total_abundance"])
-plot_grid(plotlist = p[names(p) %in% "species_nb"])
+plot_grid(plotlist = p[names(p) %in% "total_abundance"], ncol = 3)
+plot_grid(plotlist = p[names(p) %in% "species_nb"], ncol = 3)
+plot_grid(plotlist = p[names(p) %in% "log_species_nb"], ncol = 3)
 ```
 
 - Trends of total abundance are linked to the one of species richness but not to
@@ -128,8 +227,6 @@ plot_grid(plotlist = p[names(p) %in% "species_nb"])
   species.
 
 ```{r}
-names(rigal_trends) <- var_temporal_trends
-
 p <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
     ggplot(aes(x = linear_slope)) +
@@ -137,6 +234,99 @@ p <- map2(rigal_trends, names(rigal_trends),
     labs(title = .y)
 )
 plot_grid(plotlist = p)
+```
+
+# Look at strong turnover trends
+
+- Check with Jaccard:
+
+```{r}
+high_jaccard_slope <-
+  slope_df %>%
+  select(siteid, total_abundance, species_nb, jaccard) %>%
+  arrange(desc(jaccard))
+high_jaccard_slope
+site_desc_jaccard_slope <-
+  high_jaccard_slope %>%
+  .[["siteid"]]
+```
+
+```{r}
+ti <- filtered_dataset$location %>%
+  filter(siteid %in% site_desc_jaccard_slope[1:20]) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 2154)
+
+sp::plot(ne_countries())
+sp::plot(st_geometry(ti), add = TRUE, col = "red", pch = 19)
+```
+
+
+```{r}
+filtered_dataset$abun_rich_op %>%
+  filter(siteid %in% site_desc_jaccard_slope[1:20]) %>%
+  group_by(siteid) %>%
+  summarise(across(c("total_abundance", "species_nb"),
+      list(median = median, mean = mean))) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
+  scroll_box(width = "100%", height = "400px")
+```
+
+```{r}
+p_high_jaccard_slope <- map(site_desc_jaccard_slope[1:20],
+  ~plot_community_data(
+    analysis_dataset %>%
+    filter(siteid == .x) %>%
+    select(siteid, year, jaccard),
+    y = "jaccard", x = "year",
+  smoothing_method = "lm"))
+plot_grid(plotlist = p_high_jaccard_slope, ncol = 3)
+```
+
+```{r}
+tar_load(vegdist_turnover_c)
+```
+
+- Hum, do not understand why community are more similar at the end of the time-steps
+
+```{r}
+p_pop_high_jaccard <-
+  map(site_desc_jaccard_slope[1:20],
+    ~plot_temporal_population(
+      filtered_dataset$measurement %>%
+        filter(siteid == .x)
+      ) +
+    theme(legend.position = "none")
+    )
+plot_grid(plotlist = p_pop_high_jaccard, ncol = 3)
+```
+
+- Lets see communities that becomes more dissimilar:
+
+
+```{r}
+p_jaccard_low_jaccard <-
+  map(site_desc_jaccard_slope[(length(site_desc_jaccard_slope)-20):length(site_desc_jaccard_slope)],
+    ~plot_community_data(
+      analysis_dataset %>%
+        filter(siteid == .x) %>%
+        select(siteid, year, jaccard),
+      y = "jaccard", x = "year",
+      smoothing_method = "lm"))
+plot_grid(plotlist = p_jaccard_low_jaccard, ncol = 3)
+```
+
+```{r}
+p_pop_low_jaccard <-
+  map(site_desc_jaccard_slope[
+    (length(site_desc_jaccard_slope)-20):length(site_desc_jaccard_slope)],
+    ~plot_temporal_population(
+      filtered_dataset$measurement %>%
+        filter(siteid == .x)
+      ) +
+    theme(legend.position = "none")
+    )
+plot_grid(plotlist = p_pop_low_jaccard, ncol = 3)
 ```
 
 # Comparison rigal, lm
@@ -383,12 +573,6 @@ sd(exp(rigal_trends_df$log_total_abundance) - 1) * 100
 median(exp(na.omit(rigal_trends_df$log_species_nb))  - 1) * 100
 sd(exp(na.omit(rigal_trends_df$log_species_nb)) - 1) * 100
 ```
-
-
-
-
-
-
 
 ## Analysis
 

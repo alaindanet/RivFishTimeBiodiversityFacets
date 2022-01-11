@@ -42,15 +42,12 @@ get_site_community_matrix <- function(
     select(siteid, mat)
 
     if (average_first_year) {
-      mat_com  <- mat_com  %>%
-        mutate(
-          mat = purrr::map(mat,
-            ~average_first_years_com_mat(
-              mat = .x,
-              nb_year_to_average = nb_year_to_average
-            )
-          )
+      mat_com$mat <- purrr::map(mat_com$mat,
+        ~average_first_years_com_mat(
+          mat = .x,
+          nb_year_to_average = nb_year_to_average
         )
+      )
     }
 
     # Relative abundaces
@@ -68,10 +65,10 @@ average_first_years_com_mat <- function(
   mat = NULL,
   nb_year_to_average = NULL) {
 
-  avgfirst_year <- colMeans(mat[1:nb_year_to_average, ])
+  avgfirst_year <- colMeans(mat[1:nb_year_to_average, , drop = FALSE])
   new_first_year <- mean(as.numeric(row.names(mat[1:nb_year_to_average, ])))
 
-  new_mat <- mat[nb_year_to_average:nrow(mat), ]
+  new_mat <- mat[nb_year_to_average:nrow(mat), , drop = FALSE]
   new_mat[1, ] <- avgfirst_year
   row.names(new_mat)[1] <- new_first_year
 

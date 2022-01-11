@@ -1,9 +1,19 @@
-plot_community_data <- function(dataset = NULL, y = NULL, x = NULL, title = NULL) {
+plot_community_data <- function(
+  dataset = NULL,
+  y = NULL,
+  x = NULL,
+  title = NULL,
+  smoothing_method = "loess"
+  ) {
 
   p <- dataset %>%
     ggplot(aes_string(y = y, x = x)) +
-    geom_point() +
-    geom_smooth(method = "loess", formula = "y ~ x")
+    geom_point()
+
+  if (!is.null(smoothing_method)) {
+    p <- p +
+      geom_smooth(method = smoothing_method, formula = "y ~ x")
+  }
 
   if (!is.null(title)) {
     p <- p +

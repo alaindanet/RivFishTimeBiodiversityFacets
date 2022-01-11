@@ -127,7 +127,7 @@ site_year <- filtered_dataset$site_quanti %>%
 ```
 
 ```{r, results="hide"}
-map_dfr(c("span", "completeness", "min", "median", "max"),
+map_dfr(c("span", "completeness", "min", "median", "max", "n"),
   ~tibble(
     variable = .x, 
     median = median(site_year[[.x]]))
