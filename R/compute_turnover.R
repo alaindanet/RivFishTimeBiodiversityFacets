@@ -327,7 +327,7 @@ target_custom_temporal_turnover <- function(
   ) {
 
   dataset$value <- furrr::future_map(
-    dataset$mat_rel, get_custom_temporal_turnover,
+    dataset$mat_bin, get_custom_temporal_turnover,
       fun = fun,
       var_name = var_name,
       return_tibble = return_tibble,
@@ -335,5 +335,60 @@ target_custom_temporal_turnover <- function(
 
   dataset[, c("siteid", "value")] %>%
     unnest(cols = value)
+
+}
+
+#' Baselga decomposition of jaccard
+#'
+#'
+#'@examples
+#'
+#'mat <- matrix(
+#'  c(1, 0, 1, 1, 0, 1, 1, 0),
+#'  ncol = 2,
+#'  byrow = TRUE,
+#'  dimnames = list(NULL, c("pika", "sala"))
+#')
+#'
+#'x <- decostand(mat, method = "pa")
+#'
+#'compute_jaccard_decomp(x = x[1, ], y = x[2, ])
+#'compute_jaccard_decomp(x = x[1, ], y = x[3, ])
+#'compute_jaccard_decomp(x = x[1, ], y = x[1, ])
+compute_jaccard_decomp <- function(
+  x = NULL,
+  y = NULL,
+  type = "all"
+  ) {
+
+  nb_common <- sum(x & y)
+  nb_disappear <- sum(x & !y)
+  nb_appear <- sum(!x & y)
+
+  beta_jac <- (nb_disappear + nb_appear) /
+    (nb_common + nb_disappear + nb_appear)
+
+  beta_jac_tu <- 2 * pmin(nb_disappear, nb_appear) /
+    (nb_common + (2 * pmin(nb_disappear, nb_appear)))
+
+  beta_jac_ne <- beta_jac - beta_jac_tu
+
+  if(type == "jaccard") {
+    return(beta_jac)
+  } else if (type == "nestedness") {
+    return(beta_jac_ne)
+  } else if (type == "turnover") {
+    return(beta_jac_tu)
+  } else if (type == "all") {
+    out <- c(
+      jaccard = beta_jac,
+      jaccard_ne = beta_jac_ne,
+      jaccard_tu = beta_jac_tu
+    )
+    return(out)
+  } else {
+    stop("wrong type supplied")
+  }
+
 
 }

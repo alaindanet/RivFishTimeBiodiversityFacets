@@ -32,6 +32,9 @@ get_var_replacement <- function() {
   appearance = "Appearance",
   disappearance = "Disappearance",
   shannon = "Shannon",
-  simpson = "Simpson"
+  simpson = "Simpson",
+  jaccard_dis = "Jaccard dissimilarity",
+  nestedness = "Nestedness",
+  turnover = "turnover"
   )
 }

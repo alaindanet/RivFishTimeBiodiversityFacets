@@ -14,12 +14,9 @@ source(here::here("start_rmd.R"))
 ```{r load-targets, include=FALSE}
 tar_load(c(filtered_dataset, analysis_dataset))
 tar_load(c(rigal_trends, var_temporal_trends))
-```
-
-
-```{r}
 names(rigal_trends) <- var_temporal_trends
 ```
+
 ```{r}
 slope <- map_dfr(rigal_trends, ~.x %>%
   select(siteid, linear_slope),
@@ -203,7 +200,7 @@ test <- map2(ti$resp1, ti$resp2,
   }
 )
 
-p <- map(test, function(x) {
+p_trends_trends <- map(test, function(x) {
   l <- colnames(x)
   x %>%
     ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
@@ -214,17 +211,20 @@ p <- map(test, function(x) {
       y = get_var_replacement()[l[3]]
     )
 })
-names(p) <- map_chr(test, ~colnames(.x)[2])
+names(p_trends_trends) <- map_chr(test, ~colnames(.x)[2])
 
-plot_grid(plotlist = p[names(p) %in% "total_abundance"], ncol = 3)
-plot_grid(plotlist = p[names(p) %in% "species_nb"], ncol = 3)
-plot_grid(plotlist = p[names(p) %in% "log_species_nb"], ncol = 3)
+plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "total_abundance"], ncol = 3)
+plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "species_nb"], ncol = 3)
+plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"], ncol = 3)
 ```
 
 - Trends of total abundance are linked to the one of species richness but not to
   shannon and simpson, suggesting that the trends of abundance are more link to
   trends of rare species. Logic: gain and loss of species should concern rare
   species.
+
+- Species richness decrease linked to disappearance, but not increase 
+- Species richness increase linked to appearance, but not decrease 
 
 ```{r}
 p <- map2(rigal_trends, names(rigal_trends),
@@ -234,6 +234,30 @@ p <- map2(rigal_trends, names(rigal_trends),
     labs(title = .y)
 )
 plot_grid(plotlist = p)
+```
+
+- Turnover vs nestedness:
+
+```{r}
+test <- slope_df %>%
+  mutate(
+    nes_sup_tu = nestedness > turnover,
+    nes_inf_tu = nestedness < turnover,
+    rich_inc = species_nb >= 0
+  )
+sum(test$nes_sup_tu)
+sum(test$nes_inf_tu)
+test %>%
+  tabyl(rich_inc, nes_sup_tu) %>%
+  adorn_totals("row") %>%
+  adorn_title(placement = "top")
+```
+
+```{r}
+slope_df %>%
+  ggplot(aes(x = species_nb, y = nestedness - turnover)) +
+  geom_point() +
+  geom_smooth(method = "smooth")
 ```
 
 # Look at strong turnover trends
@@ -564,6 +588,30 @@ rigal_trends_df_loc %>%
 ```
 
 ```{r}
+rigal_trends_df_loc <- filtered_dataset$location %>%
+  left_join(rigal_trends_df, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+
+```{r}
+library(colorspace)
+div_pal <- colorspace::sequential_hcl(11, "plasma")
+world <- ne_countries(returnclass = "sf")
+```
+
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = rigal_trends_df_loc,
+      aes(color = log_species_nb), shape = 1) +
+    scale_color_continuous(type = "viridis") +
+    theme(legend.position = "bottom")
+```
+
+```{r}
 rigal_trends_df %>%
   summarise(across(where(is.numeric), median, na.rm = T)) %>%
   unlist()
@@ -574,7 +622,67 @@ median(exp(na.omit(rigal_trends_df$log_species_nb))  - 1) * 100
 sd(exp(na.omit(rigal_trends_df$log_species_nb)) - 1) * 100
 ```
 
-## Analysis
+## Sensibility analysis 
+
+```{r}
+tar_load(c(rigal_trends_avg3y))
+names(rigal_trends_avg3y) <- var_temporal_trends
+```
+```{r}
+tar_load(c(analysis_dataset_avg3y, measurement_avg3y, measurement))
+tar_load(c(turnover_avg3y_c))
+tar_load(c(vegdist_turnover_c))
+tar_load(c(hillnb_avg3y))
+```
+
+
+```{r}
+slope_avg3y <- map_dfr(rigal_trends_avg3y[
+  ! names(rigal_trends_avg3y) %in% c("jaccard_dis", "nestedness", "turnover")], ~.x %>%
+  select(siteid, linear_slope),
+.id = "response"
+)
+```
+
+- Number of sites that are in the different datasets:
+
+```{r}
+u_site <- map(list(classic = slope, avg_3y = slope_avg3y), ~unique(.x$siteid))
+sum(u_site[[1]] %in% u_site[[2]])
+sum(u_site[[2]] %in% u_site[[1]])
+```
+
+```{r}
+comparison_baseline <- rbind(
+  slope %>%
+    mutate(type = "classic") %>%
+    filter(siteid %in% u_site[["avg_3y"]]),
+  slope_avg3y %>%
+    mutate(type = "avg_3y")
+  ) %>%
+pivot_wider(names_from = type, values_from = linear_slope)
+```
+
+- It is not too bad, but we can see some differences:  
+  - slope negatively biaised for `log_species_nb` in
+    3 years baseline 
+  - Bunch of trends in appearance/disappearance trends disappears with  
+    3 years baseline 
+  - But note that in three years baseline, there are three points less data 
+
+
+```{r}
+comparison_baseline %>%
+  ggplot(aes(x = classic, y = avg_3y)) +
+  geom_point() +
+  geom_abline(intercept = 0, slope = 1) +
+  facet_wrap(~response, scale = "free")
+```
+
+```{r}
+```
+
+
 
 ## Reproducibility
 

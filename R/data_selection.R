@@ -82,7 +82,7 @@ get_filtered_dataset <- function(
 
 tar_avg_first_year_measurement <- function(
   dataset = NULL,
-  nb_year_to_average = 3
+  nb_sampling_to_average = 3
   ) {
 
   output <- dataset %>%
@@ -91,7 +91,7 @@ tar_avg_first_year_measurement <- function(
       data = list(
         avg_first_year_measurement(
           x = data,
-          nb_year_to_average = nb_year_to_average
+          nb_sampling_to_average = nb_sampling_to_average
         )
       )
     )
@@ -105,7 +105,7 @@ tar_avg_first_year_measurement <- function(
 
 avg_first_year_measurement <- function(
   x = NULL,
-  nb_year_to_average = 3
+  nb_sampling_to_average = 3
   ) {
 
   stopifnot(all(na.omit(x$abundance) != 0) & all(na.omit(x$biomass) != 0))
@@ -119,26 +119,43 @@ avg_first_year_measurement <- function(
   arrange(year)
 
 avg_first_year <- new_df %>%
-  slice(1:nb_year_to_average) %>%
+  slice(1:nb_sampling_to_average) %>%
   summarise(across(where(is.numeric), mean))
 
 output <- rbind(
-  new_df[-c(1:nb_year_to_average), ],
-  mutate(avg_first_year, op_id = new_df[median(1:nb_year_to_average), ]$op_id)
+  new_df[-c(1:nb_sampling_to_average), ],
+  mutate(
+    avg_first_year,
+    op_id = new_df[median(1:nb_sampling_to_average), ]$op_id
+  )
 )
 
+# Reput abundance and biomass in right shape
 output <- output %>%
   pivot_longer(
     cols = c(-op_id, -year),
     names_to = c("variable", "species"),
     names_sep = "([.])",
-    values_to = "value"
-    ) %>%
-pivot_wider(
-  names_from = "variable",
-  values_from = "value"
-  ) %>%
-filter(abundance != 0, biomass != 0)
+    values_to = "value") %>%
+pivot_wider(names_from = "variable",
+  values_from = "value")
+
+output <- output %>%
+  filter(abundance != 0)
+
+# Check that year not touch are the same 
+year_to_be_same <- sort(unique(x$year))[-c(1:nb_sampling_to_average)]
+x_comparison <- x %>%
+  filter(year %in% year_to_be_same) %>%
+  arrange(year, species)
+output_comparison <- output %>%
+  filter(year %in% year_to_be_same) %>%
+  arrange(year, species)
+
+stopifnot(all(x_comparison$abundance == output_comparison$abundance))
+stopifnot(all(is.na(x_comparison$biomass) == is.na(output_comparison$biomass)))
+stopifnot(all(na.omit(x_comparison$biomass) == na.omit(output_comparison$biomass)))
+
 return(output)
 
 }

@@ -322,10 +322,212 @@ p + geom_boxplot(
 labs(title = "Neutral model + empirical data", subtitle = "Abundance = 0, in red")
 ```
 
+## Partition in nestedness and turnover 
+
+### TEST
+
 ```{r}
+library(betapart)
 tar_load(com_mat_site)
 ti <- com_mat_site$mat[[1]]
 ```
+
+```{r}
+core <- betapart.core(decostand(ti, method = "pa"))
+
+data(bbsData)
+bbs.t <- beta.temp(bbs1980, bbs2000, index.family="jac")
+bbs.t
+```
+
+```{r}
+x <- matrix(
+  c(1, 0, 1, 1, 0, 1, 1, 0),
+  ncol = 2,
+  byrow = TRUE,
+  dimnames = list(NULL, c("pika", "sala"))
+)
+x <- as.matrix(decostand(x, method = "pa"))
+
+x[x == 1] <- rpois(n = sum(x == 1), lambda = 5)
+x[x > 0] <- 1
+
+compute_jaccard_decomp(x = x[1, ], y = x[2, ])
+compute_jaccard_decomp(x = x[1, ], y = x[3, ])
+compute_jaccard_decomp(x = x[1, ], y = x[1, ])
+```
+
+### DATA
+
+```{r}
+tar_load(c(baselga_c, analysis_dataset))
+baselga_c
+
+baselga_summary <-
+  baselga_c %>%
+  select(-year) %>%
+  pivot_longer(cols = -siteid, names_to = "response", values_to = "beta") %>%
+  group_by(response) %>%
+  summarise(
+    summary_dist = list(
+      enframe(summary_distribution(beta))
+    )
+    ) %>%
+  unnest(cols = summary_dist) %>%
+  pivot_wider(names_from = "name", values_from = "value")
+
+baselga_summary %>%
+  kable %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+```
+
+```{r}
+baselga_c %>%
+  select(-year) %>%
+  pivot_longer(cols = -siteid, names_to = "response", values_to = "beta") %>%
+  ggplot(aes(x = beta)) +
+  geom_histogram() +
+  facet_grid(cols = vars(response)) +
+  labs(x = "Beta-div values", main = "Baselga decomposition of dissimilarity in nestedness and turnover")
+```
+
+
+
+## Partition in abundance change and relative abundance change 
+
+### TEST
+
+```{r}
+DD <- function(
+  x,
+  ref.t = 1,
+  zero.rm = FALSE
+  ) {
+
+  lmb <- apply(x, 1, sum)
+  D2 <- log(lmb / lmb[ref.t])
+
+  x.p <- t(apply(x, 1, function(z) z / sum(z)))
+  Pt <- x.p[ref.t,]
+
+  if(zero.rm == FALSE) {
+    D1 <- -t(apply(x.p, 1, function(z) ifelse(Pt==0, 0, log(Pt/z)))) %*% Pt
+  }else{
+    D1 <- -t(apply(x.p, 1, function(z)ifelse(Pt==0|z==0, 0, log(Pt/z)))) %*% Pt
+  }
+
+  D <- D1 + D2
+  data.frame(D, D1, D2)
+}
+
+```
+
+```{r}
+DD(ti, zero.rm = TRUE)
+```
+
+
+# Metacommunity by basin 
+
+
+```{r}
+tar_load(com_mat_basin)
+loc <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+```{r}
+loc_com_basin <- loc %>%
+  filter(main_bas %in% unique(com_mat_basin$main_bas))
+
+ggplot(data = ne_countries(returnclass = "sf")) +
+    geom_sf() +
+    geom_sf(data = loc_com_basin,
+      aes(color = as.factor(main_bas)), shape = 1) +
+    theme(legend.position = "bottom")
+
+```
+
+```{r}
+ti <- matrix(rep(NA, 10), ncol = 2, dimnames = list(seq(1,5), letters[1:2]))
+to_add <- list(c = rep(1,5), d = rep(2, 5))
+tu <- matrix(
+  unlist(to_add), ncol = length(to_add), byrow = FALSE,
+  dimnames = list(NULL, names(to_add)))
+cbind(ti, tu)
+```
+
+
+```{r}
+x <- vector("double", length = 10)
+for(i in seq(10)) {
+  x[i] <- mean(vegdist(com_mat_basin$mat[[i]], method = "jaccard"))
+}
+test <- com_mat_basin %>%
+filter(main_bas == unique(main_bas)[1])
+
+# Keep site present
+common_site <- Reduce(intersect, map(test$mat, row.names))
+#
+site_nb_sampling <- map(test$mat, row.names) %>%
+  unlist() %>%
+  table
+site_to_keep <- names(site_nb_sampling)[site_nb_sampling >= 10]
+
+# Site sampled each year and for 10 years at least
+common_site <- Reduce(intersect,
+  map(test$mat, ~row.names(.x)[row.names(.x) %in% site_to_keep]
+  )
+)
+```
+```{r}
+te <- com_mat_basin %>%
+  select(main_bas, year, mat) %>%
+  nest_by(main_bas)
+
+
+tee <- te %>%
+  mutate(
+    site_to_keep = list(
+      select_rownames_in_matrix_list(data[["mat"]], min_nb_sampled = 10)
+      ),
+    nb_site = length(site_to_keep),
+    total_species = list(get_total_species_in_matrix_list(data$mat)),
+    nb_species = length(total_species)
+    )
+
+tii <- tee %>%
+  unnest(cols = data) %>%
+  ungroup()
+
+tii %>%
+  rowwise() %>%
+  mutate(mat = list(
+      filter_complete_com_matrix(
+        mat = mat,
+        site_to_keep = site_to_keep,
+        common_species = total_species)
+    )
+  ) %>%
+  filter(nb_site >= 10)
+```
+
+```{r}
+tar_load(filtered_com_mat_basin)
+
+filtered_com_mat_basin$mean_dissimilarity <- 
+  map_dbl(filtered_com_mat_basin$mat, ~mean(vegdist(.x, method = "bray")))
+```
+
+```{r}
+filtered_com_mat_basin %>%
+  ggplot(aes(x = year, mean_dissimilarity)) +
+  geom_point() +
+  geom_smooth() +
+  facet_wrap(~main_bas)
+```
+
 
 
 ## Analysis

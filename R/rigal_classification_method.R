@@ -162,11 +162,12 @@ class.trajectory <- function (Y = NULL, X = NULL, dataset = NULL, interval_size 
 #'  trends_data[trends_data$siteid == unique(trends_data$siteid)[2], ],
 #'  y_var = "total_abundance",
 #'  x_var = "year", site_id = "siteid")
-get_rigal_trajectory_classification <- function(
+get_rigal_trajectory_classification <- function (
   dataset = NULL,
   y_var = NULL,
   x_var = NULL,
-  site_id = NULL) {
+  site_id = NULL
+  ) {
 
   site_id_sym <- rlang::sym(site_id)
 
@@ -185,7 +186,7 @@ get_rigal_trajectory_classification <- function(
 
   error <- purrr::map_chr(classification, class) == "try-error"
   if (any(error)) {
-    warning(paste0(length(which(error)), " stations/variable failed"))
+    warning(paste0(sum(error)), " stations/variable failed")
   }
 
   to_add_to_output <- classification[!error] %>%

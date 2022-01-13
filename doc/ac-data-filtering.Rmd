@@ -93,6 +93,21 @@ ggplot(data = world) +
 ```
 
 ```{r}
+unique(loc$main_bas) %>% length
+unique(loc$waterbody) %>% length
+
+ti <- table(as.factor(loc$main_bas)) %>%
+  enframe() %>%
+  arrange(desc(value))
+
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = filter(loc, main_bas %in% ti$name[1:20]),
+      aes(color = as.factor(main_bas)), shape = 1) +
+    theme(legend.position = "bottom")
+```
+
+```{r}
 loc %>%
   ggplot(aes(x = protocol, fill = ecoregion)) +
   geom_bar() +
@@ -108,6 +123,8 @@ loc %>%
   labs(x = "Abundance unit", y = "Number of sites") +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
+
+
 
 ```{r}
 site_year <- filtered_dataset$site_quanti %>%
@@ -362,6 +379,7 @@ indexs_loc <- inla.spde.make.index("s", spde_loc$n.spde)
 # Project gaussian random field to vertices
 A <- inla.spde.make.A(mesh = mesh, loc = coords_loc)
 ```
+
 
 
 
