@@ -166,7 +166,8 @@ get_rigal_trajectory_classification <- function (
   dataset = NULL,
   y_var = NULL,
   x_var = NULL,
-  site_id = NULL
+  site_id = NULL,
+  backtransform_linear_coefs = TRUE
   ) {
 
   site_id_sym <- rlang::sym(site_id)
@@ -197,6 +198,16 @@ get_rigal_trajectory_classification <- function (
   output <- output %>%
     left_join(to_add_to_output, by = site_id) %>%
     as_tibble
+
+  if (backtransform_linear_coefs & str_detect(y_var, "^log_")) {
+
+    output$linear_slope <-
+      (exp(output$linear_slope) - 1) * 100 
+
+    output$linear_slope_strd_error <-
+      (exp(output$linear_slope_strd_error) - 1) * 100
+  }
+  
 
   return(output)
 }

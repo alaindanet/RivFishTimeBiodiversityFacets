@@ -288,7 +288,8 @@ tar_plan(
     get_rigal_trajectory_classification(
       analysis_dataset,
       y_var = var_temporal_trends,
-      x_var = "year", site_id = "siteid"),
+      x_var = "year", site_id = "siteid",
+      backtransform_linear_coefs = TRUE),
     pattern = map(var_temporal_trends),
     iteration = "list"
     ),
