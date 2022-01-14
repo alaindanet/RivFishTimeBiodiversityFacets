@@ -2,7 +2,10 @@
 title: Biblio and research questions
 output:
   bookdown::html_document2:
+    toc: true
+    toc_float: true
     theme: "readable"
+    code_folding: hide
 bibliography: bibliography.bib
 ---
 
@@ -87,6 +90,203 @@ knitr::include_graphics(
 source("https://raw.githubusercontent.com/NCEAS/codyn/master/R/utilities.R")
 check_single_onerep
 ```
+
+### Spatial scale 
+
+### Script of [Lise to select Basin](/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/ENV_LAYERS/Script_optimization_time_window.R)
+
+```{r, eval=FALSE}
+select_data <- continuous_data[
+  continuous_data$span >= 10 & continuous_data$completeness >= 0.8,
+  ]
+```
+- Select basin that have at least 5 sites:
+
+```{r, eval=FALSE}
+#////////////////////////////////////////
+#select basins with at least 5 sites
+    data_basins <- NULL
+    for (oo in levels(select_data_all$ORIGIN)) {
+      dat_sel <- select_data_all[select_data_all$ORIGIN == oo, ]
+      tab <- table(dat_sel$MAIN_BAS)
+      keep <- names(which(tab >= 5))
+      data_basins <- rbind(data_basins, dat_sel[dat_sel$MAIN_BAS %in% keep, ])
+    }
+```
+
+- Over the basin, find the nb of (op / sites) by year and by basin to find the
+  optimal period of sampling, i.e.  max(year) - min(year) with the most
+  sampling
+  - Keep by basin site span 10 years of data
+  - Keep by basin the year with the maximum number of sampled sites
+
+```{r, eval=FALSE}
+for (idx in 1:totalNbas) {
+  select_data <- data_basins[data_basins$MAIN_BAS == ID[idx], ]
+
+  data_summary <- NULL
+
+  for (ii in min(select_data$begin):max(select_data$begin)) {
+
+    for (jj in min(select_data$end):max(select_data$end)) {
+
+      dat_sel <- select_data[select_data$begin <= ii & select_data$end >= jj, ]
+      span <- jj - ii + 1
+
+      data_summary <- rbind(
+        data_summary,
+        data.frame(BEG = ii, END = jj, SPAN = span, NB = nrow(dat_sel))
+      )
+    }
+  }
+
+  data_summary <- data_summary[data_summary$SPAN >= 10, ]
+  RES <- rbind(RES, data.frame(MAIN_BAS = ID[idx], data_summary[which.max(data_summary$NB), ]))
+}
+```
+
+- With the period most sampled by basin
+  - Keep the basins that have at leat 5 sites in this period
+
+```{r, eval= FALSE}
+data_basins <- read.table("Segments_per_basin.txt", h = T)
+
+select_basins <- NULL
+for (idx in 1:nrow(RES)) {
+  selec <- data_basins[
+    data_basins$MAIN_BAS == RES$MAIN_BAS[idx] &
+      data_basins$begin <= RES$BEG[idx] &
+      data_basins$end >= RES$END[idx],
+    ]
+
+  if (nrow(selec) >= 5) {
+    select_basins <- rbind(select_basins, selec)
+  }
+}
+```
+
+- By site:
+  - Check that the consecutive temporal series, non consecutive if more than two
+    years between two samplings 
+  - Compute span and completeness for each consecutive segment of each site
+
+```{r}
+x <- seq(10)
+s <- split(x, cumsum(c(TRUE, diff(x) > 2)))
+s
+
+x <- x[!x %in% c(3, 4, 5)]
+s <- split(x, cumsum(c(TRUE, diff(x) > 2)))
+s
+sapply(s, length)
+```
+
+
+```{r, eval=FALSE}
+continuous_data <- NULL
+for (kk in 1:length(files)) {
+  fishdata <- read.table(files[kk], h = T)
+
+  fishdata$Abundances <- as.numeric(fishdata$Abundances)
+
+  summarized_fishdata <- fishdata %>%
+    group_by(sYNGEO_ID, Year) %>%
+    summarise(Total_abund = sum(Abundances, na.rm = T))
+
+  totalNsites <- length(unique(summarized_fishdata$sYNGEO_ID))
+  print(c(totalNsites, length(unique(fishdata$SiteID))))
+  ID <- unique(summarized_fishdata$sYNGEO_ID)
+
+  for (idx in 1:totalNsites) {
+    df <- summarized_fishdata %>%
+      subset(sYNGEO_ID == ID[idx])
+    site_no <- ID[idx]
+
+    x <- df$Year
+    s <- split(x, cumsum(c(TRUE, diff(x) > 2)))
+    nb <- sapply(s, length)
+    begin <- sapply(s, min)
+    end <- sapply(s, max)
+    span <- end - begin + 1
+    completeness <- nb / span
+
+    continuous_data <- rbind(
+      continuous_data,
+      data.frame(
+        sYNGEO_ID = as.character(ID[idx]),
+        # segment=rep(1:length(s)),
+        begin,
+        end,
+        span,
+        completeness,
+        unique(
+          chara[
+            chara$sYNGEO_ID == as.character(ID[idx]) &
+              chara$Origin == as.character(unique(fishdata$Origin)),
+            c(1, 8, 9, 13:15)
+            ]
+        )
+      )
+    )
+
+  }
+}
+```
+
+- Check problem:
+  - Check which consecutive segments has completeness inferior to 80%
+  - By basin:
+    - remove segments that do not repect completeness ? i.e. keep sevel several
+      segements by sites ?
+    - remove basin that has less than 5 sites after segments selection 
+    - *Note: no selection on the length of the segements ?*
+
+
+```{r, eval=FALSE}
+BAS_pb <- NULL
+pb <- continuous_data[which(continuous_data$completeness < 0.8), ]
+pb_basin <- unique(pb$MAIN_BAS)
+for (ii in pb_basin) {
+  dat_pb <- read.table(files[grep(ii, files)])
+  enl <- pb$sYNGEO_ID[pb$MAIN_BAS == ii]
+  dat_pb <- dat_pb[-which(dat_pb$sYNGEO_ID %in% enl), ]
+  aa <- nlevels(factor(dat_pb$SiteID))
+  if (aa < 5) {
+    BAS_pb <- c(BAS_pb, as.character(ii)) # no sites
+  }
+  write.table(dat_pb, files[grep(ii, files)], row.names = FALSE, sep = "\t")
+}
+
+```
+
+```{r, eval=FALSE}
+continuous_data <- continuous_data[
+  -which(
+    continuous_data$completeness < 0.8 | continuous_data$MAIN_BAS %in% BAS_pb
+  ), ]
+write.table(
+  continuous_data,
+  "sites_selection_basins_stability.txt", sep = "\t",
+  row.names = FALSE)
+```
+
+- **Summary** (from what I believe I understood):
+  1. Select sites that span at least 10 years and completeness >= 0.8
+  2. Select basins that have 5 sites at least 
+  3. Find optimal sampled period by basin: 
+     - combination of `min(year)` and `max(year)` with the most sampling
+  4. By basin
+     1. select site in most sampled period
+     2. select basins that have at least 5 sites
+  5. Separate non consecutive segments by sites: 
+    1. Select segments which have completeness > .8 
+    2. Several segments by site ?
+  6. Keep basin with at least 5 sites
+
+- I am not sure that the sites are same each year in each basin with this
+  selection
+- What is average number of site by year?
+
 
 
 ## Environmental characteristics 
@@ -519,5 +719,17 @@ plot(y~x, dfd)
 abline(lm(y ~ x, data = dfd), col = "red")
 title("first order equation")
 ```
+
+## 13 january 2022
+
+- Caracterize changes in numbers:
+  - number of species, etc... 
+  - coefficents per decade 
+- Plot tendancies by classification category: Jaccard vs richness
+
+```{r}
+knitr::include_graphics(here::here("doc", "fig", "meeting-2022-01-13.jpeg"))
+```
+
 
 # References {-}

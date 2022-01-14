@@ -4,6 +4,9 @@ author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: "readable"
     code_folding: hide
 ---
 
@@ -18,7 +21,8 @@ names(rigal_trends) <- var_temporal_trends
 ```
 
 ```{r}
-slope <- map_dfr(rigal_trends, ~.x %>%
+slope <- map_dfr(rigal_trends,
+  ~.x %>%
   select(siteid, linear_slope),
 .id = "response"
 )
@@ -26,12 +30,10 @@ slope <- map_dfr(rigal_trends, ~.x %>%
 
 ```{r}
 slope_df <- slope %>%
-  pivot_wider(names_from = "response", values_from = "linear_slope")
+  pivot_wider(names_from = "response", values_from = "linear_slope") 
 ```
 
-# Check trends
-
-- no NA in slopes since fix [rigal_classification](https://github.com/alaindanet/RivFishTimeBiodiversityFacets/commit/1c8b8c48e39abbe7644f2ab1ea1ec175b550c149):
+# Summary
 
 ```{r}
 summary_slope <- slope %>%
@@ -42,8 +44,39 @@ summary_slope <- slope %>%
 summary_slope %>%
   mutate(response = get_var_replacement()[response]) %>%
   kable() %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
+  scroll_box(width = "100%", height = "400px")
 ```
+
+```{r}
+bs <- map(var_temporal_trends, ~summary_distribution(slope_df[[.x]]))
+names(bs) <- var_temporal_trends
+```
+- Jaccard trends: `r round(bs$jaccard["mean"], 3)` (`r round(bs$jaccard["sd"],3)` s.d.)
+  (-0.01 in @dornelas_assemblage_2014).
+  - meaning `r round(bs$jaccard["mean"], 3) * 10` % change per decade in average 
+  - Jaccard decreased in `r percent(sum(slope_df$jaccard < 0) / nrow(slope_df))`
+    of the sites (79% in @dornelas_assemblage_2014) 
+- Richness trends:
+  - +`r round(bs$log_species_nb["mean"], 1)`% richness change per year
+    (`r round(bs$log_species_nb["sd"], 1)` s.d.), i.e.
+    `r round(bs$log_species_nb["mean"] * 10)`% per decade.
+  - 
+
+# Check trends
+
+```{r, fig.height=12}
+p <- map2(rigal_trends, names(rigal_trends),
+  ~.x %>%
+    ggplot(aes(x = linear_slope)) +
+    geom_histogram() +
+    labs(title = .y)
+)
+plot_grid(plotlist = p)
+```
+
+- no NA in slopes since fix [rigal_classification](https://github.com/alaindanet/RivFishTimeBiodiversityFacets/commit/1c8b8c48e39abbe7644f2ab1ea1ec175b550c149):
+
 
 ```{r}
 na_siteid_slope <- unique(slope[is.na(slope$linear_slope), ]$siteid)
@@ -90,7 +123,7 @@ filtered_dataset$abun_rich_op %>%
   summarise(across(c("total_abundance", "species_nb"), list(median = median, mean = mean)))
 ```
 
-```{r, out.width="100%"}
+```{r, out.width="100%", fig.height=12}
 p_high_slope_abun <- map(site_desc_slope_total_abundance[1:20],
   ~plot_community_data(
     analysis_dataset %>%
@@ -139,6 +172,8 @@ plot_temporal_population(s11735_pop) +
   theme(legend.position = "bottom")
 ```
 
+- Second highest temporal trends in abundance:
+
 ```{r}
 s6466_com <- analysis_dataset %>%
   filter(siteid == site_desc_slope_total_abundance[2]) %>%
@@ -150,8 +185,25 @@ plot_community_data(s6466_com, y = "total_abundance", x = "year",
 
 ```
 
+```{r}
+s6466_pop <- filtered_dataset$measurement %>%
+  filter(siteid == site_desc_slope_total_abundance[2]) %>%
+  arrange(year) %>%
+  select(siteid, year, species, abundance)
+
+s6466_pop %>%
+  group_by(species) %>%
+  summarise(abun = sum(abundance)) %>%
+  arrange(desc(abun))
+
+plot_temporal_population(s6466_pop) +
+  theme(legend.position = "bottom")
+```
+
 # Relationships among temporal trends
 
+
+## Globally
 
 ```{r}
 cor_slope <- slope_df %>%
@@ -177,7 +229,7 @@ corrplot::corrplot(cor_slope, type = "upper", tl.srt = 35, diag = FALSE)
 ```
 
 
-```{r}
+```{r, fig.height=12}
 ti <- expand.grid(
   resp1 = unique(slope$response),
   resp2 = unique(slope$response)
@@ -205,7 +257,7 @@ p_trends_trends <- map(test, function(x) {
   x %>%
     ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
     geom_point() +
-    geom_smooth(method = "lm") +
+    geom_smooth(method = "loess") +
     labs(
       x = get_var_replacement()[l[2]],
       y = get_var_replacement()[l[3]]
@@ -213,30 +265,42 @@ p_trends_trends <- map(test, function(x) {
 })
 names(p_trends_trends) <- map_chr(test, ~colnames(.x)[2])
 
-plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "total_abundance"], ncol = 3)
-plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "species_nb"], ncol = 3)
-plot_grid(plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"], ncol = 3)
+```
+
+## Total abundance
+
+```{r, fig.height=12}
+plot_grid(
+  plotlist = p_trends_trends[names(p_trends_trends) %in% "total_abundance"],
+  ncol = 3)
+```
+
+## Species richness
+
+```{r, fig.height=12}
+plot_grid(
+  plotlist = p_trends_trends[names(p_trends_trends) %in% "species_nb"],
+  ncol = 3)
+```
+
+## Log species richness
+
+```{r, fig.height=12}
+plot_grid(
+  plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"],
+  ncol = 3
+)
 ```
 
 - Trends of total abundance are linked to the one of species richness but not to
   shannon and simpson, suggesting that the trends of abundance are more link to
   trends of rare species. Logic: gain and loss of species should concern rare
   species.
-
 - Species richness decrease linked to disappearance, but not increase 
 - Species richness increase linked to appearance, but not decrease 
 
-```{r}
-p <- map2(rigal_trends, names(rigal_trends),
-  ~.x %>%
-    ggplot(aes(x = linear_slope)) +
-    geom_histogram() +
-    labs(title = .y)
-)
-plot_grid(plotlist = p)
-```
 
-- Turnover vs nestedness:
+## Turnover vs nestedness:
 
 ```{r}
 test <- slope_df %>%
@@ -254,11 +318,64 @@ test %>%
 ```
 
 ```{r}
-slope_df %>%
-  ggplot(aes(x = species_nb, y = nestedness - turnover)) +
-  geom_point() +
-  geom_smooth(method = "smooth")
+slope_df_med <- slope_df %>%
+  left_join(median_site_rich, by = "siteid")
 ```
+
+```{r}
+slope_df_med %>%
+  ggplot(aes(
+      x = log_species_nb,
+      y = nestedness - turnover,
+      color = log(med_chao_richness)
+      )) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_smooth(method = "loess")
+```
+
+```{r}
+median_site_rich <- analysis_dataset %>%
+  select(c("siteid", starts_with("chao_"), "total_abundance")) %>%
+  group_by(siteid) %>%
+  summarise(across(where(is.double), median)) %>%
+  rename_with(~paste0("med_", .x), where(is.double))
+```
+
+
+```{r}
+p_baselga_jaccard <- map(c("nestedness", "turnover"),
+  ~slope_df_med %>%
+    ggplot(aes(
+        x = jaccard_dis,
+        y = !!sym(.x),
+      color = log(med_chao_richness))) +
+    geom_point() +
+    scale_color_viridis() +
+    geom_abline(intercept = 0, slope = 1) +
+    geom_smooth(method = "loess")
+)
+p_baselga_jaccard[[3]] <-
+  slope_df_med %>%
+  ggplot(aes(
+      x = jaccard_dis,
+      y = nestedness - turnover,
+      color = log(med_chao_richness))) +
+  geom_point() +
+  scale_color_viridis() +
+  geom_abline(intercept = 0, slope = 1) +
+  geom_smooth(method = "loess")
+
+plot_grid(plotlist = p_baselga_jaccard, ncol = 3)
+```
+
+```{r}
+slope_df_med %>%
+  ggplot(aes(x = med_chao_richness, y = jaccard_dis)) +
+  geom_point()
+```
+
+
 
 # Look at strong turnover trends
 
@@ -296,7 +413,7 @@ filtered_dataset$abun_rich_op %>%
   scroll_box(width = "100%", height = "400px")
 ```
 
-```{r}
+```{r, fig.height=12}
 p_high_jaccard_slope <- map(site_desc_jaccard_slope[1:20],
   ~plot_community_data(
     analysis_dataset %>%
@@ -313,7 +430,7 @@ tar_load(vegdist_turnover_c)
 
 - Hum, do not understand why community are more similar at the end of the time-steps
 
-```{r}
+```{r, fig.height=12}
 p_pop_high_jaccard <-
   map(site_desc_jaccard_slope[1:20],
     ~plot_temporal_population(
@@ -328,7 +445,7 @@ plot_grid(plotlist = p_pop_high_jaccard, ncol = 3)
 - Lets see communities that becomes more dissimilar:
 
 
-```{r}
+```{r, fig.height=12}
 p_jaccard_low_jaccard <-
   map(site_desc_jaccard_slope[(length(site_desc_jaccard_slope)-20):length(site_desc_jaccard_slope)],
     ~plot_community_data(
@@ -340,7 +457,7 @@ p_jaccard_low_jaccard <-
 plot_grid(plotlist = p_jaccard_low_jaccard, ncol = 3)
 ```
 
-```{r}
+```{r, fig.height=12}
 p_pop_low_jaccard <-
   map(site_desc_jaccard_slope[
     (length(site_desc_jaccard_slope)-20):length(site_desc_jaccard_slope)],
@@ -441,12 +558,12 @@ for (i in slope_comp$diff[1:6,]$siteid) {
 par(old_par)
 ```
 
-# Polynomial 
+# Classification of temporal trends 
 
 
 - Classification:
 
-```{r}
+```{r, fig.height=12}
 classification_station <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
   ggplot(aes(x = shape_class)) +
@@ -492,7 +609,9 @@ ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
 ti %>%
   filter(direction != "Total") %>%
   select(response, direction, percent) %>%
-  pivot_wider(names_from = "direction", values_from = "percent")
+  pivot_wider(names_from = "direction", values_from = "percent") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```
 
 
@@ -518,7 +637,7 @@ ti %>%
 ```
 
 
-```{r}
+```{r, fig.height=12}
 #https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/
 hist_linear_plot <- map2(rigal_trends, names(rigal_trends),
   ~.x %>%
@@ -557,7 +676,7 @@ map2(type_response, names(type_response),
 )
 ```
 
-## Spatialization of temporal trends
+# Spatialization of temporal trends
 
 ```{r}
 rigal_trends_df_loc <-
@@ -622,7 +741,7 @@ median(exp(na.omit(rigal_trends_df$log_species_nb))  - 1) * 100
 sd(exp(na.omit(rigal_trends_df$log_species_nb)) - 1) * 100
 ```
 
-## Sensibility analysis 
+# Sensibility analysis of temporal trends
 
 ```{r}
 tar_load(c(rigal_trends_avg3y))
@@ -671,7 +790,7 @@ pivot_wider(names_from = type, values_from = linear_slope)
   - But note that in three years baseline, there are three points less data 
 
 
-```{r}
+```{r, fig.height=8}
 comparison_baseline %>%
   ggplot(aes(x = classic, y = avg_3y)) +
   geom_point() +

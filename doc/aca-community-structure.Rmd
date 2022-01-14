@@ -3,9 +3,11 @@ title: "Community structure"
 author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-      bookdown::html_document2:
-        theme: "readable"
-        code_folding: hide
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
 ---
 
 ```{r setup, include=FALSE}
@@ -14,7 +16,6 @@ source(here::here("start_rmd.R"))
 ```{r}
 library(vegan)
 ```
-
 
 ```{r load-targets, include=FALSE}
 tar_load(filtered_dataset)
@@ -42,7 +43,8 @@ bci_div <- tibble(
 
 ```{r}
 kable(bci_div) %>%
-  kable_styling(bootstrap_options = c("striped", "hover", "condensed"))
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed")) %>%
+  scroll_box(width = "100%", height = "400px")
 ```
 
 
@@ -430,6 +432,8 @@ DD(ti, zero.rm = TRUE)
 # Metacommunity by basin 
 
 
+- Basin with more than 10 sites and followed more than 10 years
+
 ```{r}
 tar_load(com_mat_basin)
 loc <- filtered_dataset$location %>%
@@ -437,7 +441,7 @@ loc <- filtered_dataset$location %>%
   crs = 4326)
 ```
 
-```{r}
+```{r, out.width="100%"}
 loc_com_basin <- loc %>%
   filter(main_bas %in% unique(com_mat_basin$main_bas))
 
@@ -445,73 +449,10 @@ ggplot(data = ne_countries(returnclass = "sf")) +
     geom_sf() +
     geom_sf(data = loc_com_basin,
       aes(color = as.factor(main_bas)), shape = 1) +
-    theme(legend.position = "bottom")
-
+    theme(legend.position = "none")
 ```
 
-```{r}
-ti <- matrix(rep(NA, 10), ncol = 2, dimnames = list(seq(1,5), letters[1:2]))
-to_add <- list(c = rep(1,5), d = rep(2, 5))
-tu <- matrix(
-  unlist(to_add), ncol = length(to_add), byrow = FALSE,
-  dimnames = list(NULL, names(to_add)))
-cbind(ti, tu)
-```
-
-
-```{r}
-x <- vector("double", length = 10)
-for(i in seq(10)) {
-  x[i] <- mean(vegdist(com_mat_basin$mat[[i]], method = "jaccard"))
-}
-test <- com_mat_basin %>%
-filter(main_bas == unique(main_bas)[1])
-
-# Keep site present
-common_site <- Reduce(intersect, map(test$mat, row.names))
-#
-site_nb_sampling <- map(test$mat, row.names) %>%
-  unlist() %>%
-  table
-site_to_keep <- names(site_nb_sampling)[site_nb_sampling >= 10]
-
-# Site sampled each year and for 10 years at least
-common_site <- Reduce(intersect,
-  map(test$mat, ~row.names(.x)[row.names(.x) %in% site_to_keep]
-  )
-)
-```
-```{r}
-te <- com_mat_basin %>%
-  select(main_bas, year, mat) %>%
-  nest_by(main_bas)
-
-
-tee <- te %>%
-  mutate(
-    site_to_keep = list(
-      select_rownames_in_matrix_list(data[["mat"]], min_nb_sampled = 10)
-      ),
-    nb_site = length(site_to_keep),
-    total_species = list(get_total_species_in_matrix_list(data$mat)),
-    nb_species = length(total_species)
-    )
-
-tii <- tee %>%
-  unnest(cols = data) %>%
-  ungroup()
-
-tii %>%
-  rowwise() %>%
-  mutate(mat = list(
-      filter_complete_com_matrix(
-        mat = mat,
-        site_to_keep = site_to_keep,
-        common_species = total_species)
-    )
-  ) %>%
-  filter(nb_site >= 10)
-```
+- Basin with 10 same sites followed more than 10 years: 
 
 ```{r}
 tar_load(filtered_com_mat_basin)
@@ -519,6 +460,20 @@ tar_load(filtered_com_mat_basin)
 filtered_com_mat_basin$mean_dissimilarity <- 
   map_dbl(filtered_com_mat_basin$mat, ~mean(vegdist(.x, method = "bray")))
 ```
+
+
+```{r}
+loc_com_basin <- loc %>%
+  filter(main_bas %in% unique(filtered_com_mat_basin$main_bas))
+
+ggplot(data = ne_countries(returnclass = "sf")) +
+    geom_sf() +
+    geom_sf(data = loc %>%
+      filter(main_bas %in% unique(filtered_com_mat_basin$main_bas)),
+      aes(color = as.factor(main_bas)), shape = 1) +
+    theme(legend.position = "none")
+```
+
 
 ```{r}
 filtered_com_mat_basin %>%
