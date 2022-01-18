@@ -15,6 +15,7 @@ library("rnaturalearth")
 library("rnaturalearthdata")
 
 library(cowplot)
+library(viridis)
 
 #clean dataset
 library(janitor)

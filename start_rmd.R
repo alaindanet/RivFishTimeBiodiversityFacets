@@ -1,7 +1,8 @@
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
-  cache = FALSE
+  cache = FALSE,
+  out.width="100%"
 )
 
 source(here::here("R", "misc.R"))

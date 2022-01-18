@@ -1,5 +1,6 @@
 library("devtools")
 library("here")
+library(tflow)
 options(devtools.name = "Alain Danet",
   devtools.desc.author = "person('Alain', 'Danet',
   email='alain.danet@ilstu.edu', role = c('aut', 'cre'))",
@@ -23,7 +24,7 @@ devtools::check(vignettes = FALSE)
 
 ######################
 #  Set data folder  #
-#zaj#####################
+######################
 use_data_raw()
 
 # Copy the address of the Lise shared drive
@@ -86,3 +87,5 @@ use_rmd("aca-community-structure")
 
 use_test("turnover")
 use_r("neutral_model")
+use_rmd("af-explain-high-turnover")
+

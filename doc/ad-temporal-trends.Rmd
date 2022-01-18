@@ -318,23 +318,6 @@ test %>%
 ```
 
 ```{r}
-slope_df_med <- slope_df %>%
-  left_join(median_site_rich, by = "siteid")
-```
-
-```{r}
-slope_df_med %>%
-  ggplot(aes(
-      x = log_species_nb,
-      y = nestedness - turnover,
-      color = log(med_chao_richness)
-      )) +
-  geom_point() +
-  scale_color_viridis() +
-  geom_smooth(method = "loess")
-```
-
-```{r}
 median_site_rich <- analysis_dataset %>%
   select(c("siteid", starts_with("chao_"), "total_abundance")) %>%
   group_by(siteid) %>%
@@ -342,6 +325,27 @@ median_site_rich <- analysis_dataset %>%
   rename_with(~paste0("med_", .x), where(is.double))
 ```
 
+```{r}
+slope_df_med <- slope_df %>%
+  left_join(median_site_rich, by = "siteid") %>%
+  mutate(
+    nes_sup_tu = nestedness > turnover,
+    nes_inf_tu = nestedness < turnover,
+    rich_inc = species_nb >= 0
+  )
+```
+
+```{r}
+slope_df_med %>%
+  ggplot(aes(
+      x = log_species_nb,
+      y = jaccard_dis,
+      shape = nes_sup_tu,
+      color = nes_sup_tu
+      )) +
+  geom_point() +
+  geom_smooth(method = "gam")
+```
 
 ```{r}
 p_baselga_jaccard <- map(c("nestedness", "turnover"),
@@ -469,6 +473,9 @@ p_pop_low_jaccard <-
     )
 plot_grid(plotlist = p_pop_low_jaccard, ncol = 3)
 ```
+
+
+
 
 # Comparison rigal, lm
 
@@ -703,6 +710,14 @@ rigal_trends_df_loc %>%
 
 rigal_trends_df_loc %>%
   ggplot(aes(x = country, y = jaccard, fill = ecoregion)) +
+  geom_boxplot()
+
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = jaccard_dis, fill = ecoregion)) +
+  geom_boxplot()
+
+rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = hillebrand, fill = ecoregion)) +
   geom_boxplot()
 ```
 
