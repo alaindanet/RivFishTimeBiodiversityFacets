@@ -177,7 +177,7 @@ get_vegdist_temporal_turnover <- function(
   drop_first_year = TRUE
   ) {
 
-  dist_obj <- 1 - as.matrix(vegan::vegdist(mat, method = method))
+  dist_obj <- 1 - as.matrix(vegan::vegdist(mat, method = method, binary = TRUE))
 
   dist_to_reference_year <- get_temporal_vegdist(
     dist_mat = dist_obj,

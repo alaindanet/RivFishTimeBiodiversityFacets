@@ -331,5 +331,7 @@ tar_plan(
   tar_render(community_structure, "doc/aca-community-structure.Rmd"),
   tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
   tar_render(meeting_slides, here("talk/meeting.Rmd")),
+  tar_render(explain_high_turnover,
+    here("doc/af-explain-high-turnover.Rmd"))
 
 )
