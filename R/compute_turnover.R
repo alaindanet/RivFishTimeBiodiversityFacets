@@ -321,13 +321,14 @@ target_custom_temporal_turnover <- function(
   dataset = NULL,
   fun = NULL,
   var_name = NULL,
+  mat_col = "mat_bin",
   return_tibble = TRUE,
   drop_first_year = TRUE,
   ...
   ) {
 
   dataset$value <- furrr::future_map(
-    dataset$mat_bin, get_custom_temporal_turnover,
+    dataset[[mat_col]], get_custom_temporal_turnover,
       fun = fun,
       var_name = var_name,
       return_tibble = return_tibble,
