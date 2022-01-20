@@ -122,6 +122,7 @@ filter_op <- function(
     selected_protocol = NULL,
     selected_abun_unit = NULL,
     nb_sampling = NULL,
+    span_min = 10,
     extent_month = 1,
     convert_month_to_date = FALSE,
     return_no_filtered = FALSE
@@ -246,22 +247,39 @@ filter_op <- function(
         unnest(cols = c(data)) %>%
         ungroup()
 
-      # Number of sampling
-      if (!is.null(nb_sampling)) {
-        summary_sampling <- output %>%
-          group_by(siteid) %>%
-          summarise(n = n())
+    # Span 
+    if (!is.null(span_min)) {
+	summary_sampling <- output %>%
+	    group_by(siteid) %>%
+	    summarise(
+		span = max(year) - min(year) + 1
+	    )
 
-        mask_nb_sampling <- output$siteid %in%
-          summary_sampling[summary_sampling$n >= nb_sampling, ]$siteid
+	    mask_span <- output$siteid %in%
+		summary_sampling[summary_sampling$span >= span_min, ]$siteid
 
-        output <- output[mask_nb_sampling, ]
-      }
+	    output <- output[mask_span, ]
+    }
 
-      var_to_drop <- c("med_month", "mode_quarter", "med_date", "month_duration",
-        "month_check", "quarter_check")
+    # Number of sampling
+    if (!is.null(nb_sampling)) {
+	summary_sampling <- output %>%
+	    group_by(siteid) %>%
+	    summarise(
+		n = n(),
+		span = max(year) - min(year) + 1
+	    )
+
+	    mask_nb_sampling <- output$siteid %in%
+		summary_sampling[summary_sampling$n >= nb_sampling, ]$siteid
+
+	    output <- output[mask_nb_sampling, ]
+    }
+
+      var_to_drop <- c("med_month", "mode_quarter", "med_date",
+	  "month_duration", "month_check", "quarter_check")
       output <- output %>%
-        select(- all_of(var_to_drop))
+	  select(- all_of(var_to_drop))
 
       stopifnot(all(!is.na(output$protocol)))
 

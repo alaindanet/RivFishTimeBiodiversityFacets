@@ -616,11 +616,11 @@ ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
 ti %>%
   filter(direction != "Total") %>%
   select(response, direction, percent) %>%
+  mutate(response = str_replace_all(response, get_var_replacement())) %>%
   pivot_wider(names_from = "direction", values_from = "percent") %>%
   kable() %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
 ```
-
 
 - Linear trends:
 
@@ -717,8 +717,8 @@ rigal_trends_df_loc %>%
   geom_boxplot()
 
 rigal_trends_df_loc %>%
-  ggplot(aes(x = country, y = hillebrand, fill = ecoregion)) +
-  geom_boxplot()
+    ggplot(aes(x = country, y = hillebrand, fill = ecoregion)) +
+    geom_boxplot()
 ```
 
 ```{r}
@@ -732,17 +732,22 @@ rigal_trends_df_loc <- filtered_dataset$location %>%
 ```{r}
 library(colorspace)
 div_pal <- colorspace::sequential_hcl(11, "plasma")
-world <- ne_countries(returnclass = "sf")
+world <- ne_countries(returnclass = "sf") 
+
+bb <- st_bbox(rigal_trends_df_loc)
 ```
 
 
 ```{r}
-ggplot(data = world) +
-    geom_sf() +
-    geom_sf(data = rigal_trends_df_loc,
-      aes(color = log_species_nb), shape = 1) +
-    scale_color_continuous(type = "viridis") +
-    theme(legend.position = "bottom")
+map_world_trends(df = rigal_trends_df_loc, y = "log_species_nb")
+```
+
+```{r}
+map_world_trends(df = rigal_trends_df_loc, y = "jaccard")
+```
+
+```{r}
+map_world_trends(df = rigal_trends_df_loc, y = "log_total_abundance")
 ```
 
 ```{r}

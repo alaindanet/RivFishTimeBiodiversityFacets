@@ -88,6 +88,7 @@ use_rmd("aca-community-structure")
 use_test("turnover")
 use_r("neutral_model")
 use_rmd("af-explain-high-turnover")
+use_rmd("xx-meeting-report")
 
 # download river data
 

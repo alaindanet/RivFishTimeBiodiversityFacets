@@ -30,7 +30,7 @@ get_filtered_dataset <- function(
   if (type %in% c("all", "location")) {
     mask <- site_desc_loc$siteid %in% op_protocol$siteid
     output$location <- site_desc_loc[mask, ]
-    # Remove NZ: opportunistic fishing operation 
+    # Remove NZ: opportunistic fishing operation
     mask <- output$location$country != "New Zealand"
     output$location <- output$location[mask, ]
   }

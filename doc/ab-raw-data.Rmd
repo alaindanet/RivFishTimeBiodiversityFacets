@@ -37,7 +37,8 @@ mask_siteid_sampling <- site_protocol_quanti[
 mask_siteid_protocol <- site_protocol_quali[
   site_protocol_quali$unitabundance %in% c("Count", "Ind.100m2"), ]$siteid
 
-mask_siteid <- mask_siteid_sampling[mask_siteid_sampling %in% mask_siteid_protocol]
+mask_siteid <- mask_siteid_sampling[
+    mask_siteid_sampling %in% mask_siteid_protocol]
 ```
 
 ```{r}

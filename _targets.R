@@ -97,7 +97,7 @@ tar_plan(
     get_basin_year_community_matrix(
       x = filtered_dataset$measurement,
       loc = filtered_dataset$location,
-      min_nb_site_by_basin = 10,
+      min_nb_site_by_basin = 5,
       min_year_by_basin = 10
     )
     ),
@@ -158,6 +158,7 @@ tar_plan(
       dataset = com_mat_site,
       fun = compute_hillebrand,
       var_name = "hillebrand",
+      mat_col = "mat_rel",
       return_tibble = TRUE,
       drop_first_year = TRUE,
       similarity = TRUE
@@ -330,6 +331,7 @@ tar_plan(
   tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
   tar_render(community_structure, "doc/aca-community-structure.Rmd"),
   tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+  tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
   tar_render(meeting_slides, here("talk/meeting.Rmd")),
   tar_render(explain_high_turnover,
     here("doc/af-explain-high-turnover.Rmd"))

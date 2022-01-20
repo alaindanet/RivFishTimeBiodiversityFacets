@@ -11,6 +11,12 @@ get_site_desc_loc <- function(ts_data = NULL, save_data = TRUE) {
       .funs = ~get_unique_values_c(x = .x, na.omit = FALSE)) %>%
     ungroup()
 
+  # Fix Country
+  mask_usa <- stringr::str_detect(site_desc_loc$country, "United States")
+  site_desc_loc$country[mask_usa] <- "USA"
+  mask_canada <- stringr::str_detect(site_desc_loc$country, "Canada")
+  site_desc_loc$country[mask_canada] <- "CAN"
+
   if (save_data) {
     usethis::use_data(site_desc_loc, overwrite = TRUE)
   }
@@ -157,7 +163,6 @@ get_abundance_biomass_data <- function(ts_data = NULL, save_data = TRUE) {
     filter(n > 1)
   mask <- paste0("op_id == '", bad_abundance$op_id, "' & ",
     "species == '", bad_abundance$species, "'", collapse = " | ")
-
 
   check_df <- measurement %>%
     filter(eval(parse(text = mask)))

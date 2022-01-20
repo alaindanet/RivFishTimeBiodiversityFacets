@@ -131,8 +131,8 @@ site_year <- filtered_dataset$site_quanti %>%
   filter(variable == "year") %>%
   left_join(filtered_dataset$location, by = "siteid") %>%
   mutate(
-    span = max - min,
-    completeness = n / (span + 1),
+    span = max - min + 1,
+    completeness = n / (span),
     cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
       include.lowest = TRUE
     ),
@@ -175,6 +175,16 @@ site_year %>%
   geom_bar() +
   labs(
     x = "Completeness of sampling (nb sampling / year span )",
+    y = "Number of sites"
+  )
+```
+
+```{r}
+site_year %>%
+  ggplot(aes(x = n, fill = ecoregion)) +
+  geom_bar() +
+  labs(
+    x = "nb sampling",
     y = "Number of sites"
   )
 ```

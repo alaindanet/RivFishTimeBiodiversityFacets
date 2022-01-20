@@ -310,7 +310,8 @@ p
 ```
 
 - Empirical data are far more variable than neutral dynamics, but:
-  - also negative in average 
+  - also negative in average
+  - average close to neutral when immigration is strong and low death rate 
   - neutral trends computed over 250 years, data over 10s years
   - Data displays quite a lot of positive turnover
 
@@ -319,7 +320,11 @@ p
 p + geom_boxplot(
   data = trend_vegdist_slope %>%
     filter(response == "jaccard") %>%
-    mutate(abun = as.factor(0)),
+    mutate(abun = as.factor(0)) %>%
+    filter(
+      linear_slope >= quantile(linear_slope, 0.05) &
+      linear_slope <= quantile(linear_slope, 0.95)
+    ),
   aes(y = linear_slope, x = abun)) +
 labs(title = "Neutral model + empirical data", subtitle = "Abundance = 0, in red")
 ```
@@ -475,7 +480,7 @@ ggplot(data = ne_countries(returnclass = "sf")) +
 ```
 
 
-```{r}
+```{r, eval=FALSE}
 filtered_com_mat_basin %>%
   ggplot(aes(x = year, mean_dissimilarity)) +
   geom_point() +
