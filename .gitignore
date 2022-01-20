@@ -6,3 +6,4 @@ data
 _targets
 doc/*_files/
 doc/fig/raw_data
+.Rproj.user

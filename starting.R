@@ -89,3 +89,30 @@ use_test("turnover")
 use_r("neutral_model")
 use_rmd("af-explain-high-turnover")
 
+# download river data
+
+riveratlas_shp_url <- "https://figshare.com/ndownloader/files/20087237"
+destfile_riveratlas <- "L:/ENV_LAYERS/river_atlas_v10_shp.zip"
+download.file(
+  url = riveratlas_shp_url,
+  destfile = destfile_riveratlas,
+  method="auto", 
+  quiet = FALSE,
+  mode = "wb",
+  cacheOK = TRUE
+)
+unzip(destfile_riveratlas, exdir = sub(".zip", "", destfile_riveratlas))
+
+# Download water temperature data
+
+water_temperature_url <- "https://zenodo.org/record/1468408/files/waterTemperature_Global_monthly_1979-2014.nc?download=1"
+destfile_water_temperature <- "L:/ENV_LAYERS/waterTemperature_Global_monthly_1979-2014.nc"
+download.file(
+  url = water_temperature_url,
+  destfile = destfile_water_temperature,
+  method="auto", 
+  quiet = FALSE,
+  mode = "wb",
+  cacheOK = TRUE
+)
+unzip(destfile_riveratlas, exdir = sub(".zip", "", destfile_riveratlas))
