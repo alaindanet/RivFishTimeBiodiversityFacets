@@ -9,7 +9,7 @@ tar_plan(
   # tar_target(target2, function_to_make2(arg)) ## targets style
   tar_target(
     raw_data_file,
-    here("inst", "extdata", "GlobalTimeSeries_database_1232021.csv"),
+    get_raw_file_path(),
     format = "file",
     error = "continue"),
   tar_target(timeseries, load_time_series_data(raw_data_file)),

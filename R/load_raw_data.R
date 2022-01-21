@@ -18,3 +18,13 @@ load_time_series_data <- function(path) {
 
   return(output)
 }
+
+get_raw_file_path <- function() {
+  if (Sys.info()["user"] == "ahdanet") {
+    dir_file <- "L:/RivFishTIME/house_version"
+  } else {
+    dir_file <- here::here("inst", "extdata")
+  }
+  paste0(dir_file, "/", "GlobalTimeSeries_database_1232021.csv")
+}
+
