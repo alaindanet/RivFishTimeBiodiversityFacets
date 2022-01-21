@@ -7,3 +7,6 @@ _targets
 doc/*_files/
 doc/fig/raw_data
 .Rproj.user
+doc/fig/*.png
+doc/fig/*.jpeg
+
