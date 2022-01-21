@@ -398,8 +398,8 @@ pop_trends$p_pop
 
 The operation are too time consuming, so I set `eval = FALSE` from here. 
 
-```{r}
-knitr::opts_chunk$set(eval = FALSE)
+```{r, eval=TRUE}
+knitr::opts_chunk$set(eval=FALSE)
 ```
 
 ## River atlas
@@ -410,10 +410,11 @@ rvat_shp_files <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
   .[stringr::str_detect(., "\\.shp")]
 eu_shp <- rvat_shp_files[stringr::str_detect(rvat_shp_files, "eu.shp$")]
 eu_shp_layers <- sf::st_layers(eu_shp, do_count = TRUE)
+
+#<!--There are `r length(rvat_shp_files)`. The dataset is gigantic,-->
+#<!--`r eu_shp_layers$field` variables...-->
 ```
 
-There are `r length(rvat_shp_files)`. The dataset is gigantic,
-`r eu_shp_layers$field` variables...
 
 - Looking at the columns:
 
