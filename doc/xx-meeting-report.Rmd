@@ -1,0 +1,395 @@
+---
+title: "Meeting report"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(filtered_dataset, analysis_dataset))
+tar_load(c(rigal_trends, var_temporal_trends))
+names(rigal_trends) <- var_temporal_trends
+```
+# Introduction 
+
+## Documenting community changes
+
+- Many papers report local species richness and temporal trends
+  - Abundance [@klink_meta-analysis_2020]
+  - Species richness: [@vellend_global_2013; @dornelas_assemblage_2014]
+
+- Other aspects of community structure vary through time:
+  - Composition: [@dornelas_assemblage_2014; @hillebrand_biodiversity_2018]
+  - Functional diversity [@barnagaud_temporal_2017]
+  - Evenness (ref)
+
+## Why do we want to assess community changes ?
+
+- Global changes have affect a tremendous effect communities
+- Understanding assembly and disassembly rules
+- Give a more complex and complete picture of what is going on ?
+
+## Link between different facets of biodiversity
+
+- Species richness:
+  - Evenness / richness: (+) [@soininen_relationship_2012]
+  - FDiv / richness: (+) [@mouchet_functional_2010]
+  - FEve / richness: (O) [@mouchet_functional_2010]
+  ... to complete
+
+## Research questions 
+
+# Methods
+
+## Data selection
+
+- Unique protocol and unique unit of abundance by site 
+- One sampling by year and site
+- In each site, samplings should be in the median (more or less one month and half, i.e. 1.5 month)
+- 10 samplings by site
+
+```{r}
+loc <- filtered_dataset$location %>%
+  left_join(filtered_dataset$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+```{r}
+fig_sites <- paste0(
+  "Australia absence because span is superior to 10 years of 100s of sites but number of samplings < 10.")
+```
+
+
+```{r, fig.cap=fig_sites}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+bb <- st_bbox(loc)
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = loc, aes(color = protocol), shape = 1) +
+    coord_sf(
+      xlim = bb[c("xmin", "xmax")],
+      ylim = bb[c("ymin", "ymax")],
+      expand = FALSE
+      ) +
+    theme(legend.position = "bottom") +
+    labs(title = paste0("Number of sites: ", nrow(loc)))
+```
+
+
+
+## Biodiversity
+
+### Quantity
+
+- Hill numbers 
+  - $H^0$: Species richness 
+  - $H^1$: Shannon
+  - $H^2$: Simpson
+
+We used also hill numbers with coverage-based correction proposed by
+@chao_coverage-based_2014
+
+- Evenness:
+  - Pielou: $J = H^1 / log(S)$ 
+
+### Betadiversity 
+
+Betadiversity metrics compares the composition of two communities. In our case, we
+compare the composition of each time step relatively to the baseline, i.e. the
+first year of sampling. 
+
+- Species exchange index: [@hillebrand_biodiversity_2018]
+  - Presence-absence: $J = SER_r = \dfrac{S_{imm} + S_{lost}}{S_{tot}}$
+  - Relative abundance: $SER_a = \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}$ 
+
+  - $S_{imm}$, $S_{lost}$, $S_{tot}$: number of immigrant, lost and total species respectively
+  - $i$: species $i$, $p$: relative abundance, $\prime$: second community
+  - $J$: Jaccard index
+
+Turnover metrics based on presence/absence can be decomposed in
+appearance/disappearance and nestedness / turnover.
+
+- appearance: $\dfrac{S_{imm}}{S_{tot}}$, disappearance: $\dfrac{S_{lost}}{S_{tot}}$
+
+- Turnover: $J_t = \dfrac{2 * min(S_{lost}, S_{imm})}{S_{common} + (2 * min(S_{lost}, S_{imm})}$
+- Nestedness: $SER_r - J_t$
+
+
+# Environment (Coming soon)
+
+# Statistical analysis 
+
+- Simple lm by site
+
+# Results
+
+## Direction of trends 
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
+  .id = "response"
+)
+ti %>%
+  filter(direction != "Total") %>%
+  select(response, direction, percent) %>%
+  mutate(response = str_replace_all(response, get_var_replacement())) %>%
+  pivot_wider(names_from = "direction", values_from = "percent") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "shape_class"),
+  .id = "response"
+)
+
+ti %>%
+  filter(shape_class != "Total") %>%
+  select(response, shape_class, percent) %>%
+  mutate(response = str_replace_all(response, get_var_replacement())) %>%
+  pivot_wider(names_from = "shape_class", values_from = "percent") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```
+
+
+## Average
+
+```{r}
+slope <- map_dfr(rigal_trends,
+  ~.x %>%
+  select(siteid, linear_slope),
+.id = "response"
+)
+```
+
+```{r}
+rigal_trends_df <-  map2_dfr(
+  rigal_trends, names(rigal_trends),
+  ~.x %>% mutate(variable = .y)
+  ) %>%
+select(variable, siteid, linear_slope) %>%
+pivot_wider(names_from = "variable", values_from = "linear_slope")
+```
+
+
+```{r}
+summary_slope <- slope %>%
+  group_by(response) %>%
+  summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
+  unnest(cols = summ) %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  select(response, mean, median, sd)
+summary_slope %>%
+  mutate(response = get_var_replacement()[response]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
+  scroll_box(width = "100%", height = "1000px")
+```
+
+```{r, include=FALSE}
+j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
+r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
+
+```
+
+```{r}
+p_jt_sup_ne <- sum(abs(rigal_trends_df$turnover) > abs(rigal_trends_df$nestedness)) /
+  nrow(rigal_trends_df)
+```
+```{r, include=FALSE}
+cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")
+cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
+```
+
+
+
+- To compare with @dornelas_assemblage_2014:
+  - Species richness:
+    - @dornelas_assemblage_2014: 1557 measurements of species richness in two
+      consecutive times, 629 (40%) increase, 624 (40%) decrease, and 304 (20%)
+      do not change.
+    - Our study: 13% increase, 7% decrease, 78% do not change, 
+      median: + `r percent(r_med_tr * 10)` species by decade (i.e from 2 to 3
+      species, 10 to 15 species in 10 years)
+  - Jaccard:
+    - 10% species replaced per decade [@dornelas_assemblage_2014] 
+    - 28% of species replaced per decade [@blowes_geography_2019]
+    - our study: `r percent(abs(j_med_tr) * 10)` of species per decade
+  - Turnover / nestedness:
+    - @blowes_geography_2019: 97% of study shows turnover exceeding nestedness
+    - our study: `r percent(p_jt_sup_ne)`
+  - Jaccard vs dominance-based SER:
+    - low correlation: $0.34$
+
+
+```{r}
+rigal_trends_df %>%
+  ggplot(aes(x = jaccard , y = hillebrand)) +
+  geom_point() +
+#  geom_smooth(method = "gam") +
+  labs(x = "Jaccard trends (similarity, binary)", y = "Hillebrand trends
+    (similarity, relative abundance)")
+```
+
+```{r}
+rigal_trends_df_loc <- filtered_dataset$location %>%
+  left_join(rigal_trends_df, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+## Relationships between temporal trends 
+
+```{r}
+knitr::include_graphics(here("doc", "fig", "p_cor_slope_tot.png"))
+```
+
+
+```{r, fig.height=12}
+ti <- expand.grid(
+  resp1 = unique(slope$response),
+  resp2 = unique(slope$response)
+  ) %>%
+  filter(resp2 != resp1) %>%
+  filter(
+    resp1 %in% c("chao_richness", "species_nb", "log_species_nb",
+      "total_abundance", "log_total_abundance")) %>%
+  mutate_all(as.character) %>%
+  arrange(resp1)
+
+test <- map2(ti$resp1, ti$resp2,
+  function(x, y) {
+    bi <- slope %>%
+      filter(response %in% c(x, y)) %>%
+      select(siteid, response, linear_slope) %>%
+      pivot_wider(names_from = "response", values_from = "linear_slope")
+
+    return(bi)
+  }
+)
+
+p_trends_trends <- map(test, function(x) {
+  l <- colnames(x)
+  x %>%
+    ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
+    geom_point() +
+    geom_smooth(method = "loess") +
+    labs(
+      x = get_var_replacement()[l[2]],
+      y = get_var_replacement()[l[3]]
+    )
+})
+names(p_trends_trends) <- map_chr(test, ~colnames(.x)[2])
+```
+
+```{r, fig.height=12}
+plot_grid(
+  plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"],
+  ncol = 3
+)
+```
+
+## Spatial trends 
+
+### Map
+
+#### Site
+
+```{r}
+p <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
+ ~ map_world_trends(
+   df = rigal_trends_df_loc, y = .x, range_per = .95) +
+   labs(title = get_var_replacement()[.x])
+)
+p
+```
+
+#### Median trends by Basin
+
+```{r}
+basin_slope <- rigal_trends_df_loc %>%
+  group_by(main_bas) %>%
+  summarise(across(where(is.double), median))
+
+p_basin <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
+ ~ map_world_trends(
+   df = basin_slope, y = .x, range_per = .95) +
+   labs(title = get_var_replacement()[.x])
+)
+p_basin
+```
+
+#### Country 
+
+```{r}
+country_slope <- rigal_trends_df_loc %>%
+  group_by(country) %>%
+  summarise(across(where(is.double), median))
+
+p_country <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
+ ~ map_world_trends(
+   df = country_slope, y = .x, range_per = .95) +
+   labs(title = get_var_replacement()[.x])
+)
+p_country
+```
+
+### Boxplot
+
+```{r}
+b_country <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
+ ~ rigal_trends_df_loc %>%
+  ggplot(aes(x = country, y = !!sym(.x), fill = ecoregion)) +
+  geom_boxplot() +
+labs(title = get_var_replacement()[.x])
+)
+b_country
+```
+
+## Rarity
+
+Cf other document
+
+## Spatial scale
+
+- Selection on basin data 
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
+
+# References {-}
