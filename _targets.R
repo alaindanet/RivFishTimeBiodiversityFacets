@@ -36,7 +36,8 @@ tar_plan(
       op_protocol = op_protocol,
       selected_protocol = NULL,
       selected_abun_unit = NULL,
-      nb_sampling = 10,
+      nb_sampling = 5,
+      span_min = 10,
       extent_month = 1.5,
       convert_month_to_date = TRUE,
       return_no_filtered = FALSE

@@ -394,9 +394,144 @@ pop_trends <- toy_dataset %>%
 pop_trends$p_pop
 ```
 
+# Environmental variables 
+
+The operation are too time consuming, so I set `eval = FALSE` from here. 
+
+```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+## River atlas
+
+```{r}
+rvat_shp_files <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
+  list.files(., full.names = TRUE) %>%
+  .[stringr::str_detect(., "\\.shp")]
+eu_shp <- rvat_shp_files[stringr::str_detect(rvat_shp_files, "eu.shp$")]
+eu_shp_layers <- sf::st_layers(eu_shp, do_count = TRUE)
+```
+
+There are `r length(rvat_shp_files)`. The dataset is gigantic,
+`r eu_shp_layers$field` variables...
+
+- Looking at the columns:
+
+```{r}
+tictoc::tic()
+riveratlas_slice <- sf::read_sf(eu_shp, query = "SELECT * FROM RiverATLAS_v10_eu WHERE FID = 1")
+tictoc::toc()
+#313.564 sec elapsed
+
+col_riveratlas <- colnames(riveratlas_slice)
+stream_charac <- col_riveratlas[str_detect(col_riveratlas, "[A-Z]")]
+
+# environmental variable begins by three character
+env_stream <- str_sub(col_riveratlas[!col_riveratlas %in% stream_charac], 1, 3)
+unique_env_type <- unique(env_stream)
+```
+
+```{r}
+```
 
 
-## Analysis
+```{r}
+tictoc::tic()
+test <- sf::read_sf(eu_shp, query = "SELECT MAIN_RIV FROM RiverATLAS_v10_eu")
+tictoc::toc()
+#188.71 sec elapsed
+
+loc <- get_site_location_as_sf()
+
+ti <- st_crop(test,
+  c(
+  xmin =  st_bbox(loc)["xmin"],
+  xmax = st_bbox(loc)["xmax"],
+  ymin = st_bbox(loc)["ymin"],
+  ymax = st_bbox(loc)["ymax"]
+  )
+)
+object.size(test) * 10^-6
+
+```
+
+```{r}
+tar_load(filtered_dataset)
+sf::sf_use_s2(FALSE)
+world <- ne_countries(returnclass = "sf") %>%
+  select(sov_a3)
+
+filtered_dataset$location
+loc <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+```
+
+```{r}
+# Probleme de coordonées en Suède et en Angleterre
+overlap_mask <- st_intersects(loc, world)
+overlap_mask <- st_is_within_distance(loc, world, dist = 100)
+mask_country_loc <- map_lgl(overlap_mask, any)
+
+plot(st_geometry(world %>% st_crop(st_bbox(loc[!mask_country_loc, "siteid"]))))
+plot(st_geometry(loc[!mask_country_loc, "siteid"]), add = TRUE)
+```
+
+```{r}
+mask_world <- map_int(overlap_mask[mask_country_loc], 1) %>% unique
+selected_country <- world[mask_world, ]
+plot(st_geometry(selected_country))
+```
+
+```{r}
+its_rv_country <- st_intersects(test, selected_country)
+mask_river_country <- map_lgl(its_rv_country, any)
+sum(mask_river_country) / length(mask_river_country)
+map_dbl(list(test[mask_river_country, ], test), object.size) %>% reduce(., `/`) 
+```
+
+```{r}
+#https://github.com/r-spatial/sf/issues/792
+#https://stackoverflow.com/questions/51292952/snap-a-point-to-the-closest-point-on-a-line-segment-using-sf
+
+snapped_pt <- st_snap(
+  st_transform(loc, crs = 54008),
+  st_transform(test[mask_river_country, ], crs = 54008),
+  tolerance = 200
+)
+```
+
+
+- Match with convex hull 
+
+```{r}
+hull_station <- st_convex_hull(st_union(loc))
+plot(st_geometry(world))
+plot(st_geometry(hull_station), add = TRUE)
+```
+
+
+```{r}
+its_rv_st <- st_intersects(test, hull_station)
+mask_river_atlas <- map_lgl(its_rv_st, any)
+sum(mask_river_atlas) / length(mask_river_atlas)
+map_dbl(list(test[mask_river_atlas, ], test), object.size) %>% reduce(., `/`) 
+?st_nearest_points
+```
+
+
+
+```{r}
+mask_country_loc <- map_lgl(overlap_mask, any)
+plot(st_geometry(world %>% st_crop(st_bbox(loc[!mask_country_loc, "siteid"]))))
+plot(st_geometry(loc[!mask_country_loc, "siteid"]), add = TRUE)
+unit(10, units = "cm")
+```
+
+
+
+
+
+# Misc
 
 ## Reproducibility
 

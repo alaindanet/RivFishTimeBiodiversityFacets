@@ -1,4 +1,5 @@
 library("devtools")
+library(magrittr)
 library("here")
 library(tflow)
 options(devtools.name = "Alain Danet",
@@ -111,9 +112,28 @@ destfile_water_temperature <- "L:/ENV_LAYERS/waterTemperature_Global_monthly_197
 download.file(
   url = water_temperature_url,
   destfile = destfile_water_temperature,
-  method="auto", 
+  method = "auto",
   quiet = FALSE,
   mode = "wb",
   cacheOK = TRUE
 )
 unzip(destfile_riveratlas, exdir = sub(".zip", "", destfile_riveratlas))
+
+## Create symbolic link
+files <- c("RiverATLAS_v10_shp", "waterTemperature_Global_monthly_1979-2014.nc")
+
+links <- paste0(here("inst", "extdata", files))
+targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
+
+for (i in seq_along(files)) {
+  R.utils::createLink(
+    link = links[i],
+    target = targets[i],
+    overwrite = TRUE
+  )
+}
+
+eu_shp <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
+  list.files(., full.names = TRUE) %>%
+  .[stringr::str_detect(., "eu.shp")]
+sf::st_layers(eu_shp, do_count = TRUE)
