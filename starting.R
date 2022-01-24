@@ -137,3 +137,5 @@ eu_shp <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
   list.files(., full.names = TRUE) %>%
   .[stringr::str_detect(., "eu.shp")]
 sf::st_layers(eu_shp, do_count = TRUE)
+
+use_r("spatial_match")

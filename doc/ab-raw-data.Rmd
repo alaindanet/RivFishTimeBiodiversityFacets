@@ -432,33 +432,18 @@ env_stream <- str_sub(col_riveratlas[!col_riveratlas %in% stream_charac], 1, 3)
 unique_env_type <- unique(env_stream)
 ```
 
-```{r}
-```
-
 
 ```{r}
 tictoc::tic()
-test <- sf::read_sf(eu_shp, query = "SELECT MAIN_RIV FROM RiverATLAS_v10_eu")
+riv_atlas <- sf::read_sf(eu_shp, query = "SELECT FID FROM RiverATLAS_v10_eu")
 tictoc::toc()
 #188.71 sec elapsed
 
 loc <- get_site_location_as_sf()
-
-ti <- st_crop(test,
-  c(
-  xmin =  st_bbox(loc)["xmin"],
-  xmax = st_bbox(loc)["xmax"],
-  ymin = st_bbox(loc)["ymin"],
-  ymax = st_bbox(loc)["ymax"]
-  )
-)
-object.size(test) * 10^-6
-
 ```
 
 ```{r}
 tar_load(filtered_dataset)
-sf::sf_use_s2(FALSE)
 world <- ne_countries(returnclass = "sf") %>%
   select(sov_a3)
 
@@ -487,12 +472,10 @@ plot(st_geometry(selected_country))
 its_rv_country <- st_intersects(test, selected_country)
 mask_river_country <- map_lgl(its_rv_country, any)
 sum(mask_river_country) / length(mask_river_country)
-map_dbl(list(test[mask_river_country, ], test), object.size) %>% reduce(., `/`) 
+map_dbl(list(test[mask_river_country, ], test), object.size) %>% reduce(., `/`)
 ```
 
 ```{r}
-#https://github.com/r-spatial/sf/issues/792
-#https://stackoverflow.com/questions/51292952/snap-a-point-to-the-closest-point-on-a-line-segment-using-sf
 
 snapped_pt <- st_snap(
   st_transform(loc, crs = 54008),
@@ -527,6 +510,98 @@ plot(st_geometry(world %>% st_crop(st_bbox(loc[!mask_country_loc, "siteid"]))))
 plot(st_geometry(loc[!mask_country_loc, "siteid"]), add = TRUE)
 unit(10, units = "cm")
 ```
+
+```{r}
+st_bbox(riv_atlas)
+loc %>%
+  st_crop(st_bbox(riv_atlas))
+
+st_bbox(riv_atlas)
+esp <- loc %>%
+  filter(country == "ESP")
+esp_riv_atlas <- riv_atlas %>%
+  st_crop(st_bbox(esp))
+  
+snapped_pt <- st_snap(
+  st_transform(esp, crs = 54008),
+  st_transform(esp_riv_atlas, crs = 54008),
+  tolerance = 200
+)
+nearest_snapped_pt <- st_nearest_points(
+  st_transform(esp, crs = 54008),
+  st_transform(esp_riv_atlas, crs = 54008),
+  tolerance = 200
+)
+
+plot(st_geometry(esp_riv_atlas))
+plot(st_geometry(esp), add = TRUE)
+plot(st_geometry(snapped_pt) %>% st_transform(crs = 4326), col = "red", add = TRUE)
+```
+```{r}
+plot(st_geometry(esp))
+plot(st_geometry(snapped_pt) %>% st_transform(crs = 4326), col = "red", add = TRUE)
+
+
+plot(st_geometry(esp))
+plot(st_geometry(nearest_snapped_pt) %>% st_transform(crs = 4326), col = "red", add = TRUE)
+
+```
+
+```{r}
+nearest_snapped_pt_sf <- st_snap_points2(
+  st_transform(esp, crs = 54008),
+  st_transform(esp_riv_atlas, crs = 54008),
+  max_dist = 2000,
+  return_snapped_pt = TRUE
+)
+
+
+plot(st_geometry(esp_riv_atlas[nearest_snapped_pt, ]))
+plot(st_geometry(esp), add = TRUE)
+plot(st_geometry(nearest_snapped_pt_sf) %>% st_transform(crs = 4326), col = "red", add = TRUE)
+```
+
+- Test with problematic sweden: 
+
+```{r}
+swe_site <- loc %>% filter(country == "SWE")
+ti <- match_river_site(
+  river = riv_atlas,
+  site = swe_site,
+  max_dist = NULL,
+  metric_crs = 54008,
+  return_snapped_pt = FALSE,
+  crop = TRUE,
+  buffer_dist = NULL,
+  col_id_river = "FID",
+  site_id = "siteid"
+)
+
+```
+
+```{r}
+plot(st_geometry(riv_atlas %>%))
+plot(st_geometry(swe_site), add = TRUE)
+plot(st_geometry(ti) %>% st_transform(crs = 4326), col = "red", add = TRUE)
+```
+
+```{r}
+```
+
+
+
+
+```{r}
+library(mapview)
+
+mapview(esp_riv_atlas) +
+  mapview(nearest_snapped_pt %>%
+    st_transform(crs = 54008),
+  col.regions = "red") +
+  esp
+```
+
+
 
 
 
