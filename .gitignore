@@ -9,4 +9,5 @@ doc/fig/raw_data
 .Rproj.user
 doc/fig/*.png
 doc/fig/*.jpeg
+_targets.yaml
 
