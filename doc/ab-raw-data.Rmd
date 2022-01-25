@@ -629,7 +629,44 @@ correspondance <- furrr::future_map_dfr(
 ```
 
 ```{r}
+tar_load(c(filtered_dataset, riveratlas_shp_files))
+crop_eu <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs =  4087) 
+river_shp_filepath <- riveratlas_shp_files[str_detect(riveratlas_shp_files, "eu")]
+ layer_name <- sf::st_layers(river_shp_filepath, do_count = TRUE)$name
+  river <- sf::read_sf(river_shp_filepath, query = paste0("SELECT FID FROM ", layer_name)) %>%
+    st_transform(crs = 4087)
+riv_atlas_loc <- river %>%
+  st_crop(st_bbox(crop_eu))
+  
+ind <- seq_len(nrow(crop_eu))
+nb_points_chuncks <- 200
+chuncks <- split(ind, ceiling(seq_along(ind)/nb_points_chuncks))
+```
 
+```{r}
+debugonce(st_snap_points)
+debugonce(match_river_site)
+loc <- crop_eu %>%
+  st_crop(st_bbox( riv_atlas_loc)) %>%
+  arrange(main_bas) %>%
+  slice(1:10)
+```
+
+```{r}
+debugonce(check_return_snap)
+ti <- match_river_site(
+    river = riv_atlas_loc,
+    site = loc,
+    max_dist = 2000,
+    metric_crs = NULL,
+    return_snapped_pt = FALSE,
+    crop = TRUE,
+    buffer_dist = NULL,
+    col_id_river = "FID",
+    site_id = "siteid"
+  )
 ```
 
 

@@ -14,19 +14,15 @@ st_snap_points <- function(
   
   
   distance_tmp <- map(seq_len(n), ~st_nearest_points(x[.x,], y))
-  
+ 
   near <- x %>%
     mutate(
       distance = distance_tmp,
-      which_nearest = map(distance, get_nearest_pt),
+      which_nearest = map_int(distance, get_nearest_pt, max_dist = max_dist),
       snapped_pt = pmap(
-        list(distance, which_nearest, geometry), 
-        function(d, nearest, origin){
-          if (is.na(nearest)) {
-            return(st_geometry(origin))
-          }
-          return(st_cast(distance[nearest, ], "POINT")[2])
-        })
+        list(distance, which_nearest, geometry),
+        check_return_snap),
+      riverid = map_int(which_nearest, ~ifelse(!is.na(.x), y[.x, ]$FID, NA))
     )
 
   if(return_snapped_pt) {
@@ -37,13 +33,13 @@ st_snap_points <- function(
         if (is.na(near$which_nearest[i])) {
           return(st_geometry(x)[i])
         }
-        return(st_cast(near$distance[i][near$which_nearest[i], ], "POINT")[2])
+        return(st_cast(near$distance[i][near$which_nearest[i], ], "POINT"))
     })
     )
-
     return(out)
+    
   } else {
-    return(near %>% select(which, snapped_pt))
+    return(near %>% select(siteid, riverid, which_nearest, snapped_pt))
   }
 
 }
@@ -89,7 +85,7 @@ match_river_site <- function(
     return_snapped_pt = return_snapped_pt
   )
 
-  if (!return_snapped_pt) {
+  if (return_snapped_pt) {
     
     mask_na <- function(x, ...) {
       if(is.na(x)) {
@@ -103,16 +99,16 @@ match_river_site <- function(
       riverid = map_int(nearest_snapped_pt, mask_na),
       siteid = site[[site_id]]
     )
-    
     return(out)
+    
   } else {
-    return(return_snapped_pt)
+    return(nearest_snapped_pt)
   }
 
 
 }
 
-get_nearest_pt <- function(snapped_pt = NULL) {
+get_nearest_pt <- function(snapped_pt = NULL, max_dist = NULL) {
   
   nrst_len <- st_length(snapped_pt)
   nrst_mn <- which.min(nrst_len)
@@ -127,25 +123,33 @@ get_nearest_pt <- function(snapped_pt = NULL) {
 #' 
 #' Has parallel capacities with future::plan()
 #' 
-#' @param proj_crs integer default to 54032 because it keeps the distance well globally
-#' https://learn.arcgis.com/en/projects/choose-the-right-projection/
-#' https://epsg.io/54032
+#' @param proj_crs integer default to 4087 because it keeps the distance well globally
+#' https://epsg.org/crs_4087/WGS-84-World-Equidistant-Cylindrical.html
+#' https://epsg.io/4087
 target_snap_site_to_river <- function(
   river_shp_filepath = NULL,
   site_sf = NULL,
-  proj_crs = 54032,
-  length_chunk = 200
+  proj_crs = 4087,
+  length_chunk = 200,
+  max_dist = 2000
 ) {
   
   # load shapefile
   layer_name <- sf::st_layers(river_shp_filepath, do_count = TRUE)$name
   river <- sf::read_sf(river_shp_filepath, query = paste0("SELECT FID FROM ", layer_name)) %>%
-    st_transform(crs = proj_crs) 
+    st_transform(crs = proj_crs)
+  
   # crop shapefile
   crop_site <- site_sf %>% 
     st_transform(crs = proj_crs) %>%
     st_crop(st_bbox(river)) %>%
     arrange(main_bas)
+  
+  # if no site in the river
+  if(nrow(crop_site) == 0) {
+    return(NA)
+  }
+  
   river_crop <- river %>%
     st_crop(st_bbox(crop_site))
   
@@ -160,7 +164,7 @@ target_snap_site_to_river <- function(
     ~match_river_site(
       river = river_crop,
       site = crop_site[.x,],
-      max_dist = 2000,
+      max_dist = max_dist,
       metric_crs = NULL,
       return_snapped_pt = FALSE,
       crop = TRUE,
@@ -180,4 +184,11 @@ get_shp_files <- function(dir = here("inst", "extdata", "RiverATLAS_v10_shp")) {
     list.files(., full.names = TRUE) %>%
     .[stringr::str_detect(., "\\.shp")]
   
+}
+
+check_return_snap <- function(d, nearest, origin){
+  if (is.na(nearest)) {
+    return(origin)
+  }
+  return(st_cast(d[[nearest]], "POINT"))
 }

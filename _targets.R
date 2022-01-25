@@ -14,7 +14,6 @@ tar_plan(
     error = "continue"),
   tar_target(riveratlas_shp_files, 
              get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
-             format = "file",
              error = "continue"
   ),
   tar_target(timeseries, load_time_series_data(raw_data_file)),
@@ -331,13 +330,12 @@ tar_plan(
     #),
 tar_target(snapped_site_river,
           target_snap_site_to_river(
-            river_shp_filepath = river_atlas_shp_files,
+            river_shp_filepath = riveratlas_shp_files,
             site_sf = filtered_dataset$location %>%
               st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
-            proj_crs = 54032,
-            length_chunk = 200,
-            nb_cores = availableCores()),
-           pattern = map(river_atlas_shp_files),
+            proj_crs =  4087,
+            length_chunk = 200),
+           pattern = map(riveratlas_shp_files),
            iteration = "list"
 ),
 
