@@ -405,9 +405,8 @@ knitr::opts_chunk$set(eval=FALSE)
 ## River atlas
 
 ```{r}
-rvat_shp_files <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
-  list.files(., full.names = TRUE) %>%
-  .[stringr::str_detect(., "\\.shp")]
+#
+
 eu_shp <- rvat_shp_files[stringr::str_detect(rvat_shp_files, "eu.shp$")]
 eu_shp_layers <- sf::st_layers(eu_shp, do_count = TRUE)
 
@@ -447,7 +446,6 @@ tar_load(filtered_dataset)
 world <- ne_countries(returnclass = "sf") %>%
   select(sov_a3)
 
-filtered_dataset$location
 loc <- filtered_dataset$location %>%
   st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 ```
@@ -564,29 +562,76 @@ plot(st_geometry(nearest_snapped_pt_sf) %>% st_transform(crs = 4326), col = "red
 - Test with problematic sweden: 
 
 ```{r}
-swe_site <- loc %>% filter(country == "SWE")
+riv_atlas <- st_transform(riv_atlas, crs = 3152)
+
+```
+```{r}
+swe_site <- loc %>%
+  filter(country == "SWE")
+swe_site <- st_transform(swe_site, crs = 3152)
+#debugonce(st_snap_points)
 ti <- match_river_site(
   river = riv_atlas,
   site = swe_site,
-  max_dist = NULL,
-  metric_crs = 54008,
+  max_dist = 10000,
+  metric_crs = NULL,
   return_snapped_pt = FALSE,
   crop = TRUE,
   buffer_dist = NULL,
   col_id_river = "FID",
   site_id = "siteid"
 )
+```
 
+
+```{r}
+dev.new()
+plot(st_geometry(riv_atlas[riv_atlas$FID %in% ti$riverid, ]))
+plot(st_geometry(swe_site), add = TRUE)
 ```
 
 ```{r}
-plot(st_geometry(riv_atlas %>%))
+plot(st_geometry(riv_atlas))
 plot(st_geometry(swe_site), add = TRUE)
 plot(st_geometry(ti) %>% st_transform(crs = 4326), col = "red", add = TRUE)
 ```
 
 ```{r}
+crop_eu <- loc %>% 
+  st_transform(crs = 3152) %>%
+  st_crop(st_bbox(riv_atlas)) %>%
+  arrange(main_bas)
+riv_atlas_loc <- riv_atlas %>%
+  st_crop(st_bbox(crop_eu))
+  
+ind <- seq_len(nrow(crop_eu))
+nb_points_chuncks <- 200
+chuncks <- split(ind, ceiling(seq_along(ind)/nb_points_chuncks))
+
+nb_cores <- availableCores()
+plan(strategy = multisession(workers = 2))
 ```
+```{r}
+correspondance <- furrr::future_map_dfr(
+  chuncks[1:2],
+  ~match_river_site(
+    river = riv_atlas_loc,
+    site = crop_eu[.x,],
+    max_dist = 2000,
+    metric_crs = NULL,
+    return_snapped_pt = FALSE,
+    crop = TRUE,
+    buffer_dist = NULL,
+    col_id_river = "FID",
+    site_id = "siteid"
+  )
+)
+```
+
+```{r}
+
+```
+
 
 
 
@@ -603,6 +648,9 @@ mapview(esp_riv_atlas) +
 
 
 
+```{r}
+map()
+```
 
 
 

@@ -123,7 +123,9 @@ unzip(destfile_riveratlas, exdir = sub(".zip", "", destfile_riveratlas))
 files <- c("RiverATLAS_v10_shp", "waterTemperature_Global_monthly_1979-2014.nc")
 
 links <- paste0(here("inst", "extdata", files))
-targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
+#targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
+#for windows
+targets <- paste0("L:/", "ENV_LAYERS/", c(files))
 
 for (i in seq_along(files)) {
   R.utils::createLink(
@@ -133,9 +135,13 @@ for (i in seq_along(files)) {
   )
 }
 
-eu_shp <- here("inst", "extdata", "RiverATLAS_v10_shp") %>%
+
+eu_shp <- here("inst", "extdata", "RiverATLAS_v10_shp.lnk") %>%
+  R.utils::filePath(., expandLinks = "any") %>%
   list.files(., full.names = TRUE) %>%
   .[stringr::str_detect(., "eu.shp")]
 sf::st_layers(eu_shp, do_count = TRUE)
+
+
 
 use_r("spatial_match")

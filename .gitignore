@@ -10,4 +10,4 @@ doc/fig/raw_data
 doc/fig/*.png
 doc/fig/*.jpeg
 _targets.yaml
-
+.Rhistory

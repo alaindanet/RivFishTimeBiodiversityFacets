@@ -2,7 +2,7 @@ source("./packages.R")
 
 ## Load your R files
 lapply(list.files(here("R"), full.names = TRUE), source)
-plan(multisession, workers = 3)
+plan(multisession, workers = availableCores() - 1)
 
 ## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
@@ -12,6 +12,11 @@ tar_plan(
     get_raw_file_path(),
     format = "file",
     error = "continue"),
+  tar_target(riveratlas_shp_files, 
+             get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
+             format = "file",
+             error = "continue"
+  ),
   tar_target(timeseries, load_time_series_data(raw_data_file)),
   tar_target(site_desc_loc, get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
@@ -324,6 +329,17 @@ tar_plan(
     #pattern = map(simple_lm),
     #iteration = "list"
     #),
+tar_target(snapped_site_river,
+          target_snap_site_to_river(
+            river_shp_filepath = river_atlas_shp_files,
+            site_sf = filtered_dataset$location %>%
+              st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
+            proj_crs = 54032,
+            length_chunk = 200,
+            nb_cores = availableCores()),
+           pattern = map(river_atlas_shp_files),
+           iteration = "list"
+),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
