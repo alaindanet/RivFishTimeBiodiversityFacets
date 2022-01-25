@@ -46,3 +46,21 @@ map_world_trends <- function(
       scale_color_distiller(palette = "Spectral", type = "div") +
       theme(legend.position = "bottom")
 }
+
+#'
+#' Works with windows shortcuts
+get_shp_files <- function(dir = here("inst", "extdata", "RiverATLAS_v10_shp")) {
+  dir %>%
+    list.files(., full.names = FALSE) %>%
+    .[stringr::str_detect(., "\\.shp")]
+}
+
+get_full_file_name <- function(
+  filename = NULL,
+  dir = here("inst", "extdata", "RiverATLAS_v10_shp")
+  ) {
+  dir %>%
+    R.utils::filePath(., expandLinks = "any") %>%
+    list.files(., full.names = TRUE) %>%
+    .[stringr::str_detect(., filename)]
+}

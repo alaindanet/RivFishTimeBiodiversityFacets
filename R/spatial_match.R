@@ -131,39 +131,48 @@ target_snap_site_to_river <- function(
   site_sf = NULL,
   proj_crs = 4087,
   length_chunk = 200,
-  max_dist = 2000
+  max_dist = 1000
 ) {
-  
+
   # load shapefile
   layer_name <- sf::st_layers(river_shp_filepath, do_count = TRUE)$name
-  river <- sf::read_sf(river_shp_filepath, query = paste0("SELECT FID FROM ", layer_name)) %>%
+  river <- sf::read_sf(
+    get_full_file_name(filename = river_shp_filepath),
+    query = paste0("SELECT FID FROM ", layer_name)) %>%
     st_transform(crs = proj_crs)
-  
+
   # crop shapefile
-  crop_site <- site_sf %>% 
+  crop_site <- site_sf %>%
     st_transform(crs = proj_crs) %>%
     st_crop(st_bbox(river)) %>%
     arrange(main_bas)
-  
+
   # if no site in the river
   if(nrow(crop_site) == 0) {
     return(NA)
   }
-  
+
   river_crop <- river %>%
     st_crop(st_bbox(crop_site))
-  
+
+  # Crop the river on buffered sites
+  river_crop <- crop_on_buffer(
+    to_crop = river_crop,
+    x = crop_site,
+    buffer_dist = max_dist
+  )
+
   # cut the task by n times length_chunck
   ind <- seq_len(nrow(crop_site))
   nb_points_chuncks <- length_chunk
-  chuncks <- split(ind, ceiling(seq_along(ind)/nb_points_chuncks))
-  
+  chuncks <- split(ind, ceiling(seq_along(ind) / nb_points_chuncks))
+
   # Run
   correspondance <- furrr::future_map_dfr(
     chuncks,
     ~match_river_site(
       river = river_crop,
-      site = crop_site[.x,],
+      site = crop_site[.x, ],
       max_dist = max_dist,
       metric_crs = NULL,
       return_snapped_pt = FALSE,
@@ -176,19 +185,36 @@ target_snap_site_to_river <- function(
   return(correspondance)
 }
 
-#'
-#' Works with windows shortcuts
-get_shp_files <- function(dir = here("inst", "extdata", "RiverATLAS_v10_shp")) {
-  dir %>%
-    R.utils::filePath(., expandLinks = "any") %>%
-    list.files(., full.names = TRUE) %>%
-    .[stringr::str_detect(., "\\.shp")]
-  
-}
 
 check_return_snap <- function(d, nearest, origin){
   if (is.na(nearest)) {
     return(origin)
   }
   return(st_cast(d[[nearest]], "POINT"))
+}
+
+#' Crop an sf object on another with a buffer 
+#'
+#' @examples
+#' ti <- st_sf(
+#'   a = 3,
+#'   geometry = st_sfc(st_point(1:2), st_point(3:4)))
+#' tl <- st_sf(
+#'   a = 3,
+#'   geometry = st_sfc(st_linestring(pts), st_linestring(pts + 12))
+#'   )
+#' 
+#' plot(g_buf)
+#' plot(tl, add = T)
+#' crop_on_buffer(to_crop = tl, x = ti, buffer_dist = 12)
+crop_on_buffer <- function(
+  to_crop = NULL,
+  x = NULL,
+  buffer_dist = NULL
+  ) {
+
+  x <- st_buffer(x, buffer_dist)
+  to_crop <- to_crop[map_lgl(st_intersects(to_crop, x), any), ]
+
+  return(to_crop)
 }
