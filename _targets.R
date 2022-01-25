@@ -2,7 +2,7 @@ source("./packages.R")
 
 ## Load your R files
 lapply(list.files(here("R"), full.names = TRUE), source)
-plan(multisession, workers = availableCores() - 1)
+plan(multisession, workers = min(availableCores() - 1, 4))
 
 ## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
@@ -330,7 +330,7 @@ tar_plan(
     #),
 tar_target(snapped_site_river,
   target_snap_site_to_river(
-    river_shp_filepath = riveratlas_shp_files,
+    river_shp_filepath = get_full_file_name(riveratlas_shp_files),
     site_sf = filtered_dataset$location %>%
       st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
     proj_crs =  4087,
@@ -340,6 +340,9 @@ tar_target(snapped_site_river,
   pattern = map(riveratlas_shp_files),
   iteration = "list"
 ),
+tar_target(snapped_site_river_c,
+           snapped_site_river[!map_lgl(snapped_site_river, ~all(is.na(.x)))] %>%
+             reduce(., rbind)),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

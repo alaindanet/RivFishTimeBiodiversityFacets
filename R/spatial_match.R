@@ -136,8 +136,7 @@ target_snap_site_to_river <- function(
 
   # load shapefile
   layer_name <- sf::st_layers(river_shp_filepath, do_count = TRUE)$name
-  river <- sf::read_sf(
-    get_full_file_name(filename = river_shp_filepath),
+  river <- sf::read_sf(river_shp_filepath,
     query = paste0("SELECT FID FROM ", layer_name)) %>%
     st_transform(crs = proj_crs)
 

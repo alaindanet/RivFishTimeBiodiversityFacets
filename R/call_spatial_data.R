@@ -51,6 +51,7 @@ map_world_trends <- function(
 #' Works with windows shortcuts
 get_shp_files <- function(dir = here("inst", "extdata", "RiverATLAS_v10_shp")) {
   dir %>%
+    R.utils::filePath(., expandLinks = "any") %>%
     list.files(., full.names = FALSE) %>%
     .[stringr::str_detect(., "\\.shp")]
 }
