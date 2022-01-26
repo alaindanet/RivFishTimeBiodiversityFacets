@@ -14,5 +14,9 @@ tar_load(riveratlas_site)
 riveratlas_site$siteid
 
 source(file = "start_rmd.R")
-river <- sf::read_sf(shp_file)
-ti<-reduce(snapped_site_river[map_lgl(snapped_site_river, ~!all(is.na(.x)))], rbind)
+tar_load(names = c(water_temperature_file, filtered_dataset))
+debug(extract_water_temperature_values)
+extract_water_temperature_values(raster_path = water_temperature_file,
+                                 site = filtered_dataset$location %>%
+                                   st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+                                   )

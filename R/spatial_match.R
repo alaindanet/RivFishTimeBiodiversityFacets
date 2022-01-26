@@ -270,5 +270,5 @@ extract_water_temperature_values <- function(
   raster_path <- R.utils::filePath(raster_path, expandLinks = "any")
   
   r <- terra::rast(raster_path)
-  terra::extract(r, site)
+  terra::extract(r, st_coordinates(site))
 }

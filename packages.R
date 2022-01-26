@@ -13,6 +13,7 @@ library("rmarkdown")
 library("sf")
 library("rnaturalearth")
 library("rnaturalearthdata")
+library(terra)
 
 library(cowplot)
 library(viridis)
