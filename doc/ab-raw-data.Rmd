@@ -689,8 +689,42 @@ mapview(esp_riv_atlas) +
 map()
 ```
 
+## Water temperature
+
+```{r}
+library(ncdf4)
+
+tar_load(water_temperature_file)
+wt_path <- R.utils::filePath(water_temperature_file, expandLinks = "any")
+wt_nc <- nc_open(wt_path)
+wt_nc
+```
+
+- Get time variable:
+```{r}
+ncatt_get(wt_nc, "time")
 
 
+unit_time <- ncatt_get(wt_nc, "time", "units")$value
+origin_time <- str_extract(unit_time, "[0-9]{4}-[0-9]{2}-[0-9]{2}")
+
+time_var <- ncvar_get(wt_nc, "time")
+time_var %>% tail + ymd(origin_time)
+```
+
+```{r}
+nc_close()
+```
+
+- Load the file:
+```{r}
+library(terra)
+wt <- rast(wt_path)
+```
+
+```{r}
+terra::extract(wt, vect(loc[1,]))
+```
 
 # Misc
 

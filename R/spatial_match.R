@@ -263,3 +263,12 @@ target_extract_riveratlas_info  <- function(
 
 }
 
+extract_water_temperature_values <- function(
+  raster_path= NULL,
+  site = NULL
+  ) {
+  raster_path <- R.utils::filePath(raster_path, expandLinks = "any")
+  
+  r <- terra::rast(raster_path)
+  terra::extract(r, site)
+}
