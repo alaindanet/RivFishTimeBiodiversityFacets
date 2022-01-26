@@ -6,7 +6,9 @@ st_snap_points <- function(
   x,
   y,
   max_dist = 1000,
-  return_snapped_pt = FALSE) {
+  return_snapped_pt = FALSE,
+  river_id = "HYRIV_ID"
+    ) {
 
   if (inherits(x, "sf")) n <- nrow(x)
   if (inherits(x, "sfc")) n <- length(x)
@@ -22,7 +24,7 @@ st_snap_points <- function(
       snapped_pt = pmap(
         list(distance, which_nearest, geometry),
         check_return_snap),
-      riverid = map_int(which_nearest, ~ifelse(!is.na(.x), y[.x, ]$FID, NA))
+      riverid = map_int(which_nearest, ~ifelse(!is.na(.x), y[.x, ][[river_id]], NA))
     )
 
   if(return_snapped_pt) {
@@ -52,7 +54,7 @@ match_river_site <- function(
   return_snapped_pt = FALSE,
   crop = TRUE,
   buffer_dist = NULL,
-  col_id_river = "FID",
+  col_id_river = "HYRIV_ID",
   site_id = "siteid"
 ) {
 
@@ -131,13 +133,14 @@ target_snap_site_to_river <- function(
   site_sf = NULL,
   proj_crs = 4087,
   length_chunk = 200,
-  max_dist = 1000
+  max_dist = 1000,
+  river_id = "HYRIV_ID"
 ) {
 
   # load shapefile
   layer_name <- sf::st_layers(river_shp_filepath, do_count = TRUE)$name
   river <- sf::read_sf(river_shp_filepath,
-    query = paste0("SELECT FID FROM ", layer_name)) %>%
+    query = paste0("SELECT ", river_id," FROM ", layer_name)) %>%
     st_transform(crs = proj_crs)
 
   # crop shapefile
@@ -177,7 +180,7 @@ target_snap_site_to_river <- function(
       return_snapped_pt = FALSE,
       crop = TRUE,
       buffer_dist = NULL,
-      col_id_river = "FID",
+      col_id_river = river_id,
       site_id = "siteid"
     )
   )
@@ -221,35 +224,42 @@ crop_on_buffer <- function(
 extract_riveratlas_info <- function(
   shp_file = NULL,
   site = NULL,
-  riverid = "riverid"
+  site_riverid = "riverid",
+  river_id = "HYRIV_ID"
   ) {
 
   river <- sf::read_sf(shp_file)
-  mask <- river$FID %in% site[[riverid]]
+  mask <- river[[river_id]] %in% site[[site_riverid]]
   river <- river[mask,]
   
-  site$FID <- site[[riverid]]
-  to_join <- site[, c("siteid", "FID")] %>%
+  site[[river_id]] <- site[[site_riverid]]
+  to_join <- site[, c("siteid", river_id)] %>%
     st_drop_geometry()
   
   
   river <- river %>%
-    left_join(to_join, by = "FID")
+    left_join(to_join, by = river_id)
   
   return(river)
 }
 
 target_extract_riveratlas_info  <- function(
   river_shp_files = NULL,
-  snap_list = NULL
+  snap_list = NULL,
+  river_id = "riverid"
   ) {
 
   mask_na <- map_lgl(snap_list, ~all(is.na(.x)))
   river_shp_files <- river_shp_files[!mask_na]
-  site <- reduce(snap_list[!mask_na], rbind)
+  snap_c <- reduce(snap_list[!mask_na], rbind)
 
-  out <- map_dfr(river_shp_files, extract_riveratlas_info,
-    site = site)
+  out <- map_dfr(river_shp_files,
+                 ~extract_riveratlas_info(shp_file = .x,
+                                          site = snap_c)
+  )
+  
+  stopifnot(sum(!is.na(snap_c[[river_id]])) == nrow(out))
   return(out)
 
 }
+
