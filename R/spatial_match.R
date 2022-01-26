@@ -220,7 +220,8 @@ crop_on_buffer <- function(
 
 extract_riveratlas_info <- function(
   shp_file = NULL,
-  site = NULL
+  site = NULL,
+  riverid = "riverid"
   ) {
 
   # load shp file
@@ -233,7 +234,7 @@ extract_riveratlas_info <- function(
     "SELECT * FROM ",
     layer_name,
     " WHERE FID IN ",
-    "(", paste0("'", site$fid, "'", collapse = ", "), ")"
+    "(", paste0("'", site[[riverid]], "'", collapse = ", "), ")"
   )
 
   river <- sf::read_sf(shp_file, query = query_fid)
@@ -246,7 +247,7 @@ target_extract_riveratlas_info  <- function(
   ) {
 
   mask_na <- map_lgl(snap_list, ~all(is.na(.x)))
-  river_shp_files <- river_shp_files[mask_na]
+  river_shp_files <- river_shp_files[!mask_na]
   site <- reduce(snap_list[!mask_na], rbind)
 
   out <- map_dfr(river_shp_files, extract_riveratlas_info,

@@ -328,26 +328,9 @@ tar_plan(
     #pattern = map(simple_lm),
     #iteration = "list"
     #),
-<<<<<<< HEAD
-tar_target(snapped_site_river,
-  target_snap_site_to_river(
-    river_shp_filepath = get_full_file_name(riveratlas_shp_files),
-    site_sf = filtered_dataset$location %>%
-      st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
-    proj_crs =  4087,
-    length_chunk = 200,
-    max_dist = 1000
-    ),
-  pattern = map(riveratlas_shp_files),
-  iteration = "list"
-),
-tar_target(snapped_site_river_c,
-           snapped_site_river[!map_lgl(snapped_site_river, ~all(is.na(.x)))] %>%
-             reduce(., rbind)),
-=======
   tar_target(snapped_site_river,
     target_snap_site_to_river(
-      river_shp_filepath = riveratlas_shp_files,
+      river_shp_filepath = get_full_file_name(riveratlas_shp_files),
       site_sf = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
       proj_crs =  4087,
@@ -356,13 +339,13 @@ tar_target(snapped_site_river_c,
       ),
     pattern = map(riveratlas_shp_files),
     iteration = "list"
-    ),
-  target_extract_riveratlas_info(
-    river_shp_files = map_chr(riveratlas_shp_files, ~get_full_file_name(filename = .x)),
-    snap_list = snapped_site_river
   ),
->>>>>>> a617f29f57e48c8193ecb5e248cd6081ef3fd9b9
-
+tar_target(riveratlas_site,
+           target_extract_riveratlas_info(
+             river_shp_files = map_chr(riveratlas_shp_files, ~get_full_file_name(filename = .x)),
+             snap_list = snapped_site_river)
+           ),
+           
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
   tar_render(report, here("doc/aa-research-questions.Rmd")),
