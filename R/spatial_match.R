@@ -224,20 +224,18 @@ extract_riveratlas_info <- function(
   riverid = "riverid"
   ) {
 
-  # load shp file
-  layer_name <- sf::st_layers(
-    shp_file,
-    do_count = TRUE)$name
-
-
-  query_fid <- paste0(
-    "SELECT * FROM ",
-    layer_name,
-    " WHERE FID IN ",
-    "(", paste0("'", site[[riverid]], "'", collapse = ", "), ")"
-  )
-
-  river <- sf::read_sf(shp_file, query = query_fid)
+  river <- sf::read_sf(shp_file)
+  mask <- river$FID %in% site[[riverid]]
+  river <- river[mask,]
+  
+  site$FID <- site[[riverid]]
+  to_join <- site[, c("siteid", "FID")] %>%
+    st_drop_geometry()
+  
+  
+  river <- river %>%
+    left_join(to_join, by = "FID")
+  
   return(river)
 }
 
