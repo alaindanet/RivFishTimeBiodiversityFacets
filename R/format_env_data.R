@@ -4,18 +4,17 @@ format_water_temperature <- function(
   siteid = filtered_dataset$location$siteid,
   raster_path = NULL) {
   
-  x <- terra::rast(x = R.utils::filePath(water_temperature_file, expandLinks = "any"))
+  x <- terra::rast(x = R.utils::filePath(raster_path, expandLinks = "any"))
   
   # Add site id, put in long format
   wt <- wt %>%
     mutate(
-      siteid = siteid,
-      tmp = kelvin_to_celcius(tmp)
+      siteid = siteid
     ) %>%
-    pivot_longer(cols = -siteid, names_to = "col", values_to = "tmp")
+    pivot_longer(cols = -siteid, names_to = "col", values_to = "tmp") %>%
+    mutate(tmp = kelvin_to_celcius(tmp))
   
   time <- tibble(col = seq_len(length(time(x))), date = time(x))
-  
   
   # Add date
   wt <- wt %>%
