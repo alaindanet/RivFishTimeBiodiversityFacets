@@ -145,3 +145,4 @@ sf::st_layers(eu_shp, do_count = TRUE)
 
 
 use_r("spatial_match")
+use_r("format_env_data")

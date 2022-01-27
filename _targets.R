@@ -355,6 +355,12 @@ tar_target(water_temperature,
              site = filtered_dataset$location %>%
                st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
            )),
+tar_target(wt,
+           format_water_temperature(
+             wt = water_temperature,
+             siteid = filtered_dataset$location$siteid,
+             raster_path = water_temperature_file)
+           ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
