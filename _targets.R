@@ -331,7 +331,7 @@ tar_plan(
         #select(-model),
     #pattern = map(simple_lm),
     #iteration = "list"
-    #),
+  #),
   tar_target(snapped_site_river,
     target_snap_site_to_river(
       river_shp_filepath = get_full_file_name(riveratlas_shp_files),
@@ -343,24 +343,26 @@ tar_plan(
       ),
     pattern = map(riveratlas_shp_files),
     iteration = "list"
-  ),
-tar_target(riveratlas_site,
-           target_extract_riveratlas_info(
-             river_shp_files = map_chr(riveratlas_shp_files, ~get_full_file_name(filename = .x)),
-             snap_list = snapped_site_river)
-           ),
-tar_target(water_temperature,
-           extract_water_temperature_values(
-             raster_path= water_temperature_file,
-             site = filtered_dataset$location %>%
-               st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
-           )),
-tar_target(wt,
-           format_water_temperature(
-             wt = water_temperature,
-             siteid = filtered_dataset$location$siteid,
-             raster_path = water_temperature_file)
-           ),
+    ),
+  tar_target(riveratlas_site,
+    target_extract_riveratlas_info(
+      river_shp_files = map_chr(riveratlas_shp_files,
+        ~get_full_file_name(filename = .x)),
+      snap_list = snapped_site_river)
+    ),
+
+  tar_target(water_temperature,
+    extract_water_temperature_values(
+      raster_path = water_temperature_file,
+      site = filtered_dataset$location %>%
+        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+      )),
+  tar_target(wt,
+    format_water_temperature(
+      wt = water_temperature,
+      siteid = filtered_dataset$location$siteid,
+      raster_path = water_temperature_file)
+    ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

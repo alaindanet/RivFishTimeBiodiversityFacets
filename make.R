@@ -20,3 +20,4 @@ extract_water_temperature_values(raster_path = water_temperature_file,
                                  site = filtered_dataset$location %>%
                                    st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
                                    )
+

@@ -14,6 +14,7 @@ library("sf")
 library("rnaturalearth")
 library("rnaturalearthdata")
 library(terra)
+library("exactextractr")
 
 library(cowplot)
 library(viridis)
