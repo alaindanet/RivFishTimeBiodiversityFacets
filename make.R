@@ -1,7 +1,11 @@
 library(targets)
 library(tarchetypes)
 
+
 tar_make()
+
+future::plan(future::multisession, workers = min(future::availableCores() - 1, 10))
+tar_make_future()
 
 tar_meta()
 tar_visnetwork()

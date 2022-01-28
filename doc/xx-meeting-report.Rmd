@@ -77,11 +77,6 @@ bb <- st_bbox(loc)
 ggplot(data = world) +
     geom_sf() +
     geom_sf(data = loc, aes(color = protocol), shape = 1) +
-    coord_sf(
-      xlim = bb[c("xmin", "xmax")],
-      ylim = bb[c("ymin", "ymax")],
-      expand = FALSE
-      ) +
     theme(legend.position = "bottom") +
     labs(title = paste0("Number of sites: ", nrow(loc)))
 ```
