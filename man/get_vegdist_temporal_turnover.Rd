@@ -2,7 +2,7 @@
 % Please edit documentation in R/compute_turnover.R
 \name{get_vegdist_temporal_turnover}
 \alias{get_vegdist_temporal_turnover}
-\title{Get temporal turnover from first year with vegdist}
+\title{Get temporal similarity from first year with vegdist}
 \usage{
 get_vegdist_temporal_turnover(
   mat = NULL,
@@ -13,6 +13,7 @@ get_vegdist_temporal_turnover(
 }
 \description{
 Wrapper around vegdist
+compute 1 - as.matrix(vegdist) to have similarity instead of disimilarity
 }
 \examples{
 tar_load(com_mat_site)

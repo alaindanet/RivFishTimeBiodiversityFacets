@@ -9,6 +9,7 @@ filter_op(
   selected_protocol = NULL,
   selected_abun_unit = NULL,
   nb_sampling = NULL,
+  span_min = 10,
   extent_month = 1,
   convert_month_to_date = FALSE,
   return_no_filtered = FALSE

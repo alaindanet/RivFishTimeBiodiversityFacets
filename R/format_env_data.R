@@ -12,13 +12,13 @@ format_water_temperature <- function(
       siteid = siteid
     ) %>%
     pivot_longer(cols = -siteid, names_to = "col", values_to = "tmp") %>%
-    mutate(tmp = kelvin_to_celcius(tmp))
-  
+    mutate(tmp = kelvin_to_celcius(tmp)) %>%
+    mutate(col = as.integer(str_extract(col, "\\d+")))
+
   time <- tibble(col = seq_len(length(time(x))), date = time(x))
-  
+
   # Add date
   wt <- wt %>%
-    mutate(col = as.integer(str_extract(col, "\\d"))) %>%
     left_join(time, by = "col")
   
   out <- wt %>%
@@ -34,4 +34,34 @@ format_water_temperature <- function(
 #' kelvin_to_celcius(273.15)
 kelvin_to_celcius <- function(x = NULL) {
   x - 273.15
+}
+
+get_moving_average_tmp <- function(wt = NULL) {
+
+  wt_y_mw <- wt %>%
+    nest_by(siteid) %>%
+    mutate(
+      mw_tmp = list(
+        slide_period_dfr(
+          .x = data,
+          .i = data$date,
+          .period = "year",
+          .f = ~data.frame(
+            date = mean(.x$date),
+            mw_tmp = mean(.x$tmp)
+            ),
+          #        .f = function(x) mean(x),
+          .before = 6,
+          .after = 6,
+          .complete = TRUE
+          )
+      )
+    )
+
+    out <- wt_y_mw %>%
+      select(siteid, mw_tmp) %>%
+      unnest(mw_tmp) %>%
+      summarise(mw_tmp = mean(mw_tmp))
+
+    return(out)
 }

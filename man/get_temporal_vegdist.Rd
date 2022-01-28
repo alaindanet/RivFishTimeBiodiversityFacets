@@ -4,7 +4,7 @@
 \alias{get_temporal_vegdist}
 \title{From vegdist object to temporal diversity}
 \usage{
-get_temporal_vegdist(vegdist_obj = NULL, drop_first_year = TRUE)
+get_temporal_vegdist(dist_mat = NULL, drop_first_year = TRUE)
 }
 \description{
 From vegdist object to similarity index from the reference year to the other

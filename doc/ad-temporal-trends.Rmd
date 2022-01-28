@@ -30,7 +30,7 @@ slope <- map_dfr(rigal_trends,
 
 ```{r}
 slope_df <- slope %>%
-  pivot_wider(names_from = "response", values_from = "linear_slope") 
+  pivot_wider(names_from = "response", values_from = "linear_slope")
 ```
 
 # Summary
@@ -818,8 +818,224 @@ comparison_baseline %>%
   facet_wrap(~response, scale = "free")
 ```
 
+# Environment 
+
 ```{r}
+tar_load(c(wt_mv_avg, riveratlas_site))
+col_to_keep <- get_river_atlas_significant_var()
+names(col_to_keep) <- NULL
+
+riv <- riveratlas_site %>%
+  clean_names() %>%
+  select(all_of(c("siteid", col_to_keep))) %>%
+  st_drop_geometry()
 ```
+
+```{r}
+slp_riv <- slope_df %>%
+  select(siteid, log_species_nb, evenness, turnover, nestedness, hillebrand,
+    appearance, disappearance, jaccard) %>%
+left_join(riv, by = "siteid") %>%
+left_join(select(filtered_dataset$location, siteid, ecoregion, main_bas, latitude, longitude), by = "siteid")
+
+length(unique(slp_riv$main_bas))
+```
+
+```{r}
+slp_riv %>%
+  ggplot(aes(y = jaccard, x = as.factor(ord_stra), color = ecoregion)) +
+  geom_boxplot()
+
+slp_riv %>%
+  ggplot(aes(y = jaccard, x = log(dist_up_km), color = ecoregion)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+slp_riv %>%
+  ggplot(aes(y = jaccard, x = as.factor(ord_flow), color = ecoregion)) +
+  geom_boxplot()
+
+slp_riv %>%
+  ggplot(aes(y = jaccard, x = tmp_dc_cyr /10, color = ecoregion)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+```{r}
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = as.factor(ord_stra), color = ecoregion)) +
+  geom_boxplot()
+
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = log(dist_up_km), color = ecoregion)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = as.factor(ord_flow), color = ecoregion)) +
+  geom_boxplot()
+
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = tmp_dc_cyr /10, color = ecoregion)) +
+  geom_point() +
+  geom_smooth(method = "lm")
+```
+
+```{r}
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = log(dist_up_km), color = as.factor(main_bas))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) + 
+  theme(legend.position = "none")
+
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = ord_stra, color = as.factor(main_bas))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "none")
+
+slp_riv %>%
+  ggplot(aes(y = hillebrand, x = ord_flow, color = as.factor(main_bas))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  theme(legend.position = "none")
+```
+```{r}
+ti <- slp_riv %>%
+ nest_by(main_bas) %>%
+ filter(nrow(data) > 10 & sum(!is.na(data$dist_up_km)) > 10) 
+
+tu <- ti %>%
+  mutate(
+    m = list(lm(jaccard ~ log(dist_up_km), data = data)),
+    coef = list(broom::tidy(m))
+  ) %>%
+  unnest(coef) %>%
+  filter(term == "log(dist_up_km)") 
+
+tu %>%
+  ggplot(aes(x = estimate)) +
+  geom_histogram()
+
+summary(lm(jaccard ~ log(dist_up_km), slp_riv))
+```
+
+- Appearance:
+
+```{r}
+library(spaMM)
+tu <- ti %>%
+  mutate(
+    m = list(lm(appearance ~ ord_stra, data = data))
+    ,
+    coef = list(broom.mixed::tidy(m))
+  ) %>%
+  unnest(coef) %>%
+  filter(term == "ord_stra") %>%
+  ungroup()
+
+stat_data <- slp_riv %>%
+  mutate(
+    appearance = scale(appearance),
+    ord_stra = as.factor(ord_stra),
+    main_bas = as.factor(main_bas),
+    log_dist_up_km = log(dist_up_km) 
+  )
+
+m0 <- spaMM::fitme(appearance ~ ord_stra, stat_data)
+plot(m0)
+
+m1 <- spaMM::fitme(appearance ~ ord_stra + (1 | main_bas),
+  stat_data)
+
+m2 <- spaMM::fitme(
+  appearance ~ ord_stra + (1 + ord_stra | main_bas),
+  stat_data
+)
+
+m2d <- spaMM::fitme(
+  appearance ~ dist_up_km + (1 + dist_up_km | main_bas),
+  stat_data
+)
+
+m2d <- spaMM::fitme(
+  appearance ~ log_dist_up_km + (1 + log_dist_up_km | main_bas),
+  stat_data
+)
+plot(m2d)
+ti[[1]]
+head(ti[,1])
+ti <- predict(m2d)
+cbind(ti[,1], )
+ti %>% reduce(., cbind)
+ti %>%
+  ggplot(aes(y = prediction, x = dist_up_km, color = main_bas)) +
+  geom_point()
+
+tm <- stat_data %>%
+  na.omit() %>%
+  mutate(
+    pred_appearance = predict(m2d, re.form = ~log_dist_up_km + (1 + log_dist_up_km | main_bas))[,1]
+  )
+  
+```
+
+```{r}
+m3 <- spaMM::fitme(scale(appearance) ~ ord_stra + (1 | main_bas) +
+  Matern(1 | longitude + latitude),
+
+  na.omit(slp_riv), control.HLfit = list(algebra = "decorr"))
+```
+
+
+- Disappearance:
+
+```{r}
+tu <- ti %>%
+  mutate(
+    m = list(lm(disappearance ~ log(dist_up_km), data = data)),
+    coef = list(broom::tidy(m))
+  ) %>%
+  unnest(coef) %>%
+  filter(term == "log(dist_up_km)") %>%
+  ungroup()
+
+tu %>%
+  ggplot(aes(x = estimate)) +
+  geom_histogram()
+
+summary(lm(disappearance ~ log(dist_up_km), slp_riv))
+```
+
+```{r}
+cor_slp_env <-
+  slp_riv[, !colnames(slp_riv) %in% c("siteid", "ecoregion", "main_bas")] %>%
+  na.omit() %>%
+  cor(., method = "spearman")
+```
+
+
+```{r cor_slp_env}
+corrplot::corrplot(
+  cor_slp_env
+)
+```
+
+```{r}
+
+```
+
+
+```{r}
+
+library(INLA)
+a3 <- inla(scale(appearance) ~ ord_stra + f(main_bas, model = "iid"),
+  family = "gaussian",
+  control.predictor = list(link = 1, compute = TRUE),
+  control.compute = list(cpo = TRUE, dic = TRUE, config = TRUE),
+  data = slp_riv)
+```
+
+
 
 
 

@@ -25,11 +25,16 @@ library(janitor)
 library(codyn)
 library(vegan)
 
+# date
+library(slider)
+
 
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
 
 # For brms
+#conflict_prefer("chisq.test", "stats")
+#conflict_prefer("fisher.test", "stats")
 conflict_prefer("col_factor", "scales")
 conflict_prefer("ar", "brms")
 conflict_prefer("col_factor", "scales")
@@ -37,6 +42,12 @@ conflict_prefer("discard", "scales")
 conflict_prefer("extract", "tidyr")
 conflict_prefer("group_rows", "dplyr")
 conflict_prefer("lag", "dplyr")
+#conflict_prefer("inset", "magrittr")
+#conflict_prefer("rescale", "scales")
+#conflict_prefer("run", "future")
+#conflict_prefer("simplify", "purrr")
+#conflict_prefer("src", "dplyr")
+#conflict_prefer("stamp", "lubridate")
 
 library(rmarkdown)
 

@@ -8,7 +8,8 @@ get_rigal_trajectory_classification(
   dataset = NULL,
   y_var = NULL,
   x_var = NULL,
-  site_id = NULL
+  site_id = NULL,
+  backtransform_linear_coefs = TRUE
 )
 }
 \description{

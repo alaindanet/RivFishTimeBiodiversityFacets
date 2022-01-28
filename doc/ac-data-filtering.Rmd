@@ -393,6 +393,8 @@ A <- inla.spde.make.A(mesh = mesh, loc = coords_loc)
 
 # Environment
 
+## River atlas 
+
 ```{r}
 tar_load(riveratlas_site)
 riveratlas_site  <- riveratlas_site %>%
@@ -416,7 +418,6 @@ colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "ria_")]
 ```{r}
 riveratlas_site <- riveratlas_site %>%
   mutate(across(starts_with("tmp_"), ~.x / 10))
-
 ```
 
 
@@ -434,8 +435,6 @@ riv %>%
   geom_histogram() +
   facet_wrap(~variable, scales = "free_x")
 ```
-
-
 
 ```{r}
 library(ade4)
@@ -466,7 +465,12 @@ p_pca[[1]]
 p_pca[[2]]
 p_pca[[3]]
 ```
-##
+## Water temperature 
+
+```{r, eval=FALSE}
+tar_load(c(water_temperature, filtered_dataset))
+```
+
 
 ## Analysis
 

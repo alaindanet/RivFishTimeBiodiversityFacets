@@ -12,13 +12,14 @@ tar_plan(
     format = "file",
     error = "continue"),
   tar_target(riveratlas_shp_files,
-             get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
-             error = "continue"
-  ),
+    get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
+    error = "continue"
+    ),
   tar_target(water_temperature_file,
-             here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc"),
-             error = "continue"
-  ),
+    here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc"),
+    format = "file",
+    error = "continue"
+    ),
   tar_target(timeseries, load_time_series_data(raw_data_file)),
   tar_target(site_desc_loc, get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
@@ -362,6 +363,7 @@ tar_plan(
       siteid = filtered_dataset$location$siteid,
       raster_path = water_temperature_file)
     ),
+  tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

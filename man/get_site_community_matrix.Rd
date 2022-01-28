@@ -4,7 +4,11 @@
 \alias{get_site_community_matrix}
 \title{Get community matrix by site}
 \usage{
-get_site_community_matrix(x = NULL)
+get_site_community_matrix(
+  x = NULL,
+  average_first_year = FALSE,
+  nb_sampling_to_average = NULL
+)
 }
 \description{
 Get community matrix by site
