@@ -2,7 +2,6 @@ source("./packages.R")
 
 ## Load your R files
 lapply(list.files(here("R"), full.names = TRUE), source)
-plan(multisession, workers = min(availableCores() - 1, 4))
 
 ## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
