@@ -922,6 +922,11 @@ summary(lm(jaccard ~ log(dist_up_km), slp_riv))
 - Appearance:
 
 ```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+
+```{r}
 library(spaMM)
 tu <- ti %>%
   mutate(
@@ -938,7 +943,7 @@ stat_data <- slp_riv %>%
     appearance = scale(appearance),
     ord_stra = as.factor(ord_stra),
     main_bas = as.factor(main_bas),
-    log_dist_up_km = log(dist_up_km) 
+    log_dist_up_km = log(dist_up_km)
   )
 
 m0 <- spaMM::fitme(appearance ~ ord_stra, stat_data)
@@ -956,33 +961,49 @@ m2d <- spaMM::fitme(
   appearance ~ dist_up_km + (1 + dist_up_km | main_bas),
   stat_data
 )
+summary(m2d)
 
 m2d <- spaMM::fitme(
-  appearance ~ log_dist_up_km + (1 + log_dist_up_km | main_bas),
+  appearance ~ log_dist_up_km + (1 + log_dist_up_km | ecoregion/main_bas/siteid),
   stat_data
 )
+summary(m2d)
 plot(m2d)
-ti[[1]]
-head(ti[,1])
-ti <- predict(m2d)
-cbind(ti[,1], )
-ti %>% reduce(., cbind)
-ti %>%
-  ggplot(aes(y = prediction, x = dist_up_km, color = main_bas)) +
-  geom_point()
+
 
 tm <- stat_data %>%
   na.omit() %>%
   mutate(
-    pred_appearance = predict(m2d, re.form = ~log_dist_up_km + (1 + log_dist_up_km | main_bas))[,1]
+    pred_appearance = predict(m2d,
+                              re.form = ~log_dist_up_km + (1 + log_dist_up_km | ecoregion))[,1]
   )
-  
+tm %>%
+  ggplot(aes(x = log_dist_up_km, y = pred_appearance, color = ecoregion)) +
+  geom_line()
+```
+```{r}
+tar_load(analysis_dataset)
+formula <- paste0(
+  "jaccard",
+  " ~ ",
+  "year", "+", "year:ord_stra", " + ", "(1 + year:ord_stra| ecoregion/main_bas/siteid)"
+)
+spaMM::fitme(formula = formula, data = analysis_dataset)
+
+formula <- paste0(
+  "jaccard",
+  " ~ ",
+  "dis_up_km + tmp_dc_cyr + (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas/siteid)"
+)
+
+
+
 ```
 
-```{r}
+
+```{r, eval=FALSE}
 m3 <- spaMM::fitme(scale(appearance) ~ ord_stra + (1 | main_bas) +
   Matern(1 | longitude + latitude),
-
   na.omit(slp_riv), control.HLfit = list(algebra = "decorr"))
 ```
 

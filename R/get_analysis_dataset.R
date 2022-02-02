@@ -5,7 +5,8 @@ get_analysis_dataset <- function(
   turnover_c = NULL,
   vegdist_turnover_c = NULL,
   hillnb = NULL,
-  baselga_c = NULL
+  baselga_c = NULL,
+  river = NULL
   ) {
 
   analysis_dataset <- filtered_dataset$abun_rich_op %>%
@@ -27,7 +28,10 @@ get_analysis_dataset <- function(
         by = c("siteid", "year"))
   }
 
-
+  if (!is.null(river)) {
+    analysis_dataset <- analysis_dataset %>%
+      left_join(river, by = c("siteid"))
+  }
   year_stat_site <- filtered_dataset$site_quanti %>%
     filter(variable == "year") %>%
     select(siteid, min, max) %>%
@@ -39,4 +43,29 @@ get_analysis_dataset <- function(
 
   return(analysis_dataset)
 
+}
+
+get_rigal_slope_df <- function(
+  rigal_trends = NULL,
+  var_names = NULL) {
+  
+  names(rigal_trends) <- var_names
+  slope <- map_dfr(rigal_trends,
+                   ~.x %>%
+                     select(siteid, linear_slope),
+                   .id = "response"
+  )
+  slope_df <- slope %>%
+    pivot_wider(names_from = "response", values_from = "linear_slope")
+  
+  return(slope_df)
+  
+}
+
+get_rigal_analysis_dataset <- function(
+  rigal_df = NULL,
+  river = NULL
+) {
+   river_df %>%
+    left_join(river, by = c("siteid"))
 }

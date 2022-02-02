@@ -53,3 +53,7 @@ library(rmarkdown)
 
 # parallel
 library(future)
+
+# Statistics
+library(INLA)
+library(inlatools)

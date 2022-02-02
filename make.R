@@ -18,4 +18,14 @@ tar_load(riveratlas_site)
 riveratlas_site$siteid
 
 source(file = "start_rmd.R")
-tar_load(water_temperature_file)
+tar_load(analysis_dataset)
+
+tar_load(inla_rich)
+dist_check <- inlatools::fast_distribution_check(inla_rich)
+plot(dist_check)
+summary(inla_rich)
+
+tar_load(inla_abun)
+dist_check <- inlatools::distribution_check(inla_rich)
+plot(dist_check)
+summary(inla_rich)
