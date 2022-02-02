@@ -178,7 +178,7 @@ pre code {
 
 <h1 class="title toc-ignore">Filter sites and operation</h1>
 <h4 class="author">Alain Danet</h4>
-<h4 class="date">28 January, 2022</h4>
+<h4 class="date">02 February, 2022</h4>
 
 </div>
 
@@ -1033,7 +1033,7 @@ Reproducibility receipt
 </summary>
 <pre class="r"><code>## datetime
 Sys.time()
-#&gt; [1] &quot;2022-01-28 20:36:10 CST&quot;
+#&gt; [1] &quot;2022-02-02 12:19:04 CST&quot;
 
 ## repository
 if(requireNamespace(&#39;git2r&#39;, quietly = TRUE)) {
@@ -1046,7 +1046,7 @@ if(requireNamespace(&#39;git2r&#39;, quietly = TRUE)) {
 }
 #&gt; Local:    main L:/alain/RivFishTimeBiodiversityFacets
 #&gt; Remote:   main @ origin (https://github.com/alaindanet/RivFishTimeBiodiversityFacets.git)
-#&gt; Head:     [11ac65f] 2022-01-28: Format temperature
+#&gt; Head:     [b0d3238] 2022-02-02: Add env to analysis + test spamm hierarchical model
 
 ## session info
 sessionInfo()
@@ -1084,30 +1084,31 @@ sessionInfo()
 #&gt; [40] conflicted_1.1.0       
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
-#&gt;  [1] colorspace_2.0-2   ggsignif_0.6.3     ellipsis_0.3.2     class_7.3-19      
-#&gt;  [5] rgdal_1.5-28       rprojroot_2.0.2    snakecase_0.11.0   fs_1.5.2          
-#&gt;  [9] rstudioapi_0.13    proxy_0.4-26       ggpubr_0.4.0       farver_2.1.0      
-#&gt; [13] listenv_0.8.0      ggrepel_0.9.1      fansi_1.0.2        xml2_1.3.3        
-#&gt; [17] codetools_0.2-18   splines_4.1.1      cachem_1.0.6       knitr_1.37        
-#&gt; [21] jsonlite_1.7.3     broom_0.7.11       cluster_2.1.2      dbplyr_2.1.1      
-#&gt; [25] compiler_4.1.1     httr_1.4.2         backports_1.4.1    assertthat_0.2.1  
-#&gt; [29] fastmap_1.1.0      cli_3.1.1          s2_1.0.7           htmltools_0.5.2   
-#&gt; [33] tools_4.1.1        igraph_1.2.11      gtable_0.3.0       glue_1.6.0        
-#&gt; [37] wk_0.6.0           Rcpp_1.0.8         carData_3.0-5      jquerylib_0.1.4   
-#&gt; [41] cellranger_1.1.0   vctrs_0.3.8        svglite_2.0.0      nlme_3.1-152      
-#&gt; [45] iterators_1.0.13   xfun_0.29          globals_0.14.0     ps_1.6.0          
-#&gt; [49] rvest_1.0.2        lifecycle_1.0.1    rstatix_0.7.0      MASS_7.3-54       
-#&gt; [53] hms_1.1.1          yaml_2.2.2         memoise_2.0.1      gridExtra_2.3     
-#&gt; [57] sass_0.4.0         stringi_1.7.6      highr_0.9          e1071_1.7-9       
-#&gt; [61] warp_0.2.0         rlang_0.4.12       pkgconfig_2.0.3    systemfonts_1.0.3 
-#&gt; [65] evaluate_0.14      labeling_0.4.2     processx_3.5.2     tidyselect_1.1.1  
-#&gt; [69] parallelly_1.30.0  R6_2.5.1           generics_0.1.1     base64url_1.4     
-#&gt; [73] DBI_1.1.2          pillar_1.6.5       haven_2.4.3        withr_2.4.3       
-#&gt; [77] mgcv_1.8-36        units_0.7-2        abind_1.4-5        car_3.0-12        
-#&gt; [81] modelr_0.1.8       crayon_1.4.2       KernSmooth_2.23-20 utf8_1.2.2        
-#&gt; [85] tzdb_0.2.0         grid_4.1.1         readxl_1.3.1       data.table_1.14.2 
-#&gt; [89] git2r_0.29.0       callr_3.7.0        reprex_2.0.1       digest_0.6.29     
-#&gt; [93] classInt_0.4-3     webshot_0.5.2      munsell_0.5.0      bslib_0.3.1</code></pre>
+#&gt;  [1] readxl_1.3.1       backports_1.4.1    systemfonts_1.0.3  igraph_1.2.11     
+#&gt;  [5] splines_4.1.1      listenv_0.8.0      digest_0.6.29      htmltools_0.5.2   
+#&gt;  [9] fansi_1.0.2        memoise_2.0.1      base64url_1.4      cluster_2.1.2     
+#&gt; [13] tzdb_0.2.0         globals_0.14.0     modelr_0.1.8       R.utils_2.11.0    
+#&gt; [17] svglite_2.0.0      colorspace_2.0-2   rvest_1.0.2        ggrepel_0.9.1     
+#&gt; [21] warp_0.2.0         haven_2.4.3        xfun_0.29          rgdal_1.5-28      
+#&gt; [25] callr_3.7.0        crayon_1.4.2       jsonlite_1.7.3     iterators_1.0.13  
+#&gt; [29] glue_1.6.0         gtable_0.3.0       webshot_0.5.2      car_3.0-12        
+#&gt; [33] abind_1.4-5        DBI_1.1.2          rstatix_0.7.0      Rcpp_1.0.8        
+#&gt; [37] units_0.7-2        proxy_0.4-26       httr_1.4.2         wk_0.6.0          
+#&gt; [41] ellipsis_0.3.2     pkgconfig_2.0.3    R.methodsS3_1.8.1  farver_2.1.0      
+#&gt; [45] sass_0.4.0         dbplyr_2.1.1       utf8_1.2.2         tidyselect_1.1.1  
+#&gt; [49] labeling_0.4.2     rlang_0.4.12       munsell_0.5.0      cellranger_1.1.0  
+#&gt; [53] tools_4.1.1        cachem_1.0.6       cli_3.1.1          generics_0.1.1    
+#&gt; [57] broom_0.7.11       evaluate_0.14      fastmap_1.1.0      yaml_2.2.2        
+#&gt; [61] processx_3.5.2     knitr_1.37         fs_1.5.2           s2_1.0.7          
+#&gt; [65] nlme_3.1-152       R.oo_1.24.0        xml2_1.3.3         compiler_4.1.1    
+#&gt; [69] rstudioapi_0.13    e1071_1.7-9        ggsignif_0.6.3     reprex_2.0.1      
+#&gt; [73] bslib_0.3.1        stringi_1.7.6      highr_0.9          ps_1.6.0          
+#&gt; [77] classInt_0.4-3     vctrs_0.3.8        pillar_1.6.5       lifecycle_1.0.1   
+#&gt; [81] jquerylib_0.1.4    data.table_1.14.2  R6_2.5.1           KernSmooth_2.23-20
+#&gt; [85] gridExtra_2.3      parallelly_1.30.0  codetools_0.2-18   MASS_7.3-54       
+#&gt; [89] assertthat_0.2.1   rprojroot_2.0.2    withr_2.4.3        mgcv_1.8-36       
+#&gt; [93] hms_1.1.1          grid_4.1.1         class_7.3-19       snakecase_0.11.0  
+#&gt; [97] carData_3.0-5      git2r_0.29.0       ggpubr_0.4.0</code></pre>
 </details>
 </div>
 </div>

@@ -309,8 +309,13 @@ tar_target(rigal_slp_df,
              rigal_trends = rigal_trends,
              var_names = var_temporal_trends)),
 tar_target(slp_env,
-           get_rigal_analysis_dataset(rigal_df = rigal_slp_df,
-                                      river = river)),
+           get_rigal_analysis_dataset(
+             rigal_df = rigal_slp_df,
+              river = riveratlas_site[,
+                colnames(riveratlas_site) %in% c("siteid", get_river_atlas_significant_var())],
+           spatial = select(filtered_dataset$location, siteid, ecoregion, main_bas)
+           )
+           ),
   tar_target(rigal_trends_avg3y,
     get_rigal_trajectory_classification(
       analysis_dataset_avg3y,
@@ -419,10 +424,10 @@ tar_target(inla_test,
            )
 ),
 tar_target(trend_env, 
-           model_spamm(
+           model_rigal_spamm(
            formula = paste0(var_temporal_trends,
                             " ~ ",
-                            "dis_up_km + tmp_dc_cyr +
+                            "dist_up_km + tmp_dc_cyr +
                             (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas/siteid)"
                             ),
            data = slp_env),

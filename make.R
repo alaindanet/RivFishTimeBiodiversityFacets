@@ -14,11 +14,11 @@ tar_load(c(riveratlas_shp_files, filtered_dataset))
 tar_load(snapped_site_river, snapped_site_river)
 
 
-tar_load(riveratlas_site)
+tar_load(c(riveratlas_site,slp_env))
 riveratlas_site$siteid
 
 source(file = "start_rmd.R")
-tar_load(analysis_dataset)
+tar_load(rigal_slp_df)
 
 tar_load(inla_rich)
 dist_check <- inlatools::fast_distribution_check(inla_rich)

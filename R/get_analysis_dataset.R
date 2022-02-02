@@ -64,8 +64,10 @@ get_rigal_slope_df <- function(
 
 get_rigal_analysis_dataset <- function(
   rigal_df = NULL,
-  river = NULL
+  river = NULL,
+  spatial = NULL
 ) {
-   river_df %>%
-    left_join(river, by = c("siteid"))
+   rigal_df %>%
+    left_join(river, by = c("siteid")) %>%
+    left_join(spatial, by = "siteid")
 }
