@@ -72,7 +72,7 @@ get_rigal_analysis_dataset <- function(
     left_join(spatial, by = "siteid") %>%
     mutate(
       tmp_c_cyr = tmp_dc_cyr / 10,
-      log_dist_up_km = log(dist_up_km)
+      log_dist_up_km = log(dist_up_km),
+      main_bas = as.factor(main_bas)
     )
- 
 }

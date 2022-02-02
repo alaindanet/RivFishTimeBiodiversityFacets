@@ -934,7 +934,7 @@ re <- paste0("(1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas/siteid)")
 
 ```{r}
 re <- paste0("~ dist_up_km + (1 + dist_up_km | main_bas)")
-pred <- na.omit(slp_env) 
+pred <- na.omit(slp_env)
 for (i in seq_along(var_temporal_trends)) {
   tmp <- predict(trend_env[[i]], 
     re.form = as.formula(re) 
@@ -982,8 +982,8 @@ plot_grid(plotlist = p, ncol = 3)
 ```{r}
 re <- paste0("~ tmp_dc_cyr + (1 + tmp_dc_cyr | main_bas)")
 pred_tmp <- from_data_to_predict(
-  model_list = trend_env, 
-  dataset = slp_env, 
+  model_list = trend_env,
+  dataset = slp_env,
   re = re
 )
 ```
@@ -992,12 +992,11 @@ pred_tmp <- from_data_to_predict(
 p_tmp <- map(
   c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
   function(x) {
-    pred %>%
+    pred_tmp %>%
       ggplot(aes(
           y = !!sym(x),
           x = tmp_dc_cyr,
-          color = as.factor(main_bas),
-          shape = as.factor(ecoregion)
+          color = as.factor(main_bas)
           )) +
       geom_line() +
       theme(legend.position = "none")
