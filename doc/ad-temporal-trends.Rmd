@@ -29,8 +29,8 @@ slope <- map_dfr(rigal_trends,
 ```
 
 ```{r}
-slope_df <- slope %>%
-  pivot_wider(names_from = "response", values_from = "linear_slope")
+tar_load(rigal_slp_df)
+slope_df <- rigal_slp_df
 ```
 
 # Summary
@@ -922,12 +922,105 @@ summary(lm(jaccard ~ log(dist_up_km), slp_riv))
 - Appearance:
 
 ```{r}
+library(spaMM)
+tar_load(c(trend_env, slp_env))
+names(trend_env) <- var_temporal_trends
+
+summary(trend_env$jaccard_dis)
+
+predict(trend_env$jaccard)[,1]
+re <- paste0("(1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas/siteid)")
+```
+
+```{r}
+re <- paste0("~ dist_up_km + (1 + dist_up_km | main_bas)")
+pred <- na.omit(slp_env) 
+for (i in seq_along(var_temporal_trends)) {
+  tmp <- predict(trend_env[[i]], 
+    re.form = as.formula(re) 
+    )[,1]
+  names(tmp) <- NULL
+  pred[[var_temporal_trends[i]]] <- tmp
+}
+from_data_to_predict <- function(
+  model_list = NULL,
+  dataset = NULL,
+  re = NULL
+) {
+
+  pred <- na.omit(dataset) 
+  for (i in seq_along(names(model_list))) {
+    tmp <- predict(model_list[[i]], 
+      re.form = as.formula(re) 
+      )[,1]
+    names(tmp) <- NULL
+    pred[[names(model_list)[i]]] <- tmp
+  }
+  return(pred)
+}
+```
+
+```{r}
+p <- map(
+  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
+  function(x) {
+
+    pred %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = dist_up_km,
+          color = as.factor(main_bas),
+          shape = as.factor(ecoregion)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p, ncol = 3)
+```
+
+```{r}
+re <- paste0("~ tmp_dc_cyr + (1 + tmp_dc_cyr | main_bas)")
+pred_tmp <- from_data_to_predict(
+  model_list = trend_env, 
+  dataset = slp_env, 
+  re = re
+)
+```
+
+```{r}
+p_tmp <- map(
+  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
+  function(x) {
+    pred %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = tmp_dc_cyr,
+          color = as.factor(main_bas),
+          shape = as.factor(ecoregion)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p_tmp, ncol = 3)
+```
+
+
+
+
+```{r}
+pred_
+```
+
+```{r}
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
 
+
+
 ```{r}
-library(spaMM)
 tu <- ti %>%
   mutate(
     m = list(lm(appearance ~ ord_stra, data = data))

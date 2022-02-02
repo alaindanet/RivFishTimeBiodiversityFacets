@@ -423,12 +423,12 @@ tar_target(inla_test,
                control.predictor = list(link = 1)
            )
 ),
-tar_target(trend_env, 
+tar_target(trend_env,
            model_rigal_spamm(
            formula = paste0(var_temporal_trends,
                             " ~ ",
                             "dist_up_km + tmp_dc_cyr +
-                            (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas/siteid)"
+                            (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
                             ),
            data = slp_env),
            pattern = map(var_temporal_trends),
