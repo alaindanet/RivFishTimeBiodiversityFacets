@@ -428,7 +428,7 @@ tar_target(trend_env,
            formula = paste0(var_temporal_trends,
                             " ~ ",
                             "dist_up_km + tmp_dc_cyr +
-                            (1 + dist_up_km + tmp_dc_cyr | ecoregion + main_bas)"
+                            (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
                             ),
            data = slp_env),
            pattern = map(var_temporal_trends),
