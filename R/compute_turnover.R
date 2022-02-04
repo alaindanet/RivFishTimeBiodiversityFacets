@@ -148,7 +148,7 @@ variable_by_year <- function(x = NULL, variable = NULL) {
 #'
 get_temporal_vegdist <- function(
   dist_mat = NULL,
-  drop_first_year = TRUE) {
+  drop_first_year = FALSE) {
 
   x <- dist_mat
 
@@ -174,7 +174,7 @@ get_vegdist_temporal_turnover <- function(
   mat = NULL,
   method = NULL,
   return_tibble = TRUE,
-  drop_first_year = TRUE
+  drop_first_year = FALSE 
   ) {
 
   dist_obj <- 1 - as.matrix(vegan::vegdist(mat, method = method, binary = TRUE))
@@ -203,7 +203,7 @@ target_vegdist_turnover <- function(
   dataset = NULL,
   method = NULL,
   return_tibble = TRUE,
-  drop_first_year = TRUE
+  drop_first_year = FALSE
   ) {
 
   dataset[[method]] <- furrr::future_map(
@@ -298,7 +298,7 @@ get_custom_temporal_turnover <- function(
   fun = NULL,
   var_name = "value",
   return_tibble = TRUE,
-  drop_first_year = TRUE,
+  drop_first_year = FALSE,
   ...
   ) {
 
@@ -323,7 +323,7 @@ target_custom_temporal_turnover <- function(
   var_name = NULL,
   mat_col = "mat_bin",
   return_tibble = TRUE,
-  drop_first_year = TRUE,
+  drop_first_year = FALSE,
   ...
   ) {
 

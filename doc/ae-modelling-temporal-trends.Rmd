@@ -36,15 +36,6 @@ summary(analysis_dataset$jaccard)
 ```
 
 ```{r}
-transform01 <- function(x, na.omit = TRUE) {
-  if (na.omit) {
-    len <- length(na.omit(x))
-  } else {
-    len <- length(x) 
-  }
-
-  (x * (len - 1) + 0.5) / (len)
-}
 x <- rbinom(20, 1, .5)
 transform01(x)
 analysis_dataset$jaccard_scaled <- transform01(analysis_dataset$jaccard)
@@ -99,17 +90,31 @@ fr <- analysis_dataset %>%
       )
       )) %>%
   na.omit() %>%
-  mutate(jaccard_scaled = transform01(jaccard))
+  mutate(
+    jaccard_scaled = transform01(jaccard),
+    main_bas = as.factor(main_bas),
+    scaled_dist_up_km = scale(dist_up_km),
+    log_dist_up_km = log(dist_up_km),
+    scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
+    tmp_c_cyr = tmp_dc_cyr / 10,
+    scaled_tmp_c_cyr = scale(tmp_c_cyr),
+
+  )
+```
+```{r}
+hist(fr$jaccard_scaled)
 ```
 
+
 ```{r}
-ti <- glmmTMB(jaccard_scaled ~ year + (1 | siteid),
-  family = list(family = "beta", link = "logit"),
+ti <- glmmTMB(jaccard_scaled ~
+  year*scaled_dist_up_km + (1 | siteid),
+  family = beta_family(link = "logit"),
   data = fr)
 ```
 
 ```{r}
-plot(resid(ti) ~ fitted(ti))
+plot(residuals(ti) ~ fitted(ti))
 ```
 
 ```{r}
@@ -119,6 +124,22 @@ ti1 <- update(ti, dispformula = ~ siteid)
 ```{r}
 plot(resid(ti1) ~ fitted(ti1))
 ```
+- Normal distribution:
+
+```{r}
+?family_glmmTMB
+tn <- glmmTMB(jaccard_scaled ~
+  year * scaled_dist_up_km +
+  (1 + year | siteid) +
+  (1 + scaled_dist_up_km | main_bas),
+  family = gaussian(link = "identity"),
+  data = fr)
+summary(tn)
+plot(resid(tn) ~ fitted(tn))
+plot(fr$jaccard_scaled ~ fitted(tn))
+abline(c(0,1))
+```
+
 
 
 ## INLA 

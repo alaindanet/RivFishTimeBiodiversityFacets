@@ -82,7 +82,7 @@ tar_plan(
            mat = as.matrix(.x[250:500, ]),
            method = "jaccard",
            return_tibble = TRUE,
-           drop_first_year = TRUE
+           drop_first_year = FALSE
          )
        )
       ) %>%
@@ -131,7 +131,7 @@ tar_plan(
       dataset = com_mat_site,
       method = vegdist_index,
       return_tibble = TRUE,
-      drop_first_year = TRUE
+      drop_first_year = FALSE
       ),
     pattern = map(vegdist_index),
     iteration = "list"),
@@ -143,7 +143,7 @@ tar_plan(
       dataset = com_mat_site_avg3y,
       method = vegdist_index,
       return_tibble = TRUE,
-      drop_first_year = TRUE
+      drop_first_year = FALSE
       ),
     pattern = map(vegdist_index),
     iteration = "list"),
@@ -169,7 +169,7 @@ tar_plan(
       var_name = "hillebrand",
       mat_col = "mat_rel",
       return_tibble = TRUE,
-      drop_first_year = TRUE,
+      drop_first_year = FALSE,
       similarity = TRUE
     )
   ),
@@ -179,7 +179,7 @@ tar_plan(
       fun = compute_hillebrand,
       var_name = "hillebrand",
       return_tibble = TRUE,
-      drop_first_year = TRUE,
+      drop_first_year = FALSE,
       similarity = TRUE
     )
   ),
@@ -189,7 +189,7 @@ tar_plan(
       fun = compute_codyn_turnover,
       var_name = turnover_types_chr,
       return_tibble = TRUE,
-      drop_first_year = TRUE,
+      drop_first_year = FALSE,
       type = turnover_types_chr
       ),
     pattern = map(turnover_types_chr),
@@ -201,7 +201,7 @@ tar_plan(
       fun = compute_jaccard_decomp,
       var_name = baselga_types_chr,
       return_tibble = TRUE,
-      drop_first_year = TRUE,
+      drop_first_year = FALSE,
       type = baselga_types_chr
       ),
     pattern = map(baselga_types_chr),
@@ -218,7 +218,7 @@ tar_plan(
       fun = compute_codyn_turnover,
       var_name = turnover_types_chr,
       return_tibble = TRUE,
-      drop_first_year = TRUE,
+      drop_first_year = FALSE,
       type = turnover_types_chr
       ),
     pattern = map(turnover_types_chr),
