@@ -851,9 +851,9 @@ slp_riv %>%
   geom_point() +
   geom_smooth(method = "lm")
 
-slp_riv %>%
-  ggplot(aes(y = jaccard, x = as.factor(ord_flow), color = ecoregion)) +
-  geom_boxplot()
+# slp_riv %>%
+#   ggplot(aes(y = jaccard, x = as.factor(ord_flow), color = ecoregion)) +
+#   geom_boxplot()
 
 slp_riv %>%
   ggplot(aes(y = jaccard, x = tmp_dc_cyr /10, color = ecoregion)) +
@@ -870,9 +870,9 @@ slp_riv %>%
   geom_point() +
   geom_smooth(method = "lm")
 
-slp_riv %>%
-  ggplot(aes(y = hillebrand, x = as.factor(ord_flow), color = ecoregion)) +
-  geom_boxplot()
+# slp_riv %>%
+#   ggplot(aes(y = hillebrand, x = as.factor(ord_flow), color = ecoregion)) +
+#   geom_boxplot()
 
 slp_riv %>%
   ggplot(aes(y = hillebrand, x = tmp_dc_cyr /10, color = ecoregion)) +
@@ -893,11 +893,11 @@ slp_riv %>%
   geom_smooth(method = "lm", se = FALSE) +
   theme(legend.position = "none")
 
-slp_riv %>%
-  ggplot(aes(y = hillebrand, x = ord_flow, color = as.factor(main_bas))) +
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE) +
-  theme(legend.position = "none")
+# slp_riv %>%
+#   ggplot(aes(y = hillebrand, x = ord_flow, color = as.factor(main_bas))) +
+#   geom_point() +
+#   geom_smooth(method = "lm", se = FALSE) +
+#   theme(legend.position = "none")
 ```
 ```{r}
 ti <- slp_riv %>%

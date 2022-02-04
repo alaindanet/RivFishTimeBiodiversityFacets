@@ -262,7 +262,7 @@ tar_plan(
       baselga_c = baselga_c,
       river = riveratlas_site[,
         colnames(riveratlas_site) %in%
-          setNames(get_river_atlas_significant_var(), NULL)
+          c("siteid", setNames(get_river_atlas_significant_var(), NULL))
         ]
     )
     ),
