@@ -36,7 +36,9 @@ kelvin_to_celcius <- function(x = NULL) {
   x - 273.15
 }
 
-get_moving_average_tmp <- function(wt = NULL) {
+get_moving_average_tmp <- function(
+  wt = NULL,
+  avg_by_site = FALSE) {
 
   wt_y_mw <- wt %>%
     nest_by(siteid) %>%
@@ -54,14 +56,24 @@ get_moving_average_tmp <- function(wt = NULL) {
           .before = 6,
           .after = 6,
           .complete = TRUE
-          )
+        )
       )
     )
 
     out <- wt_y_mw %>%
       select(siteid, mw_tmp) %>%
-      unnest(mw_tmp) %>%
-      summarise(mw_tmp = mean(mw_tmp))
+      unnest(mw_tmp)
+
+    if (avg_by_site) {
+      out <- out %>%
+        summarise(tmp_w_ama = mean(mw_tmp))
+    } else {
+      out <- out %>%
+        ungroup() %>%
+        mutate(year = year(date)) %>%
+        group_by(siteid, year) %>%
+        summarise(tmp_w_ama = mean(mw_tmp))
+    }
 
     return(out)
 }

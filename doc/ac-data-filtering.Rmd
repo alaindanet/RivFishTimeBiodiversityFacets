@@ -398,8 +398,6 @@ A <- inla.spde.make.A(mesh = mesh, loc = coords_loc)
 
 ```{r}
 tar_load(riveratlas_site)
-riveratlas_site  <- riveratlas_site %>%
-  janitor::clean_names()
 ```
 
 ```{r}
@@ -469,7 +467,7 @@ p_pca[[3]]
 ## Water temperature 
 
 ```{r, eval=FALSE}
-tar_load(c(water_temperature, filtered_dataset))
+tar_load(c(wt_mv_avg, wt))
 ```
 
 

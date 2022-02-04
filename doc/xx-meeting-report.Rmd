@@ -195,6 +195,22 @@ riv %>%
 
 # Statistical analysis 
 
+## Species composition change
+
+In each site and at each sampling point, we computed the dissimilarity (Jaccard,
+Appearance, Disappearance, Turnover & Nestedness) between the time step and the
+reference time, i.e. the first year of sampling. Regarding 
+the reference time step, there are two different strategies. First is to include it,
+i.e. setting a dissimilarity of 0 at each beginning of a time series
+[@blowes_geography_2019]. Another strategy is to exclude the first year from the
+analysis [@dornelas_assemblage_2014]. The first option logically constrains the analysis
+toward increasing dissimilarity as the second can capture recovery from
+perturbation soon after the first samplings. I guess that the first option makes
+more sense more it removes to sensibility to community changes happening just
+after the references year.
+
+## Model 
+
 - Simple lm by site
 
 # Results
