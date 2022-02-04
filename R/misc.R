@@ -5,3 +5,9 @@ source_dir <- function(path, trace = TRUE, ...) {
     if(trace) cat("\n")
   }
 }
+
+obj_mb <- function(x = NULL) {
+  x <- object.size(x)
+  class(x) <- "numeric"
+  round(x * 10^-6)
+}

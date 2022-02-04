@@ -22,41 +22,91 @@ names(rigal_trends) <- var_temporal_trends
 ```
 # Introduction 
 
-## Documenting community changes
-
-- Many papers report local species richness and temporal trends
-  - Abundance [@klink_meta-analysis_2020]
-  - Species richness: [@vellend_global_2013; @dornelas_assemblage_2014]
-
-- Other aspects of community structure vary through time:
-  - Composition: [@dornelas_assemblage_2014; @hillebrand_biodiversity_2018]
-  - Functional diversity [@barnagaud_temporal_2017]
-  - Evenness (ref)
-
 ## Why do we want to assess community changes ?
 
 - Global changes have affect a tremendous effect communities
 - Understanding assembly and disassembly rules
 - Give a more complex and complete picture of what is going on ?
 
-## Link between different facets of biodiversity
+## Documenting community changes
 
-- Species richness:
-  - Evenness / richness: (+) [@soininen_relationship_2012]
-  - FDiv / richness: (+) [@mouchet_functional_2010]
-  - FEve / richness: (O) [@mouchet_functional_2010]
-  ... to complete
+- Many papers report  temporal trends of local species richness and turnover
+  - Abundance [@klink_meta-analysis_2020]
+  - Species richness and or turnover: [@vellend_global_2013, @dornelas_assemblage_2014, @blowes_geography_2019]
+  - They describe basically no trends in species richness but high turnover  
+  - Species turnover vary a lot according to geography and taxons
+    [@blowes_geography_2019]
+  - Species turnover (as opposite of nestedness [@baselga_temporal_2013]) has
+    been reported to be the major change, i.e. change in species identity, which
+    is coherent with the absence of species richness trends  
+
+## Research gap
+
+- Biodiversity trends are all about geographical variation, i.e. few ecological drivers are involved
 
 ## Research questions 
+
+### Drivers of temporal changes 
+
+- What are the drivers of community changes ?
+  - Climate change: more appearance and disappearance in the upper basin
+  - More species turnover far from the source because of dispersal ability
+
+```{r}
+cap_turn <- paste0(
+  "The hypothesis is that sites located at the middle of the stream network
+  will experience the more composition change through time because of two
+  opposites constraints. Climate change is expected to drive species upward in
+  the stream network but an opposite constrain gathered into hydrological
+  contrain, such as water flowand obstacles to migration will restrain the
+  upward migration. The sum of those constrains is hypothesized to result in a
+  quadratic relationship between jaccard turnover and distance from source.")
+```
+
+
+```{r, fig.cap=cap_turn}
+knitr::include_graphics("fig/turnover_hyp.pdf")
+```
+
+### Within and basin scale 
+
+- Temporal homogeneization at the basin scale?
+
+```{r}
+dis_cap <- paste0("If sites within basin becomes more dissimilar from their
+  reference (first year of observation), we
+  should observe at the same time an homogeneization of sites at the basin scale")
+```
+
+```{r, fig.cap=dis_cap}
+ggplot(tibble(x = c(0, .1)), aes(x)) +
+  stat_function(fun = function(x) x, geom = "line") +
+  labs(
+    x = "Average temporal dissimalitiry within basin",
+    y = "Temporal similarity at the basin scale"
+  )
+```
+
+
+- Product:
+  - Map of temperature and distance to effect on turnover by basin ?
+
+## Fish freshwater in streams 
+
+- Streams are a good model to study turnover:  
+  - They are spatially delimited at the basin level
+  - Stream fishes are strongly constrained by hydrological constrains, which are
+    highly variable at a small spatial scale, making possible to ecological
+    drivers at multiple places, here the basin scale.
 
 # Methods
 
 ## Data selection
 
-- Unique protocol and unique unit of abundance by site 
+- Unique protocol and unique unit of abundance by site
 - One sampling by year and site
 - In each site, samplings should be in the median (more or less one month and half, i.e. 1.5 month)
-- 10 samplings by site
+- 5 samplings by site, span 10 years 
 
 ```{r}
 loc <- filtered_dataset$location %>%
@@ -121,7 +171,27 @@ appearance/disappearance and nestedness / turnover.
 - Nestedness: $SER_r - J_t$
 
 
-# Environment (Coming soon)
+# Environment
+
+##
+
+```{r}
+
+tar_load(riveratlas_site)
+riv <- riveratlas_site %>%
+  select(all_of(c("siteid", setNames(get_river_atlas_significant_var(), NULL)))) %>%
+  mutate(across(starts_with("tmp_"), ~.x / 10)) %>%
+  st_drop_geometry()
+```
+
+```{r}
+riv %>%
+  rename(get_river_atlas_significant_var()) %>%
+  pivot_longer(cols = -siteid, names_to = "variable", values_to = "values") %>%
+  ggplot(aes(x = values)) +
+  geom_histogram() +
+  facet_wrap(~variable, scales = "free")
+```
 
 # Statistical analysis 
 
@@ -207,8 +277,6 @@ p_jt_sup_ne <- sum(abs(rigal_trends_df$turnover) > abs(rigal_trends_df$nestednes
 cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")
 cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
 ```
-
-
 
 - To compare with @dornelas_assemblage_2014:
   - Species richness:
@@ -298,60 +366,6 @@ plot_grid(
 
 ## Spatial trends 
 
-### Map
-
-#### Site
-
-```{r}
-p <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
- ~ map_world_trends(
-   df = rigal_trends_df_loc, y = .x, range_per = .95) +
-   labs(title = get_var_replacement()[.x])
-)
-p
-```
-
-#### Median trends by Basin
-
-```{r}
-basin_slope <- rigal_trends_df_loc %>%
-  group_by(main_bas) %>%
-  summarise(across(where(is.double), median))
-
-p_basin <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
- ~ map_world_trends(
-   df = basin_slope, y = .x, range_per = .95) +
-   labs(title = get_var_replacement()[.x])
-)
-p_basin
-```
-
-#### Country 
-
-```{r}
-country_slope <- rigal_trends_df_loc %>%
-  group_by(country) %>%
-  summarise(across(where(is.double), median))
-
-p_country <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
- ~ map_world_trends(
-   df = country_slope, y = .x, range_per = .95) +
-   labs(title = get_var_replacement()[.x])
-)
-p_country
-```
-
-### Boxplot
-
-```{r}
-b_country <- map(c("log_species_nb", "log_total_abundance", "jaccard", "hillebrand", "appearance", "disappearance", "turnover", "nestedness"),
- ~ rigal_trends_df_loc %>%
-  ggplot(aes(x = country, y = !!sym(.x), fill = ecoregion)) +
-  geom_boxplot() +
-labs(title = get_var_replacement()[.x])
-)
-b_country
-```
 
 ## Rarity
 
@@ -360,6 +374,336 @@ Cf other document
 ## Spatial scale
 
 - Selection on basin data 
+
+## Environment
+
+### PCA
+
+```{r}
+library(ade4)
+library(factoextra)
+tar_load(rigal_slp_df)
+slope_df <- rigal_slp_df
+```
+
+```{r}
+res.pca <- dudi.pca(select(slope_df, -siteid),
+  scannf = FALSE,   # Hide scree plot
+  nf = 5            # Number of components kept in the results
+)
+```
+
+```{r}
+fviz_eig(res.pca)
+```
+
+```{r, fig.height = 12}
+p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
+  ~fviz_pca_var(res.pca,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+
+plot_grid(plotlist = p_pca, ncol = 1)
+```
+
+#### Environment
+
+
+```{r}
+riv_data_pca <- riv %>%
+  select(-siteid) %>%
+  mutate(across(c(dist_up_km, dis_m3_pyr, urb_pc_cse, ele_mt_cav, pac_pc_cse),
+      ~log(.x + 2))
+  ) %>%
+  rename(get_river_atlas_significant_var()) %>%
+  na.omit()
+pca_riv <- dudi.pca(df = scale(riv_data_pca), scannf = FALSE, nf = 3)
+```
+
+- We see two main axis (as I found in France):
+  - First axis related to stream size (distance from source, River area)
+  - Second axis related to Temperature 
+
+```{r}
+fviz_eig(pca_riv)
+
+p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
+  ~fviz_pca_var(pca_riv,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+
+p_pca[[1]]
+p_pca[[2]]
+p_pca[[3]]
+```
+#### Environment - Trends
+
+```{r}
+tar_load(slp_env)
+slp_env_for_pca <- slp_env %>%
+  select(-all_of(c("siteid", "main_bas", "ecoregion", "geometry"))) %>%
+  rename(get_river_atlas_significant_var())
+slp_env_for_pca$geometry <- NULL
+  
+pca_slp_env <- dudi.pca(
+  df = scale(na.omit(slp_env_for_pca)),
+  scannf = FALSE, nf = 3)
+```
+
+```{r}
+p_slp_env_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
+
+  ~fviz_pca_var(pca_slp_env,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+
+p_slp_env_pca[[1]]
+p_slp_env_pca[[2]]
+p_slp_env_pca[[3]]
+```
+
+
+
+### Model
+
+```{r, eval=FALSE}
+paste0(var_temporal_trends,
+  " ~ ",
+  "dist_up_km + tmp_dc_cyr +
+  (1 + dist_up_km + tmp_dc_cyr | main_bas)"
+) %>%
+as.formula
+```
+
+```{r}
+library(spaMM)
+tar_load(c(trend_env))
+names(trend_env) <- var_temporal_trends
+```
+
+```{r}
+ti_trends <- map(var_temporal_trends,
+  ~fitme(
+  as.formula(paste0("scale(", .x, ") ~ dist_up_km + tmp_c_cyr + (1 | main_bas)")),
+  data = slp_env[,
+    colnames(slp_env) %in%
+    c(.x, "siteid", "dist_up_km", "tmp_c_cyr", "main_bas", "ecoregion")
+  ]
+  )
+)
+names(ti_trends) <- var_temporal_trends
+```
+
+```{r}
+ci <- map_dfr(ti_trends[names(ti_trends) %in% c("log_total_abundance", "log_species_nb", "jaccard",
+      "appearance", "disappearance", "turnover",
+      "nestedness", "hillebrand")], function(v) {
+  x <- confint(v, c("dist_up_km", "tmp_c_cyr"), verbose = FALSE)
+  tmp <- map_dfr(x, function(x) {
+    tm <- x$interval
+    names(tm) <- c("lower", "upper")
+    return(tm)
+  }, .id = "parm"
+  )
+  return(tmp)
+}, .id = "response")
+ci %>%
+  kable(.,
+    caption = "Confidence interval (bootstrap)")
+```
+
+```{r}
+from_data_to_predict <- function(
+  model_list = NULL,
+  dataset = NULL,
+  re = NULL
+) {
+
+  pred <- na.omit(dataset)
+  for (i in seq_along(names(model_list))) {
+    tmp <- predict(model_list[[i]],
+      re.form = as.formula(re),
+      intervals = "predVar"
+      )[,1]
+    names(tmp) <- NULL
+    pred[[names(model_list)[i]]] <- tmp
+  }
+  return(pred)
+}
+```
+
+```{r, eval = FALSE}
+xx <- list(
+    tmp_c_cyr = seq(min(na.omit(slp_env$tmp_c_cyr)), max(na.omit(slp_env$tmp_c_cyr)), length.out = 10),
+    dist_up_km = seq(min(na.omit(slp_env$dist_up_km)), max(na.omit(slp_env$dist_up_km)), length.out = 10),
+    main_bas = unique(na.omit(slp_env$main_bas))
+)
+new_data <- expand.grid(xx) %>%
+    as_tibble()
+pred <- predict(ti_trends[[1]], newdata = new_data, re.form = re, intervals="predVar")
+int <- cbind(pred[,1], attr(pred, "intervals")) %>%
+    as_tibble() %>%
+    rename(y = V1)
+```
+```{r, eval = FALSE}
+xxx <- cbind(int, new_data) %>%
+    as_tibble
+xxx %>%
+    ggplot(aes(y = y, x = dist_up_km, color = main_bas)) +
+    geom_point() +
+    theme(legend.position = "none")
+```
+
+
+
+```{r}
+re <- paste0("~ tmp_c_cyr + (1 | main_bas)")
+pred_tmp <- from_data_to_predict(
+  model_list = ti_trends,
+  dataset = slp_env,
+  re = re
+)
+p_tmp <- map(
+  c(
+      "log_total_abundance", "log_species_nb", "jaccard",
+      "appearance", "disappearance", "turnover",
+      "nestedness", "hillebrand"),
+  function(x) {
+    pred_tmp %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = tmp_c_cyr,
+          color = main_bas
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p_tmp, ncol = 3)
+```
+
+```{r}
+re <- paste0("~ dist_up_km + (1 | main_bas)")
+pred <- na.omit(slp_env)
+for (i in seq_along(var_temporal_trends)) {
+  tmp <- predict(trend_env[[i]],
+    re.form = as.formula(re)
+    )[, 1]
+  names(tmp) <- NULL
+  pred[[var_temporal_trends[i]]] <- tmp
+}
+p <- map(
+  c("log_total_abundance", "log_species_nb", "jaccard",
+      "appearance", "disappearance", "turnover",
+      "nestedness", "hillebrand"),
+  function(x) {
+
+    pred %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = dist_up_km,
+          color = as.factor(main_bas),
+          shape = as.factor(ecoregion)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p, ncol = 3)
+```
+
+```{r}
+re <- paste0("~ tmp_dc_cyr + (1 | main_bas)")
+pred_tmp <- from_data_to_predict(
+  model_list = trend_env,
+  dataset = slp_env,
+  re = re
+)
+p_tmp <- map(
+  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
+  function(x) {
+    pred_tmp %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = tmp_dc_cyr,
+          color = as.factor(main_bas)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p_tmp, ncol = 3)
+```
+
+- Ecoregion:
+
+```{r}
+re <- paste0("~ dist_up_km + (1 + dist_up_km | ecoregion)")
+pred_dist_ecoregion <- from_data_to_predict(
+  model_list = trend_env,
+  dataset = slp_env,
+  re = re
+)
+```
+
+```{r}
+p_dist_ecoregion <- map(
+  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
+  function(x) {
+
+    pred_dist_ecoregion %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = dist_up_km,
+          color = as.factor(ecoregion)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p_dist_ecoregion, ncol = 3)
+```
+
+```{r}
+re <- paste0("~ tmp_dc_cyr + (1 + tmp_dc_cyr | ecoregion)")
+pred_tmp_ecoregion <- from_data_to_predict(
+  model_list = trend_env,
+  dataset = slp_env,
+  re = re
+)
+```
+
+```{r}
+p_tmp_ecoregion <- map(
+  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
+  function(x) {
+    pred_tmp_ecoregion %>%
+      ggplot(aes(
+          y = !!sym(x),
+          x = tmp_dc_cyr,
+          color = as.factor(main_bas)
+          )) +
+      geom_line() +
+      theme(legend.position = "none")
+  }
+)
+plot_grid(plotlist = p_tmp_ecoregion, ncol = 3)
+```
 
 ## Analysis
 

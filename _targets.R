@@ -260,7 +260,10 @@ tar_plan(
       vegdist_turnover_c = vegdist_turnover_c,
       hillnb = hillnb,
       baselga_c = baselga_c,
-      river = riveratlas_site
+      river = riveratlas_site[,
+        colnames(riveratlas_site) %in%
+          setNames(get_river_atlas_significant_var(), NULL)
+        ]
     )
     ),
   tar_target(analysis_dataset_avg3y,

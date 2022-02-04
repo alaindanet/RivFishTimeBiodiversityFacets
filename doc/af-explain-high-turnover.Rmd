@@ -36,9 +36,6 @@ slope_df <- slope %>%
 
 ## Neutral difference 
 
-```{r}
-
-```
 
 # Rare species hypothesis 
 

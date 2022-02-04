@@ -14,12 +14,143 @@ library(INLA)
 library(inlatools)
 library(inlabru)
 library(spaMM)
+library("glmmTMB")
 ```
 
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset))
+tar_load(c(filtered_dataset, analysis_dataset, var_temporal_trends))
 ```
+
+# Model ALL in ONE  
+
+## spaMM
+
+### Jaccard
+
+- Quite a lot of 0 and 1, it can be problematic for beta regression 
+
+```{r}
+hist(analysis_dataset$jaccard)
+summary(analysis_dataset$jaccard)
+```
+
+```{r}
+transform01 <- function(x, na.omit = TRUE) {
+  if (na.omit) {
+    len <- length(na.omit(x))
+  } else {
+    len <- length(x) 
+  }
+
+  (x * (len - 1) + 0.5) / (len)
+}
+x <- rbinom(20, 1, .5)
+transform01(x)
+analysis_dataset$jaccard_scaled <- transform01(analysis_dataset$jaccard)
+```
+- Better to transform variable on the na.omit data 
+
+```{r}
+summary(analysis_dataset$jaccard_scaled)
+ti <- analysis_dataset %>%
+  na.omit() %>%
+  mutate(jaccard_scaled = transform01(jaccard))
+summary(ti[, c("jaccard", "jaccard_scaled")])
+```
+
+
+
+```{r}
+analysis_dataset %>%
+  ggplot(aes(y = jaccard_scaled, x = year)) +
+  geom_point()
+```
+
+
+```{r, eval=FALSE}
+# https://stats.stackexchange.com/q/423274
+ti <- glmmTMB(jaccard_scaled ~ year + (1 | siteid),
+  family = list(family = "beta", link = "logit"),
+  data = na.omit(analysis_dataset[, c("siteid", "jaccard_scaled", "year",
+      "species_nb")]))
+```
+```{r, eval=FALSE}
+plot(resid(ti) ~ fitted(ti))
+```
+```{r, eval=FALSE}
+ti1 <- update(ti, dispformula = ~ species_nb)
+```
+
+```{r, eval=FALSE}
+plot(resid(ti1) ~ fitted(ti1))
+```
+
+### Test
+
+```{r}
+fr <- analysis_dataset %>% 
+  filter(country == "FRA") %>%
+  select(all_of(
+      c(
+        "siteid","ecoregion", "main_bas", "year",
+        var_temporal_trends,
+        setNames(get_river_atlas_significant_var(), NULL)
+      )
+      )) %>%
+  na.omit() %>%
+  mutate(jaccard_scaled = transform01(jaccard))
+```
+
+```{r}
+ti <- glmmTMB(jaccard_scaled ~ year + (1 | siteid),
+  family = list(family = "beta", link = "logit"),
+  data = fr)
+```
+
+```{r}
+plot(resid(ti) ~ fitted(ti))
+```
+
+```{r}
+ti1 <- update(ti, dispformula = ~ siteid)
+```
+
+```{r}
+plot(resid(ti1) ~ fitted(ti1))
+```
+
+
+## INLA 
+
+- General model of Van Klink: 
+
+```{r, eval=FALSE}
+inla(x ~ Year: Realm: U + Realm + U +
+  f(Period, model = 'iid')+
+  # random intercept season
+  f(Plot_ID, model = 'iid')+
+  # random intercept site
+  f(StudyArea_ID, model='iid')+
+  # random intercept study area
+  f(Datasource_ID, model='iid')+
+  # random intercept study
+  f(Plot_ID_slope, iYear, model='iid')+
+  # random slope site
+  f(StudyArea_ID_slope, iYear, model='iid')+
+  # random slope study area
+  f(Datasource_ID_slope, Year, model='iid') +
+  # random slope study
+  f(Year,model='ar1', replicate=as.numeric(Plot_ID)), # AR1 term
+family="gaussian"
+# normal distribution
+)
+```
+
+
+# Test
+
+## Test Illinois
 
 ```{r}
 site_il <- filtered_dataset$location %>%
