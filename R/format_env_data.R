@@ -27,6 +27,38 @@ format_water_temperature <- function(
   return(out)
   
 }
+filter_water_temperature <- function(
+  wt = NULL,
+  raw_tmp_threshold = 40, 
+  nb_sd_threshold = 5
+  ) {
+
+  limit_abberant <- wt %>%
+    filter(tmp <= raw_tmp_threshold) %>%
+    mutate(month = month(date)) %>%
+    nest_by(siteid, month) %>%
+    summarise(
+      mean_tmp = mean(data$tmp, na.rm = T),
+      sd_tmp = sd(data$tmp, na.rm = T), 
+      .groups = "drop"
+    )
+
+    wt_check <- wt %>%
+      mutate(month = month(date)) %>%
+      left_join(limit_abberant, by = c("siteid", "month")) %>%
+      filter(!is.na(sd_tmp)) %>%
+      filter(tmp <= raw_tmp_threshold) %>%
+      mutate(
+        check_tmp = abs(tmp - mean_tmp) >=
+          nb_sd_threshold * sd_tmp
+      )
+
+      out <- wt_check %>%
+        filter(!check_tmp) %>%
+        select(siteid, date, tmp)
+      return(out)
+
+} 
 
 #' kelvin to celcius
 #'
@@ -55,7 +87,7 @@ get_moving_average_tmp <- function(
           #        .f = function(x) mean(x),
           .before = 6,
           .after = 6,
-          .complete = TRUE
+          .complete = FALSE
         )
       )
     )

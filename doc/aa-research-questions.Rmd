@@ -307,6 +307,12 @@ write.table(
     - Copernicus land cover 2016 to 2020: https://github.com/bluegreen-labs/ecmwfr
     - 1995 à 2015 ESA: https://catalogue.ceda.ac.uk/uuid/b382ebe6679d44b8b0e68ea4ef4b701c 
 
+- Riveratlas: See `L://ENV_LAYERS`
+
+- Water temperature:`L://ENV_LAYERS`
+
+- Air temperature: chelsa
+
 # Biodiversity
 
 ## LPI

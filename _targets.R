@@ -378,7 +378,12 @@ tar_target(slp_env,
     format_water_temperature(
       wt = water_temperature,
       siteid = filtered_dataset$location$siteid,
-      raster_path = water_temperature_file)
+      raster_path = water_temperature_file) %>%
+    filter_water_temperature(
+      wt = .,
+      raw_tmp_threshold = 40, 
+      nb_sd_threshold = 5
+    )
     ),
   tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
 tar_target(spde, make_spde(loc = filtered_dataset$location)),

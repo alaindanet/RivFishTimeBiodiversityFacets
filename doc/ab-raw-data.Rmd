@@ -646,8 +646,6 @@ chuncks <- split(ind, ceiling(seq_along(ind)/nb_points_chuncks))
 ```
 
 ```{r}
-debugonce(st_snap_points)
-debugonce(match_river_site)
 loc <- crop_eu %>%
   st_crop(st_bbox( riv_atlas_loc)) %>%
   arrange(main_bas) %>%
@@ -655,7 +653,6 @@ loc <- crop_eu %>%
 ```
 
 ```{r}
-debugonce(check_return_snap)
 ti <- match_river_site(
     river = riv_atlas_loc,
     site = loc,
@@ -685,9 +682,6 @@ mapview(esp_riv_atlas) +
 
 
 
-```{r}
-map()
-```
 
 ## Water temperature
 
@@ -703,7 +697,6 @@ wt_nc
 - Get time variable:
 ```{r}
 ncatt_get(wt_nc, "time")
-
 
 unit_time <- ncatt_get(wt_nc, "time", "units")$value
 origin_time <- str_extract(unit_time, "[0-9]{4}-[0-9]{2}-[0-9]{2}")
@@ -725,6 +718,83 @@ wt <- rast(wt_path)
 ```{r}
 terra::extract(wt, vect(loc[1,]))
 ```
+
+###  Inspect values 
+
+```{r}
+tar_load(wt)
+```
+
+```{r}
+hist(wt$tmp)
+summary(wt$tmp)
+mask_abberant_tmp <- !is.na(wt$tmp) & wt$tmp >= 40
+sum(mask_abberant_tmp, na.rm = TRUE)
+
+summary(wt[!mask_abberant_tmp, ])
+```
+
+```{r}
+limit_abberant <- wt %>%
+  filter(tmp <= 40) %>%
+  mutate(month = month(date)) %>%
+  nest_by(siteid, month) %>%
+  summarise(
+    mean_tmp = mean(data$tmp, na.rm = T),
+    sd_tmp = sd(data$tmp, na.rm = T), 
+  .groups = "drop"
+  )
+limit_abberant %>%
+  filter(is.na(sd_tmp))
+```
+```{r}
+wt[wt$siteid %in%
+  limit_abberant[is.na(limit_abberant$sd_tmp),]$siteid,
+] %>%
+  ggplot(aes(y = tmp, x = date, color = siteid)) +
+  geom_line() +
+  labs(x = "Date", y = "Temperature (°C)") +
+  scale_y_log10()
+```
+
+
+```{r}
+wt_check <- wt %>%
+  mutate(month = month(date)) %>%
+  left_join(limit_abberant, by = c("siteid", "month")) %>%
+  filter(!is.na(sd_tmp)) %>%
+  filter(tmp <= 40) %>%
+  mutate(check_tmp = abs(tmp - mean_tmp) >= 5 * sd_tmp)
+
+summary(wt_check[!wt_check$check_tmp,])
+sum(wt_check$check_tmp)
+
+mask_site <- unique(wt_check[wt_check$check_tmp, ]$siteid)
+ti <- wt_check[wt_check$siteid %in% mask_site,] 
+unique(ti$siteid)
+```
+```{r}
+ti[ti$siteid %in% unique(ti$siteid)[5:10], ] %>%
+  ggplot(aes(y = tmp, x = date, color = siteid)) +
+  geom_line() +
+  labs(x = "Date", y = "Temperature (°C)") +
+  geom_point(
+    data = ti[
+      ti$siteid %in% unique(ti$siteid)[1:5] &
+      ti$check_tmp,
+      ], size =4)
+```
+
+```{r}
+wt_check %>%
+  filter(!check_tmp) %>%
+  select(siteid, date, tmp)
+
+```
+
+
+
+
 
 # Misc
 
