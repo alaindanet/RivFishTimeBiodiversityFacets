@@ -422,8 +422,112 @@ p_pca[[3]]
 ## Water temperature 
 
 ```{r}
-tar_load(c(wt_mv_avg, wt))
+tar_load(c(wt_mv_avg, filtered_dataset))
+wt_mv_avg  <- wt_mv_avg %>%
+  ungroup()
 ```
+```{r}
+library(glmmTMB)
+library(DHARMa)
+library(ggeffects)
+mod_wt_data <- wt_mv_avg  %>%
+  left_join(
+    filtered_dataset$location %>%
+    select(siteid, ecoregion, main_bas) %>%
+    mutate(main_bas = as.character(main_bas)),
+    by = "siteid"
+  )
+
+tabyl_df(mod_data, "ecoregion")
+length(unique(mod_data$siteid))
+```
+
+```{r}
+hist(mod_data$tmp_w_ama)
+```
+
+
+```{r}
+#https://stackoverflow.com/questions/66467641/partial-effect-plots-from-spamm
+
+# Put ecoregion as a fixed effect because not enough ecogion data to estimate the
+# random effect:
+#mod_wt <- glmmTMB(
+#  tmp_w_ama ~ year * ecoregion +
+#    (1 + year | main_bas/siteid),
+#  data = mod_data)
+tar_load(mod_wt)
+
+#vignette('troubleshooting')
+diagnose(mod_wt)
+confint(mod_wt)
+sim_res <- DHARMa::simulateResiduals(mod_wt)
+plot(sim_res)
+```
+```{r}
+pr <- ggpredict(mod_wt, "year")
+plot(pr)
+
+# No
+me <- ggpredict(mod_wt,
+  terms = c("year", "ecoregion"),
+  type = "random")
+plot(me)
+
+#
+bas <- ggpredict(mod_wt,
+  terms = c("year", "main_bas [sample=8]"),
+  type = "random")
+plot(bas)
+```
+
+
+```{r}
+coef_wt <- coef(mod_wt)
+coef_site <- coef_wt$cond$`siteid:main_bas` %>%
+  mutate(
+    siteid = stringr::str_split(row.names(coef_wt$cond$`siteid:main_bas`), ":") %>%
+  map_chr(., 1),
+main_bas = stringr::str_split(row.names(coef_wt$cond$`siteid:main_bas`), ":") %>%
+  map_chr(., 2)
+  )
+
+loc_wt_year_slp <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326) %>%
+left_join(coef_site, by = "siteid")
+```
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = loc_wt_year_slp, aes(fill = year * 10), shape = 21) +
+    scale_fill_viridis() +
+    theme(legend.position = "bottom")
+```
+
+```{r}
+coef_bas <- coef_wt$cond$`main_bas` %>%
+  mutate( main_bas = row.names(coef_wt$cond$`main_bas`))
+```
+
+```{r}
+loc_wt_year_slp_bas <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  mutate(main_bas = as.character(main_bas)) %>%
+  left_join(coef_bas, by = "main_bas")
+```
+
+```{r}
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = loc_wt_year_slp_bas, aes(fill = year * 10), shape = 21) +
+    scale_fill_viridis() +
+    theme(legend.position = "bottom")
+```
+
+
+
 
 
 

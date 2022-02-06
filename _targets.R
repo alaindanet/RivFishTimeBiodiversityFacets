@@ -266,6 +266,14 @@ tar_plan(
         ]
     )
     ),
+  tar_target(mod_wt_data,
+    wt_mv_avg  %>%
+      left_join(
+        filtered_dataset$location %>%
+          select(siteid, ecoregion, main_bas) %>%
+          mutate(main_bas = as.character(main_bas)),
+        by = "siteid"
+      )),
   tar_target(analysis_dataset_avg3y,
     get_analysis_dataset(
       filtered_dataset = filtered_dataset_avg3y,
@@ -381,67 +389,72 @@ tar_target(slp_env,
       raster_path = water_temperature_file) %>%
     filter_water_temperature(
       wt = .,
-      raw_tmp_threshold = 40, 
+      raw_tmp_threshold = 40,
       nb_sd_threshold = 5
     )
     ),
   tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
-tar_target(spde, make_spde(loc = filtered_dataset$location)),
-tar_target(inla_rich, try(inla(
-  species_nb ~
-    year +
-    f(siteid, model = "iid") +
-    f(main_bas, model = "iid") +
-    f(span, year, model = "iid"),
-  family = "zeroinflatednbinomial1",
-  control.family = list(link = "log"),
-  control.predictor = list(link = 1, compute = TRUE),
-  control.compute = list(
-    cpo = TRUE,
-    dic = TRUE,
-    config = TRUE,
-    return.marginals.predictor = TRUE),
-  data = analysis_dataset,
-  verbose = TRUE
-)), error = "continue"),
-tar_target(inla_abun, inla(
-  total_abundance ~
-    year +
-    unitabundance +
-    f(siteid, model = "iid") +
-    f(span, year, model = "iid"),
-  family = "gaussian",
-  #control.family = list(link = "log"),
-  control.predictor = list(link = 1, compute = TRUE),
-  control.compute = list(
-    cpo = TRUE,
-    dic = TRUE,
-    config = TRUE,
-    return.marginals.predictor = TRUE),
-  data = analysis_dataset,
-  verbose = TRUE
-), error = "continue"),
-tar_target(inla_test,
-           inla(y ~ x,
-                family = "gaussian",
-                data = list(
-                  x = rnorm(100, mean = 6, sd = 2),
-                  y = rnorm(100, mean = 6, sd = 1)
-                            ),
-               control.predictor = list(link = 1)
-           )
-),
-tar_target(trend_env,
-           model_rigal_spamm(
-           formula = paste0(var_temporal_trends,
-                            " ~ ",
-                            "dist_up_km + tmp_dc_cyr +
-                            (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
-                            ),
-           data = slp_env),
-           pattern = map(var_temporal_trends),
-           iteration = "list"
-),
+  tar_target(mod_wt,
+    glmmTMB(
+      tmp_w_ama ~ year * ecoregion +
+        (1 + year | main_bas / siteid),
+      data = mod_data)),
+  tar_target(spde, make_spde(loc = filtered_dataset$location)),
+  tar_target(inla_rich, try(inla(
+        species_nb ~
+          year +
+          f(siteid, model = "iid") +
+          f(main_bas, model = "iid") +
+          f(span, year, model = "iid"),
+        family = "zeroinflatednbinomial1",
+        control.family = list(link = "log"),
+        control.predictor = list(link = 1, compute = TRUE),
+        control.compute = list(
+          cpo = TRUE,
+          dic = TRUE,
+          config = TRUE,
+          return.marginals.predictor = TRUE),
+        data = analysis_dataset,
+        verbose = TRUE
+        )), error = "continue"),
+  tar_target(inla_abun, inla(
+      total_abundance ~
+        year +
+        unitabundance +
+        f(siteid, model = "iid") +
+        f(span, year, model = "iid"),
+      family = "gaussian",
+      #control.family = list(link = "log"),
+      control.predictor = list(link = 1, compute = TRUE),
+      control.compute = list(
+        cpo = TRUE,
+        dic = TRUE,
+        config = TRUE,
+        return.marginals.predictor = TRUE),
+      data = analysis_dataset,
+      verbose = TRUE
+      ), error = "continue"),
+  tar_target(inla_test,
+    inla(y ~ x,
+      family = "gaussian",
+      data = list(
+        x = rnorm(100, mean = 6, sd = 2),
+        y = rnorm(100, mean = 6, sd = 1)
+        ),
+      control.predictor = list(link = 1)
+    )
+    ),
+  tar_target(trend_env,
+    model_rigal_spamm(
+      formula = paste0(var_temporal_trends,
+        " ~ ",
+        "dist_up_km + tmp_dc_cyr +
+        (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
+      ),
+    data = slp_env),
+  pattern = map(var_temporal_trends),
+  iteration = "list"
+  ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

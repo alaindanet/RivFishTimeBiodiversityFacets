@@ -57,3 +57,4 @@ library(future)
 # Statistics
 library(INLA)
 library(inlatools)
+library(glmmTMB)
