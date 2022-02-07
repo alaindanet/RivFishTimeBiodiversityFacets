@@ -398,7 +398,7 @@ tar_target(slp_env,
     glmmTMB(
       tmp_w_ama ~ year * ecoregion +
         (1 + year | main_bas / siteid),
-      data = mod_data)),
+      data = mod_wt_data)),
   tar_target(spde, make_spde(loc = filtered_dataset$location)),
   tar_target(inla_rich, try(inla(
         species_nb ~
