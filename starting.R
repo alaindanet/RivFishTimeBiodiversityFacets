@@ -147,3 +147,7 @@ sf::st_layers(eu_shp, do_count = TRUE)
 use_r("spatial_match")
 use_r("format_env_data")
 use_r("spamm_helper")
+
+# DL Chelsa data
+source(here("R", "load_raw_data.R"))
+download_chelsa(overwrite = FALSE)

@@ -35,7 +35,7 @@ download_chelsa <- function(
   ) {
 
   if (!dir.exists(dl_dir)) {
-    dir.create(dl_dir, recursive = TRUE, showWarnings = FALSE)
+    dir.create(dl_dir, recursive = FALSE, showWarnings = FALSE)
   }
 
   url_prefix <- "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/monthly/tas/"
@@ -47,22 +47,29 @@ download_chelsa <- function(
   year_selected <- year_selected[
     year_selected >= 1980 | year_selected <= 2019
     ]
-  file_names <- paste0(
-    file_radical,
-    monthly,
-    "_",
+  
+  file_names <- purrr::map(
     year_selected,
-    file_suffix
-  )
+    ~paste0(file_radical, monthly, "_", .x, file_suffix)) %>%
+    purrr::reduce(., c)
+  
 
   if (!overwrite) {
     mask_already_dl <- file_names %in% list.files(dl_dir)
     file_names <- file_names[!mask_already_dl]
   }
 
-  download.file(
-    url = paste0(url_prefix, file_names),
-    destfile = paste0(dl_dir, "/", file_names)
-  )
+  for (i in seq_along(file_names)) {
+    curl::curl_download(
+      url = paste0(url_prefix, file_names[i]),
+      destfile = paste0(dl_dir, "/", file_names[i])
+    )
+  }
+  
+}
+
+convert_chelsa_to_celcius <- function(x = NULL) {
+  #https://chelsa-climate.org/wp-admin/download-page/CHELSA_tech_specification_V2.pdf
+  x / 10 - 273.15
 }
 
