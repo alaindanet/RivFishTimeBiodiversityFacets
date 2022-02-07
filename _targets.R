@@ -266,6 +266,30 @@ tar_plan(
         ]
     )
     ),
+  tar_target(fr,
+    analysis_dataset %>%
+      filter(country == "FRA") %>%
+      select(all_of(
+          c(
+            "siteid","ecoregion", "main_bas", "year",
+            var_temporal_trends,
+            setNames(get_river_atlas_significant_var(), NULL)
+          )
+          )) %>%
+      na.omit() %>%
+      mutate(
+        jaccard_scaled = transform01(jaccard),
+        main_bas = as.factor(main_bas),
+        scaled_dist_up_km = scale(dist_up_km),
+        log_dist_up_km = log(dist_up_km),
+        scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
+        tmp_c_cyr = tmp_dc_cyr / 10,
+        scaled_tmp_c_cyr = scale(tmp_c_cyr)
+        ) %>%
+      group_by(siteid) %>%
+      mutate(year_nb = year - min(year)) %>%
+      ungroup()
+    ),
   tar_target(mod_wt_data,
     wt_mv_avg  %>%
       left_join(
