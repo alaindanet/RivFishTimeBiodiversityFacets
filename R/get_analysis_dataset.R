@@ -6,7 +6,8 @@ get_analysis_dataset <- function(
   vegdist_turnover_c = NULL,
   hillnb = NULL,
   baselga_c = NULL,
-  river = NULL
+  river = NULL,
+  water_temperature = NULL
   ) {
 
   analysis_dataset <- filtered_dataset$abun_rich_op %>%
@@ -32,6 +33,13 @@ get_analysis_dataset <- function(
     analysis_dataset <- analysis_dataset %>%
       left_join(river, by = c("siteid"))
   }
+
+  if (!is.null(water_temperature)) {
+    analysis_dataset <- analysis_dataset %>%
+      left_join(water_temperature, by = "year", "tmp_w_ama")
+  }
+
+
   year_stat_site <- filtered_dataset$site_quanti %>%
     filter(variable == "year") %>%
     select(siteid, min, max) %>%
@@ -40,6 +48,21 @@ get_analysis_dataset <- function(
 
   analysis_dataset <- analysis_dataset %>%
     left_join(year_stat_site, by = "siteid")
+
+  # Variable transformation
+  analysis_dataset <- analysis_dataset %>%
+    mutate(
+      jaccard_scaled = transform01(jaccard),
+      main_bas = as.factor(main_bas),
+      scaled_dist_up_km = scale(dist_up_km),
+      log_dist_up_km = log(dist_up_km),
+      scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
+      tmp_c_cyr = tmp_dc_cyr / 10,
+      scaled_tmp_c_cyr = scale(tmp_c_cyr)
+      ) %>%
+  group_by(siteid) %>%
+  mutate(year_nb = year - min(year)) %>%
+  ungroup()
 
   return(analysis_dataset)
 

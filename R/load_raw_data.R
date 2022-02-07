@@ -28,3 +28,41 @@ get_raw_file_path <- function() {
   paste0(dir_file, "/", "GlobalTimeSeries_database_1232021.csv")
 }
 
+download_chelsa <- function(
+  year_selected = seq(1980, 2019),
+  dl_dir = here::here("L://ENV_LAYERS/CHELSA"),
+  overwrite = FALSE
+  ) {
+
+  if (!dir.exists(dl_dir)) {
+    dir.create(dl_dir, recursive = TRUE, showWarnings = FALSE)
+  }
+
+  url_prefix <- "https://os.zhdk.cloud.switch.ch/envicloud/chelsa/chelsa_V2/GLOBAL/monthly/tas/"
+  file_radical <- "CHELSA_tas_"
+  file_suffix <- "_V.2.1.tif"
+
+  # Generate file names:
+  monthly <- c(paste0("0", seq(1, 9)), paste0(1, seq(0, 2)))
+  year_selected <- year_selected[
+    year_selected >= 1980 | year_selected <= 2019
+    ]
+  file_names <- paste0(
+    file_radical,
+    monthly,
+    "_",
+    year_selected,
+    file_suffix
+  )
+
+  if (!overwrite) {
+    mask_already_dl <- file_names %in% list.files(dl_dir)
+    file_names <- file_names[!mask_already_dl]
+  }
+
+  download.file(
+    url = paste0(url_prefix, file_names),
+    destfile = paste0(dl_dir, "/", file_names)
+  )
+}
+
