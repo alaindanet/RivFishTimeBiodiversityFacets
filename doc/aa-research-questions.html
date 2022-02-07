@@ -590,12 +590,12 @@ selection</li>
 <div id="environmental-characteristics" class="section level2" number="3.2">
 <h2><span class="header-section-number">3.2</span> Environmental characteristics</h2>
 <ul>
-<li>Site protection status:
+<li><p>Site protection status:</p>
 <ul>
 <li>US database, Australian database</li>
 <li><a href="https://prioritizr.github.io/wdpar/">wdpar R package</a></li>
 </ul></li>
-<li>Land use:
+<li><p>Land use:</p>
 <ul>
 <li>biais in studied land-use types in ecology: <span class="citation">Martin, Blossey, and Ellis (2012)</span></li>
 <li>from 1700 to 2000: <a href="https://ecotope.org/anthromes/v2/" class="uri">https://ecotope.org/anthromes/v2/</a></li>
@@ -610,6 +610,9 @@ to 1700 CE, 10 y increments from 1710 to 1990 CE, and 1 y increments from
 <li>1995 à 2015 ESA: <a href="https://catalogue.ceda.ac.uk/uuid/b382ebe6679d44b8b0e68ea4ef4b701c" class="uri">https://catalogue.ceda.ac.uk/uuid/b382ebe6679d44b8b0e68ea4ef4b701c</a></li>
 </ul></li>
 </ul></li>
+<li><p>Riveratlas: See <code>L://ENV_LAYERS</code></p></li>
+<li><p>Water temperature:<code>L://ENV_LAYERS</code></p></li>
+<li><p>Air temperature: chelsa</p></li>
 </ul>
 </div>
 </div>
@@ -796,7 +799,6 @@ ti %&gt;%
 <li>Chao: <a href="https://github.com/JohnsonHsieh/iNEXT">iNEXT</a>, <a href="https://besjournals.onlinelibrary.wiley.com/doi/10.1111/2041-210X.12613">BES paper</a></li>
 </ul>
 <pre class="r"><code>library(iNEXT)
-#&gt; Warning: package &#39;iNEXT&#39; was built under R version 4.1.2
 data(spider)</code></pre>
 <pre class="r"><code>div_spider &lt;- iNEXT::iNEXT(spider, q = c(0, 1, 2), datatype = &quot;abundance&quot;)</code></pre>
 <ul>

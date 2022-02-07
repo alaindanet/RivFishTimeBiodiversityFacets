@@ -23,7 +23,7 @@ op_protocol %>%
   filter(is.na(month), is.na(quarter))
 ```
 
-```{r}
+```{r, eval=TRUE}
 test_filter <- filter_op(
       op_protocol = op_protocol,
       selected_protocol = NULL,
@@ -340,7 +340,7 @@ invChat.Ind_c((ti$abundance) * 100, C = .985, conf = NULL)
 # Spatial assessment
 
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 tar_load(spde)
 plot(spde)
 ```

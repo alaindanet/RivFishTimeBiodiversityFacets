@@ -2858,7 +2858,6 @@ rigal_trends_df_loc %&gt;%
   st_as_sf(coords = c(&quot;longitude&quot;, &quot;latitude&quot;),
   crs = 4326)</code></pre>
 <pre class="r"><code>library(colorspace)
-#&gt; Warning: package &#39;colorspace&#39; was built under R version 4.1.2
 div_pal &lt;- colorspace::sequential_hcl(11, &quot;plasma&quot;)
 world &lt;- ne_countries(returnclass = &quot;sf&quot;) 
 

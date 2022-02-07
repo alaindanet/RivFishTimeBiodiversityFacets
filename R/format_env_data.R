@@ -98,13 +98,14 @@ get_moving_average_tmp <- function(
 
     if (avg_by_site) {
       out <- out %>%
+        group_by(siteid) %>%
         summarise(tmp_w_ama = mean(mw_tmp))
     } else {
       out <- out %>%
         ungroup() %>%
         mutate(year = year(date)) %>%
         group_by(siteid, year) %>%
-        summarise(tmp_w_ama = mean(mw_tmp))
+        summarise(tmp_w_ama = mean(mw_tmp), .groups = "drop")
     }
 
     return(out)
