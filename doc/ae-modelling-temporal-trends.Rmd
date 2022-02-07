@@ -15,6 +15,7 @@ library(inlatools)
 library(inlabru)
 library(spaMM)
 library("glmmTMB")
+library(DHARMa)
 ```
 
 
@@ -39,6 +40,7 @@ summary(analysis_dataset$jaccard)
 x <- rbinom(20, 1, .5)
 transform01(x)
 analysis_dataset$jaccard_scaled <- transform01(analysis_dataset$jaccard)
+analysis_dataset$main_bas <- as.character(analysis_dataset$main_bas)
 ```
 - Better to transform variable on the na.omit data 
 
@@ -54,17 +56,20 @@ summary(ti[, c("jaccard", "jaccard_scaled")])
 
 ```{r}
 analysis_dataset %>%
-  ggplot(aes(y = jaccard_scaled, x = year)) +
-  geom_point()
+  filter(siteid %in% sample(unique(siteid))[1:60]) %>%
+  ggplot(aes(y = jaccard_scaled, x = year, color = siteid)) +
+  geom_line() +
+  theme(legend.position = "none")
 ```
 
 
 ```{r, eval=FALSE}
 # https://stats.stackexchange.com/q/423274
-ti <- glmmTMB(jaccard_scaled ~ year + (1 | siteid),
+ti <- glmmTMB(jaccard_scaled ~ year * ecoregion +
+  (1 + year | main_bas/siteid),
   family = list(family = "beta", link = "logit"),
   data = na.omit(analysis_dataset[, c("siteid", "jaccard_scaled", "year",
-      "species_nb")]))
+      "species_nb", "ecoregion", "main_bas")]))
 ```
 ```{r, eval=FALSE}
 plot(resid(ti) ~ fitted(ti))
@@ -80,7 +85,7 @@ plot(resid(ti1) ~ fitted(ti1))
 ### Test
 
 ```{r}
-fr <- analysis_dataset %>% 
+fr <- analysis_dataset %>%
   filter(country == "FRA") %>%
   select(all_of(
       c(
@@ -97,48 +102,101 @@ fr <- analysis_dataset %>%
     log_dist_up_km = log(dist_up_km),
     scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
     tmp_c_cyr = tmp_dc_cyr / 10,
-    scaled_tmp_c_cyr = scale(tmp_c_cyr),
-
-  )
+    scaled_tmp_c_cyr = scale(tmp_c_cyr)
+  ) %>%
+  group_by(siteid) %>%
+  mutate(year_nb = year - min(year)) %>%
+  ungroup()
 ```
 ```{r}
 hist(fr$jaccard_scaled)
+tabyl_df(fr, "main_bas")
 ```
 
 
 ```{r}
-ti <- glmmTMB(jaccard_scaled ~
-  year*scaled_dist_up_km + (1 | siteid),
+ti <- glmmTMB(
+  jaccard_scaled ~ 0 + year_nb * scaled_dist_up_km +
+  (0 + year_nb | main_bas/siteid),
+offset = rep(1.0, nrow(fr)),
   family = beta_family(link = "logit"),
   data = fr)
+diagnose(ti)
 ```
 
 ```{r}
+res_sim <- simulateResiduals(ti)
+plot(res_sim)
 plot(residuals(ti) ~ fitted(ti))
+plot(fr$jaccard_scaled ~ fitted(ti))
 ```
 
 ```{r}
-ti1 <- update(ti, dispformula = ~ siteid)
+confint(ti)
+```
+
+
+```{r}
+ti1 <- update(ti, dispformula = ~ year_nb)
+diagnose(ti1)
 ```
 
 ```{r}
-plot(resid(ti1) ~ fitted(ti1))
+res_sim1 <- simulateResiduals(ti1)
+plot(res_sim1)
+
+confint(ti1)
 ```
+
+```{r}
+ti2 <- update(ti1, dispformula = ~ year_nb + scaled_dist_up_km)
+diagnose(ti2)
+```
+
+```{r}
+res_sim2 <- simulateResiduals(ti2)
+plot(res_sim2)
+
+confint(ti2)
+```
+
+```{r}
+ti3 <- update(ti2, formula = jaccard_scaled ~
+  0 + year_nb/scaled_dist_up_km +
+  (0 + year_nb | main_bas/siteid))
+diagnose(ti3)
+```
+
+```{r}
+res_sim3 <- simulateResiduals(ti3)
+plot(res_sim3)
+
+confint(ti3)
+```
+
+
 - Normal distribution:
 
 ```{r}
 ?family_glmmTMB
 tn <- glmmTMB(jaccard_scaled ~
-  year * scaled_dist_up_km +
-  (1 + year | siteid) +
-  (1 + scaled_dist_up_km | main_bas),
+  0 + year_nb * scaled_dist_up_km +
+  (0 + year_nb | main_bas/siteid) +
+  (0 + scaled_dist_up_km | main_bas),
+offset = rep(1.0, nrow(fr)),
   family = gaussian(link = "identity"),
   data = fr)
+diagnose(tn)
 summary(tn)
 plot(resid(tn) ~ fitted(tn))
 plot(fr$jaccard_scaled ~ fitted(tn))
 abline(c(0,1))
 ```
+
+```{r}
+confint(tn)
+```
+
 
 
 
