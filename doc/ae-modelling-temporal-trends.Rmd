@@ -135,7 +135,6 @@ plot(fr$jaccard_scaled ~ fitted(ti))
 confint(ti)
 ```
 
-
 ```{r}
 ti1 <- update(ti, dispformula = ~ year_nb)
 diagnose(ti1)
