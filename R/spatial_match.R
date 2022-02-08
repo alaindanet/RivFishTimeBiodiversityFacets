@@ -267,8 +267,20 @@ extract_water_temperature_values <- function(
   raster_path= NULL,
   site = NULL
   ) {
+
   raster_path <- R.utils::filePath(raster_path, expandLinks = "any")
-  
+
   r <- terra::rast(raster_path)
   terra::extract(r, st_coordinates(site))
+}
+
+target_extract_chelsa_data <- function(
+  chelsa_shp_files = NULL,
+  site = NULL
+  ) {
+
+  out <- map_dfr(chelsa_shp_files,
+    ~extract_water_temperature_values(shp_file = .x,
+      site = site)
+
 }

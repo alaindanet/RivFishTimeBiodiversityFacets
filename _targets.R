@@ -431,6 +431,12 @@ tar_target(slp_env,
         (1 + year | main_bas / siteid),
       data = mod_wt_data)),
   tar_target(spde, make_spde(loc = filtered_dataset$location)),
+  tar_target(air_temperature,
+    target_extract_chelsa_data(
+      chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA"),
+      site = filtered_dataset$location %>%
+        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+      )),
   tar_target(inla_rich, try(inla(
         species_nb ~
           year +
