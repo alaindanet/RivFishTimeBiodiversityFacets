@@ -151,3 +151,5 @@ use_r("spamm_helper")
 # DL Chelsa data
 source(here("R", "load_raw_data.R"))
 download_chelsa(overwrite = FALSE)
+
+use_r("glmmTMB_models")
