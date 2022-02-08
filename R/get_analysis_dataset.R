@@ -31,7 +31,13 @@ get_analysis_dataset <- function(
 
   if (!is.null(river)) {
     analysis_dataset <- analysis_dataset %>%
-      left_join(river, by = c("siteid"))
+      left_join(river, by = c("siteid")) %>%
+      mutate(scaled_dist_up_km = scale(dist_up_km),
+             log_dist_up_km = log(dist_up_km),
+             scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
+             tmp_c_cyr = tmp_dc_cyr / 10,
+             scaled_tmp_c_cyr = scale(tmp_c_cyr)
+             )
   }
 
   if (!is.null(water_temperature)) {
@@ -53,12 +59,7 @@ get_analysis_dataset <- function(
   analysis_dataset <- analysis_dataset %>%
     mutate(
       jaccard_scaled = transform01(jaccard),
-      main_bas = as.factor(main_bas),
-      scaled_dist_up_km = scale(dist_up_km),
-      log_dist_up_km = log(dist_up_km),
-      scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
-      tmp_c_cyr = tmp_dc_cyr / 10,
-      scaled_tmp_c_cyr = scale(tmp_c_cyr)
+      main_bas = as.factor(main_bas)
       ) %>%
   group_by(siteid) %>%
   mutate(year_nb = year - min(year)) %>%

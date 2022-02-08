@@ -263,7 +263,8 @@ tar_plan(
       river = riveratlas_site[,
         colnames(riveratlas_site) %in%
           c("siteid", setNames(get_river_atlas_significant_var(), NULL))
-        ]
+        ] %>%
+        st_drop_geometry()
     )
     ),
   tar_target(fr,
@@ -305,7 +306,13 @@ tar_plan(
       hillebrand = hillebrand_avg3y,
       turnover_c = turnover_avg3y_c,
       vegdist_turnover_c = vegdist_turnover_avg3y_c,
-      hillnb = hillnb_avg3y
+      hillnb = hillnb_avg3y,
+      river = riveratlas_site[,
+                              colnames(riveratlas_site) %in%
+                                c("siteid", setNames(get_river_atlas_significant_var(), NULL))
+      ] %>%
+        st_drop_geometry()
+      
     )
     ),
   # statistic
