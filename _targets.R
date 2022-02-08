@@ -433,7 +433,7 @@ tar_target(slp_env,
   tar_target(spde, make_spde(loc = filtered_dataset$location)),
   tar_target(air_temperature,
     target_extract_chelsa_data(
-      chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA"),
+      chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA", full.names = TRUE),
       site = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       )),
@@ -522,9 +522,10 @@ tar_target(nb_sp_rich_tmb,
   glmmTMB::glmmTMB(species_nb ~
     year_nb * scaled_dist_up_km +
     (1 + year_nb | main_bas / siteid) +
+    (1 + year_nb | span) +
     (1 + scaled_dist_up_km | main_bas),
   offset = NULL,
-  dispformula = ~ main_bas + siteid,
+  dispformula = ~ siteid,
   family = nbinom2(link = "log"),
   data = na.omit(analysis_dataset))
   ),

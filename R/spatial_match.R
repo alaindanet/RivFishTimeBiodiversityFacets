@@ -280,7 +280,7 @@ target_extract_chelsa_data <- function(
   ) {
 
   out <- map_dfr(chelsa_shp_files,
-    ~extract_water_temperature_values(shp_file = .x,
-      site = site)
+    ~extract_water_temperature_values(raster_path = .x,
+      site = site))
 
 }
