@@ -279,8 +279,13 @@ target_extract_chelsa_data <- function(
   site = NULL
   ) {
 
-  out <- map_dfr(chelsa_shp_files,
-    ~extract_water_temperature_values(raster_path = .x,
-      site = site))
+  out <- map(chelsa_shp_files, 
+    ~tibble(
+    siteid = site$siteid,
+    extract_water_temperature_values(raster_path = .x, site = site))
+    ) %>%
+    reduce(., left_join, by = "siteid")
+  
+  return(out)
 
 }

@@ -110,3 +110,19 @@ get_moving_average_tmp <- function(
 
     return(out)
 }
+
+format_air_temperature <- function(x = air_temperature) {
+  
+  colnames(x)[!colnames(x) %in% "siteid"] <- colnames(x)[!colnames(x) %in% "siteid"] %>% 
+    str_extract(., "\\d{2}_\\d{4}") %>%
+    str_replace(., "_", "-") %>%
+    paste0("15-",.)
+  
+  x %>%
+    pivot_longer(cols = -siteid, names_to = "date", values_to = "tmp") %>%
+    mutate(date = dmy(date),
+           tmp_c = kelvin_to_celcius(tmp / 10)
+    ) %>%
+    select(-tmp)
+  
+}

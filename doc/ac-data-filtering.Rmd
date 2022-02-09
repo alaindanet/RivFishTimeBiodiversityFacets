@@ -443,26 +443,12 @@ mod_wt_data <- wt_mv_avg  %>%
     mutate(main_bas = as.character(main_bas)),
     by = "siteid"
   )
-
-tabyl_df(mod_data, "ecoregion")
-length(unique(mod_data$siteid))
 ```
-
-```{r}
-hist(mod_data$tmp_w_ama)
-```
-
 
 ```{r}
 #https://stackoverflow.com/questions/66467641/partial-effect-plots-from-spamm
 
-# Put ecoregion as a fixed effect because not enough ecogion data to estimate the
-# random effect:
-#mod_wt <- glmmTMB(
-#  tmp_w_ama ~ year * ecoregion +
-#    (1 + year | main_bas/siteid),
-#  data = mod_data)
-load(here::here("data", "mod_wt.rda"))
+
 tar_load(mod_wt)
 
 #vignette('troubleshooting')
