@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE}
 ## target knits Rmds in their own session, so load libraries here.
 source(here::here("start_rmd.R"))
+library(skimr)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -60,6 +61,10 @@ test_filter %>%
 tar_load(filtered_op_protocol)
 tar_load(filtered_dataset)
 ```
+```{r}
+skim(filtered_dataset$site_quali)
+```
+
 
 ```{r}
 tabyl_df(filtered_dataset$site_quali, "protocol") %>%
@@ -530,6 +535,10 @@ ggplot(data = world) +
 ```
 
 
+```{r}
+tar_load(analysis_dataset)
+skim(analysis_dataset)
+```
 
 
 

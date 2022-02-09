@@ -491,6 +491,9 @@ tar_target(slp_env,
     data = slp_env),
   pattern = map(var_temporal_trends),
   iteration = "list"),
+tar_target(var_analysis, c("siteid", "main_bas", "year", "year_nb",
+    "scaled_dist_up_km", "span", "jaccard_scaled", "turnover", "nestedness", "species_nb"
+    )),
 tar_target(beta_jaccard_tmb,
   temporal_jaccard(
     formula = "jaccard_scaled ~
@@ -498,7 +501,7 @@ tar_target(beta_jaccard_tmb,
     (0 + year_nb | main_bas/siteid) +
     (0 + year_nb | span) +
     (0 + year_nb:scaled_dist_up_km | main_bas)",
-  data = na.omit(analysis_dataset) %>%
+  data = na.omit(analysis_dataset[, var_analysis]) %>%
     mutate(one = 1.0),
   family = beta_family(link = "logit"),
   dispformula = "~ year_nb + scaled_dist_up_km",
@@ -512,7 +515,7 @@ tar_target(gaussian_jaccard_tmb,
     (0 + year_nb | span) +
     (0 + year_nb:scaled_dist_up_km | main_bas)
   ",
-  data = na.omit(analysis_dataset) %>%
+  data = na.omit(analysis_dataset[, var_analysis]) %>%
     mutate(one = 1.0),
   family = gaussian(link = "identity"),
   dispformula = "~ 1",
@@ -527,7 +530,7 @@ tar_target(nb_sp_rich_tmb,
   offset = NULL,
   dispformula = ~ siteid,
   family = nbinom2(link = "log"),
-  data = na.omit(analysis_dataset))
+  data = na.omit(analysis_dataset[, var_analysis]))
   ),
 
   # Report
