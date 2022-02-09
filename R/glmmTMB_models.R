@@ -5,10 +5,10 @@ temporal_jaccard <- function(
   (0 + year_nb | main_bas/siteid) +
   (0 + year_nb:scaled_dist_up_km | main_bas)
   ",
-  data = na.omit(analysis_dataset),
-  family = beta_family(link = "logit"),
-  dispformula = "~ year_nb + scaled_dist_up_km",
-  offset = rep(1.0, nrow(na.omit(analysis_dataset)))
+  data = NULL,
+  family = NULL,
+  dispformula = NULL,
+  offset = NULL
 ) {
 
   glmmTMB::glmmTMB(

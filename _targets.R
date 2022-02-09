@@ -437,40 +437,40 @@ tar_target(slp_env,
       site = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       )),
-  tar_target(inla_rich, try(inla(
-        species_nb ~
-          year +
-          f(siteid, model = "iid") +
-          f(main_bas, model = "iid") +
-          f(span, year, model = "iid"),
-        family = "zeroinflatednbinomial1",
-        control.family = list(link = "log"),
-        control.predictor = list(link = 1, compute = TRUE),
-        control.compute = list(
-          cpo = TRUE,
-          dic = TRUE,
-          config = TRUE,
-          return.marginals.predictor = TRUE),
-        data = analysis_dataset,
-        verbose = TRUE
-        )), error = "continue"),
-  tar_target(inla_abun, inla(
-      total_abundance ~
-        year +
-        unitabundance +
-        f(siteid, model = "iid") +
-        f(span, year, model = "iid"),
-      family = "gaussian",
-      #control.family = list(link = "log"),
-      control.predictor = list(link = 1, compute = TRUE),
-      control.compute = list(
-        cpo = TRUE,
-        dic = TRUE,
-        config = TRUE,
-        return.marginals.predictor = TRUE),
-      data = analysis_dataset,
-      verbose = TRUE
-      ), error = "continue"),
+  # tar_target(inla_rich, try(inla(
+  #       species_nb ~
+  #         year +
+  #         f(siteid, model = "iid") +
+  #         f(main_bas, model = "iid") +
+  #         f(span, year, model = "iid"),
+  #       family = "zeroinflatednbinomial1",
+  #       control.family = list(link = "log"),
+  #       control.predictor = list(link = 1, compute = TRUE),
+  #       control.compute = list(
+  #         cpo = TRUE,
+  #         dic = TRUE,
+  #         config = TRUE,
+  #         return.marginals.predictor = TRUE),
+  #       data = analysis_dataset,
+  #       verbose = TRUE
+  #       )), error = "continue"),
+  # tar_target(inla_abun, inla(
+  #     total_abundance ~
+  #       year +
+  #       unitabundance +
+  #       f(siteid, model = "iid") +
+  #       f(span, year, model = "iid"),
+  #     family = "gaussian",
+  #     #control.family = list(link = "log"),
+  #     control.predictor = list(link = 1, compute = TRUE),
+  #     control.compute = list(
+  #       cpo = TRUE,
+  #       dic = TRUE,
+  #       config = TRUE,
+  #       return.marginals.predictor = TRUE),
+  #     data = analysis_dataset,
+  #     verbose = TRUE
+  #     ), error = "continue"),
   tar_target(inla_test,
     inla(y ~ x,
       family = "gaussian",
@@ -492,46 +492,70 @@ tar_target(slp_env,
   pattern = map(var_temporal_trends),
   iteration = "list"),
 tar_target(var_analysis, c("siteid", "main_bas", "year", "year_nb",
-    "scaled_dist_up_km", "span", "jaccard_scaled", "turnover", "nestedness", "species_nb"
+    "scaled_dist_up_km", "span", "jaccard_scaled", "turnover", "nestedness",
+    "species_nb", "log_species_nb", "chao_richness", "hillebrand"
     )),
+tar_target(modelling_data,
+           analysis_dataset %>%
+             select(all_of(var_analysis)) %>%
+             mutate(
+               nestedness_scaled = transform01(nestedness),
+               turnover_scaled = transform01(turnover),
+               hillebrand_scaled = transform01(hillebrand),
+               log1_year_nb = log(year_nb + 1),
+               one = 1.0
+               ) %>%
+             na.omit()
+           ),
+tar_target(var_jaccard, c("jaccard_scaled", "turnover_scaled", "nestedness_scaled")),
+tar_target(year_var, c("year_nb", "log1_year_nb")),
 tar_target(beta_jaccard_tmb,
-  temporal_jaccard(
-    formula = "jaccard_scaled ~
-    0 + year_nb/scaled_dist_up_km +
-    (0 + year_nb | main_bas/siteid) +
-    (0 + year_nb | span) +
-    (0 + year_nb:scaled_dist_up_km | main_bas)",
-  data = na.omit(analysis_dataset[, var_analysis]) %>%
-    mutate(one = 1.0),
-  family = beta_family(link = "logit"),
-  dispformula = "~ year_nb + scaled_dist_up_km",
-  offset = one)
+           tibble(
+             year_var = year_var,
+             var_jaccard = var_jaccard,
+             mod = list(temporal_jaccard(
+               formula = paste0(var_jaccard, " ~
+    0 + ", year_var," * scaled_dist_up_km +
+    (0 + ", year_var," | main_bas/siteid) +
+    (0 + ", year_var," | span) +
+    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas) + 
+    offset(log(one))"),
+    data = modelling_data,
+    family = beta_family(link = "logit"),
+    dispformula = "~ year_nb + scaled_dist_up_km")
+    )
+           ),
+    pattern = cross(var_jaccard, year_var)
   ),
 tar_target(gaussian_jaccard_tmb,
-  temporal_jaccard(
-    formula = "jaccard_scaled ~
-    0 + year_nb/scaled_dist_up_km +
-    (0 + year_nb | main_bas/siteid) +
-    (0 + year_nb | span) +
-    (0 + year_nb:scaled_dist_up_km | main_bas)
-  ",
-  data = na.omit(analysis_dataset[, var_analysis]) %>%
-    mutate(one = 1.0),
-  family = gaussian(link = "identity"),
-  dispformula = "~ 1",
-  offset = one)
+  tibble(
+    year_var = year_var,
+    var_jaccard = var_jaccard,
+    mod = list(temporal_jaccard(
+      formula = paste0(var_jaccard, " ~
+    0 + ", year_var," * scaled_dist_up_km +
+    (0 + ", year_var," | main_bas/siteid) +
+    (0 + ", year_var," | span) +
+    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas) +
+    offset(one)"),
+    data = modelling_data,
+    family = gaussian(link = "identity"),
+    dispformula = "~ 1")
+    )
   ),
-tar_target(nb_sp_rich_tmb,
-  glmmTMB::glmmTMB(species_nb ~
-    year_nb * scaled_dist_up_km +
-    (1 + year_nb | main_bas / siteid) +
-    (1 + year_nb | span) +
-    (1 + scaled_dist_up_km | main_bas),
-  offset = NULL,
-  dispformula = ~ siteid,
-  family = nbinom2(link = "log"),
-  data = na.omit(analysis_dataset[, var_analysis]))
+  pattern = cross(var_jaccard, year_var)
   ),
+# tar_target(nb_sp_rich_tmb,
+#   glmmTMB::glmmTMB(species_nb ~
+#     year_nb * scaled_dist_up_km +
+#     (1 + year_nb | main_bas / siteid) +
+#     (1 + year_nb | span) +
+#     (1 + scaled_dist_up_km | main_bas),
+#   offset = NULL,
+#   dispformula = ~ siteid,
+#   family = nbinom2(link = "log"),
+#   data = na.omit(analysis_dataset[, var_analysis]))
+#   ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
