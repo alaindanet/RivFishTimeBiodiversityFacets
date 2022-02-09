@@ -59,7 +59,8 @@ get_analysis_dataset <- function(
   analysis_dataset <- analysis_dataset %>%
     mutate(
       jaccard_scaled = transform01(jaccard),
-      main_bas = as.factor(main_bas)
+      main_bas = as.factor(main_bas),
+      one = 1.0 #dummy offset
       ) %>%
   group_by(siteid) %>%
   mutate(year_nb = year - min(year)) %>%

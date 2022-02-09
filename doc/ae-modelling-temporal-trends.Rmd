@@ -16,6 +16,8 @@ library(inlabru)
 library(spaMM)
 library("glmmTMB")
 library(DHARMa)
+library(ggeffects)
+library(emmeans)
 ```
 
 
@@ -85,33 +87,188 @@ plot(resid(ti1) ~ fitted(ti1))
 ### Test
 
 ```{r}
-fr <- analysis_dataset %>%
-  filter(country == "FRA") %>%
-  select(all_of(
-      c(
-        "siteid","ecoregion", "main_bas", "year",
-        var_temporal_trends,
-        setNames(get_river_atlas_significant_var(), NULL)
-      )
-      )) %>%
-  na.omit() %>%
-  mutate(
-    jaccard_scaled = transform01(jaccard),
-    main_bas = as.factor(main_bas),
-    scaled_dist_up_km = scale(dist_up_km),
-    log_dist_up_km = log(dist_up_km),
-    scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
-    tmp_c_cyr = tmp_dc_cyr / 10,
-    scaled_tmp_c_cyr = scale(tmp_c_cyr)
-  ) %>%
-  group_by(siteid) %>%
-  mutate(year_nb = year - min(year)) %>%
-  ungroup()
+tar_load(fr)
+skimr::skim(fr)
 ```
 ```{r}
 hist(fr$jaccard_scaled)
 tabyl_df(fr, "main_bas")
 ```
+
+- Relationships between jaccard and year number are highly non linear: 
+  - it might be more appropriate to model them with `log(year_nb)` to model
+    linearly a negative exponential relationship. However it should not catch
+    recovery from disturbance
+
+```{r}
+fr %>%
+  filter(siteid %in% sample(unique(siteid))[1:10]) %>%
+  ggplot(aes(y = jaccard_scaled, x = year_nb, color = siteid)) +
+  geom_line() +
+  theme(legend.position = "none") +
+  geom_smooth(se = FALSE)
+```
+
+- It is not pretty but seems not too bad
+
+```{r}
+sample_fr <- fr %>%
+  filter(siteid %in% sample(unique(siteid))[1:10])
+sample_fr %>%
+  ggplot(aes(y = jaccard_scaled, x = log(year_nb + 1), color = siteid)) +
+  geom_line() +
+  theme(legend.position = "none") +
+  geom_smooth(
+    formula = y ~ x,
+    method = "lm",
+    se = FALSE
+    )
+```
+
+- There are a clear relationship between stralher order and jaccard:
+  - Higher turnover through time in higher stralher order, it is expected because there are
+    more connected, larger, far from the source, and so a higher dispersion rate. 
+
+
+```{r}
+fr %>%
+  ggplot(aes(y = jaccard_scaled, x = year_nb, color = as.factor(ord_stra))) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+- Logging year number improved the linear shape of the relationship but that is
+  far from being perfect
+
+```{r}
+fr %>%
+  ggplot(aes(y = jaccard_scaled, x = log(year_nb + 1), color = as.factor(ord_stra))) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+- Logging both response and predictor do not improve stuff:
+
+```{r}
+fr %>%
+  ggplot(aes(y = log(jaccard_scaled + 1), x = log(year_nb + 1), color = as.factor(ord_stra))) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+- Temperature:
+
+```{r}
+fr %>%
+  mutate(tmp_cat = cut(scaled_tmp_c_cyr, breaks = 8)) %>%
+  ggplot(aes(y = jaccard_scaled, x = year_nb, color = as.factor(tmp_cat))) +
+  geom_point() +
+  geom_smooth(se = FALSE)
+```
+
+- Are there two synergistic effects here, like dissimilarity increase more far
+  the source (dispersal effect) but at the same dissimilarity increase more in
+  warm water, both variables might be collinear, right?
+
+```{r}
+fr %>%
+  ggplot(aes(y = tmp_c_cyr, x = as.factor(ord_stra))) +
+  geom_violin()
+```
+
+- Collinearity is weak between temperature and strahler, so it is good:
+
+```{r}
+cor(fr$tmp_c_cyr, fr$ord_stra, method = "spearman")
+car::vif(lm(jaccard_scaled ~ scaled_tmp_c_cyr + scaled_dist_up_km, fr))
+```
+
+```{r}
+tar_load(beta_jaccard_tmb)
+confint(beta_jaccard_tmb)
+analysis_dataset
+res_b_j <- simulateResiduals(beta_jaccard_tmb)
+
+summary(beta_jaccard_tmb)
+library(emmeans)
+x <- coef(beta_jaccard_tmb)$cond
+str(x)
+confint(beta_jaccard_tmb, "year_nb", component = "cond")
+y <- x[["siteid:main_bas"]]
+emmeans(beta_jaccard_tmb, "year_nb", type = "response")
+r2(beta_jaccard_tmb)
+```
+
+```{r}
+pred <- ggemmeans(beta_jaccard_tmb,
+  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
+  type = "re.zi")
+plot(pred)
+```
+
+```{r}
+tar_load(c(rigal_trends, var_temporal_trends))
+names(rigal_trends) <- var_temporal_trends
+
+hist(coef(beta_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb)
+```
+
+- Site:
+
+```{r}
+tar_load(gaussian_jaccard_tmb)
+par(mfrow = c(1, 2))
+hist(coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb)
+hist(rigal_trends[["jaccard"]]$linear_slope)
+```
+```{r}
+plot(
+  coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb,
+  coef(beta_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb,
+)
+```
+
+
+- Basin:
+
+```{r}
+x <- coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]] %>%
+  rownames_to_column(var = "siteid_main_bas") %>%
+  separate(
+    col = "siteid_main_bas",
+    into = c("siteid", "main_bas"),
+    sep = ":")
+ 
+hist(coef(gaussian_jaccard_tmb)$cond[["main_bas"]]$year_nb)
+```
+
+
+```{r}
+tar_load(filtered_dataset)
+loc <- filtered_dataset$location %>%
+  left_join(filtered_dataset$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+
+```
+
+```{r}
+loc_slp <- loc %>%
+  left_join(select(x, -main_bas), by = c("siteid"))
+
+world <- ne_countries(scale = "medium", returnclass = "sf")
+bb <- st_bbox(loc)
+ggplot(data = world) +
+    geom_sf() +
+    geom_sf(data = loc_slp, aes(color = year_nb), shape = 23) +
+    scale_color_viridis() +
+    theme(legend.position = "bottom") +
+    labs(title = paste0("Number of sites: ", nrow(loc)))
+length(unique(na.omit(analysis_dataset)$siteid))
+```
+
+
+
 
 
 ```{r}

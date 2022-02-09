@@ -498,11 +498,11 @@ tar_target(beta_jaccard_tmb,
     (0 + year_nb | main_bas/siteid) +
     (0 + year_nb | span) +
     (0 + year_nb:scaled_dist_up_km | main_bas)",
-  data = na.omit(analysis_dataset),
+  data = na.omit(analysis_dataset) %>%
+    mutate(one = 1.0),
   family = beta_family(link = "logit"),
   dispformula = "~ year_nb + scaled_dist_up_km",
-  offset = rep(1.0, nrow(na.omit(analysis_dataset)))
-  )
+  offset = one)
   ),
 tar_target(gaussian_jaccard_tmb,
   temporal_jaccard(
@@ -512,11 +512,11 @@ tar_target(gaussian_jaccard_tmb,
     (0 + year_nb | span) +
     (0 + year_nb:scaled_dist_up_km | main_bas)
   ",
-  data = na.omit(analysis_dataset),
+  data = na.omit(analysis_dataset) %>%
+    mutate(one = 1.0),
   family = gaussian(link = "identity"),
   dispformula = "~ 1",
-  offset = rep(1.0, nrow(na.omit(analysis_dataset)))
-  )
+  offset = one)
   ),
 tar_target(nb_sp_rich_tmb,
   glmmTMB::glmmTMB(species_nb ~
