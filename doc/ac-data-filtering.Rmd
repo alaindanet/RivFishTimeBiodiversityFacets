@@ -453,10 +453,10 @@ tar_load(mod_wt)
 
 #vignette('troubleshooting')
 diagnose(mod_wt)
-confint(mod_wt)
-emmeans::emmeans(mod_wt, "year", type = "response")
-sim_res <- DHARMa::simulateResiduals(mod_wt)
-plot(sim_res)
+broom.mixed::tidy(mod_wt, type = "fixed")
+#emmeans::emmeans(mod_wt, "year", type = "response")
+#sim_res <- DHARMa::simulateResiduals(mod_wt)
+#plot(sim_res)
 ```
 ```{r}
 pr <- ggpredict(mod_wt, "year")

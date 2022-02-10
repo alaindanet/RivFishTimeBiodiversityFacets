@@ -495,13 +495,14 @@ tar_target(at_mv_avg, get_moving_average_tmp(wt = format_air_temperature(air_tem
   pattern = map(var_temporal_trends),
   iteration = "list"),
 tar_target(var_analysis, c("siteid", "main_bas", "year", "year_nb",
-    "scaled_dist_up_km", "span", "jaccard_scaled", "turnover", "nestedness",
+    "scaled_dist_up_km", "span", "jaccard_scaled", "jaccard_dis", "turnover", "nestedness",
     "species_nb", "log_species_nb", "chao_richness", "hillebrand"
     )),
 tar_target(modelling_data,
            analysis_dataset %>%
              select(all_of(var_analysis)) %>%
              mutate(
+               jaccard_dis_scaled = transform01(jaccard_dis),
                nestedness_scaled = transform01(nestedness),
                turnover_scaled = transform01(turnover),
                hillebrand_scaled = transform01(hillebrand),
@@ -510,7 +511,7 @@ tar_target(modelling_data,
                ) %>%
              na.omit()
            ),
-tar_target(var_jaccard, c("jaccard_scaled", "turnover_scaled", "nestedness_scaled")),
+tar_target(var_jaccard, c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled")),
 tar_target(year_var, c("year_nb", "log1_year_nb")),
 tar_target(beta_jaccard_tmb,
            tibble(
@@ -525,10 +526,10 @@ tar_target(beta_jaccard_tmb,
     data = modelling_data,
     family = beta_family(link = "logit"),
     dispformula = "~ year_nb + scaled_dist_up_km")
-    )
+             )
            ),
     pattern = cross(var_jaccard, year_var)
-  ),
+),
 tar_target(gaussian_jaccard_tmb,
   tibble(
     year_var = year_var,
@@ -540,7 +541,7 @@ tar_target(gaussian_jaccard_tmb,
     (0 + ", year_var," | span) +
     (0 + ", year_var,":scaled_dist_up_km | main_bas)"),
     data = modelling_data,
-    offset = rep(1.0, nrow(modelling_data)),
+    offset = NULL,
     family = gaussian(link = "identity"),
     dispformula = "~ 1")
     )
@@ -548,16 +549,16 @@ tar_target(gaussian_jaccard_tmb,
   pattern = cross(var_jaccard, year_var)
   ),
 tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb")),
-tar_target(gaussian_jaccard_tmb,
+tar_target(gaussian_rich_tmb,
   tibble(
     rich_var = rich_var,
     year_var = year_var,
     mod = list(temporal_jaccard(
       formula = paste0(rich_var, " ~
-    0 + ", year_var," * scaled_dist_up_km +
-    (0 + ", year_var," | main_bas/siteid) +
-    (0 + ", year_var," | span) +
-    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas)"),
+     ", year_var," * scaled_dist_up_km +
+    (1 + ", year_var," | main_bas/siteid) +
+    (1 + ", year_var," | span) +
+    (1 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas)"),
     data = modelling_data,
     family = gaussian(link = "identity"),
     dispformula = "~ 1")
