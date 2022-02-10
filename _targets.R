@@ -431,12 +431,15 @@ tar_target(slp_env,
         (1 + year | main_bas / siteid),
       data = mod_wt_data)),
   tar_target(spde, make_spde(loc = filtered_dataset$location)),
-  tar_target(air_temperature,
+  
+tar_target(air_temperature,
     target_extract_chelsa_data(
       chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA", full.names = TRUE),
       site = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       )),
+tar_target(at_mv_avg, get_moving_average_tmp(wt = format_air_temperature(air_temperature), var_y = "tmp_c",
+                                             output_tmp_var = "tmp_a_ana")),
   # tar_target(inla_rich, try(inla(
   #       species_nb ~
   #         year +
@@ -515,11 +518,10 @@ tar_target(beta_jaccard_tmb,
              var_jaccard = var_jaccard,
              mod = list(temporal_jaccard(
                formula = paste0(var_jaccard, " ~
-    0 + ", year_var," * scaled_dist_up_km +
+    0 + ", year_var," / scaled_dist_up_km +
     (0 + ", year_var," | main_bas/siteid) +
     (0 + ", year_var," | span) +
-    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas) + 
-    offset(log(one))"),
+    (0 + ", year_var,":scaled_dist_up_km | main_bas)"),
     data = modelling_data,
     family = beta_family(link = "logit"),
     dispformula = "~ year_nb + scaled_dist_up_km")
@@ -533,12 +535,12 @@ tar_target(gaussian_jaccard_tmb,
     var_jaccard = var_jaccard,
     mod = list(temporal_jaccard(
       formula = paste0(var_jaccard, " ~
-    0 + ", year_var," * scaled_dist_up_km +
+    0 + ", year_var," / scaled_dist_up_km +
     (0 + ", year_var," | main_bas/siteid) +
     (0 + ", year_var," | span) +
-    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas) +
-    offset(one)"),
+    (0 + ", year_var,":scaled_dist_up_km | main_bas)"),
     data = modelling_data,
+    offset = rep(1.0, nrow(modelling_data)),
     family = gaussian(link = "identity"),
     dispformula = "~ 1")
     )
