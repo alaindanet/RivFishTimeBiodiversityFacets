@@ -70,8 +70,12 @@ kelvin_to_celcius <- function(x = NULL) {
 
 get_moving_average_tmp <- function(
   wt = NULL,
-  avg_by_site = FALSE) {
+  avg_by_site = FALSE,
+  var_y = "tmp",
+  output_tmp_var = "tmp_w_ama") {
 
+  sym_output_var <- sym(output_tmp_var)
+  
   wt_y_mw <- wt %>%
     nest_by(siteid) %>%
     mutate(
@@ -82,7 +86,7 @@ get_moving_average_tmp <- function(
           .period = "year",
           .f = ~data.frame(
             date = mean(.x$date),
-            mw_tmp = mean(.x$tmp)
+            mw_tmp = mean(.x[[var_y]])
             ),
           #        .f = function(x) mean(x),
           .before = 6,
@@ -99,13 +103,13 @@ get_moving_average_tmp <- function(
     if (avg_by_site) {
       out <- out %>%
         group_by(siteid) %>%
-        summarise(tmp_w_ama = mean(mw_tmp))
+        summarise(!!sym_output_var := mean(mw_tmp))
     } else {
       out <- out %>%
         ungroup() %>%
         mutate(year = year(date)) %>%
         group_by(siteid, year) %>%
-        summarise(tmp_w_ama = mean(mw_tmp), .groups = "drop")
+        summarise(!!sym_output_var := mean(mw_tmp), .groups = "drop")
     }
 
     return(out)
@@ -123,6 +127,7 @@ format_air_temperature <- function(x = air_temperature) {
     mutate(date = dmy(date),
            tmp_c = kelvin_to_celcius(tmp / 10)
     ) %>%
-    select(-tmp)
+    select(-tmp) %>%
+    arrange(date)
   
 }
