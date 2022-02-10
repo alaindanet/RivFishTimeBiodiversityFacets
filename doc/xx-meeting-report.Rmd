@@ -13,10 +13,14 @@ bibliography: "bibliography.bib"
 
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
+library(skimr)
+library(dotwhisker)
+library(broom.mixed)
+library(ggeffects)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, analysis_dataset))
+tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
 tar_load(c(rigal_trends, var_temporal_trends))
 names(rigal_trends) <- var_temporal_trends
 ```
@@ -120,18 +124,19 @@ fig_sites <- paste0(
   "Australia absence because span is superior to 10 years of 100s of sites but number of samplings < 10.")
 ```
 
-
 ```{r, fig.cap=fig_sites}
-world <- ne_countries(scale = "medium", returnclass = "sf")
+world <- ne_countries(scale = "medium", returnclass = "sf") %>% 
+  st_transform(crs = 4326)
 bb <- st_bbox(loc)
 ggplot(data = world) +
     geom_sf() +
     geom_sf(data = loc, aes(color = protocol), shape = 1) +
+#    coord_sf(xlim = bb[c("xmin", "xmax")],
+#      ylim = bb[c("ymin", "ymax")], 
+#      datum = 4326, expand = TRUE) +
     theme(legend.position = "bottom") +
     labs(title = paste0("Number of sites: ", nrow(loc)))
 ```
-
-
 
 ## Biodiversity
 
@@ -147,6 +152,12 @@ We used also hill numbers with coverage-based correction proposed by
 
 - Evenness:
   - Pielou: $J = H^1 / log(S)$ 
+
+
+```{r}
+skim(analysis_dataset, starts_with("chao_"), "species_nb", "shannon", "simpson",
+"evenness")
+```
 
 ### Betadiversity 
 
@@ -170,13 +181,16 @@ appearance/disappearance and nestedness / turnover.
 - Turnover: $J_t = \dfrac{2 * min(S_{lost}, S_{imm})}{S_{common} + (2 * min(S_{lost}, S_{imm})}$
 - Nestedness: $SER_r - J_t$
 
+```{r}
+skim(analysis_dataset, "jaccard", "turnover", "nestedness", "appearance",
+  "disappearance", "hillebrand")
+```
 
 # Environment
 
 ##
 
 ```{r}
-
 tar_load(riveratlas_site)
 riv <- riveratlas_site %>%
   select(all_of(c("siteid", setNames(get_river_atlas_significant_var(), NULL)))) %>%
@@ -194,6 +208,11 @@ riv %>%
 ```
 
 # Statistical analysis 
+
+```{r}
+skim(modelling_data)
+```
+
 
 ## Species composition change
 
@@ -213,16 +232,58 @@ after the references year.
 
 - Simple lm by site
 
+- Model all in one: 
+
+### Turnover
+
+Jaccard similarity, nestedness and turnover were modelled in two ways, Beta and
+gaussian regression. Beta regressions are more appropriate for distribution
+borned by [0,1] and are linearized by a logit link. Logit links have the
+cons that coefficients are less easy to interpret. So we run both gaussian and
+beta regressions and investigate the relationship among coefficients of those
+type modelling types. Values of turnover were slightly transformed such as
+values of one and zero to fit beta regression requirements 
+($x' = \dfrac{x \times (N - 1) + 0.5}{N}$).
+
+The model is defined like this: 
+
+```{r}
+paste0(
+  "jaccard_scaled ~
+  0 + year_nb * scaled_dist_up_km +
+  (0 + year_nb | main_bas/siteid) +
+  (0 + year_nb | span) +
+  (0 + year_nb:scaled_dist_up_km | main_bas)"
+)
+```
+
+- `year_nb`: number of year since the beginning of the monitoring (site scale) 
+- `scaled_dist_up_km`: Distance from the source (centered and scaled)
+
+- `main_bas`: Hydrographic basin
+- `siteid`: site 
+- `span`: Number of years between the end and the beginning of the monitoring
+
+Our objective was to assess the temporal turnover and its ecological drivers. We
+set intercept to equal 1.0 because year_nb = 0 at the beginning of each series,
+jaccard is always equal to 1.0. We estimated the effects of the basin and of the
+site on the temporal trends (`0 + year_nb | main_bas/siteid`), the site effect
+being nested in the basin effect. We also evaluated the effects of span on the
+temporal trends, because it is generally expected that longer timeseries
+displays stronger temporal trends.  Finally, we acknowledged that the effect of
+the distance from source can be different among basin.
+
 # Results
 
 ## Direction of trends 
 
 ```{r}
+tar_load(var_analysis)
 ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
   .id = "response"
 )
 ti %>%
-  filter(direction != "Total") %>%
+  filter(direction != "Total", response %in% var_analysis) %>%
   select(response, direction, percent) %>%
   mutate(response = str_replace_all(response, get_var_replacement())) %>%
   pivot_wider(names_from = "direction", values_from = "percent") %>%
@@ -267,6 +328,7 @@ pivot_wider(names_from = "variable", values_from = "linear_slope")
 
 ```{r}
 summary_slope <- slope %>%
+  filter(response %in% var_analysis) %>%
   group_by(response) %>%
   summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
   unnest(cols = summ) %>%
@@ -278,7 +340,6 @@ summary_slope %>%
   kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
   scroll_box(width = "100%", height = "1000px")
 ```
-
 ```{r, include=FALSE}
 j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
 r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
@@ -310,7 +371,18 @@ cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
     - @blowes_geography_2019: 97% of study shows turnover exceeding nestedness
     - our study: `r percent(p_jt_sup_ne)`
   - Jaccard vs dominance-based SER:
-    - low correlation: $0.34$
+    - low correlation: $0.52$
+
+
+```{r}
+tar_load(gaussian_jaccard_tmb)
+library(glmmTMB)
+confint(gaussian_jaccard_tmb$mod[[1]], "year_nb", component = "cond")
+summary(gaussian_jaccard_tmb$mod[[1]])
+
+ggpredict(gaussian_jaccard_tmb$mod[[1]], "year_nb")
+
+```
 
 
 ```{r}
@@ -380,7 +452,7 @@ plot_grid(
 )
 ```
 
-## Spatial trends 
+## Spatial trends
 
 
 ## Rarity
@@ -495,7 +567,145 @@ p_slp_env_pca[[3]]
 
 
 
-### Model
+## Model
+
+### Jaccard 
+
+```{r}
+tar_load(c(gaussian_jaccard_tmb, beta_jaccard_tmb))
+```
+
+```{r}
+tidy_gaus_jy  <- gaussian_jaccard_tmb %>%
+  filter(year_var == "year_nb") %>%
+  .$mod
+names(tidy_gaus_jy) <- gaussian_jaccard_tmb[
+  gaussian_jaccard_tmb$year_var == "year_nb",
+  ]$var_jaccard
+dw <- dwplot(tidy_gaus_jy,
+  vline = geom_vline(xintercept = 0, colour = "grey50", linetype = 2)) +
+  xlab("Coefficient")
+dw
+```
+
+
+```{r}
+diagnose(gaussian_jaccard_tmb$mod[[1]])
+diagnose(gaussian_jaccard_tmb$mod[[3]])
+diagnose(gaussian_jaccard_tmb$mod[[5]])
+```
+
+
+```{r}
+pred <- ggemmeans(gaussian_jaccard_tmb$mod[[1]],
+  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
+  type = "re")
+plot(pred)
+
+pred <- ggemmeans(gaussian_jaccard_tmb$mod[[3]],
+  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
+  type = "re.zi")
+plot(pred)
+
+pred <- ggemmeans(gaussian_jaccard_tmb$mod[[5]],
+  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
+  type = "re.zi")
+plot(pred)
+```
+
+- Map:
+
+```{r}
+hist(coef(gaussian_jaccard_tmb$mod[[1]])$cond[["siteid:main_bas"]]$year_nb)
+hist(coef(gaussian_jaccard_tmb$mod[[1]])$cond[["main_bas"]]$year_nb)
+```
+
+```{r}
+tar_load(filtered_dataset)
+loc <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+```{r}
+pred_slope <- gaussian_jaccard_tmb %>%
+  mutate(
+    site_slope = map(mod, function(m) {
+      coef(m)$cond[["siteid:main_bas"]] %>%
+        rownames_to_column(var = "siteid_main_bas") %>%
+        separate(
+          col = "siteid_main_bas",
+          into = c("siteid", "main_bas"),
+          sep = ":") %>%
+        select(-main_bas)
+    }),
+    basin_slope = map(mod, function(m) {
+      coef(m)$cond[["main_bas"]] %>%
+        rownames_to_column(var = "main_bas") 
+    }),
+  ) %>%
+select(-mod)
+pred_slope$basin_slope[[1]] %>%
+  as_tibble()
+
+pred_slope <- pred_slope %>%
+  mutate(
+    sf_site = map(site_slope,
+      ~left_join(.x, select(loc, siteid, geometry), by = "siteid") %>%
+        st_as_sf()
+      ),
+    sf_basin = map(basin_slope,
+      ~left_join(.x, loc %>%
+        mutate(main_bas = as.character(main_bas)) %>%
+        select(main_bas, geometry), by = "main_bas") %>%
+        st_as_sf()
+      ),
+    sf_site_map = map2(sf_site, year_var,
+      ~ggplot(data = world) +
+        geom_sf() +
+        geom_sf(data = .x, aes(color = year_nb), shape = 16) +
+        scale_color_viridis() +
+        theme(legend.position = "bottom")),
+    sf_basin_map = map2(sf_basin, year_var,
+      ~ggplot(data = world) +
+        geom_sf() +
+        geom_sf(data = .x, aes(color = year_nb), shape = 16) +
+        scale_color_viridis() +
+        theme(legend.position = "bottom"))
+  )
+```
+
+#### Site
+
+```{r}
+pred_slope$sf_site_map[[1]] +
+  labs(title = "Jaccard")
+
+pred_slope$sf_site_map[[3]] +
+  labs(title = "Turnover")
+
+pred_slope$sf_site_map[[5]] +
+  labs(title = "Nestedness")
+```
+
+#### Basin
+
+```{r}
+pred_slope$sf_basin_map[[1]] +
+  labs(title = "Jaccard")
+
+pred_slope$sf_basin_map[[3]] +
+  labs(title = "Turnover")
+
+pred_slope$sf_basin_map[[5]] +
+  labs(title = "Nestedness")
+```
+
+```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
 
 ```{r, eval=FALSE}
 paste0(var_temporal_trends,

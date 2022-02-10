@@ -178,6 +178,7 @@ fr %>%
 
 - Collinearity is weak between temperature and strahler, so it is good:
 
+
 ```{r}
 cor(fr$tmp_c_cyr, fr$ord_stra, method = "spearman")
 car::vif(lm(jaccard_scaled ~ scaled_tmp_c_cyr + scaled_dist_up_km, fr))
@@ -225,9 +226,10 @@ hist(rigal_trends[["jaccard"]]$linear_slope)
 plot(
   coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb,
   coef(beta_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb,
+  xlim= c(-.5,.2), ylim = c(-.5,.2)
 )
+abline(0,1)
 ```
-
 
 - Basin:
 
@@ -249,7 +251,6 @@ loc <- filtered_dataset$location %>%
   left_join(filtered_dataset$site_quali, by = "siteid") %>%
   st_as_sf(coords = c("longitude", "latitude"),
   crs = 4326)
-
 ```
 
 ```{r}

@@ -547,6 +547,24 @@ tar_target(gaussian_jaccard_tmb,
   ),
   pattern = cross(var_jaccard, year_var)
   ),
+tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb")),
+tar_target(gaussian_jaccard_tmb,
+  tibble(
+    rich_var = rich_var,
+    year_var = year_var,
+    mod = list(temporal_jaccard(
+      formula = paste0(rich_var, " ~
+    0 + ", year_var," * scaled_dist_up_km +
+    (0 + ", year_var," | main_bas/siteid) +
+    (0 + ", year_var," | span) +
+    (0 + scaled_dist_up_km + ", year_var,":scaled_dist_up_km | main_bas)"),
+    data = modelling_data,
+    family = gaussian(link = "identity"),
+    dispformula = "~ 1")
+    )
+  ),
+  pattern = cross(rich_var, year_var)
+  ),
 # tar_target(nb_sp_rich_tmb,
 #   glmmTMB::glmmTMB(species_nb ~
 #     year_nb * scaled_dist_up_km +
