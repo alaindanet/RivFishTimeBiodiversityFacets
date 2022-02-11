@@ -153,3 +153,5 @@ source(here("R", "load_raw_data.R"))
 download_chelsa(overwrite = FALSE)
 
 use_r("glmmTMB_models")
+use_r("pca_methods")
+

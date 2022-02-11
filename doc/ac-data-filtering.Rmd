@@ -10,7 +10,10 @@ output:
 ```{r setup, include=FALSE}
 ## target knits Rmds in their own session, so load libraries here.
 source(here::here("start_rmd.R"))
+knitr::opts_chunk$set(cache = TRUE)
 library(skimr)
+library(ade4)
+library(factoextra)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -354,6 +357,95 @@ plot(spde)
 
 # Environment
 
+## Water and air temperature
+
+```{r}
+tar_load(c(at_mv_avg, wt_mv_avg))
+
+awt <- full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year"))
+skim(awt)
+```
+
+```{r}
+wt_site_avg <- wt_mv_avg %>%
+  group_by(siteid) %>%
+  summarise(avg_w_tmp = mean(tmp_w_ama))
+```
+
+```{r}
+loc_wt <- loc %>%
+  left_join(wt_site_avg, by = "siteid")
+
+ggplot(data = world) + geom_sf() +
+  geom_sf(data = loc_wt, aes(fill = avg_w_tmp), shape = 21) +
+  scale_fill_viridis() +
+  theme(legend.position = "bottom")
+```
+
+- Check if NA:
+
+```{r}
+tar_load(analysis_dataset)
+skim(analysis_dataset)
+```
+
+
+```{r}
+na_tmp <- analysis_dataset %>%
+  left_join(wt_mv_avg, by = c("siteid", "year")) %>%
+  left_join(at_mv_avg, by = c("siteid", "year")) %>%
+  select(siteid, year, tmp_w_ama, tmp_a_ana) %>%
+  pivot_longer(
+    cols = c(tmp_w_ama, tmp_a_ana),
+    names_to = "variable", values_to = "tmp") %>%
+  group_by(variable, year) %>%
+  summarise(n_na = sum(is.na(tmp)), p_na = n_na / n(), .groups = "drop")
+```
+
+- Air temperature can be interesting to complete water temperature data:
+  - between 2007 and 2016
+  - `analysis_dataset %>% filter(variable == "tmp_a_ana")`
+
+```{r}
+na_tmp %>%
+  ggplot(aes(y = p_na, x = year, color = variable)) +
+  geom_line() +
+  labs(y = "Percentage of NAs in temperature variable",
+    x = "Year", color = "Temperature variable") +
+  scale_color_manual(values = c("red", "blue"), labels = c("Air (Chelsa)", "Water (DynWat)"))
+```
+
+```{r}
+ti <- analysis_dataset %>%
+  left_join(wt_mv_avg, by = c("siteid", "year")) %>%
+  left_join(at_mv_avg, by = c("siteid", "year")) %>%
+  select(siteid, year, tmp_w_ama, tmp_a_ana) %>%
+  skim_tee() %>%
+  mutate(
+    w_tmp_na = is.na(tmp_w_ama),
+    a_tmp_na = is.na(tmp_a_ana),
+    tmp_w_ama = ifelse( is.na(tmp_w_ama) & !is.na(tmp_a_ana),
+      tmp_a_ana, tmp_w_ama)
+  )
+```
+
+
+```{r}
+na_w_not_na_a <- ti %>%
+  group_by(year) %>%
+  summarise(w_tmp_na = sum(w_tmp_na) /n(), a_tmp_na = sum(a_tmp_na) / n()) %>%
+  filter(w_tmp_na == 1 & a_tmp_na < .01)
+ratio_data_na_w_no_na_a <-
+  analysis_dataset[analysis_dataset$year %in% na_w_not_na_a$year, ] %>%
+  nrow /
+  nrow(analysis_dataset)
+```
+
+- NA period in water temperature but not in air temperature: 
+  - `r percent(ratio_data_na_w_no_na_a)` of the data 
+
+
+
 ## River atlas 
 
 ```{r}
@@ -372,6 +464,10 @@ colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "tmp_")]
 # River discharge 
 colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "dis_m3")]
 colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "ria_")]
+# Human footprint
+colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "hft_")]
+# Population density
+colnames(riveratlas_site)[str_detect(colnames(riveratlas_site), "pnv_")]
 ```
 
 ```{r}
@@ -384,20 +480,54 @@ riveratlas_site <- riveratlas_site %>%
 riv <- riveratlas_site %>%
   select(all_of(get_river_atlas_significant_var())) %>%
   st_drop_geometry()
-
 ```
 
 ```{r}
-riv %>%
-  pivot_longer(cols = everything(), names_to = "variable", values_to = "values") %>%
-  ggplot(aes(x = values)) +
-  geom_histogram() +
-  facet_wrap(~variable, scales = "free_x")
+skim(riv)
+```
+
+
+### Human footprint
+
+```{r}
+hist(riveratlas_site$hft_ix_c09 - riveratlas_site$hft_ix_c93)
+hist(riveratlas_site$hft_ix_u09 - riveratlas_site$hft_ix_u93)
+```
+```{r}
+loc_hft <- loc %>%
+  left_join(riveratlas_site %>%
+      select(c("siteid", starts_with("hft_"))) %>%
+      st_drop_geometry(),
+    by = "siteid"
+  )
+skim_tee(st_drop_geometry(loc_hft))
+
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = loc_hft, aes(color = hft_ix_c09), shape = 19) +
+  scale_color_viridis() +
+  theme(legend.position = "bottom") +
+  labs(title = "Human footprint 2009 (catch)")
+
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = loc_hft, aes(color = hft_ix_u09), shape = 19) +
+  scale_color_viridis() +
+  theme(legend.position = "bottom") +
+  labs(title = "Human footprint 2009 (watershed)")
 ```
 
 ```{r}
-library(ade4)
-library(factoextra)
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = loc_hft, aes(color = hft_ix_u09 - hft_ix_u93), shape = 19) +
+  scale_color_viridis() +
+  theme(legend.position = "bottom") +
+  labs(title = "Human footprint difference 2009-1993 (watershed)")
+```
+
+
+```{r}
 
 pca_riv <- dudi.pca(df = scale(riv), scannf = FALSE, nf = 3)
 ```
@@ -420,10 +550,145 @@ p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
 )
 
 plot_grid(plotlist = p_pca, ncol = 1)
-p_pca[[1]]
-p_pca[[2]]
-p_pca[[3]]
 ```
+
+- With logged variables: 
+
+```{r}
+logged_riv <- riv %>%
+  mutate(across(c("Distance from source", "Strahler order", "Average elevation (m)",
+        "Annual average of discharge (m3/s)", "Protected area extent (%)", "Urban extent (%)"),
+      ~log(.x  + min(.x) + 1)))
+skim(logged_riv)
+```
+
+```{r}
+pca_data_logged_riv <- logged_riv %>%
+  filter(`Average elevation (m)` != -Inf)
+pca_logged_riv <- dudi.pca(df = scale(na.omit(pca_data_logged_riv)), scannf = FALSE, nf = 3)
+```
+```{r, fig.height=12}
+fviz_eig(pca_logged_riv)
+
+p_pca_logged_riv <- map(list(c(1, 2), c(2, 3), c(1, 3)),
+  ~fviz_pca_biplot(pca_logged_riv,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+plot_grid(plotlist = p_pca_logged_riv, ncol = 1)
+```
+
+```{r}
+lc_var <- c(
+#  "Potential Natural Vegetation Extent (catchment)" = "pnv_pc_c01-c15",
+#  "Potential Natural Vegetation Extent (watershed)" = "pnv_pc_u01-u15",
+  "Forest Cover Extent (catchment)" = "for_pc_cse",
+  "Forest Cover Extent (watershed)" = "for_pc_use",
+  "Cropland Extent (catchment)" = "crp_pc_cse",
+  "Cropland Extent (watershed)" = "crp_pc_use",
+  "Pasture Extent (catchment)" = "pst_pc_cse",
+  "Pasture Extent (watershed)" = "pst_pc_use",
+  "Urban Extent (catchment)" = "urb_pc_cse",
+  "Urban Extent (watershed)" = "urb_pc_use",
+ "Population Density (catchment)" = "ppd_pk_cav",
+ "Population Density (watershed)" = "ppd_pk_uav"
+)
+```
+
+```{r}
+lc_hft <- riveratlas_site %>%
+  select(all_of(c(
+        lc_var[str_detect(names(lc_var), "catchment")],
+        get_river_atlas_significant_var()[
+          str_detect(get_river_atlas_significant_var(), "hft_")
+          ]
+        )))
+```
+
+```{r}
+pca_data_lc_hft <- lc_hft %>%
+  st_drop_geometry()
+skim(pca_data_lc_hft)
+pca_lc_hft <- dudi.pca(
+  df = scale(na.omit(pca_data_lc_hft)),
+  scannf = FALSE, nf = 3)
+```
+
+- Human footprint is well correlated with forest extent,
+  urban extent and population density, and at a less extent
+  to urban extent. 
+
+```{r}
+corrplot::corrplot(
+  cor(as.matrix(pca_data_lc_hft), method = "spearman"),
+  type = "upper", tl.srt = 35, diag = FALSE)
+```
+
+
+```{r, fig.height=12}
+fviz_eig(pca_lc_hft)
+p_pca_lc_hft <- map(list(c(1, 2), c(2, 3), c(1, 3)),
+  ~fviz_pca_biplot(pca_lc_hft,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+plot_grid(plotlist = p_pca_lc_hft, ncol = 1)
+```
+
+```{r, fig.height=12}
+pca_logged_data_lc_hft <- pca_data_lc_hft %>%
+  mutate(across(where(is.numeric),
+      ~log(.x  + min(.x) + 1)))
+
+pca_logged_lc_hft <- dudi.pca(
+  df = scale(na.omit(pca_logged_data_lc_hft)),
+  scannf = FALSE, nf = 3
+)
+
+fviz_eig(pca_logged_lc_hft)
+
+p_pca_logged_lc_hft <- map(list(c(1, 2), c(2, 3), c(1, 3)),
+  ~fviz_pca_biplot(pca_logged_lc_hft,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+plot_grid(plotlist = p_pca_logged_lc_hft, ncol = 1)
+```
+
+```{r}
+riv_str_var <- colnames(riveratlas_site)[
+  colnames(riveratlas_site) %in%
+    c("dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav")]
+summary(riveratlas_site$ele_mt_cav)
+logged_riv_str <- riveratlas_site %>%
+  st_drop_geometry() %>%
+  select(all_of(c("siteid", riv_str_var))) %>%
+  mutate(across(where(is.numeric), ~log(.x + abs(min(.x)) + 1)))
+
+```
+
+- PCA on river structure: 
+
+```{r}
+tar_load(c(pca_riv_str, p_pca_riv_str))
+plot_grid(plotlist = p_pca_riv_str)
+```
+
+
+
+
 ## Water temperature 
 
 ```{r}
@@ -431,6 +696,7 @@ tar_load(c(wt_mv_avg, filtered_dataset))
 wt_mv_avg  <- wt_mv_avg %>%
   ungroup()
 ```
+
 ```{r}
 library(glmmTMB)
 library(DHARMa)
@@ -447,8 +713,6 @@ mod_wt_data <- wt_mv_avg  %>%
 
 ```{r}
 #https://stackoverflow.com/questions/66467641/partial-effect-plots-from-spamm
-
-
 tar_load(mod_wt)
 
 #vignette('troubleshooting')

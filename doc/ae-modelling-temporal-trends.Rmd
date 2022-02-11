@@ -185,6 +185,11 @@ car::vif(lm(jaccard_scaled ~ scaled_tmp_c_cyr + scaled_dist_up_km, fr))
 ```
 
 ```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
+
+```{r, eval = FALSE}
 tar_load(beta_jaccard_tmb)
 confint(beta_jaccard_tmb)
 analysis_dataset
@@ -200,23 +205,24 @@ emmeans(beta_jaccard_tmb, "year_nb", type = "response")
 r2(beta_jaccard_tmb)
 ```
 
-```{r}
+```{r, eval = FALSE}
 pred <- ggemmeans(beta_jaccard_tmb,
   terms = c("year_nb", "scaled_dist_up_km [quart2]"),
   type = "re.zi")
 plot(pred)
 ```
 
-```{r}
+```{r, eval = FALSE}
 tar_load(c(rigal_trends, var_temporal_trends))
 names(rigal_trends) <- var_temporal_trends
 
 hist(coef(beta_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb)
 ```
 
+
 - Site:
 
-```{r}
+```{r, eval=FALSE}
 tar_load(gaussian_jaccard_tmb)
 par(mfrow = c(1, 2))
 hist(coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]]$year_nb)
