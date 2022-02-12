@@ -13,6 +13,7 @@ bibliography: "bibliography.bib"
 
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
+knitr::opts_chunk$set(cache = TRUE)
 library(skimr)
 library(dotwhisker)
 library(broom.mixed)
@@ -69,7 +70,7 @@ cap_turn <- paste0(
 
 
 ```{r, fig.cap=cap_turn}
-knitr::include_graphics(here("doc/fig/turnover_hyp.pdf"))
+knitr::include_graphics("fig/turnover_hyp.png")
 ```
 
 ### Within and basin scale 
@@ -701,6 +702,17 @@ pred_slope$sf_basin_map[[3]] +
 pred_slope$sf_basin_map[[5]] +
   labs(title = "Nestedness")
 ```
+
+## Species richness
+
+```{r, eval = FALSE}
+tar_load(gaussian_rich_tmb)
+
+lry <- gaussian_rich_tmb$mod[[5]]
+cry <- gaussian_rich_tmb$mod[[1]]
+```
+
+
 
 ```{r}
 knitr::opts_chunk$set(eval = FALSE)
