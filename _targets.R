@@ -445,7 +445,7 @@ tar_target(slp_env,
       output_tmp_var = "tmp_a_ana")
     ),
   tar_target(pca_riv_str,
-    computed_riv_str_pca(riv = riveratlas_site, ncomp = 2)
+    compute_riv_str_pca(riv = riveratlas_site, ncomp = 2)
     ),
   tar_target(p_pca_riv_str,
     plot_rotated_pca(pca_rotated = pca_riv_str)
@@ -518,12 +518,17 @@ tar_target(modelling_data,
                nestedness_scaled = transform01(nestedness),
                turnover_scaled = transform01(turnover),
                hillebrand_scaled = transform01(hillebrand),
+               appearance_scaled = transform01(appearance),
+               disappearance_scaled = transform01(disappearance),
+               evenness_scaled = transform01(evenness),
                log1_year_nb = log(year_nb + 1),
                one = 1.0
                ) %>%
              na.omit()
            ),
-tar_target(var_jaccard, c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled")),
+tar_target(var_jaccard, c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled", "hillebrand_scaled",
+                          "appearance_scaled",
+                          "disappearance_scaled", "evenness_scaled")),
 tar_target(year_var, c("year_nb", "log1_year_nb")),
 tar_target(intercept, c(0, 1)),
 tar_target(beta_jaccard_tmb,
