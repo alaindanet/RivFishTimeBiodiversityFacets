@@ -3,6 +3,10 @@ source("./packages.R")
 ## Load your R files
 lapply(list.files(here("R"), full.names = TRUE), source)
 
+library(future.callr)
+plan(callr)
+#future::plan(future::multisession)
+
 ## tar_plan supports drake-style targets and also tar_target()
 tar_plan(
   # tar_target(target2, function_to_make2(arg)) ## targets style
@@ -508,7 +512,8 @@ tar_target(slp_env,
   iteration = "list"),
 tar_target(var_analysis, c("siteid", "main_bas", "year", "year_nb",
     "scaled_dist_up_km", "span", "jaccard_scaled", "jaccard_dis", "turnover", "nestedness",
-    "species_nb", "log_species_nb", "chao_richness", "hillebrand"
+    "species_nb", "log_species_nb", "chao_richness", "hillebrand", "appearance", "disappearance",
+    "evenness"
     )),
 tar_target(modelling_data,
            analysis_dataset %>%

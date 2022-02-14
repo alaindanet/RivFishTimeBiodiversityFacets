@@ -12,3 +12,5 @@ doc/fig/*.jpeg
 _targets.yaml
 .Rhistory
 draft.R
+*.pdf
+*_cache/
