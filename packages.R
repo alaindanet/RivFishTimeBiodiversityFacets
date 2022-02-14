@@ -58,3 +58,5 @@ library(future)
 library(INLA)
 library(inlatools)
 library(glmmTMB)
+
+library(easystats)

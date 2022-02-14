@@ -308,8 +308,6 @@ length(unique(na.omit(analysis_dataset)$siteid))
 
 
 
-
-
 ```{r}
 ti <- glmmTMB(
   jaccard_scaled ~ 0 + year_nb * scaled_dist_up_km +
@@ -425,6 +423,13 @@ res_sp1 <- simulateResiduals(sp_tmb1)
 plot(res_sp1)
 testDisp1ersion(res_sp1)
 testZeroInflation(res_sp1)
+```
+
+### Total abundance 
+
+```{r}
+fr
+
 ```
 
 

@@ -70,7 +70,7 @@ cap_turn <- paste0(
 
 
 ```{r, fig.cap=cap_turn}
-knitr::include_graphics("fig/turnover_hyp.png")
+knitr::include_graphics(here::here("doc/fig/turnover_hyp.png"))
 ```
 
 ### Within and basin scale 
@@ -207,6 +207,13 @@ riv %>%
   geom_histogram() +
   facet_wrap(~variable, scales = "free")
 ```
+```{r}
+tar_load(pca_riv_str)
+
+p <- plot_rotated_pca(pca_riv_str)
+p$rotated
+```
+
 
 # Statistical analysis 
 
@@ -376,13 +383,8 @@ cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
 
 
 ```{r}
-tar_load(gaussian_jaccard_tmb)
-library(glmmTMB)
-confint(gaussian_jaccard_tmb$mod[[1]], "year_nb", component = "cond")
-summary(gaussian_jaccard_tmb$mod[[1]])
-
-ggpredict(gaussian_jaccard_tmb$mod[[1]], "year_nb")
-
+tar_load(mod_tps_comp)
+plot(mod_tps_comp)
 ```
 
 
