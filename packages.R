@@ -28,6 +28,18 @@ library(vegan)
 # date
 library(slider)
 
+library(rmarkdown)
+
+# parallel
+library(future)
+
+# Statistics
+library(INLA)
+library(inlatools)
+library(glmmTMB)
+
+library(easystats)
+
 
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
@@ -49,14 +61,3 @@ conflict_prefer("lag", "dplyr")
 #conflict_prefer("src", "dplyr")
 #conflict_prefer("stamp", "lubridate")
 
-library(rmarkdown)
-
-# parallel
-library(future)
-
-# Statistics
-library(INLA)
-library(inlatools)
-library(glmmTMB)
-
-library(easystats)
