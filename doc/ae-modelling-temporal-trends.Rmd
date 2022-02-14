@@ -188,9 +188,48 @@ car::vif(lm(jaccard_scaled ~ scaled_tmp_c_cyr + scaled_dist_up_km, fr))
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
+# Diagnose models 
+
+```{r}
+tar_load(c(gaussian_jaccard_tmb, modelling_data))
+obj_mb(gaussian_jaccard_tmb)
+```
+
+- See gaussian model with relaxed intercept:
+
+```{r}
+g_jac_1_ly <- filter(gaussian_jaccard_tmb) %>%
+  filter(intercept == 1, year_var == "log1_year_nb")
+```
+
+- Diagnostic reveals that the models fail for basin "3" 
+
+```{r}
+ti <- diagnose(g_jac_1_ly$mod[[7]])
+ss <- summary(g_jac_1_ly$mod[[7]]$sdr) 
+ss[grepl("^(beta|theta)", rownames(ss)), ]
+
+broom.mixed::tidy(g_jac_1_ly$mod[[7]])
+```
+
+```{r}
+modelling_data %>%
+  filter(main_bas == levels(modelling_data$main_bas)[3])
+
+confint(, "log1_year_nb", component = "cond")
+
+```
+
+```{r}
+ti <- get_random_effect_glmmTMB(g_jac_1_ly$mod[[7]], effect = "main_bas")
+hist(ti[["log1_year_nb"]])
+```
+
+
+
 
 ```{r, eval = FALSE}
-tar_load(beta_jaccard_tmb)
+filter()
 confint(beta_jaccard_tmb)
 analysis_dataset
 res_b_j <- simulateResiduals(beta_jaccard_tmb)
@@ -199,7 +238,6 @@ summary(beta_jaccard_tmb)
 library(emmeans)
 x <- coef(beta_jaccard_tmb)$cond
 str(x)
-confint(beta_jaccard_tmb, "year_nb", component = "cond")
 y <- x[["siteid:main_bas"]]
 emmeans(beta_jaccard_tmb, "year_nb", type = "response")
 r2(beta_jaccard_tmb)
@@ -240,14 +278,8 @@ abline(0,1)
 - Basin:
 
 ```{r}
-x <- coef(gaussian_jaccard_tmb)$cond[["siteid:main_bas"]] %>%
-  rownames_to_column(var = "siteid_main_bas") %>%
-  separate(
-    col = "siteid_main_bas",
-    into = c("siteid", "main_bas"),
-    sep = ":")
- 
-hist(coef(gaussian_jaccard_tmb)$cond[["main_bas"]]$year_nb)
+ti <- get_random_effect_glmmTMB(g_jac_1_ly$mod[[7]], effect = "main_bas")
+hist(ti$log1_year_nb)
 ```
 
 
