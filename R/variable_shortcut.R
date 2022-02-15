@@ -56,7 +56,7 @@ get_river_atlas_significant_var <- function() {
     #"River volume (reach segment, m3)" = "riv_tc_csu",
     "Protected area extent (%)" = "pac_pc_cse",
     "Urban extent (%)" = "urb_pc_cse",
-    #"Human footprint 1993 (index)" = "hft_ix_c93",
+    "Human footprint 1993 (index)" = "hft_ix_c93",
     "Human footprint 2009 (index)" = "hft_ix_c09"
   )
 }

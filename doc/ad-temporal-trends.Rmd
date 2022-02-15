@@ -919,6 +919,94 @@ tu %>%
 summary(lm(jaccard ~ log(dist_up_km), slp_riv))
 ```
 
+## Human footprint
+
+```{r}
+tar_load(riveratlas_site)
+colnames(riveratlas_site)[
+  str_detect(colnames(riveratlas_site),
+    "hft_ix_")]
+
+
+hftc <- riveratlas_site[,
+        colnames(riveratlas_site) %in%
+          c("siteid", "hft_ix_c93", "hft_ix_c09")
+        ] %>%
+        st_drop_geometry() %>%
+        mutate(
+          cat_hft_ix_c09 = cut(hft_ix_c09, 6),
+          cat_hft_ix_c93 = cut(hft_ix_c93, 6),
+          hft_ix_c9309_percent =
+            (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
+          hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93,
+          hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
+          hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
+          log_hft_ix_c9309_percent = log(hft_ix_c9309_percent),
+          cat_hftc9309 = cut(hft_ix_c9309_percent, 6),
+          cat_hft_ix_c9309_log_ratio = cut(hft_ix_c9309_log_ratio, 6)
+        )
+skimr::skim(hftc)
+```
+```{r}
+p_hft_diff <- map(c("hft_ix_c9309_percent", "log_hft_ix_c9309_percent"),
+  ~hftc %>%
+  ggplot(aes_string(x = .x)) +
+  geom_histogram()
+)
+plot_grid(plotlist = p_hft_diff)
+```
+
+```{r}
+hftc_biodiv <- analysis_dataset %>%
+  left_join(hftc, by = "siteid")
+```
+
+```{r}
+p_jaccard_y_c9309_log_ratio <- map(
+  c("cat_hft_ix_c93", "cat_hft_ix_c09", "cat_hft_ix_c9309_log_ratio"),
+  ~hftc_biodiv %>%
+    ggplot(aes(y = jaccard_dis, x = year_nb,
+        color = !!sym(.x))) +
+    geom_point() +
+    geom_smooth()
+
+) 
+p_jaccard_y_c9309_log_ratio
+```
+
+```{r}
+p_jaccard_log_y_c9309_log_ratio <- map(
+  c("cat_hft_ix_c93", "cat_hft_ix_c09", "cat_hft_ix_c9309_log_ratio"),
+  ~hftc_biodiv %>%
+    ggplot(aes(y = jaccard_dis, x = log(year_nb + 1),
+        color = !!sym(.x))) +
+    geom_point() +
+    geom_smooth()
+
+)
+p_jaccard_log_y_c9309_log_ratio
+```
+
+- Correlation:
+
+```{r}
+library(easystats)
+tar_load(modelling_data)
+cor_data <- modelling_data %>%
+  left_join(hftc, by = "siteid") %>%
+  select(!starts_with("cat") & !ends_with("scaled") & !starts_with("log_hft")) %>%
+  select(-siteid, -main_bas)
+
+corrplot::corrplot(
+  cor(as.matrix(na.omit(cor_data), method = c("spearman")))
+  )
+```
+
+```{r}
+```
+
+
+
 ## SpaMM model
 
 
