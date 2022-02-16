@@ -18,6 +18,7 @@ library(skimr)
 library(dotwhisker)
 library(broom.mixed)
 library(ggeffects)
+library(easystats)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -383,9 +384,9 @@ cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
 
 
 ```{r}
-tar_load(mod_tps_comp)
-plot(mod_tps_comp)
+
 ```
+
 
 
 ```{r}
@@ -575,53 +576,133 @@ p_slp_env_pca[[3]]
 ### Jaccard 
 
 ```{r}
-tar_load(c(gaussian_jaccard_tmb, beta_jaccard_tmb))
-```
-
-```{r}
-tidy_gaus_jy  <- gaussian_jaccard_tmb %>%
-  filter(year_var == "year_nb") %>%
-  .$mod
-names(tidy_gaus_jy) <- gaussian_jaccard_tmb[
-  gaussian_jaccard_tmb$year_var == "year_nb",
-  ]$var_jaccard
-dw <- dwplot(tidy_gaus_jy,
-  vline = geom_vline(xintercept = 0, colour = "grey50", linetype = 2)) +
-  xlab("Coefficient")
-dw
+tar_load(c(gaussian_jaccard_tmb, gaussian_rich_tmb))
+#obj_mb(gaussian_jaccard_tmb)
 ```
 
 
+- Effect of models: 
+
 ```{r}
-diagnose(gaussian_jaccard_tmb$mod[[1]])
-diagnose(gaussian_jaccard_tmb$mod[[3]])
-diagnose(gaussian_jaccard_tmb$mod[[5]])
+tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
+plot(mod_tmb_comp)
+```
+
+```{r}
+mod_tmb_comp_std %>%
+  as_tibble() %>%
+  select(Parameter, starts_with("CI_"), starts_with("Std_")) %>%
+  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+  pivot_wider(names_from = "type", values_from = "values") %>%
+  filter(Parameter != "(Intercept)") %>%
+  ggplot(
+    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low, xmax = CI_high),
+    ) +
+  geom_pointrange(position = position_dodge(width = .2))
+```
+
+```{r}
+tar_load(binded_gaussian_tmb)
+# does not work for now because I estimated several times the basin random effect on
+# intercept, normally its fixed
+#x <- parameters(
+#  gaussian_jaccard_tmb$mod[[6]],
+#  group_level = TRUE,
+#  effects = "random"
+#)
+random_effect <- binded_gaussian_tmb %>%
+  filter(intercept == 1, year_var == "year_nb")  %>%
+  mutate(random_site = map(mod,
+      ~try(get_random_effect_glmmTMB(
+        .x, effect = "siteid:main_bas")
+      ))) %>%
+select(-mod)
+
+site_temporal_trends <- random_effect %>%
+  unnest(random_site) %>%
+  select(response, siteid, year_nb)
+```
+
+```{r}
+site_temporal_trends %>%
+  ggplot(aes(x = year_nb)) +
+  geom_histogram() +
+  facet_wrap(vars(response), scales = "free")
+```
+
+```{r}
+wide_site_tps <- site_temporal_trends  %>%
+  pivot_wider(names_from = "response", values_from = "year_nb")
+cor_site_tps <- cor(as.matrix(select(wide_site_tps, -siteid)))
+corrplot::corrplot(cor_site_tps)
+```
+
+```{r}
+
 ```
 
 
 ```{r}
-pred <- ggemmeans(gaussian_jaccard_tmb$mod[[1]],
-  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
-  type = "re")
+pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
+```
 
-pred <- ggemmeans(gaussian_jaccard_tmb$mod[[3]],
-  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
-  type = "re.zi")
-plot(pred)
+```{r}
+pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
+  filter(year_var == "year_nb", intercept == 1) %>%
+  mutate(pred = map(mod,
+      ~ggemmeans(.x,
+        terms = c("year_nb", "riv_str_rc1 [quart2]"),
+        type = "fe")
+      ),
+    pred_plot = map(pred, plot)
+  ) %>%
+  select(-mod)
+plot_grid(plotlist = pred_year_riv_str_fe$pred_plot)
+```
+```{r}
+pred_log1_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
+  filter(year_var == "log1_year_nb", intercept == 1) %>%
+  mutate(pred = map(mod,
+      ~ggemmeans(.x,
+        terms = c("log1_year_nb", "riv_str_rc1 [quart2]"),
+        type = "fe")
+      ),
+    pred_plot = map(pred, plot)
+  ) %>%
+  select(-mod)
+plot_grid(plotlist = pred_log1_year_riv_str_fe$pred_plot)
+```
 
-pred <- ggemmeans(gaussian_jaccard_tmb$mod[[5]],
-  terms = c("year_nb", "scaled_dist_up_km [quart2]"),
-  type = "re.zi")
-plot(pred)
+```{r}
+pred_year_hft_fe <- gaussian_jaccard_tmb  %>%
+  filter(year_var == "year_nb", intercept == 1) %>%
+  mutate(pred = map(mod,
+      ~ggemmeans(.x,
+        terms = c("year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
+        type = "fe")
+      ),
+    pred_plot = map(pred, plot)
+  ) %>%
+  select(-mod)
+plot_grid(plotlist = pred_year_hft_fe$pred_plot)
+```
+```{r}
+pred_log1_year_hft_fe <- gaussian_jaccard_tmb  %>%
+  filter(year_var == "log1_year_nb", intercept == 1) %>%
+  mutate(pred = map(mod,
+      ~ggemmeans(.x,
+        terms = c("log1_year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
+        type = "fe")
+      ),
+    pred_plot = map(pred, plot)
+  ) %>%
+  select(-mod)
+plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot)
 ```
 
 - Map:
-
-```{r}
-hist(coef(gaussian_jaccard_tmb$mod[[1]])$cond[["siteid:main_bas"]]$year_nb)
-hist(coef(gaussian_jaccard_tmb$mod[[1]])$cond[["main_bas"]]$year_nb)
-```
 
 ```{r}
 tar_load(filtered_dataset)
@@ -714,6 +795,74 @@ lry <- gaussian_rich_tmb$mod[[5]]
 cry <- gaussian_rich_tmb$mod[[1]]
 ```
 
+## Cluster 
+
+
+```{r}
+site_tps_clust <- wide_site_tps %>%
+  select(-siteid, -species_nb, -log_species_nb) %>%
+  as.data.frame()
+rownames(site_tps_clust) <- wide_site_tps$siteid
+```
+
+```{r}
+# Kmeans
+library(factoextra)
+fviz_nbclust(scale(site_tps_clust), kmeans, method = "silhouette")
+kclust_tps <- kmeans(scale(site_tps_clust), 4, nstart = 25)
+fviz_cluster(kclust_tps, data = site_tps_clust,
+  geom = "point",
+  ellipse.type = "convex", 
+  ggtheme = theme_bw()
+)
+```
+
+```{r}
+# Map
+cluster_loc <- loc %>%
+  left_join(enframe(kclust_tps$cluster, name = "siteid", value = "cluster"),
+    by = "siteid"
+    ) %>%
+filter(!is.na(cluster))
+ggplot(data = world) +
+  geom_sf() +
+  geom_sf(data = cluster_loc, aes(color = as.factor(cluster)), shape = 16) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
+# Composition of groups 
+group_tps <- wide_site_tps %>%
+  select(-species_nb, -log_species_nb) %>%
+  left_join(enframe(kclust_tps$cluster, name = "siteid", value = "cluster"),
+    by = "siteid"
+  ) 
+
+clust_var_summary <- group_tps %>% 
+  pivot_longer(-c(cluster, siteid), names_to = "variable", values_to = "values") %>%
+  group_by(cluster, variable) %>%
+  summarise(mean = mean(values), se = sd(values) / sqrt(n()), .groups = "drop") %>%
+  mutate(ci_low = mean - 1.96 * se, ci_high = mean + 1.96 * se)
+```
+
+- Cluster analysis: 
+  - Cluster 1: low appearance + decrease richness
+  - Cluster 2: low jaccard dis + increase richness
+  - Cluster 3: high jaccard dis + high turnover + low nestedness + increase richness
+  - Cluster 4: high richness increase + high evenness + high jaccard dis + high nestedness +
+   low turnover
+
+```{r}
+clust_var_summary %>%
+  ggplot(
+    aes(
+      x = variable, y = mean,
+      ymin = ci_low, ymax = ci_high,
+      color = as.factor(cluster))
+    ) +
+  geom_pointrange(position = position_dodge(width = .2)) +
+  geom_hline(yintercept = 0)
+```
 
 
 ```{r}

@@ -1,14 +1,21 @@
-source("./packages.R")
+library(targets)
 
 ## Load your R files
-lapply(list.files(here("R"), full.names = TRUE), source)
+lapply(list.files(here::here("R"), full.names = TRUE), source)
+tar_option_set(packages = c("targets", "tarchetypes","tidyverse", "magrittr", "lubridate", "here",
+                            "kableExtra", "scales", "rmarkdown", "sf", "rnaturalearth",
+                            "rnaturalearthdata", "terra", "cowplot", "viridis", "janitor", "codyn",
+                            "vegan", "slider", "future", "INLA", "inlatools", "glmmTMB", "easystats"))
 
 library(future.callr)
 plan(callr)
+library(targets)
+source("./packages.R")
+
 #future::plan(future::multisession)
 
 ## tar_plan supports drake-style targets and also tar_target()
-tar_plan(
+list(
   # tar_target(target2, function_to_make2(arg)) ## targets style
   tar_target(
     raw_data_file,
@@ -269,14 +276,10 @@ tar_plan(
           c("siteid", setNames(get_river_atlas_significant_var(), NULL))
         ] %>%
         st_drop_geometry() %>%
-<<<<<<< HEAD
           ## Add PCA score
           mutate(
             riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
-            riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
-          )
-=======
-        mutate(
+            riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"],
           hft_ix_c9309_percent =
             (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
           log_hft_ix_c9309_percent = hft_ix_c9309_percent,
@@ -285,7 +288,6 @@ tar_plan(
           hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
           hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff)
         )
->>>>>>> Add change in human footprint (93-09) in the model
     )
     ),
   tar_target(fr,
@@ -590,8 +592,8 @@ tar_target(beta_jaccard_tmb,
             year_var, " * hft_ix_c9309_diff_scaled +
             (", intercept, " + ", year_var," | main_bas/siteid) +
             (", intercept, " + ", year_var," | span) +
-            (", intercept, " + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-            (", intercept, " + ", year_var,":riv_str_rc1 | main_bas)"),
+            ( 0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+            ( 0 + ", year_var,":riv_str_rc1 | main_bas)"),
           data = modelling_data,
           offset = NULL,
           family = gaussian(link = "identity"),
@@ -607,11 +609,12 @@ tar_target(beta_jaccard_tmb,
         year_var = year_var,
         mod = list(temporal_jaccard(
             formula = paste0(rich_var, " ~
-              ", year_var," * riv_str_rc1 +
-              (1 + ", year_var," | main_bas/siteid) +
-              (1 + ", year_var," | span) +
-              (1 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-              (1 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)"),
+              ", year_var, " * riv_str_rc1 +",
+            year_var, " * hft_ix_c9309_diff_scaled +
+            (1 + ", year_var," | main_bas/siteid) +
+            (1 + ", year_var," | span) +
+            (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+            (0 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)"),
             data = modelling_data,
             offset = NULL,
             family = gaussian(link = "identity"),
@@ -620,19 +623,39 @@ tar_target(beta_jaccard_tmb,
           ),
         pattern = cross(rich_var, year_var)
         ),
-tar_target(mod_tps_comp,
+tar_target(mod_tmb,
   rbind(
     gaussian_jaccard_tmb %>%
       filter(intercept == 1 & year_var == "year_nb") %>%
       select(-intercept), 
     gaussian_rich_tmb %>%
-      filter(year_var == "year_nb") %>%
-      rename(var_jaccard = rich_var)
-    ) %$%
-  # Drop the main effect
-  compare_parameters(setNames(.$mod, .$var_jaccard), drop = "^scaled")
+      filter(year_var == "year_nb")
+    ) 
   ),
-
+tar_target(mod_tmb_comp,
+  # Drop the main effect
+  compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled"),
+  ),
+tar_target(mod_tmb_comp_std,
+  # Drop the main effect
+  compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic"),
+  ),
+tar_target(binded_gaussian_tmb,
+  rbind(gaussian_jaccard_tmb,
+    mutate(gaussian_rich_tmb, intercept = 1))
+),
+tar_target(random_effects,
+  binded_gaussian_tmb %>% 
+    mutate(random_effects = map(mod,
+        ~parameters(
+          .x,
+          group_level = TRUE) %>%
+        as_tibble() %>%
+        clean_names() %>%
+        select(-all_of(c("se", "ci", "component", "effects")))
+      )) %>%
+  select(-mod)
+  ),
 # tar_target(nb_sp_rich_tmb,
 #   glmmTMB::glmmTMB(species_nb ~
 #     year_nb * scaled_dist_up_km +
