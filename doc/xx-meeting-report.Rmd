@@ -645,7 +645,8 @@ mod_tmb_comp_std_df %>%
   ggplot(
     aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2))
+  geom_pointrange(position = position_dodge(width = .2)) +
+  theme(legend.position = "bottom")
 ```
 
 - Summary of results (Figure \@ref(fig:mod-slp-std)):
@@ -726,25 +727,31 @@ pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
 ```
 
-```{r}
+```{r, eval=FALSE}
 tar_load(pred_gaussian_tmb)
 ```
 
 
-```{r p-pred-riv, fig.height = 12}
+```{r p-pred-riv, fig.height = 16}
 pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
       ~ggemmeans(.x,
         terms = c("year_nb", "riv_str_rc1 [quart2]"),
-        type = "fe")
+        type = "fe") 
       ),
-    pred_plot = map(pred, plot)
+    pred_plot = map(pred, plot),
+    pred_plot = map(pred_plot, 
+                    ~.x +
+        theme(legend.position = "bottom") +
+          labs(title ="")
+          
+        )
   ) %>%
   select(-mod)
-plot_grid(plotlist = pred_year_riv_str_fe$pred_plot)
+plot_grid(plotlist = pred_year_riv_str_fe$pred_plot, ncol = 2)
 ```
-```{r, fig.height = 12}
+```{r, fig.height = 16}
 pred_log1_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "log1_year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
@@ -752,13 +759,19 @@ pred_log1_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
         terms = c("log1_year_nb", "riv_str_rc1 [quart2]"),
         type = "fe")
       ),
-    pred_plot = map(pred, plot)
+    pred_plot = map(pred, plot),
+    pred_plot = map(pred_plot, 
+                    ~.x +
+        theme(legend.position = "bottom") +
+          labs(title ="")
+          
+        )
   ) %>%
   select(-mod)
-plot_grid(plotlist = pred_log1_year_riv_str_fe$pred_plot)
+plot_grid(plotlist = pred_log1_year_riv_str_fe$pred_plot, ncol = 2)
 ```
 
-```{r}
+```{r, fig.height=16}
 pred_year_hft_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
@@ -766,12 +779,18 @@ pred_year_hft_fe <- gaussian_jaccard_tmb  %>%
         terms = c("year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
         type = "fe")
       ),
-    pred_plot = map(pred, plot)
+    pred_plot = map(pred, plot),
+    pred_plot = map(pred_plot, 
+                    ~.x +
+        theme(legend.position = "bottom") +
+          labs(title ="")
+          
+        )
   ) %>%
   select(-mod)
-plot_grid(plotlist = pred_year_hft_fe$pred_plot)
+plot_grid(plotlist = pred_year_hft_fe$pred_plot, ncol = 2)
 ```
-```{r}
+```{r, fig.height=16}
 pred_log1_year_hft_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "log1_year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
@@ -779,10 +798,15 @@ pred_log1_year_hft_fe <- gaussian_jaccard_tmb  %>%
         terms = c("log1_year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
         type = "fe")
       ),
-    pred_plot = map(pred, plot)
+    pred_plot = map(pred, plot),
+    pred_plot = map(pred_plot, 
+                    ~.x +
+        theme(legend.position = "bottom") +
+          labs(title ="")
+        )
   ) %>%
   select(-mod)
-plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot)
+plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot, ncol = 2)
 ```
 
 
@@ -860,7 +884,8 @@ clust_var_summary %>%
       color = as.factor(cluster))
     ) +
   geom_pointrange(position = position_dodge(width = .2)) +
-  geom_hline(yintercept = 0)
+  geom_hline(yintercept = 0) +
+  theme(legend.position = "bottom")
 ```
 
 
