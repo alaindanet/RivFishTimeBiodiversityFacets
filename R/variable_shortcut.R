@@ -48,7 +48,7 @@ get_river_atlas_significant_var <- function() {
     "Annual average of temperature (°C)" = "tmp_dc_cyr",
     #"Annual maximum of temperature (°C)" = "tmp_dc_cmx",
     #"Annual minimum of temperature (°C)" = "tmp_dc_cmn",
-    #"Average slope (degree)" = "slp_dg_cav",
+    "Average slope (degree)" = "slp_dg_cav",
     "Annual average of discharge (m3/s)" = "dis_m3_pyr",
     #"Annual maximum of discharge (m3/s)" = "dis_m3_pmx",
     #"Annual minimum of discharge (m3/s)" = "dis_m3_pmn",

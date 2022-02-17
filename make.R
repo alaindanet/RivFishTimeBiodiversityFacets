@@ -1,14 +1,13 @@
 library(targets)
 library(tarchetypes)
 
-
 tar_make()
 
-tar_make_future(workers = min(future::availableCores() - 1, 10))
-
+tar_make_future(workers = min(future::availableCores() - 1, 20))
 
 tar_meta()
 tar_visnetwork()
+tar_make(names = meeting_report)
 
 
 tar_load(c(riveratlas_shp_files, filtered_dataset))

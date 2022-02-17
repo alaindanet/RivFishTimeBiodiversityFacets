@@ -25,6 +25,20 @@ library(easystats)
 tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
 tar_load(c(rigal_trends, var_temporal_trends))
 names(rigal_trends) <- var_temporal_trends
+
+tar_load(c(gaussian_rich_tmb, beta_rich_tmb, gaussian_jaccard_tmb, beta_jaccard_tmb))
+tar_load(riveratlas_site)
+tar_load(pca_riv_str)
+tar_load(var_analysis)
+tar_load(rigal_slp_df)
+tar_load(slp_env)
+tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
+tar_load(binded_gaussian_tmb)
+
+tar_load(c(trend_env))
+names(trend_env) <- var_temporal_trends
+
+tar_load(random_effect_self_c)
 ```
 # Introduction 
 
@@ -184,37 +198,50 @@ appearance/disappearance and nestedness / turnover.
 - Nestedness: $SER_r - J_t$
 
 ```{r}
-skim(analysis_dataset, "jaccard", "turnover", "nestedness", "appearance",
-  "disappearance", "hillebrand")
+skim(modelling_data, "jaccard_dis", "turnover", "nestedness", "appearance",
+  "disappearance", "hillebrand", "chao_richness")
 ```
 
 # Environment
 
-##
-
 ```{r}
-tar_load(riveratlas_site)
-riv <- riveratlas_site %>%
-  select(all_of(c("siteid", setNames(get_river_atlas_significant_var(), NULL)))) %>%
-  mutate(across(starts_with("tmp_"), ~.x / 10)) %>%
-  st_drop_geometry()
+var_pca <- dimnames(pca_riv_str$rotated$loadings)[[1]]
+clean_var_pca <- get_river_atlas_significant_var()[
+  get_river_atlas_significant_var() %in% var_pca]
+high_load_rc1 <- pca_riv_str$rotated$loadings[
+pca_riv_str$rotated$loadings[, "RC1"] > .90,
+  "RC1"] 
+clean_high_load_rc1_var <- get_river_atlas_significant_var()[
+  get_river_atlas_significant_var() %in% names(high_load_rc1)]
 ```
 
-```{r}
-riv %>%
-  rename(get_river_atlas_significant_var()) %>%
-  pivot_longer(cols = -siteid, names_to = "variable", values_to = "values") %>%
-  ggplot(aes(x = values)) +
-  geom_histogram() +
-  facet_wrap(~variable, scales = "free")
-```
-```{r}
-tar_load(pca_riv_str)
 
+- The environment was characterized by the stream structure and human footprint
+  difference between 2009 and 1993
+- The stream structure was characterized by a rotated PCA axis (fig
+  \@ref(fig:p-rot-pca-riv-str)). The PCA included
+  `r paste0(clean_var_pca, collapse = ", ")`, which are respectively 
+  `r paste0(names(clean_var_pca), collapse = ", ")`. Then, the first axis
+  included in the analysis is associated with the following variables:
+  `r paste0(names(clean_high_load_rc1_var), collapse = ", ")`.
+
+```{r p-rot-pca-riv-str}
 p <- plot_rotated_pca(pca_riv_str)
 p$rotated
 ```
+```{r}
+h_hft_cap <- "Distribution of difference between human footprint in 1993 and
+2009."
+```
 
+
+```{r h-hft, fig.cap = h_hft_cap}
+hist(analysis_dataset$hft_ix_c9309_diff)
+s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.rm = T))
+```
+- The human footprint difference between 1993 and 2009 is biaised toward
+  decreased (average (sd): `r s_hft_diff["mean"]` (`r s_hft_diff["sd"]`)),
+  meaning that in average the human footprint index decreased in 16 years.
 
 # Statistical analysis 
 
@@ -228,8 +255,8 @@ skim(modelling_data)
 In each site and at each sampling point, we computed the dissimilarity (Jaccard,
 Appearance, Disappearance, Turnover & Nestedness) between the time step and the
 reference time, i.e. the first year of sampling. Regarding 
-the reference time step, there are two different strategies. First is to include it,
-i.e. setting a dissimilarity of 0 at each beginning of a time series
+the reference time step, there are two different strategies. First is to include
+it, i.e. setting a dissimilarity of 0 at each beginning of a time series
 [@blowes_geography_2019]. Another strategy is to exclude the first year from the
 analysis [@dornelas_assemblage_2014]. The first option logically constrains the analysis
 toward increasing dissimilarity as the second can capture recovery from
@@ -237,57 +264,96 @@ perturbation soon after the first samplings. I guess that the first option makes
 more sense more it removes to sensibility to community changes happening just
 after the references year.
 
+However as the relationship between most dissimilarity indices and time is
+highly non linear (like a Michaelis-Menten), we decided to relax the intercept.
+
 ## Model 
 
-- Simple lm by site
+- Simple lm by site: [@rigal_method_2020]
+  - Fit a polynomial in each site and characterize linear slope
+  - Pro: easy to implement
+  - Cons: necessitates a lot of points to work
 
-- Model all in one: 
+- Model all in one:
+  - Pro:
+    - Necessitates less data per site
+    - Take in account variability in all sites 
+  - Cons:
+    - Complicated models that takes a long time to run.
+    - Basically we try to model a lot more variables (biodiversity dimensions)
+      than previous studies at this scale [@dornelas_assemblage_2014;
+      @blowes_geography_2019; @klink_meta-analysis_2020]
+
 
 ### Turnover
 
-Jaccard similarity, nestedness and turnover were modelled in two ways, Beta and
+Jaccard disimilarity, nestedness, turnover, appearance, disappearance and hillebrand were modelled in two ways, Beta and
 gaussian regression. Beta regressions are more appropriate for distribution
 borned by [0,1] and are linearized by a logit link. Logit links have the
 cons that coefficients are less easy to interpret. So we run both gaussian and
 beta regressions and investigate the relationship among coefficients of those
 type modelling types. Values of turnover were slightly transformed such as
-values of one and zero to fit beta regression requirements 
+values of one and zero fitted beta regression requirements 
 ($x' = \dfrac{x \times (N - 1) + 0.5}{N}$).
 
 The model is defined like this: 
 
+$$
+B_i = \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + \epsilon
+$$
+where
+
+\begin{align}
+\\ \alpha&=\alpha_0 + u_{0i|j}
+\\ \beta_{0}&=\beta_0 + u_{0i|j} + u_{0k}
+\\ \beta_{2}&=\beta_{2} + u_{2j}
+\\ \beta_{4}&=\beta_{4} +u_{4j}
+\end{align}
+
+where:
+- $\alpha$: intercept
+- $\beta$: slope
+- $u$: random effect
+- $i$: site 
+- $j$: basin
+- $k$: span period in a site 
+
+- The model formula in:
+
 ```{r}
-paste0(
-  "jaccard_scaled ~
-  0 + year_nb * scaled_dist_up_km +
-  (0 + year_nb | main_bas/siteid) +
-  (0 + year_nb | span) +
-  (0 + year_nb:scaled_dist_up_km | main_bas)"
-)
+"biodiv_facet ~ 
+1 + year * river_structure + year * human_footprint_diff +
+(1 +  year | basin/site) +
+(0 +  year | span) +
+(0 +  year:human_footprint_diff | basin) +
+(0 +  year:river_structure | basin)"
 ```
 
-- `year_nb`: number of year since the beginning of the monitoring (site scale) 
-- `scaled_dist_up_km`: Distance from the source (centered and scaled)
-
-- `main_bas`: Hydrographic basin
-- `siteid`: site 
-- `span`: Number of years between the end and the beginning of the monitoring
+- `year`: number of year since the beginning of the monitoring (site scale) 
+- `river_structure`: PCA from upstream to downstream (centered and scaled)
+- `human_footprint_diff`: difference between 1993 and 2009 (centered and scaled)
+- `basin`: Hydrographic basin
+- `site`: site 
+- `span`: Number of years between the end and the beginning of the monitoring in
+  a given site
 
 Our objective was to assess the temporal turnover and its ecological drivers. We
-set intercept to equal 1.0 because year_nb = 0 at the beginning of each series,
-jaccard is always equal to 1.0. We estimated the effects of the basin and of the
-site on the temporal trends (`0 + year_nb | main_bas/siteid`), the site effect
-being nested in the basin effect. We also evaluated the effects of span on the
-temporal trends, because it is generally expected that longer timeseries
-displays stronger temporal trends.  Finally, we acknowledged that the effect of
-the distance from source can be different among basin.
+estimated the effects of the basin and of the site on the temporal trends (`1 +
+year | basin/site`), the site effect being nested in the basin effect.
+We also evaluated the effects of the span of monitoring on the temporal trends,
+because it is generally expected that longer timeseries displays stronger
+temporal trends. We also captured the effect of human pressure and river
+structure on temporal trends will be different according to basin. As an example, 
+we consider that the effects of river structure (related to
+upstream/downstream gradient) on temporal trends will depend on basin because
+they are highly different in their network structure and their sampling
+locations along this network.
 
 # Results
 
 ## Direction of trends 
 
 ```{r}
-tar_load(var_analysis)
 ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
   .id = "response"
 )
@@ -384,12 +450,6 @@ cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
 
 
 ```{r}
-
-```
-
-
-
-```{r}
 rigal_trends_df %>%
   ggplot(aes(x = jaccard , y = hillebrand)) +
   geom_point() +
@@ -474,7 +534,6 @@ Cf other document
 ```{r}
 library(ade4)
 library(factoextra)
-tar_load(rigal_slp_df)
 slope_df <- rigal_slp_df
 ```
 
@@ -503,45 +562,9 @@ p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
 plot_grid(plotlist = p_pca, ncol = 1)
 ```
 
-#### Environment
-
-
-```{r}
-riv_data_pca <- riv %>%
-  select(-siteid) %>%
-  mutate(across(c(dist_up_km, dis_m3_pyr, urb_pc_cse, ele_mt_cav, pac_pc_cse),
-      ~log(.x + 2))
-  ) %>%
-  rename(get_river_atlas_significant_var()) %>%
-  na.omit()
-pca_riv <- dudi.pca(df = scale(riv_data_pca), scannf = FALSE, nf = 3)
-```
-
-- We see two main axis (as I found in France):
-  - First axis related to stream size (distance from source, River area)
-  - Second axis related to Temperature 
-
-```{r}
-fviz_eig(pca_riv)
-
-p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
-  ~fviz_pca_var(pca_riv,
-    axes = .x,
-    col.var = "contrib", # Color by contributions to the PC
-    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-    repel = TRUE     # Avoid text overlapping
-    ) +
-  theme(legend.position = "none") + labs(title = "")
-)
-
-p_pca[[1]]
-p_pca[[2]]
-p_pca[[3]]
-```
 #### Environment - Trends
 
 ```{r}
-tar_load(slp_env)
 slp_env_for_pca <- slp_env %>%
   select(-all_of(c("siteid", "main_bas", "ecoregion", "geometry"))) %>%
   rename(get_river_atlas_significant_var())
@@ -576,7 +599,6 @@ p_slp_env_pca[[3]]
 ### Jaccard 
 
 ```{r}
-tar_load(c(gaussian_jaccard_tmb, gaussian_rich_tmb))
 #obj_mb(gaussian_jaccard_tmb)
 ```
 
@@ -584,26 +606,94 @@ tar_load(c(gaussian_jaccard_tmb, gaussian_rich_tmb))
 - Effect of models: 
 
 ```{r}
-tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
-plot(mod_tmb_comp)
+mod_slp_unstd_cap <- paste0("Estimated effects of the gaussian models.
+  Coefficients are unstardardized. See the other plot for standized effects.")
+```
+
+```{r mod-slp-unstd, fig.cap=mod_slp_unstd_cap}
+plot(mod_tmb_comp) +
+  theme(legend.position = "bottom")
 ```
 
 ```{r}
-mod_tmb_comp_std %>%
+mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
+  Coefficients are stardardized by the standard deviation of each variable
+  (response and predictor). Cleaner way of standardize would be to refit the
+  models with all the variables being scaled. Note that for hillebrand, the
+  temporal trends is negative. That is because it is a similarity index, that is
+  meaning that similarity is decreasing through time in average. Bars represent
+  CI at 95% computed with Wald approximation.")
+```
+
+
+```{r mod-slp-std, fig.cap=mod_slp_std_cap}
+mod_tmb_comp_std_df <- mod_tmb_comp_std %>%
   as_tibble() %>%
   select(Parameter, starts_with("CI_"), starts_with("Std_")) %>%
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
   separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
   pivot_wider(names_from = "type", values_from = "values") %>%
   filter(Parameter != "(Intercept)") %>%
+  filter(!response %in% c("species_nb", "log_species_nb")) 
+mod_tmb_comp_std_df %>%
   ggplot(
-    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low, xmax = CI_high),
-    ) +
+    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
+      xmax = CI_high)) +
   geom_pointrange(position = position_dodge(width = .2))
 ```
 
+- Summary of results (Figure \@ref(fig:mod-slp-std)):
+  - Temporal trends (year nb effect):
+    - Overall the magnitude of the effect of temporal trend was higher than the
+      environmental variables
+    - All the dissimiliraty indices increased in time :
+      - Hillebrand, Jaccard and Appearance have the higher temporal trends
+        ($r_\delta$ around 0.37), followed by disappearance, nestedness and
+        turnover ($r_\delta$ around 0.25)
+    - Species richness has a tiny increase around 0.02 (ten time less) and
+      evenness did not change through time in average
+  - River structure (upstream -> downstream, called hereafter stream gradient):
+    - Species richness was higher toward downstream, as well as species appearance and disappearance
+    - Linked to last point, jaccard dissimilarity and hillebrand similarity were
+      respectively higher and lower downstream
+    - The stream gradient had an effect of the same magnitude for turnover and
+      jaccard dissimilarity ($r_\delta$ around 0.12) but was 0 for nestedness.
+      It means that temporal jaccard dissimilarity downstream is due to 
+      change in species identity (turnover) rather than change in number of
+      species (nestedness).
+    - Appearance and Disappearance were also higher downstream but the effect is
+      the effect is half as great as for the other dissimilarity indices.
+  - Human footprint difference (2009 - 1993):
+    - Overall effect of human footprint difference is half as great as the
+      effect of stream gradient
+    - All variables but evenness increased with human footprint difference
+      - It means that for example jaccard dissimilarity is overall lower when
+        human footprint had decreased and that jaccard dissimilarity is overall
+        higher when human footprint had increased (which makes sense but check
+        difference in human footprint is not related to something else)
+  - Interaction between temporal trends and stream gradient (year nb riv str rc1 effect):
+    - Stream gradient had not significant effects on the temporal trends of
+      biodiversity indices.
+  - Interaction between temporal trends and human footprint difference (year nb
+     effect):
+     - The interactions are slightly significant and negative for the
+       nestedness, appearance and richness (chao richness). Since the global
+       temporal trends are positive for those variables (see year nb effect), it
+       means that the effect of human footprint difference is antagonistic. 
+       It means that species richness increase less (or worse) where human
+       footprint increased and conversely that species richness increase more
+       when human footprint decreased (!!!).
+       Idem for appearance and nestedness, which are kind of linked to species
+       richnness variation (I find this result so cool).
+
+```{r, eval = FALSE}
+# just to guide me
+mod_tmb_comp_std_df %>%
+  filter(Parameter == "year nb * hft ix c9309 diff scaled") %>%
+  filter(CI_low > 0 | CI_high < 0)
+```
+
 ```{r}
-tar_load(binded_gaussian_tmb)
 # does not work for now because I estimated several times the basin random effect on
 # intercept, normally its fixed
 #x <- parameters(
@@ -611,15 +701,7 @@ tar_load(binded_gaussian_tmb)
 #  group_level = TRUE,
 #  effects = "random"
 #)
-random_effect <- binded_gaussian_tmb %>%
-  filter(intercept == 1, year_var == "year_nb")  %>%
-  mutate(random_site = map(mod,
-      ~try(get_random_effect_glmmTMB(
-        .x, effect = "siteid:main_bas")
-      ))) %>%
-select(-mod)
-
-site_temporal_trends <- random_effect %>%
+site_temporal_trends <- random_effect_self_c %>%
   unnest(random_site) %>%
   select(response, siteid, year_nb)
 ```
@@ -638,17 +720,12 @@ cor_site_tps <- cor(as.matrix(select(wide_site_tps, -siteid)))
 corrplot::corrplot(cor_site_tps)
 ```
 
-```{r}
-
-```
-
-
-```{r}
+```{r, fig.cap="Bad looking figure from modelbased R package"}
 pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
 ```
 
-```{r}
+```{r p-pred-riv, fig.height = 12}
 pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
@@ -705,7 +782,6 @@ plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot)
 - Map:
 
 ```{r}
-tar_load(filtered_dataset)
 loc <- filtered_dataset$location %>%
   st_as_sf(coords = c("longitude", "latitude"),
   crs = 4326)
@@ -748,13 +824,13 @@ pred_slope <- pred_slope %>%
     sf_site_map = map2(sf_site, year_var,
       ~ggplot(data = world) +
         geom_sf() +
-        geom_sf(data = .x, aes(color = year_nb), shape = 16) +
+        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
         scale_color_viridis() +
         theme(legend.position = "bottom")),
     sf_basin_map = map2(sf_basin, year_var,
       ~ggplot(data = world) +
         geom_sf() +
-        geom_sf(data = .x, aes(color = year_nb), shape = 16) +
+        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
         scale_color_viridis() +
         theme(legend.position = "bottom"))
   )
@@ -789,7 +865,6 @@ pred_slope$sf_basin_map[[5]] +
 ## Species richness
 
 ```{r, eval = FALSE}
-tar_load(gaussian_rich_tmb)
 
 lry <- gaussian_rich_tmb$mod[[5]]
 cry <- gaussian_rich_tmb$mod[[1]]
@@ -881,8 +956,6 @@ as.formula
 
 ```{r}
 library(spaMM)
-tar_load(c(trend_env))
-names(trend_env) <- var_temporal_trends
 ```
 
 ```{r}

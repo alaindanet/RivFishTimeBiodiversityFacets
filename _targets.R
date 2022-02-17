@@ -2,10 +2,12 @@ library(targets)
 
 ## Load your R files
 lapply(list.files(here::here("R"), full.names = TRUE), source)
-tar_option_set(packages = c("targets", "tarchetypes","tidyverse", "magrittr", "lubridate", "here",
-                            "kableExtra", "scales", "rmarkdown", "sf", "rnaturalearth",
-                            "rnaturalearthdata", "terra", "cowplot", "viridis", "janitor", "codyn",
-                            "vegan", "slider", "future", "INLA", "inlatools", "glmmTMB", "easystats"))
+tar_option_set(packages = c(
+    "targets", "tarchetypes","tidyverse", "magrittr",
+    "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
+    "rnaturalearth", "rnaturalearthdata", "terra", "cowplot", "viridis",
+    "janitor", "codyn", "vegan", "slider", "future", "INLA", "inlatools",
+    "glmmTMB", "easystats"))
 
 library(future.callr)
 plan(callr)
@@ -74,31 +76,31 @@ list(
       nb_sampling_to_average = 3
       ) %>%
     select(-siteid, -year)
-    ),
-  tar_target(filtered_dataset_avg3y, get_filtered_dataset(
-      op_protocol = filtered_op_protocol,
-      type = "all",
-      measurement = measurement_avg3y,
-      site_desc_loc = site_desc_loc,
-      add_var_from_protocol = c("siteid", "year")
-      )),
-  # Community structure
-  tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
-  tar_target(neutral_turnover,
-    neutral_com %>%
-      mutate(
-       jaccard = purrr::map(
-         sim,
-         ~get_vegdist_temporal_turnover_c(
-           mat = as.matrix(.x[250:500, ]),
-           method = "jaccard",
-           return_tibble = TRUE,
-           drop_first_year = FALSE
-         )
-       )
-      ) %>%
-    select(-sim)
   ),
+tar_target(filtered_dataset_avg3y, get_filtered_dataset(
+    op_protocol = filtered_op_protocol,
+    type = "all",
+    measurement = measurement_avg3y,
+    site_desc_loc = site_desc_loc,
+    add_var_from_protocol = c("siteid", "year")
+    )),
+# Community structure
+tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
+tar_target(neutral_turnover,
+  neutral_com %>%
+    mutate(
+      jaccard = purrr::map(
+        sim,
+        ~get_vegdist_temporal_turnover_c(
+          mat = as.matrix(.x[250:500, ]),
+          method = "jaccard",
+          return_tibble = TRUE,
+          drop_first_year = FALSE
+        )
+      )
+      ) %>%
+  select(-sim)
+),
   tar_target(com_mat_site,
     get_site_community_matrix(
       x = filtered_dataset$measurement,
@@ -135,7 +137,7 @@ list(
       min_nb_sampling_by_site = 10,
       min_nb_site_by_basin = 10,
       clean = TRUE
-    )),
+      )),
   tar_target(vegdist_index, c("jaccard", "horn", "chao")),
   tar_target(vegdist_turnover,
     target_vegdist_turnover(
@@ -163,16 +165,16 @@ list(
     ),
   tar_target(turnover_types_chr, c("total", "appearance", "disappearance")),
   tar_target(turnover_time_to_time,
-      get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
+    get_turnover(x = filtered_dataset$measurement, type = turnover_types_chr),
     pattern = map(turnover_types_chr),
     iteration = "list"
-  ),
+    ),
   tar_target(turnover_time_to_time_c,
     turnover %>% reduce(left_join, by = c("siteid", "year"))
-  ),
+    ),
   tar_target(hillebrand_time_to_time,
     get_hillebrand_turnover(x = filtered_dataset$measurement)
-  ),
+    ),
   tar_target(hillebrand,
     target_custom_temporal_turnover(
       dataset = com_mat_site,
@@ -183,7 +185,7 @@ list(
       drop_first_year = FALSE,
       similarity = TRUE
     )
-  ),
+    ),
   tar_target(hillebrand_avg3y,
     target_custom_temporal_turnover(
       dataset = com_mat_site_avg3y,
@@ -193,7 +195,7 @@ list(
       drop_first_year = FALSE,
       similarity = TRUE
     )
-  ),
+    ),
   tar_target(turnover,
     target_custom_temporal_turnover(
       dataset = com_mat_site,
@@ -219,10 +221,10 @@ list(
     iteration = "list"),
   tar_target(turnover_c,
     turnover %>% reduce(left_join, by = c("siteid", "year"))
-  ),
+    ),
   tar_target(baselga_c,
     baselga %>% reduce(left_join, by = c("siteid", "year"))
-  ),
+    ),
   tar_target(turnover_avg3y,
     target_custom_temporal_turnover(
       dataset = com_mat_site_avg3y,
@@ -236,7 +238,7 @@ list(
     iteration = "list"),
   tar_target(turnover_avg3y_c,
     turnover_avg3y %>% reduce(left_join, by = c("siteid", "year"))
-  ),
+    ),
   tar_target(chao_hillnb,
     get_chao_hillnb(
       x = filtered_dataset$measurement,
@@ -275,19 +277,19 @@ list(
         colnames(riveratlas_site) %in%
           c("siteid", setNames(get_river_atlas_significant_var(), NULL))
         ] %>%
-        st_drop_geometry() %>%
+          st_drop_geometry() %>%
           ## Add PCA score
           mutate(
             riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
             riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"],
-          hft_ix_c9309_percent =
-            (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
-          log_hft_ix_c9309_percent = hft_ix_c9309_percent,
-          hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93,
-          hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
-          hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
-          hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff)
-        )
+            hft_ix_c9309_percent =
+              (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
+            log_hft_ix_c9309_percent = hft_ix_c9309_percent,
+            hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93,
+            hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
+            hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
+            hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff)
+          )
     )
     ),
   tar_target(fr,
@@ -321,116 +323,116 @@ list(
           select(siteid, ecoregion, main_bas) %>%
           mutate(main_bas = as.character(main_bas)),
         by = "siteid"
-      )),
-  tar_target(analysis_dataset_avg3y,
-    get_analysis_dataset(
-      filtered_dataset = filtered_dataset_avg3y,
-      chao_hillnb = chao_hillnb_avg3y,
-      hillebrand = hillebrand_avg3y,
-      turnover_c = turnover_avg3y_c,
-      vegdist_turnover_c = vegdist_turnover_avg3y_c,
-      hillnb = hillnb_avg3y,
-      river = riveratlas_site[,
-        colnames(riveratlas_site) %in%
-          c("siteid", setNames(get_river_atlas_significant_var(), NULL))
-        ] %>%
-          st_drop_geometry() %>%
-          ## Add PCA score
-          mutate(
-            riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
-            riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
-          )
-    )
-    ),
-  # statistic
-  tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
-      "chao_richness", "chao_shannon", "chao_simpson")),
-#  tar_target(spamm_com_models,
-#    run_save_spamm_model(
-#      resp_var = biodiv_facets,
-#      rhs_formula = "year + unitabundance + (1 | ecoregion / siteid) + (year |
-#      first_year)",
-#      dataset = analysis_dataset,
-#      family = "negbin"
-#    ),
-#    pattern = map(biodiv_facets),
-#    iteration = "list"
-#  ),
-  # Temporal trends
-  tar_target(var_temporal_trends,
-    c("total_abundance", "log_total_abundance", "species_nb", "log_species_nb",
-      "chao_richness", "chao_shannon", "chao_simpson", "chao_evenness",
-      "jaccard", "horn", "chao", "hillebrand", "total", "appearance",
-      "disappearance", "evenness", "shannon", "simpson",
-      "jaccard_dis", "nestedness", "turnover")
-    ),
-  tar_target(rigal_trends,
-    get_rigal_trajectory_classification(
-      analysis_dataset,
-      y_var = var_temporal_trends,
-      x_var = "year", site_id = "siteid",
-      backtransform_linear_coefs = TRUE),
-    pattern = map(var_temporal_trends),
-    iteration = "list"
-    ),
-tar_target(rigal_slp_df,
-           get_rigal_slope_df(
-             rigal_trends = rigal_trends,
-             var_names = var_temporal_trends)),
-tar_target(slp_env,
-           get_rigal_analysis_dataset(
-             rigal_df = rigal_slp_df,
-              river = riveratlas_site[,
-                colnames(riveratlas_site) %in% c("siteid", get_river_atlas_significant_var())],
-           spatial = select(filtered_dataset$location, siteid, ecoregion, main_bas)
-           )
-           ),
-  tar_target(rigal_trends_avg3y,
-    get_rigal_trajectory_classification(
-      analysis_dataset_avg3y,
-      y_var = var_temporal_trends,
-      x_var = "year", site_id = "siteid"),
-    pattern = map(var_temporal_trends),
-    iteration = "list"
-    ),
-  #tar_target(simple_lm,
-      #analysis_dataset %>%
-        #select(all_of(c("siteid", "year", var_temporal_trends))) %>%
-        #group_by(siteid) %>%
-        #nest() %>%
-        #mutate(model = purrr::map(
-            #data,
-            #~lm(as.formula(paste0(var_temporal_trends, " ~ year ")), data = .x)
-      #)
-          #) %>%
-        #select(-data),
+        )),
+    tar_target(analysis_dataset_avg3y,
+      get_analysis_dataset(
+        filtered_dataset = filtered_dataset_avg3y,
+        chao_hillnb = chao_hillnb_avg3y,
+        hillebrand = hillebrand_avg3y,
+        turnover_c = turnover_avg3y_c,
+        vegdist_turnover_c = vegdist_turnover_avg3y_c,
+        hillnb = hillnb_avg3y,
+        river = riveratlas_site[,
+          colnames(riveratlas_site) %in%
+            c("siteid", setNames(get_river_atlas_significant_var(), NULL))
+          ] %>%
+            st_drop_geometry() %>%
+            ## Add PCA score
+            mutate(
+              riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
+              riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
+            )
+      )
+      ),
+    # statistic
+    tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
+        "chao_richness", "chao_shannon", "chao_simpson")),
+    #  tar_target(spamm_com_models,
+    #    run_save_spamm_model(
+    #      resp_var = biodiv_facets,
+    #      rhs_formula = "year + unitabundance + (1 | ecoregion / siteid) + (year |
+    #      first_year)",
+    #      dataset = analysis_dataset,
+    #      family = "negbin"
+    #    ),
+    #    pattern = map(biodiv_facets),
+    #    iteration = "list"
+    #  ),
+    # Temporal trends
+    tar_target(var_temporal_trends,
+      c("total_abundance", "log_total_abundance", "species_nb", "log_species_nb",
+        "chao_richness", "chao_shannon", "chao_simpson", "chao_evenness",
+        "jaccard", "horn", "chao", "hillebrand", "total", "appearance",
+        "disappearance", "evenness", "shannon", "simpson",
+        "jaccard_dis", "nestedness", "turnover")
+      ),
+    tar_target(rigal_trends,
+      get_rigal_trajectory_classification(
+        analysis_dataset,
+        y_var = var_temporal_trends,
+        x_var = "year", site_id = "siteid",
+        backtransform_linear_coefs = TRUE),
+      pattern = map(var_temporal_trends),
+      iteration = "list"
+      ),
+    tar_target(rigal_slp_df,
+      get_rigal_slope_df(
+        rigal_trends = rigal_trends,
+        var_names = var_temporal_trends)),
+    tar_target(slp_env,
+      get_rigal_analysis_dataset(
+        rigal_df = rigal_slp_df,
+        river = riveratlas_site[,
+          colnames(riveratlas_site) %in% c("siteid", get_river_atlas_significant_var())],
+        spatial = select(filtered_dataset$location, siteid, ecoregion, main_bas)
+      )
+      ),
+    tar_target(rigal_trends_avg3y,
+      get_rigal_trajectory_classification(
+        analysis_dataset_avg3y,
+        y_var = var_temporal_trends,
+        x_var = "year", site_id = "siteid"),
+      pattern = map(var_temporal_trends),
+      iteration = "list"
+      ),
+    #tar_target(simple_lm,
+    #analysis_dataset %>%
+    #select(all_of(c("siteid", "year", var_temporal_trends))) %>%
+    #group_by(siteid) %>%
+    #nest() %>%
+    #mutate(model = purrr::map(
+    #data,
+    #~lm(as.formula(paste0(var_temporal_trends, " ~ year ")), data = .x)
+    #)
+    #) %>%
+    #select(-data),
     #pattern = map(var_temporal_trends),
     #iteration = "list"
     #),
-  #tar_target(simple_lm_coef,
-      #simple_lm %>%
-        #mutate(coef_mod = purrr::map(model, broom::tidy)) %>%
-        #select(-model),
+    #tar_target(simple_lm_coef,
+    #simple_lm %>%
+    #mutate(coef_mod = purrr::map(model, broom::tidy)) %>%
+    #select(-model),
     #pattern = map(simple_lm),
     #iteration = "list"
-  #),
-  tar_target(snapped_site_river,
-    target_snap_site_to_river(
-      river_shp_filepath = get_full_file_name(riveratlas_shp_files),
-      site_sf = filtered_dataset$location %>%
-        st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
-      proj_crs =  4087,
-      length_chunk = 200,
-      max_dist = 1000
+    #),
+    tar_target(snapped_site_river,
+      target_snap_site_to_river(
+        river_shp_filepath = get_full_file_name(riveratlas_shp_files),
+        site_sf = filtered_dataset$location %>%
+          st_as_sf(coords = c("longitude", "latitude"), crs = 4326),
+        proj_crs =  4087,
+        length_chunk = 200,
+        max_dist = 1000
+        ),
+      pattern = map(riveratlas_shp_files),
+      iteration = "list"
       ),
-    pattern = map(riveratlas_shp_files),
-    iteration = "list"
-    ),
-  tar_target(riveratlas_site,
-    target_extract_riveratlas_info(
-      river_shp_files = map_chr(riveratlas_shp_files,
-        ~get_full_file_name(filename = .x)),
-      snap_list = snapped_site_river) %>%
+    tar_target(riveratlas_site,
+      target_extract_riveratlas_info(
+        river_shp_files = map_chr(riveratlas_shp_files,
+          ~get_full_file_name(filename = .x)),
+        snap_list = snapped_site_river) %>%
       janitor::clean_names()
     ),
 
@@ -530,154 +532,204 @@ tar_target(slp_env,
         "dist_up_km + tmp_dc_cyr +
         (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
       ),
-    data = slp_env),
-  pattern = map(var_temporal_trends),
-  iteration = "list"),
-tar_target(var_analysis, c("siteid", "main_bas", "year", "year_nb",
-    "scaled_dist_up_km", "span", "jaccard_scaled", "jaccard_dis", "turnover", "nestedness",
-    "species_nb", "log_species_nb", "chao_richness", "hillebrand", "appearance", "disappearance",
-    "evenness", "riv_str_rc1", "hft_ix_c9309_diff_scaled"
-    )),
-tar_target(modelling_data,
-  analysis_dataset %>%
-    select(all_of(var_analysis)) %>%
-    mutate(
-      jaccard_dis_scaled = transform01(jaccard_dis),
-      nestedness_scaled = transform01(nestedness),
-      turnover_scaled = transform01(turnover),
-      hillebrand_scaled = transform01(hillebrand),
-      appearance_scaled = transform01(appearance),
-      disappearance_scaled = transform01(disappearance),
-      evenness_scaled = transform01(evenness),
-      log1_year_nb = log(year_nb + 1),
-      one = 1.0
-      ) %>%
-    na.omit()
-  ),
-tar_target(var_jaccard, c("jaccard_dis_scaled", "turnover_scaled",
-    "nestedness_scaled", "hillebrand_scaled", "appearance_scaled",
-    "disappearance_scaled", "evenness_scaled")),
-tar_target(year_var, c("year_nb", "log1_year_nb")),
-tar_target(intercept, c(0, 1)),
-tar_target(beta_jaccard_tmb,
-  tibble(
-    year_var = year_var,
-    intercept = intercept,
-    response = var_jaccard,
-    mod = list(temporal_jaccard(
-        formula = paste0(var_jaccard, " ~ ",
-          intercept, " + ",
-          year_var," * riv_str_rc1 + ",
-          year_var," * hft_ix_c9309_diff_scaled +
-          (", intercept, " + ", year_var," | main_bas/siteid) +
-          (", intercept, " + ", year_var," | span) +
-          (", intercept, " + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-          (", intercept, " + ", year_var,":riv_str_rc1 | main_bas)"),
-        data = modelling_data,
-        family = beta_family(link = "logit"),
-        dispformula = "~ year_nb + riv_str_rc1")
-      )
-      ),
-    pattern = cross(var_jaccard, year_var, intercept)
+    data = slp_env
     ),
-  tar_target(gaussian_jaccard_tmb,
-    tibble(
-      year_var = year_var,
+  pattern = map(var_temporal_trends),
+  iteration = "list"
+  ),
+  tar_target(var_analysis,
+    c(
+      "siteid", "main_bas", "year", "year_nb",
+      "scaled_dist_up_km", "span", "jaccard_scaled", "jaccard_dis", "turnover",
+      "nestedness", "species_nb", "log_species_nb", "chao_richness", "hillebrand",
+      "appearance", "disappearance", "evenness", "riv_str_rc1",
+      "hft_ix_c9309_diff_scaled")
+    ),
+  tar_target(modelling_data,
+    analysis_dataset %>%
+      select(all_of(var_analysis)) %>%
+      mutate(
+        jaccard_dis_scaled = transform01(jaccard_dis),
+        nestedness_scaled = transform01(nestedness),
+        turnover_scaled = transform01(turnover),
+        hillebrand_scaled = transform01(hillebrand),
+        appearance_scaled = transform01(appearance),
+        disappearance_scaled = transform01(disappearance),
+        evenness_scaled = transform01(evenness),
+        log1_year_nb = log(year_nb + 1),
+        one = 1.0
+        ) %>%
+      na.omit()
+    ),
+  tar_target(var_jaccard,
+    c("jaccard_dis_scaled", "turnover_scaled",
+      "nestedness_scaled", "hillebrand_scaled", "appearance_scaled",
+      "disappearance_scaled", "evenness_scaled")),
+  tar_target(year_var, c("year_nb", "log1_year_nb")),
+  tar_target(intercept, c(0, 1)),
+  tar_target( beta_jaccard_tmb,
+    tibble(year_var = year_var,
       intercept = intercept,
       response = var_jaccard,
-      mod = list(temporal_jaccard(
+      mod = list(
+        temporal_jaccard(
           formula = paste0(var_jaccard, " ~ ",
             intercept, " + ",
-            year_var," * riv_str_rc1 +",
-            year_var, " * hft_ix_c9309_diff_scaled +
+            year_var," * riv_str_rc1 + ",
+            year_var," * hft_ix_c9309_diff_scaled +
             (", intercept, " + ", year_var," | main_bas/siteid) +
             (", intercept, " + ", year_var," | span) +
-            ( 0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-            ( 0 + ", year_var,":riv_str_rc1 | main_bas)"),
+            (", intercept, " + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+            (", intercept, " + ", year_var,":riv_str_rc1 | main_bas)"),
           data = modelling_data,
-          offset = NULL,
-          family = gaussian(link = "identity"),
-          dispformula = "~ 1")
-      )
+          family = beta_family(link = "logit"),
+          dispformula = "~ year_nb + riv_str_rc1"
+          )
+        )
         ),
       pattern = cross(var_jaccard, year_var, intercept)
       ),
-    tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb")),
-    tar_target(gaussian_rich_tmb,
+    tar_target(gaussian_jaccard_tmb,
       tibble(
-        response = rich_var,
         year_var = year_var,
+        intercept = intercept,
+        response = var_jaccard,
         mod = list(temporal_jaccard(
-            formula = paste0(rich_var, " ~
-              ", year_var, " * riv_str_rc1 +",
-            year_var, " * hft_ix_c9309_diff_scaled +
-            (1 + ", year_var," | main_bas/siteid) +
-            (1 + ", year_var," | span) +
-            (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-            (0 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)"),
+            formula = paste0(var_jaccard, " ~ ",
+              intercept, " + ",
+              year_var," * riv_str_rc1 +",
+              year_var, " * hft_ix_c9309_diff_scaled +
+              (", intercept, " + ", year_var," | main_bas/siteid) +
+              (", intercept, " + ", year_var," | span) +
+              ( 0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+              ( 0 + ", year_var,":riv_str_rc1 | main_bas)"),
+            data = modelling_data,
+            offset = NULL,
+            family = gaussian(link = "identity"),
+            dispformula = "~ 1")
+        )
+          ),
+        pattern = cross(var_jaccard, year_var, intercept)
+        ),
+      tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb")),
+      tar_target(gaussian_rich_tmb,
+        tibble(
+          response = rich_var,
+          year_var = year_var,
+          mod = list(temporal_jaccard(
+              formula = paste0(rich_var, " ~
+                ", year_var, " * riv_str_rc1 +",
+              year_var, " * hft_ix_c9309_diff_scaled +
+              (1 + ", year_var," | main_bas/siteid) +
+              (1 + ", year_var," | span) +
+              (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+              (0 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)"),
             data = modelling_data,
             offset = NULL,
             family = gaussian(link = "identity"),
             dispformula = "~ 1")
       )
+            ),
+          pattern = cross(rich_var, year_var)
           ),
-        pattern = cross(rich_var, year_var)
+        tar_target(mod_tmb,
+          rbind(
+            gaussian_jaccard_tmb %>%
+              filter(intercept == 1 & year_var == "year_nb") %>%
+              select(-intercept), 
+            gaussian_rich_tmb %>%
+              filter(year_var == "year_nb")
+          ) %>% 
+          filter(!response %in% c("species_nb", "log_species_nb"))
+          ),
+        tar_target(mod_tmb_comp,
+          # Drop the main effect
+          compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
+          ),
+        tar_target(mod_tmb_comp_std,
+          # Drop the main effect
+          compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
+          ),
+        tar_target(binded_gaussian_tmb,
+          rbind(gaussian_jaccard_tmb,
+            mutate(gaussian_rich_tmb, intercept = 1))
+          ),
+        tar_target(random_effects,
+          binded_gaussian_tmb %>% 
+            mutate(random_effects = map(mod,
+                ~try(
+                  parameters(
+                    .x,
+                    group_level = TRUE
+                    ) %>%
+                  as_tibble() %>%
+                  clean_names() %>%
+                  select(-all_of(c("se", "ci", "component", "effects"))) 
+                )
+            )
+              ) %>%
+          select(-mod)
         ),
-tar_target(mod_tmb,
-  rbind(
-    gaussian_jaccard_tmb %>%
-      filter(intercept == 1 & year_var == "year_nb") %>%
-      select(-intercept), 
-    gaussian_rich_tmb %>%
-      filter(year_var == "year_nb")
-    ) 
-  ),
-tar_target(mod_tmb_comp,
-  # Drop the main effect
-  compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled"),
-  ),
-tar_target(mod_tmb_comp_std,
-  # Drop the main effect
-  compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic"),
-  ),
-tar_target(binded_gaussian_tmb,
-  rbind(gaussian_jaccard_tmb,
-    mutate(gaussian_rich_tmb, intercept = 1))
-),
-tar_target(random_effects,
-  binded_gaussian_tmb %>% 
-    mutate(random_effects = map(mod,
-        ~parameters(
-          .x,
-          group_level = TRUE) %>%
-        as_tibble() %>%
-        clean_names() %>%
-        select(-all_of(c("se", "ci", "component", "effects")))
-      )) %>%
+      tar_target(random_effect_self_c,
+        binded_gaussian_tmb %>%
+          filter(intercept == 1, year_var == "year_nb")  %>%
+          mutate(
+            random_site = map(mod,
+              ~try(get_random_effect_glmmTMB(
+                  .x, effect = "siteid:main_bas")
+                )),
+            random_basin = map(mod,
+              ~try(get_random_effect_glmmTMB(
+                  .x, effect = "main_bas")
+                )),
+            random_span = map(mod,
+              ~try(get_random_effect_glmmTMB(
+                  .x, effect = "span")
+                )),
+            ) %>%
+          select(-mod)
+        ),
+tar_target(pred_gaussian_tmb,
+  binded_gaussian_tmb  %>%
+    mutate(pred_riv = map2(
+        mod, year_var,
+        ~ggemmeans(.x,
+          terms = c(.y, "riv_str_rc1 [quart2]"),
+          type = "fe")
+        ),
+      pred_plot_riv = map(pred_riv, plot),
+      pred_hft = map2(
+        mod, year_var,
+        ~ggemmeans(.x,
+          terms = c(.y, "hft_ix_c9309_diff_scaled [quart2]"),
+          type = "fe")
+        ),
+      pred_plot_hft = map(pred_hft, plot)
+      ) %>%
   select(-mod)
-  ),
-# tar_target(nb_sp_rich_tmb,
-#   glmmTMB::glmmTMB(species_nb ~
-#     year_nb * scaled_dist_up_km +
-#     (1 + year_nb | main_bas / siteid) +
-#     (1 + year_nb | span) +
-#     (1 + scaled_dist_up_km | main_bas),
-#   offset = NULL,
-#   dispformula = ~ siteid,
-#   family = nbinom2(link = "log"),
-#   data = na.omit(analysis_dataset[, var_analysis]))
-#   ),
+),
+      # tar_target(nb_sp_rich_tmb,
+      #   glmmTMB::glmmTMB(species_nb ~
+      #     year_nb * scaled_dist_up_km +
+      #     (1 + year_nb | main_bas / siteid) +
+      #     (1 + year_nb | span) +
+      #     (1 + scaled_dist_up_km | main_bas),
+      #   offset = NULL,
+      #   dispformula = ~ siteid,
+      #   family = nbinom2(link = "log"),
+      #   data = na.omit(analysis_dataset[, var_analysis]))
+      #   ),
 
-  # Report
-  tar_render(intro, here("vignettes/intro.Rmd")),
-  tar_render(report, here("doc/aa-research-questions.Rmd")),
-  tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
-  tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
-  tar_render(community_structure, "doc/aca-community-structure.Rmd"),
-  tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
-  tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
-  tar_render(meeting_slides, here("talk/meeting.Rmd")),
-  tar_render(explain_high_turnover,
-    here("doc/af-explain-high-turnover.Rmd"))
+      # Report
+      tar_render(intro, here("vignettes/intro.Rmd")),
+      tar_render(report, here("doc/aa-research-questions.Rmd")),
+      tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+      tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+      tar_render(community_structure, "doc/aca-community-structure.Rmd"),
+      tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+      tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
+      tar_render(meeting_slides, here("talk/meeting.Rmd")),
+      tar_render(explain_high_turnover,
+        here("doc/af-explain-high-turnover.Rmd"))
 
-)
+      )

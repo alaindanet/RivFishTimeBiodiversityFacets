@@ -254,7 +254,7 @@ div.tocify {
 
 <h1 class="title toc-ignore">Explain high turnover</h1>
 <h4 class="author">Alain Danet</h4>
-<h4 class="date">14 February, 2022</h4>
+<h4 class="date">16 February, 2022</h4>
 
 </div>
 
@@ -1074,7 +1074,7 @@ Reproducibility receipt
 </summary>
 <pre class="r"><code>## datetime
 Sys.time()
-#&gt; [1] &quot;2022-02-14 22:32:25 CST&quot;
+#&gt; [1] &quot;2022-02-16 14:36:00 CST&quot;
 
 ## repository
 if(requireNamespace(&#39;git2r&#39;, quietly = TRUE)) {
@@ -1087,7 +1087,7 @@ if(requireNamespace(&#39;git2r&#39;, quietly = TRUE)) {
 }
 #&gt; Local:    main L:/alain/RivFishTimeBiodiversityFacets
 #&gt; Remote:   main @ origin (https://github.com/alaindanet/RivFishTimeBiodiversityFacets.git)
-#&gt; Head:     [c094b6a] 2022-02-15: Add change in human footprint (93-09) in the model
+#&gt; Head:     [54c4c2f] 2022-02-16: Add prediction + clustering analysis
 
 ## session info
 sessionInfo()
@@ -1110,68 +1110,61 @@ sessionInfo()
 #&gt; 
 #&gt; other attached packages:
 #&gt;  [1] factoextra_1.0.7        ade4_1.7-18             ecocom_0.0.0.9000      
-#&gt;  [4] cachem_1.0.6            memoise_2.0.1           betapart_1.5.4         
-#&gt;  [7] untb_1.7-4              report_0.5.0            see_0.6.8.1            
-#&gt; [10] correlation_0.8.0       modelbased_0.7.1.1      effectsize_0.6.0.1     
-#&gt; [13] parameters_0.16.0       performance_0.8.0       bayestestR_0.11.5      
-#&gt; [16] datawizard_0.2.3        insight_0.15.0          easystats_0.4.3        
-#&gt; [19] glmmTMB_1.1.2.3         inlatools_0.0.1.9001    INLA_21.11.22          
-#&gt; [22] sp_1.4-6                foreach_1.5.2           Matrix_1.4-0           
-#&gt; [25] slider_0.2.2            vegan_2.5-7             lattice_0.20-45        
-#&gt; [28] permute_0.9-7           codyn_2.0.5             janitor_2.1.0          
-#&gt; [31] viridis_0.6.2           viridisLite_0.4.0       cowplot_1.1.1          
-#&gt; [34] terra_1.5-17            rnaturalearthdata_0.1.0 rnaturalearth_0.1.0    
-#&gt; [37] sf_1.0-6                rmarkdown_2.11          scales_1.1.1           
-#&gt; [40] kableExtra_1.3.4        here_1.0.1              lubridate_1.8.0        
-#&gt; [43] magrittr_2.0.2          forcats_0.5.1           stringr_1.4.0          
-#&gt; [46] dplyr_1.0.7             purrr_0.3.4             readr_2.1.2            
-#&gt; [49] tidyr_1.2.0             tibble_3.1.6            ggplot2_3.3.5          
-#&gt; [52] tidyverse_1.3.1         tarchetypes_0.4.1       future.callr_0.7.0     
-#&gt; [55] future_1.23.0           targets_0.10.0          conflicted_1.1.0       
+#&gt;  [4] report_0.5.0            see_0.6.8.1             correlation_0.8.0      
+#&gt;  [7] modelbased_0.7.1.1      effectsize_0.6.0.1      parameters_0.16.0      
+#&gt; [10] performance_0.8.0       bayestestR_0.11.5       datawizard_0.2.3       
+#&gt; [13] insight_0.15.0          easystats_0.4.3         glmmTMB_1.1.2.3        
+#&gt; [16] inlatools_0.0.1.9001    INLA_21.11.22           sp_1.4-6               
+#&gt; [19] foreach_1.5.2           Matrix_1.4-0            slider_0.2.2           
+#&gt; [22] vegan_2.5-7             lattice_0.20-45         permute_0.9-7          
+#&gt; [25] codyn_2.0.5             janitor_2.1.0           viridis_0.6.2          
+#&gt; [28] viridisLite_0.4.0       cowplot_1.1.1           terra_1.5-17           
+#&gt; [31] rnaturalearthdata_0.1.0 rnaturalearth_0.1.0     sf_1.0-6               
+#&gt; [34] rmarkdown_2.11          scales_1.1.1            kableExtra_1.3.4       
+#&gt; [37] here_1.0.1              lubridate_1.8.0         magrittr_2.0.2         
+#&gt; [40] forcats_0.5.1           stringr_1.4.0           dplyr_1.0.7            
+#&gt; [43] purrr_0.3.4             readr_2.1.2             tidyr_1.2.0            
+#&gt; [46] tibble_3.1.6            ggplot2_3.3.5           tidyverse_1.3.1        
+#&gt; [49] tarchetypes_0.4.1       future.callr_0.7.0      future_1.23.0          
+#&gt; [52] targets_0.10.0          conflicted_1.1.0       
 #&gt; 
 #&gt; loaded via a namespace (and not attached):
-#&gt;   [1] utf8_1.2.2          tidyselect_1.1.1    lme4_1.1-28        
-#&gt;   [4] grid_4.1.2          gmp_0.6-2.1         munsell_0.5.0      
-#&gt;   [7] base64url_1.4       codetools_0.2-18    units_0.8-0        
-#&gt;  [10] withr_2.4.3         Brobdingnag_1.2-7   partitions_1.10-4  
-#&gt;  [13] colorspace_2.0-2    highr_0.9           knitr_1.37         
-#&gt;  [16] rstudioapi_0.13     geometry_0.4.5      wk_0.6.0           
-#&gt;  [19] ggsignif_0.6.3      listenv_0.8.0       labeling_0.4.2     
-#&gt;  [22] emmeans_1.7.2       git2r_0.29.0        slam_0.1-50        
-#&gt;  [25] farver_2.1.0        rprojroot_2.0.2     coda_0.19-4        
-#&gt;  [28] parallelly_1.30.0   vctrs_0.3.8         generics_0.1.2     
-#&gt;  [31] xfun_0.29           itertools_0.1-3     R6_2.5.1           
-#&gt;  [34] assertthat_0.2.1    gtable_0.3.0        globals_0.14.0     
-#&gt;  [37] processx_3.5.2      rlang_1.0.1         systemfonts_1.0.3  
-#&gt;  [40] splines_4.1.2       rstatix_0.7.0       TMB_1.7.22         
-#&gt;  [43] broom_0.7.12        s2_1.0.7            yaml_2.2.2         
-#&gt;  [46] abind_1.4-5         modelr_0.1.8        backports_1.4.1    
-#&gt;  [49] tools_4.1.2         bookdown_0.24       ellipsis_0.3.2     
-#&gt;  [52] jquerylib_0.1.4     proxy_0.4-26        polynom_1.4-0      
-#&gt;  [55] Rcpp_1.0.8          classInt_0.4-3      spaMM_3.10.0       
-#&gt;  [58] ps_1.6.0            ggpubr_0.4.0        pbapply_1.5-0      
-#&gt;  [61] ROI_1.0-0           ggrepel_0.9.1       haven_2.4.3        
-#&gt;  [64] cluster_2.1.2       fs_1.5.2            data.table_1.14.2  
-#&gt;  [67] warp_0.2.0          reprex_2.0.1        mvtnorm_1.1-3      
-#&gt;  [70] hms_1.1.1           evaluate_0.14       xtable_1.8-4       
-#&gt;  [73] readxl_1.3.1        gridExtra_2.3       compiler_4.1.2     
-#&gt;  [76] KernSmooth_2.23-20  crayon_1.4.2        minqa_1.2.4        
-#&gt;  [79] htmltools_0.5.2     mgcv_1.8-38         tzdb_0.2.0         
-#&gt;  [82] snow_0.4-4          DBI_1.1.2           corrplot_0.92      
-#&gt;  [85] magic_1.6-0         dbplyr_2.1.1        MASS_7.3-55        
-#&gt;  [88] boot_1.3-28         car_3.0-12          cli_3.1.1          
-#&gt;  [91] igraph_1.2.11       pkgconfig_2.0.3     registry_0.5-1     
-#&gt;  [94] numDeriv_2016.8-1.1 xml2_1.3.3          svglite_2.1.0      
-#&gt;  [97] bslib_0.3.1         picante_1.8.2       webshot_0.5.2      
-#&gt; [100] estimability_1.3    rvest_1.0.2         snakecase_0.11.0   
-#&gt; [103] callr_3.7.0         digest_0.6.29       rcdd_1.5           
-#&gt; [106] cellranger_1.1.0    fastmatch_1.1-3     nloptr_2.0.0       
-#&gt; [109] lifecycle_1.0.1     nlme_3.1-155        jsonlite_1.7.3     
-#&gt; [112] carData_3.0-5       fansi_1.0.2         pillar_1.7.0       
-#&gt; [115] fastmap_1.1.0       httr_1.4.2          glue_1.6.1         
-#&gt; [118] iterators_1.0.14    class_7.3-20        stringi_1.7.6      
-#&gt; [121] sass_0.4.0          doSNOW_1.0.20       mathjaxr_1.4-0     
-#&gt; [124] e1071_1.7-9         ape_5.6-1</code></pre>
+#&gt;   [1] readxl_1.3.1        backports_1.4.1     corrplot_0.92      
+#&gt;   [4] systemfonts_1.0.3   igraph_1.2.11       TMB_1.7.22         
+#&gt;   [7] splines_4.1.2       listenv_0.8.0       digest_0.6.29      
+#&gt;  [10] htmltools_0.5.2     fansi_1.0.2         memoise_2.0.1      
+#&gt;  [13] base64url_1.4       cluster_2.1.2       tzdb_0.2.0         
+#&gt;  [16] globals_0.14.0      modelr_0.1.8        svglite_2.1.0      
+#&gt;  [19] colorspace_2.0-2    ggrepel_0.9.1       rvest_1.0.2        
+#&gt;  [22] warp_0.2.0          haven_2.4.3         xfun_0.29          
+#&gt;  [25] callr_3.7.0         crayon_1.4.2        jsonlite_1.7.3     
+#&gt;  [28] lme4_1.1-28         iterators_1.0.14    glue_1.6.1         
+#&gt;  [31] gtable_0.3.0        emmeans_1.7.2       webshot_0.5.2      
+#&gt;  [34] car_3.0-12          abind_1.4-5         mvtnorm_1.1-3      
+#&gt;  [37] DBI_1.1.2           rstatix_0.7.0       Rcpp_1.0.8         
+#&gt;  [40] xtable_1.8-4        units_0.8-0         proxy_0.4-26       
+#&gt;  [43] httr_1.4.2          ellipsis_0.3.2      farver_2.1.0       
+#&gt;  [46] pkgconfig_2.0.3     sass_0.4.0          dbplyr_2.1.1       
+#&gt;  [49] utf8_1.2.2          labeling_0.4.2      tidyselect_1.1.1   
+#&gt;  [52] rlang_1.0.1         munsell_0.5.0       cellranger_1.1.0   
+#&gt;  [55] tools_4.1.2         cachem_1.0.6        cli_3.1.1          
+#&gt;  [58] generics_0.1.2      broom_0.7.12        evaluate_0.14      
+#&gt;  [61] fastmap_1.1.0       yaml_2.2.2          processx_3.5.2     
+#&gt;  [64] knitr_1.37          fs_1.5.2            nlme_3.1-155       
+#&gt;  [67] xml2_1.3.3          compiler_4.1.2      rstudioapi_0.13    
+#&gt;  [70] ggsignif_0.6.3      e1071_1.7-9         reprex_2.0.1       
+#&gt;  [73] bslib_0.3.1         stringi_1.7.6       highr_0.9          
+#&gt;  [76] ps_1.6.0            classInt_0.4-3      nloptr_2.0.0       
+#&gt;  [79] vctrs_0.3.8         pillar_1.7.0        lifecycle_1.0.1    
+#&gt;  [82] jquerylib_0.1.4     estimability_1.3    data.table_1.14.2  
+#&gt;  [85] R6_2.5.1            bookdown_0.24       KernSmooth_2.23-20 
+#&gt;  [88] gridExtra_2.3       parallelly_1.30.0   codetools_0.2-18   
+#&gt;  [91] boot_1.3-28         MASS_7.3-55         assertthat_0.2.1   
+#&gt;  [94] rprojroot_2.0.2     withr_2.4.3         mgcv_1.8-38        
+#&gt;  [97] hms_1.1.1           grid_4.1.2          coda_0.19-4        
+#&gt; [100] class_7.3-20        minqa_1.2.4         snakecase_0.11.0   
+#&gt; [103] carData_3.0-5       git2r_0.29.0        ggpubr_0.4.0       
+#&gt; [106] numDeriv_2016.8-1.1</code></pre>
 </details>
 </div>
 </div>
