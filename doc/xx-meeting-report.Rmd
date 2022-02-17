@@ -13,12 +13,10 @@ bibliography: "bibliography.bib"
 
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
-knitr::opts_chunk$set(cache = TRUE)
+#knitr::opts_chunk$set(cache = TRUE)
 library(skimr)
 library(dotwhisker)
 library(broom.mixed)
-library(ggeffects)
-library(easystats)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -40,6 +38,15 @@ names(trend_env) <- var_temporal_trends
 
 tar_load(random_effect_self_c)
 ```
+
+```{r map-setup, include=FALSE}
+loc <- filtered_dataset$location %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+world <- ne_countries(scale = "medium", returnclass = "sf")
+```
+
+
 # Introduction 
 
 ## Why do we want to assess community changes ?
@@ -310,13 +317,13 @@ where
 \\ \beta_{4}&=\beta_{4} +u_{4j}
 \end{align}
 
-where:
-- $\alpha$: intercept
-- $\beta$: slope
-- $u$: random effect
-- $i$: site 
-- $j$: basin
-- $k$: span period in a site 
+- where:
+  - $\alpha$: intercept
+  - $\beta$: slope
+  - $u$: random effect
+  - $i$: site 
+  - $j$: basin
+  - $k$: span period in a site 
 
 - The model formula in:
 
@@ -351,7 +358,7 @@ locations along this network.
 
 # Results
 
-## Direction of trends 
+## Direction of trends (rigal method) 
 
 ```{r}
 ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
@@ -381,7 +388,7 @@ ti %>%
 ```
 
 
-## Average
+## Average (rigal method)
 
 ```{r}
 slope <- map_dfr(rigal_trends,
@@ -418,7 +425,6 @@ summary_slope %>%
 ```{r, include=FALSE}
 j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
 r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
-
 ```
 
 ```{r}
@@ -694,14 +700,9 @@ mod_tmb_comp_std_df %>%
 ```
 
 ```{r}
-# does not work for now because I estimated several times the basin random effect on
-# intercept, normally its fixed
-#x <- parameters(
-#  gaussian_jaccard_tmb$mod[[6]],
-#  group_level = TRUE,
-#  effects = "random"
-#)
 site_temporal_trends <- random_effect_self_c %>%
+  filter(intercept == 1, year_var == "year_nb") %>%
+  select(response, random_site) %>%
   unnest(random_site) %>%
   select(response, siteid, year_nb)
 ```
@@ -725,6 +726,11 @@ pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
 ```
 
+```{r}
+tar_load(pred_gaussian_tmb)
+```
+
+
 ```{r p-pred-riv, fig.height = 12}
 pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "year_nb", intercept == 1) %>%
@@ -738,7 +744,7 @@ pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   select(-mod)
 plot_grid(plotlist = pred_year_riv_str_fe$pred_plot)
 ```
-```{r}
+```{r, fig.height = 12}
 pred_log1_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
   filter(year_var == "log1_year_nb", intercept == 1) %>%
   mutate(pred = map(mod,
@@ -779,88 +785,6 @@ pred_log1_year_hft_fe <- gaussian_jaccard_tmb  %>%
 plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot)
 ```
 
-- Map:
-
-```{r}
-loc <- filtered_dataset$location %>%
-  st_as_sf(coords = c("longitude", "latitude"),
-  crs = 4326)
-world <- ne_countries(scale = "medium", returnclass = "sf")
-```
-
-```{r}
-pred_slope <- gaussian_jaccard_tmb %>%
-  mutate(
-    site_slope = map(mod, function(m) {
-      coef(m)$cond[["siteid:main_bas"]] %>%
-        rownames_to_column(var = "siteid_main_bas") %>%
-        separate(
-          col = "siteid_main_bas",
-          into = c("siteid", "main_bas"),
-          sep = ":") %>%
-        select(-main_bas)
-    }),
-    basin_slope = map(mod, function(m) {
-      coef(m)$cond[["main_bas"]] %>%
-        rownames_to_column(var = "main_bas") 
-    }),
-  ) %>%
-select(-mod)
-pred_slope$basin_slope[[1]] %>%
-  as_tibble()
-
-pred_slope <- pred_slope %>%
-  mutate(
-    sf_site = map(site_slope,
-      ~left_join(.x, select(loc, siteid, geometry), by = "siteid") %>%
-        st_as_sf()
-      ),
-    sf_basin = map(basin_slope,
-      ~left_join(.x, loc %>%
-        mutate(main_bas = as.character(main_bas)) %>%
-        select(main_bas, geometry), by = "main_bas") %>%
-        st_as_sf()
-      ),
-    sf_site_map = map2(sf_site, year_var,
-      ~ggplot(data = world) +
-        geom_sf() +
-        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
-        scale_color_viridis() +
-        theme(legend.position = "bottom")),
-    sf_basin_map = map2(sf_basin, year_var,
-      ~ggplot(data = world) +
-        geom_sf() +
-        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
-        scale_color_viridis() +
-        theme(legend.position = "bottom"))
-  )
-```
-
-#### Site
-
-```{r}
-pred_slope$sf_site_map[[1]] +
-  labs(title = "Jaccard")
-
-pred_slope$sf_site_map[[3]] +
-  labs(title = "Turnover")
-
-pred_slope$sf_site_map[[5]] +
-  labs(title = "Nestedness")
-```
-
-#### Basin
-
-```{r}
-pred_slope$sf_basin_map[[1]] +
-  labs(title = "Jaccard")
-
-pred_slope$sf_basin_map[[3]] +
-  labs(title = "Turnover")
-
-pred_slope$sf_basin_map[[5]] +
-  labs(title = "Nestedness")
-```
 
 ## Species richness
 
@@ -944,6 +868,82 @@ clust_var_summary %>%
 knitr::opts_chunk$set(eval = FALSE)
 ```
 
+- Map:
+
+
+```{r}
+pred_slope <- gaussian_jaccard_tmb %>%
+  mutate(
+    site_slope = map(mod, function(m) {
+      coef(m)$cond[["siteid:main_bas"]] %>%
+        rownames_to_column(var = "siteid_main_bas") %>%
+        separate(
+          col = "siteid_main_bas",
+          into = c("siteid", "main_bas"),
+          sep = ":") %>%
+        select(-main_bas)
+    }),
+    basin_slope = map(mod, function(m) {
+      coef(m)$cond[["main_bas"]] %>%
+        rownames_to_column(var = "main_bas") 
+    }),
+  ) %>%
+select(-mod)
+pred_slope$basin_slope[[1]] %>%
+  as_tibble()
+
+pred_slope <- pred_slope %>%
+  mutate(
+    sf_site = map(site_slope,
+      ~left_join(.x, select(loc, siteid, geometry), by = "siteid") %>%
+        st_as_sf()
+      ),
+    sf_basin = map(basin_slope,
+      ~left_join(.x, loc %>%
+        mutate(main_bas = as.character(main_bas)) %>%
+        select(main_bas, geometry), by = "main_bas") %>%
+        st_as_sf()
+      ),
+    sf_site_map = map2(sf_site, year_var,
+      ~ggplot(data = world) +
+        geom_sf() +
+        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
+        scale_color_viridis() +
+        theme(legend.position = "bottom")),
+    sf_basin_map = map2(sf_basin, year_var,
+      ~ggplot(data = world) +
+        geom_sf() +
+        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
+        scale_color_viridis() +
+        theme(legend.position = "bottom"))
+  )
+```
+
+#### Site
+
+```{r}
+pred_slope$sf_site_map[[1]] +
+  labs(title = "Jaccard")
+
+pred_slope$sf_site_map[[3]] +
+  labs(title = "Turnover")
+
+pred_slope$sf_site_map[[5]] +
+  labs(title = "Nestedness")
+```
+
+#### Basin
+
+```{r}
+pred_slope$sf_basin_map[[1]] +
+  labs(title = "Jaccard")
+
+pred_slope$sf_basin_map[[3]] +
+  labs(title = "Turnover")
+
+pred_slope$sf_basin_map[[5]] +
+  labs(title = "Nestedness")
+```
 
 ```{r, eval=FALSE}
 paste0(var_temporal_trends,

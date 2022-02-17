@@ -7,7 +7,7 @@ tar_option_set(packages = c(
     "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
     "rnaturalearth", "rnaturalearthdata", "terra", "cowplot", "viridis",
     "janitor", "codyn", "vegan", "slider", "future", "INLA", "inlatools",
-    "glmmTMB", "easystats"))
+    "glmmTMB", "easystats", "ggeffects"))
 
 library(future.callr)
 plan(callr)
@@ -690,21 +690,21 @@ tar_target(neutral_turnover,
           select(-mod)
         ),
 tar_target(pred_gaussian_tmb,
-  binded_gaussian_tmb  %>%
-    mutate(pred_riv = map2(
+  binded_gaussian_tmb %>%
+    mutate(pred_riv = furrr::future_map2(
         mod, year_var,
         ~ggemmeans(.x,
           terms = c(.y, "riv_str_rc1 [quart2]"),
           type = "fe")
         ),
-      pred_plot_riv = map(pred_riv, plot),
-      pred_hft = map2(
+      pred_plot_riv = furrr::future_map(pred_riv, plot),
+      pred_hft = furrr::future_map2(
         mod, year_var,
         ~ggemmeans(.x,
           terms = c(.y, "hft_ix_c9309_diff_scaled [quart2]"),
           type = "fe")
         ),
-      pred_plot_hft = map(pred_hft, plot)
+      pred_plot_hft = furrr::future_map(pred_hft, plot)
       ) %>%
   select(-mod)
 ),

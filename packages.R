@@ -39,7 +39,7 @@ library(inlatools)
 library(glmmTMB)
 
 library(easystats)
-
+library(ggeffects)
 
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
