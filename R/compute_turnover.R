@@ -24,10 +24,55 @@ get_turnover <- function(x = NULL, type = "total") {
   return(output)
 }
 
+#' Compute the difference between year t and t0
+#'
+#' Year variable should be ordered
+#'
+#' @param dataset data.frame
+#' @param year numeric vector
+#' @param y numeric vector 
+#' @examples
+#' compute_metric_temporal_diff(year = seq(1,10), y = seq(1,10))
+
 #' Wrapper for targets
 #'
 #'
 #'
+get_richness_turnover <- function(x = NULL,
+  var_rich = c("chao_richness", "species_nb"),
+  suffix_var = "_tps"
+  ) {
+
+  x  <- x %>%
+    arrange(siteid, year) %>%
+    nest_by(siteid)
+
+  # By site, sort increasing year and build t1 and t2
+  x$rich_tps <- furrr::future_map(x$data,
+    function(y, rich_var = var_rich) {
+      out <- tibble(
+        year = y$year
+      )
+
+      for (i in rich_var) {
+        out[[paste0(i, suffix_var)]] <-
+          compute_metric_temporal_diff(
+            year = y$year, y = y[[i]]
+          )
+      }
+      return(out)
+
+    },
+    rich_var = var_rich)
+
+  out <- x %>%
+    ungroup() %>%
+    select(-data) %>%
+    unnest(rich_tps)
+
+  return(out)
+
+}
 get_hillebrand_turnover <- function(x = NULL)  {
 
   x <- x %>%
@@ -160,6 +205,17 @@ get_temporal_vegdist <- function(
   }
 
   return(out)
+}
+compute_metric_temporal_diff <- function(
+  year = NULL,
+  y = NULL) {
+
+  stopifnot("year should be ordered" = !is.unsorted(year))
+
+  t1 <- y[1]
+  t2 <- y
+
+  (t2 - t1) / (t1)
 }
 
 #' Get temporal similarity from first year with vegdist

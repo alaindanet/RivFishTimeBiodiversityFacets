@@ -60,3 +60,17 @@ get_full_file_name <- function(
     list.files(., full.names = TRUE) %>%
     .[stringr::str_detect(., filename)]
 }
+
+
+get_world_site_sf <- function(
+  loc = filtered_dataset$location
+  ){
+  list(
+    site = loc %>% 
+      st_as_sf(
+        coords = c("longitude", "latitude"),
+        crs = 4326
+      ),
+    world = ne_countries(scale = "medium", returnclass = "sf")
+  )
+}

@@ -84,6 +84,9 @@ tar_target(filtered_dataset_avg3y, get_filtered_dataset(
     site_desc_loc = site_desc_loc,
     add_var_from_protocol = c("siteid", "year")
     )),
+tar_target(world_site_sf, 
+  get_world_site_sf(loc = filtered_dataset$location)
+  ),
 # Community structure
 tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
 tar_target(neutral_turnover,
@@ -277,19 +280,9 @@ tar_target(neutral_turnover,
         colnames(riveratlas_site) %in%
           c("siteid", setNames(get_river_atlas_significant_var(), NULL))
         ] %>%
-          st_drop_geometry() %>%
-          ## Add PCA score
-          mutate(
-            riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
-            riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"],
-            hft_ix_c9309_percent =
-              (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
-            log_hft_ix_c9309_percent = hft_ix_c9309_percent,
-            hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93,
-            hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
-            hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
-            hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff)
-          )
+          st_drop_geometry()
+        ,
+        pca_riv_str = pca_riv_str
     )
     ),
   tar_target(fr,
@@ -395,27 +388,6 @@ tar_target(neutral_turnover,
       pattern = map(var_temporal_trends),
       iteration = "list"
       ),
-    #tar_target(simple_lm,
-    #analysis_dataset %>%
-    #select(all_of(c("siteid", "year", var_temporal_trends))) %>%
-    #group_by(siteid) %>%
-    #nest() %>%
-    #mutate(model = purrr::map(
-    #data,
-    #~lm(as.formula(paste0(var_temporal_trends, " ~ year ")), data = .x)
-    #)
-    #) %>%
-    #select(-data),
-    #pattern = map(var_temporal_trends),
-    #iteration = "list"
-    #),
-    #tar_target(simple_lm_coef,
-    #simple_lm %>%
-    #mutate(coef_mod = purrr::map(model, broom::tidy)) %>%
-    #select(-model),
-    #pattern = map(simple_lm),
-    #iteration = "list"
-    #),
     tar_target(snapped_site_river,
       target_snap_site_to_river(
         river_shp_filepath = get_full_file_name(riveratlas_shp_files),
@@ -539,36 +511,31 @@ tar_target(neutral_turnover,
   ),
   tar_target(var_analysis,
     c(
-      "siteid", "main_bas", "year", "year_nb",
-      "scaled_dist_up_km", "span", "jaccard_scaled", "jaccard_dis", "turnover",
-      "nestedness", "species_nb", "log_species_nb", "chao_richness", "hillebrand",
-      "appearance", "disappearance", "evenness", "riv_str_rc1",
+      "siteid", "main_bas", "year", "year_nb", "log1_year_nb",
+      "scaled_dist_up_km", "span",
+      "jaccard_dis", "jaccard_dis_scaled",
+      "turnover", "turnover_scaled", "nestedness", "nestedness_scaled",
+      "species_nb", "log_species_nb", "species_nb_tps", "species_nb_tps_scaled",
+      "chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
+      "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
+      "appearance", "appearance_scaled", "disappearance",
+      "disappearance_scaled", "evenness", "evenness_scale", "riv_str_rc1",
       "hft_ix_c9309_diff_scaled")
     ),
   tar_target(modelling_data,
     analysis_dataset %>%
       select(all_of(var_analysis)) %>%
-      mutate(
-        jaccard_dis_scaled = transform01(jaccard_dis),
-        nestedness_scaled = transform01(nestedness),
-        turnover_scaled = transform01(turnover),
-        hillebrand_scaled = transform01(hillebrand),
-        appearance_scaled = transform01(appearance),
-        disappearance_scaled = transform01(disappearance),
-        evenness_scaled = transform01(evenness),
-        log1_year_nb = log(year_nb + 1),
-        one = 1.0
-        ) %>%
       na.omit()
     ),
   tar_target(var_jaccard,
     c("jaccard_dis_scaled", "turnover_scaled",
-      "nestedness_scaled", "hillebrand_scaled", "appearance_scaled",
+      "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
       "disappearance_scaled", "evenness_scaled")),
   tar_target(year_var, c("year_nb", "log1_year_nb")),
   tar_target(intercept, c(0, 1)),
-  tar_target( beta_jaccard_tmb,
-    tibble(year_var = year_var,
+  tar_target(beta_jaccard_tmb,
+    tibble(
+      year_var = year_var,
       intercept = intercept,
       response = var_jaccard,
       mod = list(
@@ -611,7 +578,7 @@ tar_target(neutral_turnover,
           ),
         pattern = cross(var_jaccard, year_var, intercept)
         ),
-      tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb")),
+      tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb", "chao_richness_tps_scaled", "species_nb_tps_scaled")),
       tar_target(gaussian_rich_tmb,
         tibble(
           response = rich_var,
@@ -628,7 +595,7 @@ tar_target(neutral_turnover,
             offset = NULL,
             family = gaussian(link = "identity"),
             dispformula = "~ 1")
-      )
+        )
             ),
           pattern = cross(rich_var, year_var)
           ),
@@ -639,37 +606,37 @@ tar_target(neutral_turnover,
               select(-intercept), 
             gaussian_rich_tmb %>%
               filter(year_var == "year_nb")
-          ) %>% 
+            ) %>% 
           filter(!response %in% c("species_nb", "log_species_nb"))
-          ),
-        tar_target(mod_tmb_comp,
-          # Drop the main effect
-          compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
-          ),
-        tar_target(mod_tmb_comp_std,
-          # Drop the main effect
-          compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
-          ),
-        tar_target(binded_gaussian_tmb,
-          rbind(gaussian_jaccard_tmb,
-            mutate(gaussian_rich_tmb, intercept = 1))
-          ),
-        tar_target(random_effects,
-          binded_gaussian_tmb %>% 
-            mutate(random_effects = map(mod,
-                ~try(
-                  parameters(
-                    .x,
-                    group_level = TRUE
-                    ) %>%
-                  as_tibble() %>%
-                  clean_names() %>%
-                  select(-all_of(c("se", "ci", "component", "effects"))) 
-                )
-            )
-              ) %>%
-          select(-mod)
         ),
+      tar_target(mod_tmb_comp,
+        # Drop the main effect
+        compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
+        ),
+      tar_target(mod_tmb_comp_std,
+        # Drop the main effect
+        compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
+        ),
+      tar_target(binded_gaussian_tmb,
+        rbind(gaussian_jaccard_tmb,
+          mutate(gaussian_rich_tmb, intercept = 1))
+        ),
+      tar_target(random_effects,
+        binded_gaussian_tmb %>% 
+          mutate(random_effects = map(mod,
+              ~try(
+                parameters(
+                  .x,
+                  group_level = TRUE
+                  ) %>%
+                as_tibble() %>%
+                clean_names() %>%
+                select(-all_of(c("se", "ci", "component", "effects"))) 
+              )
+          )
+            ) %>%
+        select(-mod)
+      ),
       tar_target(random_effect_self_c,
         binded_gaussian_tmb %>%
           filter(intercept == 1, year_var == "year_nb")  %>%
