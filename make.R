@@ -7,7 +7,9 @@ tar_make_future(workers = min(future::availableCores() - 1, 20))
 
 tar_meta()
 tar_visnetwork()
-tar_make(names = meeting_report)
+tar_make(names = analysis_dataset_avg3y)
+tar_make(names = analysis_dataset_avg3y)
+tar_load(baselga_avg3y_c)
 
 
 tar_load(c(riveratlas_shp_files, filtered_dataset))

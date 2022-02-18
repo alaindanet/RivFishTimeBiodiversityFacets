@@ -18,6 +18,7 @@ library(factoextra)
 
 ```{r load-targets, include=FALSE}
 tar_load(c(op_protocol, site_protocol_quali, site_protocol_quanti))
+tar_load(slp_env)
 ```
 
 ```{r}

@@ -34,8 +34,16 @@ get_analysis_dataset <- function(
     }
 
     if (!is.null(river)) {
+      if(!is.null(pca_riv_str)) {
+        river <- river %>%
+            ## Add PCA score
+            mutate(
+              riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
+              riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
+            )
+      }
       analysis_dataset <- analysis_dataset %>%
-        left_join(river, by = c("siteid")) %>%
+        left_join(river, by = c("siteid"))
     }
 
     if (!is.null(water_temperature)) {
@@ -55,7 +63,7 @@ get_analysis_dataset <- function(
 
     # compute temporal richness
     temporal_richness <- get_richness_turnover(
-      x = analysis_dataset
+      x = analysis_dataset,
       var_rich = c("chao_richness", "species_nb"),
       suffix_var = "_tps"
     )
@@ -68,6 +76,7 @@ get_analysis_dataset <- function(
       mutate(
         # Response variables transformation
         jaccard_scaled = transform01(jaccard),
+        jaccard_dis = 1 - jaccard,
         jaccard_dis_scaled = transform01(jaccard_dis),
         nestedness_scaled = transform01(nestedness),
         turnover_scaled = transform01(turnover),
@@ -93,8 +102,8 @@ get_analysis_dataset <- function(
         hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
         hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
         hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff),
-        riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
-        riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
+        #riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
+        #riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"],
         main_bas = as.factor(main_bas),
         one = 1.0 #dummy offset
         ) %>%

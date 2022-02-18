@@ -242,6 +242,20 @@ tar_target(neutral_turnover,
   tar_target(turnover_avg3y_c,
     turnover_avg3y %>% reduce(left_join, by = c("siteid", "year"))
     ),
+  tar_target(baselga_avg3y,
+    target_custom_temporal_turnover(
+      dataset = com_mat_site_avg3y,
+      fun = compute_jaccard_decomp,
+      var_name = baselga_types_chr,
+      return_tibble = TRUE,
+      drop_first_year = FALSE,
+      type = baselga_types_chr
+      ),
+    pattern = map(baselga_types_chr),
+    iteration = "list"),
+  tar_target(baselga_avg3y_c,
+    baselga_avg3y %>% reduce(left_join, by = c("siteid", "year"))
+    ),
   tar_target(chao_hillnb,
     get_chao_hillnb(
       x = filtered_dataset$measurement,
@@ -295,19 +309,7 @@ tar_target(neutral_turnover,
             setNames(get_river_atlas_significant_var(), NULL)
           )
           )) %>%
-      na.omit() %>%
-      mutate(
-        jaccard_scaled = transform01(jaccard),
-        main_bas = as.factor(main_bas),
-        scaled_dist_up_km = scale(dist_up_km),
-        log_dist_up_km = log(dist_up_km),
-        scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
-        tmp_c_cyr = tmp_dc_cyr / 10,
-        scaled_tmp_c_cyr = scale(tmp_c_cyr)
-        ) %>%
-      group_by(siteid) %>%
-      mutate(year_nb = year - min(year)) %>%
-      ungroup()
+      na.omit()
     ),
   tar_target(mod_wt_data,
     wt_mv_avg  %>%
@@ -322,20 +324,17 @@ tar_target(neutral_turnover,
         filtered_dataset = filtered_dataset_avg3y,
         chao_hillnb = chao_hillnb_avg3y,
         hillebrand = hillebrand_avg3y,
+      baselga_c = baselga_avg3y_c,
         turnover_c = turnover_avg3y_c,
         vegdist_turnover_c = vegdist_turnover_avg3y_c,
         hillnb = hillnb_avg3y,
-        river = riveratlas_site[,
-          colnames(riveratlas_site) %in%
-            c("siteid", setNames(get_river_atlas_significant_var(), NULL))
-          ] %>%
-            st_drop_geometry() %>%
-            ## Add PCA score
-            mutate(
-              riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
-              riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
-            )
-      )
+      river = riveratlas_site[,
+        colnames(riveratlas_site) %in%
+          c("siteid", setNames(get_river_atlas_significant_var(), NULL))
+        ] %>%
+          st_drop_geometry(),
+        pca_riv_str = pca_riv_str
+    )
       ),
     # statistic
     tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
@@ -519,7 +518,7 @@ tar_target(neutral_turnover,
       "chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
-      "disappearance_scaled", "evenness", "evenness_scale", "riv_str_rc1",
+      "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
       "hft_ix_c9309_diff_scaled")
     ),
   tar_target(modelling_data,
