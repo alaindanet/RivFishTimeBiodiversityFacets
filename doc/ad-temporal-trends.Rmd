@@ -15,9 +15,19 @@ source(here::here("start_rmd.R"))
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, analysis_dataset))
-tar_load(c(rigal_trends, var_temporal_trends))
+tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
+tar_load(c(rigal_trends, var_temporal_trends, rigal_slp_df))
 names(rigal_trends) <- var_temporal_trends
+
+tar_load(vegdist_turnover_c)
+tar_load(c(wt_mv_avg, riveratlas_site))
+
+tar_load(c(rigal_trends_avg3y))
+names(rigal_trends_avg3y) <- var_temporal_trends
+tar_load(c(analysis_dataset_avg3y, measurement_avg3y, measurement))
+tar_load(c(turnover_avg3y_c))
+tar_load(c(vegdist_turnover_c))
+tar_load(c(hillnb_avg3y))
 ```
 
 ```{r}
@@ -29,7 +39,6 @@ slope <- map_dfr(rigal_trends,
 ```
 
 ```{r}
-tar_load(rigal_slp_df)
 slope_df <- rigal_slp_df
 ```
 
@@ -428,9 +437,6 @@ p_high_jaccard_slope <- map(site_desc_jaccard_slope[1:20],
 plot_grid(plotlist = p_high_jaccard_slope, ncol = 3)
 ```
 
-```{r}
-tar_load(vegdist_turnover_c)
-```
 
 - Hum, do not understand why community are more similar at the end of the time-steps
 
@@ -763,16 +769,6 @@ sd(exp(na.omit(rigal_trends_df$log_species_nb)) - 1) * 100
 
 # Sensibility analysis of temporal trends
 
-```{r}
-tar_load(c(rigal_trends_avg3y))
-names(rigal_trends_avg3y) <- var_temporal_trends
-```
-```{r}
-tar_load(c(analysis_dataset_avg3y, measurement_avg3y, measurement))
-tar_load(c(turnover_avg3y_c))
-tar_load(c(vegdist_turnover_c))
-tar_load(c(hillnb_avg3y))
-```
 
 
 ```{r}
@@ -821,7 +817,6 @@ comparison_baseline %>%
 # Environment 
 
 ```{r}
-tar_load(c(wt_mv_avg, riveratlas_site))
 col_to_keep <- get_river_atlas_significant_var()
 names(col_to_keep) <- NULL
 
@@ -870,12 +865,8 @@ slp_riv %>%
   geom_point() +
   geom_smooth(method = "lm")
 
-# slp_riv %>%
-#   ggplot(aes(y = hillebrand, x = as.factor(ord_flow), color = ecoregion)) +
-#   geom_boxplot()
-
 slp_riv %>%
-  ggplot(aes(y = hillebrand, x = tmp_dc_cyr /10, color = ecoregion)) +
+  ggplot(aes(y = hillebrand, x = tmp_dc_cyr / 10, color = ecoregion)) +
   geom_point() +
   geom_smooth(method = "lm")
 ```
@@ -884,7 +875,7 @@ slp_riv %>%
 slp_riv %>%
   ggplot(aes(y = hillebrand, x = log(dist_up_km), color = as.factor(main_bas))) +
   geom_point() +
-  geom_smooth(method = "lm", se = FALSE) + 
+  geom_smooth(method = "lm", se = FALSE) +
   theme(legend.position = "none")
 
 slp_riv %>%
@@ -892,13 +883,8 @@ slp_riv %>%
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   theme(legend.position = "none")
-
-# slp_riv %>%
-#   ggplot(aes(y = hillebrand, x = ord_flow, color = as.factor(main_bas))) +
-#   geom_point() +
-#   geom_smooth(method = "lm", se = FALSE) +
-#   theme(legend.position = "none")
 ```
+
 ```{r}
 ti <- slp_riv %>%
  nest_by(main_bas) %>%
@@ -910,7 +896,7 @@ tu <- ti %>%
     coef = list(broom::tidy(m))
   ) %>%
   unnest(coef) %>%
-  filter(term == "log(dist_up_km)") 
+  filter(term == "log(dist_up_km)")
 
 tu %>%
   ggplot(aes(x = estimate)) +
@@ -922,7 +908,6 @@ summary(lm(jaccard ~ log(dist_up_km), slp_riv))
 ## Human footprint
 
 ```{r}
-tar_load(riveratlas_site)
 colnames(riveratlas_site)[
   str_detect(colnames(riveratlas_site),
     "hft_ix_")]
@@ -990,21 +975,17 @@ p_jaccard_log_y_c9309_log_ratio
 - Correlation:
 
 ```{r}
-library(easystats)
-tar_load(modelling_data)
 cor_data <- modelling_data %>%
   left_join(hftc, by = "siteid") %>%
-  select(!starts_with("cat") & !ends_with("scaled") & !starts_with("log_hft")) %>%
+  select(
+    !starts_with("cat") & !ends_with("scaled") & !starts_with("log_hft")
+    ) %>%
   select(-siteid, -main_bas)
 
 corrplot::corrplot(
   cor(as.matrix(na.omit(cor_data), method = c("spearman")))
   )
 ```
-
-```{r}
-```
-
 
 
 ## SpaMM model
@@ -1072,7 +1053,6 @@ tm %>%
   geom_line()
 ```
 ```{r}
-tar_load(analysis_dataset)
 formula <- paste0(
   "jaccard",
   " ~ ",

@@ -19,8 +19,7 @@ source("./packages.R")
 ## tar_plan supports drake-style targets and also tar_target()
 list(
   # tar_target(target2, function_to_make2(arg)) ## targets style
-  tar_target(
-    raw_data_file,
+  tar_target( raw_data_file,
     get_raw_file_path(),
     format = "file",
     error = "continue"),
@@ -33,8 +32,11 @@ list(
     format = "file",
     error = "continue"
     ),
-  tar_target(timeseries, load_time_series_data(raw_data_file)),
-  tar_target(site_desc_loc, get_site_desc_loc(ts_data = timeseries)),
+  tar_target(timeseries,
+    load_time_series_data(raw_data_file)
+    ),
+  tar_target(site_desc_loc,
+    get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
   tar_target(species_number_site,
     get_species_number_site(
@@ -516,6 +518,7 @@ tar_target(neutral_turnover,
       "turnover", "turnover_scaled", "nestedness", "nestedness_scaled",
       "species_nb", "log_species_nb", "species_nb_tps", "species_nb_tps_scaled",
       "chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
+      "total_abundance", "total_abundance_tps",
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
       "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
@@ -598,12 +601,40 @@ tar_target(neutral_turnover,
             ),
           pattern = cross(rich_var, year_var)
           ),
+        tar_target(abun_var, c(
+            "total_abundance", "total_abundance_scaled",
+            "log_total_abundance",
+            "total_abundance_tps")),
+        tar_target(gaussian_abun_tmb,
+          tibble(
+            response = abun_var,
+            year_var = year_var,
+            mod = list(
+              glmmTMB(
+                formula = paste0(rich_var, " ~
+                  ", year_var, " * riv_str_rc1 +",
+                "year_nb * unitabundance",
+                year_var, " * hft_ix_c9309_diff_scaled +
+                (1 + ", year_var, " | main_bas/siteid) +
+                (1 + ", year_var, " | span) +
+                (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+                (0 + riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas)"),
+            data = modelling_data,
+            family = gaussian(link = "identity")
+                )
+        )
+            ),
+          pattern = cross(abun_var, year_var)
+          ),
+
         tar_target(mod_tmb,
           rbind(
             gaussian_jaccard_tmb %>%
               filter(intercept == 1 & year_var == "year_nb") %>%
               select(-intercept), 
             gaussian_rich_tmb %>%
+              filter(year_var == "year_nb"),
+            gaussian_abun_tmb %>%
               filter(year_var == "year_nb")
             ) %>% 
           filter(!response %in% c("species_nb", "log_species_nb"))
@@ -618,10 +649,11 @@ tar_target(neutral_turnover,
         ),
       tar_target(binded_gaussian_tmb,
         rbind(gaussian_jaccard_tmb,
-          mutate(gaussian_rich_tmb, intercept = 1))
-        ),
+          mutate(gaussian_rich_tmb, intercept = 1),
+          mutate(gaussian_abun_tmb, intercept = 1)
+        )),
       tar_target(random_effects,
-        binded_gaussian_tmb %>% 
+        binded_gaussian_tmb %>%
           mutate(random_effects = map(mod,
               ~try(
                 parameters(
@@ -630,7 +662,7 @@ tar_target(neutral_turnover,
                   ) %>%
                 as_tibble() %>%
                 clean_names() %>%
-                select(-all_of(c("se", "ci", "component", "effects"))) 
+                select(-all_of(c("se", "ci", "component", "effects")))
               )
           )
             ) %>%
