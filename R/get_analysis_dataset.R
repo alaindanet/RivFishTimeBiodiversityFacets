@@ -14,8 +14,7 @@ get_analysis_dataset <- function(
   analysis_dataset <- filtered_dataset$abun_rich_op %>%
     left_join(filtered_dataset$site_quali, by = "siteid") %>%
     left_join(filtered_dataset$location, by = "siteid") %>%
-    left_join(
-      chao_hillnb %>%
+    left_join(chao_hillnb %>%
         select(op_id, chao_richness, chao_shannon, chao_simpson, chao_evenness),
       by = "op_id"
       ) %>%
@@ -64,7 +63,7 @@ get_analysis_dataset <- function(
     # compute temporal richness
     temporal_richness <- get_richness_turnover(
       x = analysis_dataset,
-      var_rich = c("chao_richness", "species_nb"),
+      var_rich = c("chao_richness", "species_nb", "total_abundance"),
       suffix_var = "_tps"
     )
 

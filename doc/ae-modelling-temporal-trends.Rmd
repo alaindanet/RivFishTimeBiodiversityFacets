@@ -103,22 +103,24 @@ tabyl_df(fr, "main_bas")
 ```{r}
 fr %>%
   filter(siteid %in% sample(unique(siteid))[1:10]) %>%
-  ggplot(aes(y = jaccard_scaled, x = year_nb, color = siteid)) +
+  ggplot(aes(y = jaccard_dis, x = year_nb, color = siteid)) +
   geom_line() +
   theme(legend.position = "none") +
   geom_smooth(se = FALSE)
 ```
 
-- It is not pretty but seems not too bad
+- It is not pretty but seems not too bad:
 
-```{r}
+```{r, fig.cap="Example with 10 sites"}
 sample_fr <- fr %>%
   filter(siteid %in% sample(unique(siteid))[1:10])
 sample_fr %>%
   ggplot(aes(y = jaccard_scaled, x = log(year_nb + 1), color = siteid)) +
-  geom_line() +
+  geom_point() +
   theme(legend.position = "none") +
+  geom_smooth(linetype = 2, se = FALSE) +
   geom_smooth(
+    linetype = 1,
     formula = y ~ x,
     method = "lm",
     se = FALSE
@@ -142,16 +144,21 @@ fr %>%
 
 ```{r}
 fr %>%
-  ggplot(aes(y = jaccard_scaled, x = log(year_nb + 1), color = as.factor(ord_stra))) +
+  ggplot(
+    aes(y = jaccard_scaled, x = log(year_nb + 1), color = as.factor(ord_stra))
+  ) +
   geom_point() +
-  geom_smooth(se = FALSE)
+  geom_smooth(se = FALSE) +
+  geom_smooth(method = "lm", se = FALSE)
 ```
 
 - Logging both response and predictor do not improve stuff:
 
 ```{r}
 fr %>%
-  ggplot(aes(y = log(jaccard_scaled + 1), x = log(year_nb + 1), color = as.factor(ord_stra))) +
+  ggplot(
+    aes(y = log(jaccard_scaled + 1), x = log(year_nb + 1), color = as.factor(ord_stra))
+    ) +
   geom_point() +
   geom_smooth(se = FALSE)
 ```
@@ -182,6 +189,35 @@ fr %>%
 ```{r}
 cor(fr$tmp_c_cyr, fr$ord_stra, method = "spearman")
 car::vif(lm(jaccard_scaled ~ scaled_tmp_c_cyr + scaled_dist_up_km, fr))
+```
+
+- Compare different model : 
+
+
+```{r, fig.cap="Example with 10 sites. Test with GAM, quadradic and linear models"}
+sample_fr <- fr %>%
+  filter(siteid %in% sample(unique(siteid))[1:10])
+sample_fr %>%
+  ggplot(
+    aes(y = jaccard_scaled,
+      x = log(year_nb + 1),
+      color = siteid)
+    ) +
+  geom_point() +
+  theme(legend.position = "bottom") +
+  geom_smooth(linetype = 2, se = FALSE) +
+  geom_smooth(
+    linetype = 1,
+    formula = y ~ x,
+    method = "lm",
+    se = FALSE
+    ) +
+  geom_smooth(
+    linetype = 3,
+    formula = y ~ x + poly(x, 2),
+    method = "lm",
+    se = FALSE
+    )
 ```
 
 ```{r}
@@ -427,10 +463,293 @@ testZeroInflation(res_sp1)
 
 ### Total abundance 
 
+```{r, eval=FALSE}
+tar_load(c(site_protocol_quali, site_protocol_quanti))
+tar_load(op_protocol)
+analysis_dataset
+tabyl_df(analysis_dataset, "unitabundance")
+tabyl_df(site_protocol_quali, "unitabundance")
+tabyl_df(
+  mutate(op_protocol, sample_effort = is.na(sampledlength_m)),
+  "sample_effort"
+)
+filtered_dataset
+analysis_dataset %>%
+  left_join(select(op_protocol, op_id, sampledlength_m), by = "op_id") %>%
+  filter(is.na(sampledlength_m)) %$%
+  tabyl_df(., "unitabundance")
+
+sum(is.na(analysis_dataset$unitabundance))
+
+hist(analysis_dataset$total_abundance)
+```
+
+
 ```{r}
-fr
+abun <- glmmTMB(
+  total_abundance ~ year_nb * unitabundance + (1 + year_nb | main_bas / siteid),
+  data = analysis_dataset
+)
+
+plot(get_data(abun)$total_abundance ~ predict(abun))
+abline(0, 1)
+
+plot(log10(get_data(abun)$total_abundance + 1) ~ log10(predict(abun) +1))
+abline(0, 1)
+
+diagnose(abun)
+abun_res <- DHARMa::simulateResiduals(abun)
+plot(abun_res)
+```
+
+```{r}
+site_abun <- get_random_effect_glmmTMB(abun, effect = "siteid:main_bas")
+site_abun %>%
+  left_join(analysis_dataset %>%
+    select(siteid, unitabundance) %>%
+    group_by(siteid) %>%
+    summarise(unitabundance = unique(unitabundance), .group = "drop"), by = "siteid") %>%
+  ggplot(aes(x = year_nb)) +
+  geom_histogram() +
+  facet_wrap(~unitabundance, scale = "free")
+```
+
+
+- With siteid:
+
+```{r}
+log_abun <- glmmTMB(
+  log_total_abundance ~ year_nb + unitabundance + (1 + year_nb | main_bas/siteid),
+  data = analysis_dataset)
+
+get_random_effect_glmmTMB(abun, effect = "siteid:main_bas")
+
+diagnose(abun)
+abun_res <- DHARMa::simulateResiduals(abun)
+plot(abun_res)
+
+plot(get_data(log_abun)$log_total_abundance ~ predict(log_abun))
+abline(0, 1)
+```
+
+
+- With siteid:
+
+```{r}
+abun_siteid <- update(abun,
+  formula = total_abundance ~
+    log1_year_nb +
+    (1 + log1_year_nb | unitabundance/siteid)
+)
+
+diagnose(abun_siteid)
+
+get_random_effect_glmmTMB(abun_siteid, effect = "unitabundance")
+get_random_effect_glmmTMB(abun_siteid, effect = "siteid:unitabundance")
+
+abun_siteid_res <- DHARMa::simulateResiduals(abun_siteid)
+plot(abun_siteid_res)
+testDispersion(abun_siteid_res)
+
+testCategorical(abun_siteid_res, catPred = analysis_dataset$unitabundance)
+```
+
+```{r}
+scaled_abun <- analysis_dataset %>%
+  group_by(unitabundance) %>%
+  mutate( total_abundance_scaled = as.numeric(scale(total_abundance))) %>%
+  ungroup()
+hist(scaled_abun$total_abundance_scaled)
+
+abun_scaled_siteid <- update(abun_siteid,
+  formula = total_abundance_scaled ~
+    year_nb +
+    (1 + year_nb | unitabundance/siteid),
+  data = scaled_abun
+)
+diagnose(abun_scaled_siteid)
+
+abun_scaled_siteid <- DHARMa::simulateResiduals(abun_scaled_siteid)
+plot(abun_scaled_siteid)
 
 ```
+
+```{r}
+# Why not test with a gamma with dispersion parameter?
+#https://stats.stackexchange.com/questions/481109/glmm-hurdle-model-for-continuous-data-truncated-negative-binomial-family-in-glm
+
+sample_unit <- scaled_abun %>%
+  filter(!unitabundance %in% c("Leslie_index", "CPUE")) %>%
+  group_by(unitabundance) %>%
+  filter(siteid %in% sample(unique(siteid), 30)) %>%
+  ungroup
+tabyl_df(sample_unit, "unitabundance")
+
+abun_unitabun_siteid <- glmmTMB(
+  formula = total_abundance ~
+    year_nb +
+    (1 + year_nb | siteid),
+  data = sample_unit,
+  family = Gamma(),
+  dispformula = ~ unitabundance
+)
+diagnose(abun_unitabun_siteid)
+
+abun_unitabun_siteid_res <- DHARMa::simulateResiduals(abun_unitabun_siteid)
+plot(abun_unitabun_siteid_res)
+```
+
+
+```{r}
+abun_unitabun <- glmmTMB(
+  total_abundance ~ year_nb + (1 + year_nb | unitabundance),
+  data = sample_unit)
+diagnose(abun_unitabun)
+abun_unitabun_res <- DHARMa::simulateResiduals(abun_unitabun)
+plot(abun_unitabun_res)
+
+get_random_effect_glmmTMB(log_abun, effect = "unitabundance")
+```
+
+```{r}
+abun_unitabun <- glmmTMB(
+  total_abundance ~ year_nb + (1 + year_nb | unitabundance),
+  data = sample_unit)
+abun_unitabun_res <- DHARMa::simulateResiduals(abun_unitabun)
+plot(abun_unitabun_res)
+
+get_random_effect_glmmTMB(log_abun, effect = "unitabundance")
+```
+
+```{r}
+abun_unitabun_siteid <- glmmTMB(
+  total_abundance ~ year_nb + unitabundance
+    (1 + year_nb | siteid),
+  data = sample_unit)
+diagnose(abun_unitabun_siteid)
+abun_unitabun_res <- DHARMa::simulateResiduals(abun_unitabun)
+plot(abun_unitabun_res)
+
+get_random_effect_glmmTMB(log_abun, effect = "unitabundance")
+```
+
+- No modelling strategy works well, may be model as Lise suggested, abundance as
+  change from first year:
+
+```{r}
+abun_tps <- analysis_dataset %>%
+    arrange(siteid, year) %>%
+    nest_by(siteid) %>%
+    mutate(
+      abun_tps = list(
+        tibble(
+          year = data$year,
+          abun_tps = compute_metric_temporal_diff(
+            year = data$year,
+            y = data$total_abundance
+          )
+        )
+      )
+      ) %>%
+    ungroup() %>%
+    select(-data) %>%
+    unnest(abun_tps)
+
+hist(abun_tps$abun_tps)
+hist(log10(abun_tps$abun_tps + 2))
+```
+
+```{r}
+hist(analysis_dataset$total_abundance)
+hist(log10(analysis_dataset$total_abundance))
+```
+
+```{r}
+site_abun100 <- abun_tps %>%
+  filter(abun_tps >= 100) %$%
+  unique(.$siteid)
+analysis_dataset %>%
+  filter(siteid %in% sample(site_abun100, 10)) %>%
+  ggplot(
+    aes(x = year_nb, y = total_abundance, color = siteid)) +
+  geom_line()
+```
+
+
+
+```{r}
+analysis_dataset_tps <-
+  analysis_dataset %>%
+  left_join(abun_tps, by = c("siteid", "year")) %>%
+  filter(!is.na(main_bas), !is.na(siteid))
+```
+
+```{r}
+analysis_dataset_tps %>%
+  filter(year_nb == 0) %>%
+  select(abun_tps)
+```
+
+```{r}
+abun_tps_siteid <- glmmTMB(
+  abun_tps ~ 0 + log1_year_nb + (0 + log1_year_nb | main_bas/siteid),
+  data = filter(analysis_dataset_tps, siteid != "S1000", main_bas != "1080024070"))
+
+diagnose(abun_tps_siteid)
+abun_tps_siteid_res <- DHARMa::simulateResiduals(abun_tps_siteid)
+plot(abun_tps_siteid_res)
+
+get_random_effect_glmmTMB(abun_tps_siteid, effect = "main_bas")
+
+x <- get_random_effect_glmmTMB(abun_tps_siteid, effect = "siteid:main_bas") %>%
+  arrange(desc(abs(log1_year_nb)))
+hist(x[[3]])
+```
+
+```{r}
+analysis_dataset_tps %>%
+  filter(siteid %in% sample(siteid, 10)) %>%
+  ggplot(
+    aes(x = log1_year_nb, y = abun_tps, color = siteid)) +
+  geom_line() +
+  geom_smooth(method = "lm", se = FALSE)
+```
+
+```{r}
+analysis_dataset_tps %>%
+  filter(siteid %in% sample(siteid, 10)) %>%
+  ggplot(
+    aes(x = year_nb, y = abun_tps, color = siteid)) +
+  geom_line() +
+  geom_smooth(method = "lm", formula = y ~ x + lag(x), se = FALSE)
+```
+
+
+```{r}
+abun_tps_siteid <- glmmTMB(
+  abun_tps ~ 1 + year_nb + lag(year_nb) + (1 + year_nb | main_bas/siteid),
+  data = analysis_dataset_tps[,c("siteid",)]
+  )
+diagnose(abun_tps_siteid)
+
+abun_tps_siteid_res <- DHARMa::simulateResiduals(abun_tps_siteid)
+plot(abun_tps_siteid_res)
+
+get_random_effect_glmmTMB(abun_tps_siteid, effect = "main_bas")
+```
+
+```{r}
+ti <- get_data(abun_tps_siteid)
+abun_tps_siteid@data
+na.omit(analysis_dataset_tps)
+y <- log(predict(abun_tps_siteid) + 1)
+plot(
+  log(ti$abun_tps +1) ~ y,
+  xlim = c(0, 5)
+)
+abline(0,1)
+```
+
 
 
 
