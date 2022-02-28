@@ -45,7 +45,6 @@ mask_siteid <- mask_siteid_sampling[
 dir_plot <- here("doc", "fig", "raw_data")
 ```
 
-
 ```{r, eval=FALSE}
 if (!dir.exists(dir_plot)) {
   dir.create(dir_plot)
@@ -169,7 +168,6 @@ loc2 <- loc %>%
   left_join(richness_file_plot_site_tbl, by = "siteid")
 ```
 
-- Abundance: [open the map](./map_abundance.html)
 
 ```{r, eval=FALSE}
 m <- mapView(loc2, zcol = "protocol",
@@ -180,7 +178,8 @@ mapshot(m, url = "map_abundance.html",
 )
 ```
 
-- Species richness: [open the map](./map_richness.html)
+- Abundance: [open the map](./map_abundance.html)
+
 
 ```{r, eval=FALSE}
 m2 <- mapView(loc2, zcol = "protocol",
@@ -190,6 +189,8 @@ mapshot(m2, url = "map_richness.html",
   selfcontained = FALSE
 )
 ```
+
+- Species richness: [open the map](./map_richness.html)
 
 ```{r}
 trends_data <- abun_rich_op %>%

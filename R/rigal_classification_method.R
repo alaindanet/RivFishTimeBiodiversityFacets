@@ -202,7 +202,7 @@ get_rigal_trajectory_classification <- function (
   if (backtransform_linear_coefs & str_detect(y_var, "^log_")) {
 
     output$linear_slope <-
-      (exp(output$linear_slope) - 1) * 100 
+      (exp(output$linear_slope) - 1) * 100
 
     output$linear_slope_strd_error <-
       (exp(output$linear_slope_strd_error) - 1) * 100

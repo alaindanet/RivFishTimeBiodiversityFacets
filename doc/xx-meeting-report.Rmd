@@ -27,6 +27,7 @@ tar_load(c(rigal_trends, var_temporal_trends))
 names(rigal_trends) <- var_temporal_trends
 
 tar_load(c(gaussian_rich_tmb, beta_rich_tmb, gaussian_jaccard_tmb, beta_jaccard_tmb))
+
 tar_load(riveratlas_site)
 tar_load(pca_riv_str)
 tar_load(var_analysis)
@@ -43,9 +44,17 @@ tar_load(world_site_sf)
 ```
 
 ```{r map-setup, include=FALSE}
-world <- world_site_sf$world 
-loc <- world_site_sf$site 
+world <- world_site_sf$world
+loc <- world_site_sf$site
 ```
+
+# Abstract/summary (so far)
+
+
+- Cluster analysis seems reveal that biodiversity changes are
+  heterogenous at lower scale that previously shown [@blowes_geography_2019;
+  @klink_meta-analysis_2020]
+
 # Introduction 
 
 ## Why do we want to assess community changes ?
@@ -151,7 +160,7 @@ ggplot(data = world) +
     geom_sf() +
     geom_sf(data = loc, aes(color = protocol), shape = 1) +
 #    coord_sf(xlim = bb[c("xmin", "xmax")],
-#      ylim = bb[c("ymin", "ymax")], 
+#      ylim = bb[c("ymin", "ymax")],
 #      datum = 4326, expand = TRUE) +
     theme(legend.position = "bottom") +
     labs(title = paste0("Number of sites: ", nrow(loc)))
