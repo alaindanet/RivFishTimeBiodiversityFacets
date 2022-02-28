@@ -14,7 +14,6 @@ bibliography: "bibliography.bib"
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
 #knitr::opts_chunk$set(cache = TRUE)
-library(skimr)
 library(dotwhisker)
 library(broom.mixed)
 library(ade4)
@@ -22,22 +21,21 @@ library(factoextra)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
-tar_load(c(rigal_trends, var_temporal_trends))
-names(rigal_trends) <- var_temporal_trends
+tar_load(c(filtered_dataset, modelling_data))
 
-tar_load(c(gaussian_rich_tmb, beta_rich_tmb, gaussian_jaccard_tmb, beta_jaccard_tmb))
 
-tar_load(riveratlas_site)
 tar_load(pca_riv_str)
 tar_load(var_analysis)
-tar_load(rigal_slp_df)
-tar_load(slp_env)
 tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
 tar_load(binded_gaussian_tmb)
-
-tar_load(c(trend_env))
-names(trend_env) <- var_temporal_trends
+var_to_keep <- c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled",
+  "hillebrand_dis_scaled", "appearance_scaled", "disappearance_scaled",
+  "evenness_scaled", "chao_richness", "log_total_abundance", "total_abundance_tps")
+gaussian_tmb <- binded_gaussian_tmb %>%
+  filter(year_var == "log1_year_nb", intercept == 1, response %in% var_to_keep)
+obj_mb(gaussian_tmb)
+rm(binded_gaussian_tmb)
+gc()
 
 tar_load(random_effect_self_c)
 tar_load(world_site_sf)
@@ -50,7 +48,9 @@ loc <- world_site_sf$site
 
 # Abstract/summary (so far)
 
-
+- Downstream gradient is related more dissimilarity through time  
+- Cluster analysis reveals that there are only 4 scenarios of biodiversity
+  trends, indicating a low dimensionality of biodiversity trends
 - Cluster analysis seems reveal that biodiversity changes are
   heterogenous at lower scale that previously shown [@blowes_geography_2019;
   @klink_meta-analysis_2020]
@@ -69,7 +69,7 @@ loc <- world_site_sf$site
   - Abundance [@klink_meta-analysis_2020]
   - Species richness and or turnover: [@vellend_global_2013, @dornelas_assemblage_2014, @blowes_geography_2019]
   - They describe basically no trends in species richness but high turnover  
-  - Species turnover vary a lot according to geography and taxons
+  - Species turnover vary a lot according to geography and taxa
     [@blowes_geography_2019]
   - Species turnover (as opposite of nestedness [@baselga_temporal_2013]) has
     been reported to be the major change, i.e. change in species identity, which
@@ -182,10 +182,6 @@ We used also hill numbers with coverage-based correction proposed by
   - Pielou: $J = H^1 / log(S)$ 
 
 
-```{r}
-skim(analysis_dataset, starts_with("chao_"), "species_nb", "shannon", "simpson",
-"evenness")
-```
 
 ### Betadiversity 
 
@@ -209,10 +205,6 @@ appearance/disappearance and nestedness / turnover.
 - Turnover: $J_t = \dfrac{2 * min(S_{lost}, S_{imm})}{S_{common} + (2 * min(S_{lost}, S_{imm})}$
 - Nestedness: $SER_r - J_t$
 
-```{r}
-skim(modelling_data, "jaccard_dis", "turnover", "nestedness", "appearance",
-  "disappearance", "hillebrand", "chao_richness")
-```
 
 # Environment
 
@@ -237,7 +229,14 @@ clean_high_load_rc1_var <- get_river_atlas_significant_var()[
   included in the analysis is associated with the following variables:
   `r paste0(names(clean_high_load_rc1_var), collapse = ", ")`.
 
-```{r p-rot-pca-riv-str}
+```{r}
+fig_cap_pca <- "Rotated PCA on stream structure. The first axis is related to
+the distance from the source, stralher order and discharge (m3/s). The second
+axis is related to the altitude and slope degree of the site. Only the first
+axis was included in the analysis"
+```
+
+```{r p-rot-pca-riv-str, fig.cap=fig_cap_pca}
 p <- plot_rotated_pca(pca_riv_str)
 p$rotated
 ```
@@ -251,24 +250,22 @@ h_hft_cap <- "Distribution of difference between human footprint in 1993 and
 hist(analysis_dataset$hft_ix_c9309_diff)
 s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.rm = T))
 ```
-- The human footprint difference between 1993 and 2009 is biaised toward
-  decreased (average (sd): `r s_hft_diff["mean"]` (`r s_hft_diff["sd"]`)),
-  meaning that in average the human footprint index decreased in 16 years.
+- The human footprint difference between 1993 and 2009 is biaised toward an
+  decrease of human footprint (average difference (sd):
+  `r s_hft_diff["mean"]` (`r s_hft_diff["sd"]`)), meaning that in average the
+  human footprint index decreased in 16 years.
 
 # Statistical analysis 
 
-```{r}
-skim(modelling_data)
-```
 ## Species composition change
 
 In each site and at each sampling point, we computed the dissimilarity (Jaccard,
 Appearance, Disappearance, Turnover & Nestedness) between the time step and the
-reference time, i.e. the first year of sampling. Regarding 
-the reference time step, there are two different strategies. First is to include
-it, i.e. setting a dissimilarity of 0 at each beginning of a time series
-[@blowes_geography_2019]. Another strategy is to exclude the first year from the
-analysis [@dornelas_assemblage_2014]. The first option logically constrains the analysis
+reference time, i.e. the first year of sampling. Regarding the reference time
+step, there are two different strategies. First is to include it, i.e. setting a
+dissimilarity of 0 at each beginning of a time series [@blowes_geography_2019].
+Another strategy is to exclude the first year from the analysis
+[@dornelas_assemblage_2014]. The first option logically constrains the analysis
 toward increasing dissimilarity as the second can capture recovery from
 perturbation soon after the first samplings. I guess that the first option makes
 more sense more it removes to sensibility to community changes happening just
@@ -279,7 +276,7 @@ highly non linear (like a Michaelis-Menten), we decided to relax the intercept.
 
 ## Model 
 
-- Simple lm by site: [@rigal_method_2020]
+- Simple linear models by site: [@rigal_method_2020]
   - Fit a polynomial in each site and characterize linear slope
   - Pro: easy to implement
   - Cons: necessitates a lot of points to work
@@ -297,7 +294,7 @@ highly non linear (like a Michaelis-Menten), we decided to relax the intercept.
 
 ### Turnover
 
-Jaccard disimilarity, nestedness, turnover, appearance, disappearance and
+Jaccard dissimilarity, nestedness, turnover, appearance, disappearance and
 hillebrand were modelled in two ways, Beta and gaussian regression. Beta
 regressions are more appropriate for distribution borned by [0,1] and are
 linearized by a logit link. Logit links have the cons that coefficients are less
@@ -531,12 +528,39 @@ mod_tmb_comp_std_df %>%
   filter(CI_low > 0 | CI_high < 0)
 ```
 
+```{r est-log-year}
+mod_logyear_tmb_comp_std <- compare_parameters(
+  setNames(gaussian_tmb$mod, gaussian_tmb$response),
+  standardize = "basic")
+
+mod_logyear_tmb_comp_std_df <-
+  mod_logyear_tmb_comp_std %>%
+  as_tibble() %>%
+  select(Parameter, starts_with("CI_"), starts_with("Std_")) %>%
+  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+  pivot_wider(names_from = "type", values_from = "values") %>%
+  filter(Parameter != "(Intercept)") %>%
+  filter(!response %in% c("species_nb", "log_species_nb"))
+mod_logyear_tmb_comp_std_df %>%
+  ggplot(
+    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
+      xmax = CI_high)) +
+  geom_pointrange(position = position_dodge(width = .2)) +
+  theme(legend.position = "bottom")
+```
+
 
 
 ```{r, fig.cap="Bad looking figure from modelbased R package"}
 pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
 ```
+
+```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
+
 
 ```{r, eval=FALSE}
 tar_load(pred_gaussian_tmb)
@@ -628,6 +652,11 @@ plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot, ncol = 2)
 lry <- gaussian_rich_tmb$mod[[5]]
 cry <- gaussian_rich_tmb$mod[[1]]
 ```
+
+```{r}
+knitr::opts_chunk$set(eval = TRUE)
+```
+
 
 ## Cluster 
 
@@ -1016,152 +1045,6 @@ sessionInfo()
 
 # (APPENDIX) Appendix {-} 
 
-## Trends according to Rigal method 
-
-```{r}
-ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
-  .id = "response"
-)
-ti %>%
-  filter(direction != "Total", response %in% var_analysis) %>%
-  select(response, direction, percent) %>%
-  mutate(response = str_replace_all(response, get_var_replacement())) %>%
-  pivot_wider(names_from = "direction", values_from = "percent") %>%
-  kable() %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
-```
-
-```{r}
-ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "shape_class"),
-  .id = "response"
-)
-
-ti %>%
-  filter(shape_class != "Total") %>%
-  select(response, shape_class, percent) %>%
-  mutate(response = str_replace_all(response, get_var_replacement())) %>%
-  pivot_wider(names_from = "shape_class", values_from = "percent") %>%
-  kable() %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
-```
-
-### Comparison of our results with previous studies (rigal method)
-
-```{r}
-slope <- map_dfr(rigal_trends,
-  ~.x %>%
-  select(siteid, linear_slope),
-.id = "response"
-)
-```
-
-```{r}
-rigal_trends_df <-  map2_dfr(
-  rigal_trends, names(rigal_trends),
-  ~.x %>% mutate(variable = .y)
-  ) %>%
-select(variable, siteid, linear_slope) %>%
-pivot_wider(names_from = "variable", values_from = "linear_slope")
-```
-
-
-```{r}
-summary_slope <- slope %>%
-  filter(response %in% var_analysis) %>%
-  group_by(response) %>%
-  summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
-  unnest(cols = summ) %>%
-  pivot_wider(names_from = "name", values_from = "value") %>%
-  select(response, mean, median, sd)
-summary_slope %>%
-  mutate(response = get_var_replacement()[response]) %>%
-  kable() %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
-  scroll_box(width = "100%", height = "1000px")
-```
-```{r, include=FALSE}
-j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
-r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
-```
-
-```{r}
-p_jt_sup_ne <- sum(abs(rigal_trends_df$turnover) > abs(rigal_trends_df$nestedness)) /
-  nrow(rigal_trends_df)
-```
-```{r, include=FALSE}
-cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")
-cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
-```
-
-- To compare with @dornelas_assemblage_2014:
-  - Species richness:
-    - @dornelas_assemblage_2014: 1557 measurements of species richness in two
-      consecutive times, 629 (40%) increase, 624 (40%) decrease, and 304 (20%)
-      do not change.
-    - Our study: 13% increase, 7% decrease, 78% do not change, 
-      median: + `r percent(r_med_tr * 10)` species by decade (i.e from 2 to 3
-      species, 10 to 15 species in 10 years)
-  - Jaccard:
-    - 10% species replaced per decade [@dornelas_assemblage_2014] 
-    - 28% of species replaced per decade [@blowes_geography_2019]
-    - our study: `r percent(abs(j_med_tr) * 10)` of species per decade
-  - Turnover / nestedness:
-    - @blowes_geography_2019: 97% of study shows turnover exceeding nestedness
-    - our study: `r percent(p_jt_sup_ne)`
-  - Jaccard vs dominance-based SER:
-    - low correlation: $0.52$
-
-
-## Relationships between temporal trends 
-
-```{r}
-knitr::include_graphics(here("doc", "fig", "p_cor_slope_tot.png"))
-```
-
-
-```{r, fig.height=12}
-ti <- expand.grid(
-  resp1 = unique(slope$response),
-  resp2 = unique(slope$response)
-  ) %>%
-  filter(resp2 != resp1) %>%
-  filter(
-    resp1 %in% c("chao_richness", "species_nb", "log_species_nb",
-      "total_abundance", "log_total_abundance")) %>%
-  mutate_all(as.character) %>%
-  arrange(resp1)
-
-test <- map2(ti$resp1, ti$resp2,
-  function(x, y) {
-    bi <- slope %>%
-      filter(response %in% c(x, y)) %>%
-      select(siteid, response, linear_slope) %>%
-      pivot_wider(names_from = "response", values_from = "linear_slope")
-
-    return(bi)
-  }
-)
-
-p_trends_trends <- map(test, function(x) {
-  l <- colnames(x)
-  x %>%
-    ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
-    geom_point() +
-    geom_smooth(method = "loess") +
-    labs(
-      x = get_var_replacement()[l[2]],
-      y = get_var_replacement()[l[3]]
-    )
-})
-names(p_trends_trends) <- map_chr(test, ~colnames(.x)[2])
-```
-
-```{r, fig.height=12}
-plot_grid(
-  plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"],
-  ncol = 3
-)
-```
 
 ## Correlation among temporal trends 
 
@@ -1179,12 +1062,4 @@ cor_site_tps <- cor(
 corrplot::corrplot(cor_site_tps)
 ```
 
-## Maps
-
-```{r, eval=FALSE}
-rigal_trends_df_loc <- filtered_dataset$location %>%
-  left_join(rigal_trends_df, by = "siteid") %>%
-  st_as_sf(coords = c("longitude", "latitude"),
-  crs = 4326)
-```
 

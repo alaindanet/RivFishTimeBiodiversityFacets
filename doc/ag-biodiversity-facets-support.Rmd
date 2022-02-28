@@ -1,0 +1,283 @@
+---
+title: "Biodiversity facets supporting material"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::html_document2:
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+#knitr::opts_chunk$set(cache = TRUE)
+library(skimr)
+library(dotwhisker)
+library(broom.mixed)
+library(ade4)
+library(factoextra)
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
+tar_load(c(rigal_trends, var_temporal_trends))
+names(rigal_trends) <- var_temporal_trends
+
+tar_load(c(gaussian_rich_tmb, beta_rich_tmb, gaussian_jaccard_tmb, beta_jaccard_tmb))
+
+tar_load(riveratlas_site)
+tar_load(pca_riv_str)
+tar_load(var_analysis)
+tar_load(rigal_slp_df)
+tar_load(slp_env)
+tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
+tar_load(binded_gaussian_tmb)
+
+tar_load(c(trend_env))
+names(trend_env) <- var_temporal_trends
+
+tar_load(random_effect_self_c)
+tar_load(world_site_sf)
+```
+
+```{r map-setup, include=FALSE}
+world <- world_site_sf$world
+loc <- world_site_sf$site
+```
+
+##
+
+```{r}
+
+```
+
+
+```{r}
+nestedness_failed <- gaussian_tmb[gaussian_tmb$response == "nestedness_scaled", ]$mod[[1]]
+ti <- diagnose(nestedness_failed)
+nestedness_failed
+fe <- fixef(nestedness_failed)
+summary(nestedness_failed)
+x <- coef(nestedness_failed)
+map(x$cond, ~which(abs(.x) > 5))
+skimr::skim(x$cond[[1]]) 
+skimr::skim(x$cond[[2]]) 
+skimr::skim(x$cond[[3]]) 
+nestedness_failed
+
+ee <- environment(nestedness_failed$obj$fn)
+pp <- ee$last.par[-ee$random]
+ss <- summary(nestedness_failed$sdr)
+ss <- ss[grepl("^(beta|theta)", rownames(ss)), ]
+nn <- tryCatch(colnames(vcov(nestedness_failed, full = TRUE)), error = function(e) make.unique(names(pp)))
+    nn0 <- names(pp)
+    names(pp) <- rownames(ss) <- nn
+    link_par <- (nn0 != "beta" | family(nestedness_failed)$link %in% c("log",
+        "cloglog", "logit", "probit"))
+    bigcoef <- (pp[abs(pp) > 10 & link_par])
+```
+
+```{r}
+```
+
+
+
+## Variable distribution
+
+
+```{r}
+skim(analysis_dataset, starts_with("chao_"), "species_nb", "shannon", "simpson",
+"evenness")
+```
+
+```{r}
+skim(modelling_data, "jaccard_dis", "turnover", "nestedness", "appearance",
+  "disappearance", "hillebrand", "chao_richness")
+```
+
+## Analysis
+
+### Rigal method result
+
+
+#### Trends according to Rigal method 
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
+  .id = "response"
+)
+ti %>%
+  filter(direction != "Total", response %in% var_analysis) %>%
+  select(response, direction, percent) %>%
+  mutate(response = str_replace_all(response, get_var_replacement())) %>%
+  pivot_wider(names_from = "direction", values_from = "percent") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```
+
+```{r}
+ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "shape_class"),
+  .id = "response"
+)
+
+ti %>%
+  filter(shape_class != "Total") %>%
+  select(response, shape_class, percent) %>%
+  mutate(response = str_replace_all(response, get_var_replacement())) %>%
+  pivot_wider(names_from = "shape_class", values_from = "percent") %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover"))
+```
+
+#### Comparison of our results with previous studies (rigal method)
+
+```{r}
+slope <- map_dfr(rigal_trends,
+  ~.x %>%
+  select(siteid, linear_slope),
+.id = "response"
+)
+```
+
+```{r}
+rigal_trends_df <-  map2_dfr(
+  rigal_trends, names(rigal_trends),
+  ~.x %>% mutate(variable = .y)
+  ) %>%
+select(variable, siteid, linear_slope) %>%
+pivot_wider(names_from = "variable", values_from = "linear_slope")
+```
+
+
+```{r}
+summary_slope <- slope %>%
+  filter(response %in% var_analysis) %>%
+  group_by(response) %>%
+  summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
+  unnest(cols = summ) %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  select(response, mean, median, sd)
+summary_slope %>%
+  mutate(response = get_var_replacement()[response]) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
+  scroll_box(width = "100%", height = "1000px")
+```
+```{r, include=FALSE}
+j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
+r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
+```
+
+```{r}
+p_jt_sup_ne <- sum(abs(rigal_trends_df$turnover) > abs(rigal_trends_df$nestedness)) /
+  nrow(rigal_trends_df)
+```
+```{r, include=FALSE}
+cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")
+cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
+```
+
+- To compare with @dornelas_assemblage_2014:
+  - Species richness:
+    - @dornelas_assemblage_2014: 1557 measurements of species richness in two
+      consecutive times, 629 (40%) increase, 624 (40%) decrease, and 304 (20%)
+      do not change.
+    - Our study: 13% increase, 7% decrease, 78% do not change, 
+      median: + `r percent(r_med_tr * 10)` species by decade (i.e from 2 to 3
+      species, 10 to 15 species in 10 years)
+  - Jaccard:
+    - 10% species replaced per decade [@dornelas_assemblage_2014] 
+    - 28% of species replaced per decade [@blowes_geography_2019]
+    - our study: `r percent(abs(j_med_tr) * 10)` of species per decade
+  - Turnover / nestedness:
+    - @blowes_geography_2019: 97% of study shows turnover exceeding nestedness
+    - our study: `r percent(p_jt_sup_ne)`
+  - Jaccard vs dominance-based SER:
+    - low correlation: $0.52$
+
+## Relationships between temporal trends 
+
+```{r}
+knitr::include_graphics(here("doc", "fig", "p_cor_slope_tot.png"))
+```
+
+
+```{r, fig.height=12}
+ti <- expand.grid(
+  resp1 = unique(slope$response),
+  resp2 = unique(slope$response)
+  ) %>%
+  filter(resp2 != resp1) %>%
+  filter(
+    resp1 %in% c("chao_richness", "species_nb", "log_species_nb",
+      "total_abundance", "log_total_abundance")) %>%
+  mutate_all(as.character) %>%
+  arrange(resp1)
+
+test <- map2(ti$resp1, ti$resp2,
+  function(x, y) {
+    bi <- slope %>%
+      filter(response %in% c(x, y)) %>%
+      select(siteid, response, linear_slope) %>%
+      pivot_wider(names_from = "response", values_from = "linear_slope")
+
+    return(bi)
+  }
+)
+
+p_trends_trends <- map(test, function(x) {
+  l <- colnames(x)
+  x %>%
+    ggplot(aes(x = !!sym(l[2]), y = !!sym(l[3]))) +
+    geom_point() +
+    geom_smooth(method = "loess") +
+    labs(
+      x = get_var_replacement()[l[2]],
+      y = get_var_replacement()[l[3]]
+    )
+})
+names(p_trends_trends) <- map_chr(test, ~colnames(.x)[2])
+```
+
+```{r, fig.height=12}
+plot_grid(
+  plotlist = p_trends_trends[names(p_trends_trends) %in% "log_species_nb"],
+  ncol = 3
+)
+```
+
+#### Maps
+
+```{r, eval=FALSE}
+rigal_trends_df_loc <- filtered_dataset$location %>%
+  left_join(rigal_trends_df, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
