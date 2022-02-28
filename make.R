@@ -3,12 +3,12 @@ library(tarchetypes)
 
 tar_make()
 
-tar_make_future(workers = min(future::availableCores() - 1, 20))
+tar_make_future(workers = min(future::availableCores() - 1, 24))
 
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = trends_env)
+tar_make(names = gaussian_abun_tmb)
 
 
 source(file = "start_rmd.R")

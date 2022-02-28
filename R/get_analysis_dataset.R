@@ -111,7 +111,10 @@ get_analysis_dataset <- function(
       year_nb = year - min(year), 
       log1_year_nb = log(year_nb + 1)
       ) %>%
-    ungroup()
+    ungroup() %>%
+    group_by(unitabundance) %>%
+      mutate( total_abundance_scaled = as.numeric(scale(total_abundance))) %>%
+      ungroup()
 
   return(analysis_dataset)
 

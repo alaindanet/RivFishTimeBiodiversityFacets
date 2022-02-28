@@ -518,7 +518,8 @@ tar_target(neutral_turnover,
       "turnover", "turnover_scaled", "nestedness", "nestedness_scaled",
       "species_nb", "log_species_nb", "species_nb_tps", "species_nb_tps_scaled",
       "chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
-      "total_abundance", "total_abundance_tps",
+      "unitabundance",
+      "total_abundance", "total_abundance_tps", "log_total_abundance", "total_abundance_scaled",
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
       "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
@@ -610,10 +611,10 @@ tar_target(neutral_turnover,
             response = abun_var,
             year_var = year_var,
             mod = list(
-              glmmTMB(
-                formula = paste0(rich_var, " ~
+              try(temporal_jaccard(
+                formula = paste0(abun_var, " ~
                   ", year_var, " * riv_str_rc1 +",
-                "year_nb * unitabundance",
+                year_var, "* unitabundance",
                 year_var, " * hft_ix_c9309_diff_scaled +
                 (1 + ", year_var, " | main_bas/siteid) +
                 (1 + ", year_var, " | span) +
@@ -621,7 +622,7 @@ tar_target(neutral_turnover,
                 (0 + riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas)"),
             data = modelling_data,
             family = gaussian(link = "identity")
-                )
+                ))
         )
             ),
           pattern = cross(abun_var, year_var)

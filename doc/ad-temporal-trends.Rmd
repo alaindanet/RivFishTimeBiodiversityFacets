@@ -978,9 +978,9 @@ p_jaccard_log_y_c9309_log_ratio
 cor_data <- modelling_data %>%
   left_join(hftc, by = "siteid") %>%
   select(
-    !starts_with("cat") & !ends_with("scaled") & !starts_with("log_hft")
+    !starts_with("cat") & !ends_with("scaled") & !starts_with("log_hft") & !starts_with("scaled")
     ) %>%
-  select(-siteid, -main_bas)
+  select(-siteid, -main_bas, -unitabundance)
 
 corrplot::corrplot(
   cor(as.matrix(na.omit(cor_data), method = c("spearman")))
