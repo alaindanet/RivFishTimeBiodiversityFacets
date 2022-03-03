@@ -4,6 +4,7 @@ author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
   bookdown::html_document2:
+    df_print: paged
     toc: true
     toc_float: true
     theme: "readable"
@@ -22,67 +23,375 @@ library(factoextra)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, analysis_dataset, modelling_data))
-tar_load(c(rigal_trends, var_temporal_trends))
-names(rigal_trends) <- var_temporal_trends
-
-tar_load(c(gaussian_rich_tmb, beta_rich_tmb, gaussian_jaccard_tmb, beta_jaccard_tmb))
-
-tar_load(riveratlas_site)
-tar_load(pca_riv_str)
-tar_load(var_analysis)
-tar_load(rigal_slp_df)
-tar_load(slp_env)
-tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
-tar_load(binded_gaussian_tmb)
-
-tar_load(c(trend_env))
-names(trend_env) <- var_temporal_trends
-
-tar_load(random_effect_self_c)
-tar_load(world_site_sf)
+tar_load(c( modelling_data))
+tar_load(c(abun_var, var_jaccard, rich_var))
+tar_load(c(binded_gaussian_tmb_no_evt_re))
 ```
 
-```{r map-setup, include=FALSE}
-world <- world_site_sf$world
-loc <- world_site_sf$site
-```
 
-##
+# Notes on transformed variables 
+
+- Notes:
+  - [Back transform coefficients on scaled predictors](https://stackoverflow.com/a/47007597)
+  - [Back transform coefficients on scaled predictors](https://stackoverflow.com/a/24286763)
+  - [Back transform coefficients on scaled predictors](https://stackoverflow.com/a/53735644)
+  - 
+
+- [Interpreting coefficients on log scale](https://data.library.virginia.edu/interpreting-log-transformations-in-a-linear-model/):
+  - Only the dependent/response variable is log-transformed: Exponentiate the
+    coefficient, subtract one from this number, and multiply by 100. This gives
+    the percent increase (or decrease) in the response for every one-unit
+    increase in the independent variable. Example: the coefficient is 0.198.
+    (exp(0.198) – 1) * 100 = 21.9. For every one-unit increase in the
+    independent variable, our dependent variable increases by about 22%.
+ - Only independent/predictor variable(s) is log-transformed: Divide the
+   coefficient by 100. This tells us that a 1% increase in the independent
+   variable increases (or decreases) the dependent variable by (coefficient/100)
+   units. Example: the coefficient is 0.198. 0.198/100 = 0.00198. For every 1%
+   increase in the independent variable, our dependent variable increases by
+   about 0.002. For x percent increase, multiply the coefficient by log(1.x).
+   Example: For every 10% increase in the independent variable, our dependent
+   variable increases by about 0.198 * log(1.10) = 0.02.
+  - Both dependent/response variable and independent/predictor variable(s) are
+    log-transformed: Interpret the coefficient as the percent increase in the
+    dependent variable for every 1% increase in the independent variable.
+    Example: the coefficient is 0.198. For every 1% increase in the independent
+    variable, our dependent variable increases by about 0.20%. For x percent
+    increase, calculate 1.x to the power of the coefficient, subtract 1, and
+    multiply by 100. Example: For every 20% increase in the independent
+    variable, our dependent variable increases by about $(1.20^0.198 – 1) * 100$ =
+    3.7 percent.
+
+# Assess if log-year or year is the best model
+
+Logging the year number is a way to linearize the relationship between
+dissimilarity and year, which looks like a Michaelis-Menten relationship.
+With the complete model, we can compare the fitting of the model with year or
+log_year.
 
 ```{r}
-
+#,
+#   p_pred_obs = map(mod, plot_pred_obs_glmmtmb)
 ```
 
 
 ```{r}
-nestedness_failed <- gaussian_tmb[gaussian_tmb$response == "nestedness_scaled", ]$mod[[1]]
-ti <- diagnose(nestedness_failed)
-nestedness_failed
-fe <- fixef(nestedness_failed)
-summary(nestedness_failed)
-x <- coef(nestedness_failed)
-map(x$cond, ~which(abs(.x) > 5))
-skimr::skim(x$cond[[1]]) 
-skimr::skim(x$cond[[2]]) 
-skimr::skim(x$cond[[3]]) 
-nestedness_failed
+biodiv_facets_main <- c(abun_var, var_jaccard, rich_var)[
+  !str_detect(
+    c(abun_var, var_jaccard, rich_var),
+    "species_nb|tps|abundance_scaled|^total"
+    )
+  ]
+```
+- Model without random effect on ecological drivers, the more complex models having many
+  convergence problems :
 
-ee <- environment(nestedness_failed$obj$fn)
-pp <- ee$last.par[-ee$random]
-ss <- summary(nestedness_failed$sdr)
-ss <- ss[grepl("^(beta|theta)", rownames(ss)), ]
-nn <- tryCatch(colnames(vcov(nestedness_failed, full = TRUE)), error = function(e) make.unique(names(pp)))
-    nn0 <- names(pp)
-    names(pp) <- rownames(ss) <- nn
-    link_par <- (nn0 != "beta" | family(nestedness_failed)$link %in% c("log",
-        "cloglog", "logit", "probit"))
-    bigcoef <- (pp[abs(pp) > 10 & link_par])
+```{r}
+comp_log_year_no_evt_re <- binded_gaussian_tmb_no_evt_re %>%
+  filter(response %in% biodiv_facets_main) %>%
+  mutate(
+    fit_summary = map(mod, broom.mixed::glance)
+  )
+```
+
+- Model year as log has a lower AIC except for total abundance and
+  evenness_scaled. The difference of AIC is spectacular for jaccard and
+  hillebrand.
+
+
+```{r}
+aic_table_no_evt_re <- comp_log_year_no_evt_re %>%
+  select(year_var, response, fit_summary) %>%
+  unnest(fit_summary) %>%
+  select(year_var, response, AIC) %>%
+  mutate( AIC = round(AIC)) %>%
+  pivot_wider(names_from = "year_var", values_from = "AIC") %>%
+  mutate(which_min = ifelse(
+      log1_year_nb == min(c(year_nb, log1_year_nb)),
+        "log1_year_nb", "year_nb")
+  )
+aic_table_no_evt_re
+```
+
+## Compare models 
+
+- Actually, there are nothing to compare since the other models fails to have an
+  AIC because the random effect are badly estimated.
+
+```{r}
+model_to_compare <- binded_gaussian_tmb_no_evt_re %>%
+  filter(year_var == "log1_year_nb", response %in% biodiv_facets_main)
 ```
 
 ```{r}
+model_to_compare <- model_to_compare %>%
+  mutate(diagnosis = map_lgl(mod, diagnose))
 ```
 
+- The site random effect on the intercept is producing problems: 
+
+```{r}
+x <- model_to_compare$mod[[2]] 
+diagnose(x)
+model_parameters(x)
+```
+
+```{r}
+y <- update(x,
+  formula = jaccard_dis_scaled ~ log1_year_nb * riv_str_rc1 + log1_year_nb *
+    hft_ix_c9309_diff_scaled + (1 | main_bas/siteid) 
+  )
+diagnose(y)
+
+#May be that the weak variation of log year nb is responsible 
+z <- update(x,
+  formula = jaccard_dis_scaled ~
+    scale(log1_year_nb) * riv_str_rc1 +
+    scale(log1_year_nb) * hft_ix_c9309_diff_scaled +
+    (1 + scale(log1_year_nb) | main_bas/siteid)
+  )
+diagnose(z)
+#no
+
+za <- update(x,
+  formula = jaccard_dis_scaled ~
+    scale(log1_year_nb) * riv_str_rc1 +
+    scale(log1_year_nb) * hft_ix_c9309_diff_scaled +
+    (scale(log1_year_nb) | main_bas/siteid)
+  )
+diagnose(za)
+
+zb <- update(x,
+  formula = jaccard_dis_scaled ~
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (1 | main_bas/siteid)
+)
+diagnose(zb)
+
+zc <- update(x,
+  formula = jaccard_dis_scaled ~
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid)
+)
+diagnose(zc)
+parameters(zc)
+confint(zc)
+model_parameters(zc, bootstrap = FALSE)
+
+yy <- parameters(y)
+xx <- parameters(x)
+
+```
+
+- it looks like the the theta_1+log1_year_nb|site.3 makes a lot of trouble. I
+  think that is a random effect but I do not know which one. Update: it is the
+  random effect on intercept that seems to not work on temporal variables.
+  It seems logical because intercept are all 0 
+
+
+- Let's looks at the other problems
+
+```{r}
+walk2(model_to_compare$mod, model_to_compare$response,
+  function(x, y) {
+  print(y)
+  diagnose(x)
+  }
+)
+```
+
+- Disappearance:
+
+```{r}
+dis <- model_to_compare[model_to_compare$response == "disappearance_scaled", ]$mod[[1]]
+dis2 <- update(dis,
+  formula = disappearance_scaled ~
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid),
+  REML = TRUE
+)
+
+model_parameters(dis2)
+
+dis3 <- update(dis,
+  formula = disappearance_scaled ~
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (1 + log1_year_nb | main_bas/siteid),
+  REML = TRUE)
+```
+
+It seems that I have unusually large statistics (Large Z) when the estimate  
+is very low. I am not concerned about the estimations because the estimated
+standard error on the estimates for large Z coefficients are of the same orders
+
+```{r}
+anova(dis3, dis2)
+```
+
+## Delete intercept for log year model ? 
+
+- Test with jaccard model:
+
+```{r}
+zc0 <- update(zc,
+  formula = jaccard_dis_scaled ~
+    0 + log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid)
+)
+
+zc0_no_main <- update(zc,  
+  formula = jaccard_dis_scaled ~
+    0 + log1_year_nb/riv_str_rc1 +
+    log1_year_nb/hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid)
+)
+```
+
+```{r}
+anova(zc0_no_main, zc0 ,zc)
+```
+
+```{r}
+comp_intercept <- compare_models(zc, zc0, zc0_no_main, effects = "fixed")
+comp_intercept %>%
+  as_tibble() %>%
+  select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
+  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+  pivot_wider(names_from = "type", values_from = "values") %>%
+  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
+  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled")) %>%
+  ggplot(
+    aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
+      xmax = CI_high)) +
+  geom_pointrange(position = position_dodge(width = .2))
+
+```
+
+- test with nestedness:
+
+```{r}
+ne <- glmmTMB(formula = nestedness_scaled ~
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid),
+  data = modelling_data 
+)
+
+ne0 <- update(ne,
+  formula = nestedness_scaled ~
+    0 + log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid)
+)
+
+ne0_no_main <- update(ne,  
+  formula = nestedness_scaled ~
+    0 + log1_year_nb/riv_str_rc1 +
+    log1_year_nb/hft_ix_c9309_diff_scaled +
+    (0 + log1_year_nb | main_bas/siteid)
+)
+```
+
+```{r}
+anova(ne0_no_main, ne0 , ne)
+```
+
+```{r}
+model_comp_interp_int <- function(resp =NULL, df = modelling_data) {
+
+  ne <- glmmTMB(formula = as.formula(paste0(resp, "~
+        log1_year_nb * riv_str_rc1 +
+        log1_year_nb * hft_ix_c9309_diff_scaled +
+        (0 + log1_year_nb | main_bas/siteid)")),
+  data = df 
+  )
+
+  ne0 <- update(ne,
+    formula = as.formula(paste0(resp, "~
+        0 + log1_year_nb * riv_str_rc1 +
+        log1_year_nb * hft_ix_c9309_diff_scaled +
+        (0 + log1_year_nb | main_bas/siteid)"))
+  )
+
+  ne0_no_main <- update(ne,  
+    formula = as.formula(paste0(resp, "~
+        0 + log1_year_nb / riv_str_rc1 +
+        log1_year_nb / hft_ix_c9309_diff_scaled +
+        (0 + log1_year_nb | main_bas/siteid)"))
+  )
+
+  list(main = ne, main0 = ne0, no_main0 = ne0_no_main)
+}
+```
+
+
+
+```{r}
+comp_intercept <- compare_models(ne, ne0, ne0_no_main, effects = "fixed")
+comp_intercept %>%
+  as_tibble() %>%
+  select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
+  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+  pivot_wider(names_from = "type", values_from = "values") %>%
+  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
+  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled")) %>%
+  ggplot(
+    aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
+      xmax = CI_high)) +
+  geom_pointrange(position = position_dodge(width = .2))
+
+```
+
+- Turnover:
+
+
+```{r}
+tu_comp <- model_comp_interp_int(resp = "turnover_scaled")
+anova(tu_comp[[1]], tu_comp[[2]], tu_comp[[3]])
+aic <- map_dfr(tu_comp, broom.mixed::glance, .id = "name")
+round(exp((min(aic$AIC) - aic$AIC)/2), 3)
+```
+
+```{r}
+plot_model_comp_coeff <- function(model_list = NULL) {
+
+  comp_intercept <- compare_models(model_list, effects = "fixed")
+  comp_intercept %>%
+    as_tibble() %>%
+    select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
+    pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+    separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+    pivot_wider(names_from = "type", values_from = "values") %>%
+    filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
+    filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled")) %>%
+    ggplot(
+      aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
+        xmax = CI_high)) +
+    geom_pointrange(position = position_dodge(width = .2))
+}
+```
+
+```{r}
+plot_model_comp_coeff(model_list = tu_comp)
+```
+
+- Appearance:
+
+```{r}
+appearance_comp <- model_comp_interp_int(resp = "appearance_scaled")
+anova(appearance_comp[[1]], appearance_comp[[2]], appearance_comp[[3]])
+```
+
+```{r}
+plot_model_comp_coeff(model_list = appearance_comp)
+```
 
 
 ## Variable distribution
@@ -172,8 +481,8 @@ r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
 ```
 
 ```{r}
-p_jt_sup_ne <- sum(abs(rigal_trends_df$turnover) > abs(rigal_trends_df$nestedness)) /
-  nrow(rigal_trends_df)
+p_jt_sup_ne <- sum( abs(rigal_trends_df$turnover) >
+  abs(rigal_trends_df$nestedness)) / nrow(rigal_trends_df)
 ```
 ```{r, include=FALSE}
 cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")

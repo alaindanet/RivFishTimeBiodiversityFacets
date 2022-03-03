@@ -326,17 +326,17 @@ tar_target(neutral_turnover,
         filtered_dataset = filtered_dataset_avg3y,
         chao_hillnb = chao_hillnb_avg3y,
         hillebrand = hillebrand_avg3y,
-      baselga_c = baselga_avg3y_c,
+        baselga_c = baselga_avg3y_c,
         turnover_c = turnover_avg3y_c,
         vegdist_turnover_c = vegdist_turnover_avg3y_c,
         hillnb = hillnb_avg3y,
-      river = riveratlas_site[,
-        colnames(riveratlas_site) %in%
-          c("siteid", setNames(get_river_atlas_significant_var(), NULL))
-        ] %>%
-          st_drop_geometry(),
-        pca_riv_str = pca_riv_str
-    )
+        river = riveratlas_site[,
+          colnames(riveratlas_site) %in%
+            c("siteid", setNames(get_river_atlas_significant_var(), NULL))
+          ] %>%
+            st_drop_geometry(),
+          pca_riv_str = pca_riv_str
+      )
       ),
     # statistic
     tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
@@ -452,8 +452,6 @@ tar_target(neutral_turnover,
   tar_target(p_pca_riv_str,
     plot_rotated_pca(pca_rotated = pca_riv_str)
     ),
-
-
   # tar_target(inla_rich, try(inla(
   #       species_nb ~
   #         year +
@@ -503,13 +501,9 @@ tar_target(neutral_turnover,
       formula = paste0(var_temporal_trends,
         " ~ ",
         "dist_up_km + tmp_dc_cyr +
-        (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"
-      ),
-    data = slp_env
-    ),
-  pattern = map(var_temporal_trends),
-  iteration = "list"
-  ),
+        (1 + dist_up_km + tmp_dc_cyr | ecoregion/main_bas)"),
+      data = slp_env),
+    pattern = map(var_temporal_trends), iteration = "list"),
   tar_target(var_analysis,
     c(
       "siteid", "main_bas", "year", "year_nb", "log1_year_nb",
@@ -554,248 +548,371 @@ tar_target(neutral_turnover,
           data = modelling_data,
           family = beta_family(link = "logit"),
           dispformula = "~ year_nb + riv_str_rc1"
+          ))),
+    pattern = cross(var_jaccard, year_var, intercept)),
+  tar_target(gaussian_jaccard_tmb,
+    tibble(
+      year_var = year_var,
+      intercept = intercept,
+      response = var_jaccard,
+      mod = list(
+        temporal_jaccard(
+          formula = paste0(var_jaccard, " ~ ",
+            intercept, " + ",
+            year_var," * riv_str_rc1 +",
+            year_var, " * hft_ix_c9309_diff_scaled +
+            (", intercept, " + ", year_var," | main_bas/siteid) +
+            (", intercept, " + ", year_var," | span) +
+            ( 0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+            ( 0 + ", year_var,":riv_str_rc1 | main_bas)"),
+          data = modelling_data,
+          offset = NULL,
+          family = gaussian(link = "identity"),
+          dispformula = "~ 1"
           )
-        )
-        ),
-      pattern = cross(var_jaccard, year_var, intercept)
-      ),
-    tar_target(gaussian_jaccard_tmb,
-      tibble(
-        year_var = year_var,
-        intercept = intercept,
-        response = var_jaccard,
-        mod = list(temporal_jaccard(
-            formula = paste0(var_jaccard, " ~ ",
-              intercept, " + ",
-              year_var," * riv_str_rc1 +",
-              year_var, " * hft_ix_c9309_diff_scaled +
-              (", intercept, " + ", year_var," | main_bas/siteid) +
-              (", intercept, " + ", year_var," | span) +
-              ( 0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-              ( 0 + ", year_var,":riv_str_rc1 | main_bas)"),
-            data = modelling_data,
-            offset = NULL,
-            family = gaussian(link = "identity"),
-            dispformula = "~ 1")
-        )
-          ),
-        pattern = cross(var_jaccard, year_var, intercept)
-        ),
-      tar_target(gaussian_jaccard_tmb_simple,
-        tibble(
-          response = var_jaccard,
-          year_var = year_var,
-          mod = list(temporal_jaccard(
-              formula = paste0(var_jaccard, " ~
-                ", year_var, " * riv_str_rc1 +",
-              year_var, " * hft_ix_c9309_diff_scaled +
-              (1 + ", year_var," | main_bas:siteid) +
-              (1 + 
-                ", year_var, " +
-                hft_ix_c9309_diff_scaled +
-                riv_str_rc1 +",
-              year_var,":riv_str_rc1 +",
-              year_var,":hft_ix_c9309_diff_scaled | main_bas)"),
-              data = modelling_data,
-              offset = NULL,
-              family = gaussian(link = "identity"),
-              dispformula = "~ 1")
-        )
-            ),
-          pattern = cross(var_jaccard, year_var)
-          ),
-      tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb", "chao_richness_tps_scaled", "species_nb_tps_scaled")),
-      tar_target(gaussian_rich_tmb,
-        tibble(
-          response = rich_var,
-          year_var = year_var,
-          mod = list(temporal_jaccard(
-              formula = paste0(rich_var, " ~
-                ", year_var, " * riv_str_rc1 +",
-              year_var, " * hft_ix_c9309_diff_scaled +
-              (1 + ", year_var," | main_bas/siteid) +
-              (1 + ", year_var," | span) +
-              (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-              (0 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)"),
-            data = modelling_data,
-            offset = NULL,
-            family = gaussian(link = "identity"),
-            dispformula = "~ 1")
-        )
-            ),
-          pattern = cross(rich_var, year_var)
-          ),
-      tar_target(gaussian_rich_tmb_simple,
-        tibble(
-          response = rich_var,
-          year_var = year_var,
-          mod = list(temporal_jaccard(
-              formula = paste0(rich_var, " ~
+        )),
+    pattern = cross(var_jaccard, year_var, intercept)
+    ),
+  tar_target(gaussian_jaccard_tmb_simple,
+    tibble(
+      response = var_jaccard,
+      year_var = year_var,
+      mod = list(
+        temporal_jaccard(
+          formula = paste0(var_jaccard, " ~
+            ", year_var, " * riv_str_rc1 +",
+          year_var, " * hft_ix_c9309_diff_scaled +
+          (1 + ", year_var," | main_bas:siteid) +
+          (1 + 
+            ", year_var, " +
+            hft_ix_c9309_diff_scaled +
+            riv_str_rc1 +",
+          year_var,":riv_str_rc1 +",
+          year_var,":hft_ix_c9309_diff_scaled | main_bas)"),
+        data = modelling_data,
+        offset = NULL,
+        family = gaussian(link = "identity"),
+        dispformula = "~ 1")
+        )),
+    pattern = cross(var_jaccard, year_var)
+    ),
+  tar_target(rich_var, c("chao_richness", "species_nb", "log_species_nb", "chao_richness_tps_scaled", "species_nb_tps_scaled")),
+  tar_target(gaussian_rich_tmb,
+    tibble(
+      response = rich_var,
+      year_var = year_var,
+      mod = list(glmmTMB(
+          formula = as.formula(paste0(rich_var, " ~
+              ", year_var, " * riv_str_rc1 +",
+            year_var, " * hft_ix_c9309_diff_scaled +
+            (1 + ", year_var," | main_bas/siteid) +
+            (1 + ", year_var," | span) +
+            (0 + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+            (0 + riv_str_rc1 + ", year_var,":riv_str_rc1 | main_bas)")),
+          data = modelling_data,
+          family = gaussian(link = "identity")
+          ))),
+    pattern = cross(rich_var, year_var)
+    ),
+  tar_target(gaussian_rich_tmb_simple,
+    tibble(
+      response = rich_var,
+      year_var = year_var,
+      mod = list(
+        temporal_jaccard(
+          formula = paste0(rich_var, " ~
+            ", year_var, " * riv_str_rc1 +",
+          year_var, " * hft_ix_c9309_diff_scaled +
+          (1 + ", year_var," | main_bas:siteid) +
+          (1 + ", year_var, "+
+            hft_ix_c9309_diff_scaled +
+            riv_str_rc1 +",
+          year_var,":riv_str_rc1 +",
+          year_var,":hft_ix_c9309_diff_scaled | main_bas)"),
+        data = modelling_data,
+        offset = NULL,
+        family = gaussian(link = "identity"),
+        dispformula = "~ 1"
+          ))),
+    pattern = cross(rich_var, year_var)
+    ),
+  tar_target(rich_jaccard_var, c(rich_var, var_jaccard)),
+  tar_target(gaussian_rich_jaccard_tmb_no_int_re,
+    tibble(
+      response = rich_jaccard_var,
+      year_var = year_var,
+      mod = list(try(glmmTMB(formula = as.formula(
+              paste0(rich_jaccard_var, " ~
                 ", year_var, " * riv_str_rc1 +",
               year_var, " * hft_ix_c9309_diff_scaled +
               (1 + ", year_var," | main_bas:siteid) +
               (1 + ", year_var, "+
                 hft_ix_c9309_diff_scaled +
-                riv_str_rc1 +",
-              year_var,":riv_str_rc1 +",
-              year_var,":hft_ix_c9309_diff_scaled | main_bas)"),
-            data = modelling_data,
-            offset = NULL,
-            family = gaussian(link = "identity"),
-            dispformula = "~ 1")
-        )
-            ),
-          pattern = cross(rich_var, year_var)
+                riv_str_rc1 | main_bas)")),
+              data = modelling_data,
+              family = gaussian(link = "identity")
+              )))
           ),
-        tar_target(abun_var, c(
-            "total_abundance", "total_abundance_scaled",
-            "log_total_abundance",
-            "total_abundance_tps")),
-        tar_target(gaussian_abun_tmb,
-          tibble(
-            response = abun_var,
-            year_var = year_var,
-            mod = list(
-              try(temporal_jaccard(
-                formula = paste0(abun_var, " ~
-                  ", year_var, " * riv_str_rc1 +",
-                year_var, "* unitabundance",
-                year_var, " * hft_ix_c9309_diff_scaled +
-                (1 + ", year_var, " | main_bas/siteid) +
-                (1 + ", year_var, " | span) +
-                (0 + hft_ix_c9309_diff_scaled + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
-                (0 + riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas)"),
-            data = modelling_data,
-            family = gaussian(link = "identity")
-                ))
-        )
+        pattern = cross(rich_jaccard_var, year_var)
+        ),
+      tar_target(gaussian_rich_jaccard_tmb_no_evt_re,
+        tibble(
+          response = rich_jaccard_var,
+          year_var = year_var,
+          mod = list(try(glmmTMB(
+                formula = as.formula(paste0(rich_jaccard_var, " ~
+                    ", year_var, " * riv_str_rc1 +",
+                  year_var, " * hft_ix_c9309_diff_scaled +
+                  (1 + ", year_var," | main_bas:siteid) +
+                  (1 + ", year_var, "| main_bas)")),
+                data = modelling_data,
+                family = gaussian(link = "identity"))
+                )
+                )),
+            pattern = cross(rich_jaccard_var, year_var)
             ),
-          pattern = cross(abun_var, year_var)
-          ),
-        tar_target(gaussian_abun_tmb_simple,
-          tibble(
-            response = abun_var,
-            year_var = year_var,
-            mod = list(
-              try(temporal_jaccard(
-                formula = paste0(abun_var, " ~
-                  ", year_var, " * riv_str_rc1 +",
-                year_var, "* unitabundance",
-                year_var, " * hft_ix_c9309_diff_scaled +
-                (1 + hft_ix_c9309_diff_scaled + ", year_var, ":hft_ix_c9309_diff_scaled +  riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas) +
-                (1 + ", year_var, " | main_bas:siteid) 
-                "),
-            data = modelling_data,
-            family = gaussian(link = "identity")
-                ))
-        )
-            ),
-          pattern = cross(abun_var, year_var)
-          ),
-
-        tar_target(mod_tmb,
-          rbind(
-            gaussian_jaccard_tmb %>%
-              filter(intercept == 1 & year_var == "year_nb") %>%
-              select(-intercept), 
-            gaussian_rich_tmb %>%
-              filter(year_var == "year_nb"),
-            gaussian_abun_tmb %>%
-              filter(year_var == "year_nb")
-            ) %>%
-          filter(!response %in% c("species_nb", "log_species_nb"))
-        ),
-      tar_target(mod_tmb_comp,
-        # Drop the main effect
-        compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
-        ),
-      tar_target(mod_tmb_comp_std,
-        # Drop the main effect
-        compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
-        ),
-      tar_target(binded_gaussian_tmb,
-        rbind(gaussian_jaccard_tmb,
-          mutate(gaussian_rich_tmb, intercept = 1),
-          mutate(gaussian_abun_tmb, intercept = 1)
-        )),
-      tar_target(random_effects,
-        binded_gaussian_tmb %>%
-          mutate(random_effects = map(mod,
-              ~try(
-                parameters(
-                  .x,
-                  group_level = TRUE
-                  ) %>%
-                as_tibble() %>%
-                clean_names() %>%
-                select(-all_of(c("se", "ci", "component", "effects")))
+          tar_target(abun_var, c(
+              "total_abundance", "total_abundance_scaled",
+              "log_total_abundance",
+              "total_abundance_tps")),
+          tar_target(gaussian_abun_tmb,
+            tibble(
+              response = abun_var,
+              year_var = year_var,
+              mod = list(
+                try(glmmTMB(
+                    formula = as.formula(paste0(abun_var, " ~
+                        ", year_var, " * riv_str_rc1 +",
+                      year_var, "* unitabundance +",
+                      year_var, " * hft_ix_c9309_diff_scaled +
+                      (1 + ", year_var, " | main_bas/siteid) +
+                      (1 + ", year_var, " | span) +
+                      (0 + hft_ix_c9309_diff_scaled + ", year_var, ":hft_ix_c9309_diff_scaled | main_bas) +
+                      (0 + riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas)")),
+                    data = modelling_data,
+                    family = gaussian(link = "identity")
+                    ))
+                    )),
+                pattern = cross(abun_var, year_var)
+                ),
+              tar_target(gaussian_abun_tmb_simple,
+                tibble(
+                  response = abun_var,
+                  year_var = year_var,
+                  mod = list(
+                    try(glmmTMB(
+                        formula = as.formula(paste0(abun_var, " ~
+                            ", year_var, " * riv_str_rc1 +",
+                          year_var, "* unitabundance +",
+                          year_var, " * hft_ix_c9309_diff_scaled +
+                          (1 + hft_ix_c9309_diff_scaled + ", year_var, ":hft_ix_c9309_diff_scaled +  riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas) +
+                          (1 + ", year_var, " | main_bas:siteid) 
+                        ")),
+                        data = modelling_data,
+                        family = gaussian(link = "identity")
+                        )))),
+                pattern = cross(abun_var, year_var)
+                ),
+              tar_target(gaussian_abun_tmb_no_int_re,
+                tibble(
+                  response = abun_var,
+                  year_var = year_var,
+                  mod = list(
+                    try(glmmTMB(
+                        formula = as.formula(paste0(abun_var, " ~
+                            ", year_var, " * riv_str_rc1 +",
+                          year_var, "* unitabundance +",
+                          year_var, " * hft_ix_c9309_diff_scaled +
+                          (1 + ", year_var, "+  hft_ix_c9309_diff_scaled +  riv_str_rc1 | main_bas) +
+                          (1 + ", year_var, " | main_bas:siteid) 
+                        ")),
+                        data = modelling_data,
+                        family = gaussian(link = "identity")
+                        )))),
+                pattern = cross(abun_var, year_var)
+                ),
+              tar_target(gaussian_abun_tmb_no_evt_re,
+                tibble(
+                  response = abun_var,
+                  year_var = year_var,
+                  mod = list(
+                    try(glmmTMB(
+                        formula = as.formula(paste0(abun_var, " ~
+                            ", year_var, " * riv_str_rc1 +",
+                          year_var, "* unitabundance +",
+                          year_var, " * hft_ix_c9309_diff_scaled +
+                          (1 + ", year_var, "| main_bas) +
+                          (1 + ", year_var, " | main_bas:siteid) 
+                        ")),
+                        data = modelling_data,
+                        family = gaussian(link = "identity")
+                        )))),
+                pattern = cross(abun_var, year_var)
+                ),
+              ## More coherent modelling by response variable caracteristics
+  tar_target(tps_var, c("jaccard_dis_scaled", "turnover_scaled",
+      "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
+      "disappearance_scaled", "chao_richness_tps_scaled",
+      "species_nb_tps_scaled")),
+  tar_target(gaussian_tps,
+    tibble(
+      response = tps_var,
+      mod = list(try(glmmTMB(
+              formula = get_formula_tps_indices(resp = tps_var),
+              data = modelling_data,
+              family = gaussian(link = "identity"))
               )
-          )
-            ) %>%
-        select(-mod)
+        )),
+    pattern = map(tps_var)
       ),
-      tar_target(random_effect_self_c,
-        binded_gaussian_tmb %>%
-          filter(intercept == 1, year_var == "year_nb")  %>%
-          mutate(
-            random_site = map(mod,
-              ~try(get_random_effect_glmmTMB(
-                  .x, effect = "siteid:main_bas")
-                )),
-            random_basin = map(mod,
-              ~try(get_random_effect_glmmTMB(
-                  .x, effect = "main_bas")
-                )),
-            random_span = map(mod,
-              ~try(get_random_effect_glmmTMB(
-                  .x, effect = "span")
-                )),
-            ) %>%
-          select(-mod)
-        ),
-tar_target(pred_gaussian_tmb,
-  binded_gaussian_tmb %>%
-    mutate(pred_riv = furrr::future_map2(
-        mod, year_var,
-        ~ggemmeans(.x,
-          terms = c(.y, "riv_str_rc1 [quart2]"),
-          type = "fe")
-        ),
-      pred_plot_riv = furrr::future_map(pred_riv, plot),
-      pred_hft = furrr::future_map2(
-        mod, year_var,
-        ~ggemmeans(.x,
-          terms = c(.y, "hft_ix_c9309_diff_scaled [quart2]"),
-          type = "fe")
-        ),
-      pred_plot_hft = furrr::future_map(pred_hft, plot)
-      ) %>%
-  select(-mod)
-),
-      # tar_target(nb_sp_rich_tmb,
-      #   glmmTMB::glmmTMB(species_nb ~
-      #     year_nb * scaled_dist_up_km +
-      #     (1 + year_nb | main_bas / siteid) +
-      #     (1 + year_nb | span) +
-      #     (1 + scaled_dist_up_km | main_bas),
-      #   offset = NULL,
-      #   dispformula = ~ siteid,
-      #   family = nbinom2(link = "log"),
-      #   data = na.omit(analysis_dataset[, var_analysis]))
-      #   ),
-
-      # Report
-      tar_render(intro, here("vignettes/intro.Rmd")),
-      tar_render(report, here("doc/aa-research-questions.Rmd")),
-      tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
-      tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
-      tar_render(community_structure, "doc/aca-community-structure.Rmd"),
-      tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
-      tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
-      tar_render(meeting_slides, here("talk/meeting.Rmd")),
-      tar_render(explain_high_turnover,
-        here("doc/af-explain-high-turnover.Rmd")),
-      tar_render(ag-biodiversity-facets-support,
-        here("doc/ag-biodiversity-facets-support.Rmd"))
-
+  tar_target(log_rich_var, c("log_species_nb", "log_chao_richness")),
+  tar_target(gaussian_rich,
+    tibble(
+      response = log_rich_var,
+      mod = list(try(glmmTMB(
+            formula = get_formula_non_tps(resp = log_rich_var),
+            data = modelling_data,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(log_rich_var)
+    ),
+  tar_target(gaussian_abun,
+    tibble(
+      response = "log_total_abundance",
+      mod = list(try(glmmTMB(
+            formula = get_formula_abun(resp = "log_total_abundance"),
+            data = modelling_data,
+            family = gaussian(link = "identity"))))
       )
+    ),
+  tar_target(binded_gaussian,
+    rbind(gaussian_tps, gaussian_rich, gaussian_abun)
+    ),
+  tar_target(tps_model_for_comp,
+    tibble(
+      response = tps_var,
+      mod = list(model_comp_interp_int(resp = tps_var, df = modelling_data))
+      ) %>%
+      mutate(p = purrr::map(mod, ~plot_model_comp_coeff(model_list = .x))),
+    pattern = map(tps_var)
+    ),
+  tar_target(mod_tmb,
+                        rbind(
+                          gaussian_jaccard_tmb %>%
+                            filter(intercept == 1 & year_var == "year_nb") %>%
+                            select(-intercept), 
+                          gaussian_rich_tmb %>%
+                            filter(year_var == "year_nb"),
+                          gaussian_abun_tmb %>%
+                            filter(year_var == "year_nb")
+                          ) %>%
+                        filter(!response %in% c("species_nb", "log_species_nb"))
+                      ),
+                    tar_target(mod_tmb_comp,
+                      # Drop the main effect
+                      compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
+                      ),
+                    tar_target(mod_tmb_comp_std,
+                      # Drop the main effect
+                      compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
+                      ),
+                    # Binding
+                    tar_target(binded_gaussian_tmb,
+                      rbind(gaussian_jaccard_tmb,
+                        mutate(gaussian_rich_tmb, intercept = 1),
+                        mutate(gaussian_abun_tmb, intercept = 1)
+                        )),
+                    tar_target(binded_gaussian_tmb_simple,
+                      rbind(gaussian_jaccard_tmb_simple,
+                        gaussian_rich_tmb_simple,
+                        gaussian_abun_tmb_simple
+                        )),
+                    tar_target(binded_gaussian_tmb_no_evt_re,
+                      rbind(gaussian_rich_jaccard_tmb_no_evt_re,
+                        gaussian_abun_tmb_no_evt_re)),
+                    tar_target(binded_gaussian_tmb_no_int_re,
+                      rbind(gaussian_rich_jaccard_tmb_no_int_re,
+                        gaussian_abun_tmb_no_int_re)),
+
+                    # Random effects
+                    tar_target(random_effects,
+                      binded_gaussian_tmb %>%
+                        mutate(random_effects = map(mod,
+                            ~try(
+                              parameters(
+                                .x,
+                                group_level = TRUE
+                                ) %>%
+                              as_tibble() %>%
+                              clean_names() %>%
+                              select(-all_of(c("se", "ci", "component", "effects")))
+                            )
+                        )
+                          ) %>%
+                      select(-mod)
+                    ),
+                  tar_target(random_effect_self_c,
+                    binded_gaussian_tmb %>%
+                      filter(intercept == 1, year_var == "year_nb")  %>%
+                      mutate(
+                        random_site = map(mod,
+                          ~try(get_random_effect_glmmTMB(
+                              .x, effect = "siteid:main_bas")
+                            )),
+                        random_basin = map(mod,
+                          ~try(get_random_effect_glmmTMB(
+                              .x, effect = "main_bas")
+                            )),
+                        random_span = map(mod,
+                          ~try(get_random_effect_glmmTMB(
+                              .x, effect = "span")
+                            )),
+                        ) %>%
+                      select(-mod)
+                    ),
+                  tar_target(pred_gaussian_tmb,
+                    binded_gaussian_tmb %>%
+                      mutate(pred_riv = furrr::future_map2(
+                          mod, year_var,
+                          ~ggemmeans(.x,
+                            terms = c(.y, "riv_str_rc1 [quart2]"),
+                            type = "fe")
+                          ),
+                        pred_plot_riv = furrr::future_map(pred_riv, plot),
+                        pred_hft = furrr::future_map2(
+                          mod, year_var,
+                          ~ggemmeans(.x,
+                            terms = c(.y, "hft_ix_c9309_diff_scaled [quart2]"),
+                            type = "fe")
+                          ),
+                        pred_plot_hft = furrr::future_map(pred_hft, plot)
+                        ) %>%
+                    select(-mod)
+                  ),
+                # tar_target(nb_sp_rich_tmb,
+                #   glmmTMB::glmmTMB(species_nb ~
+                #     year_nb * scaled_dist_up_km +
+                #     (1 + year_nb | main_bas / siteid) +
+                #     (1 + year_nb | span) +
+                #     (1 + scaled_dist_up_km | main_bas),
+                #   offset = NULL,
+                #   dispformula = ~ siteid,
+                #   family = nbinom2(link = "log"),
+                #   data = na.omit(analysis_dataset[, var_analysis]))
+                #   ),
+
+                # Report
+                tar_render(intro, here("vignettes/intro.Rmd")),
+                tar_render(report, here("doc/aa-research-questions.Rmd")),
+                tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+                tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+                tar_render(community_structure, "doc/aca-community-structure.Rmd"),
+                tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+                tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
+                tar_render(meeting_slides, here("talk/meeting.Rmd")),
+                tar_render(explain_high_turnover,
+                  here("doc/af-explain-high-turnover.Rmd")),
+                tar_render(biodiversity_facets_support,
+                  here("doc/ag-biodiversity-facets-support.Rmd"))
+
+                            )

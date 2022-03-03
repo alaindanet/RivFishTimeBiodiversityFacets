@@ -21,7 +21,7 @@ library(factoextra)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, modelling_data))
+tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
 
 tar_load(pca_riv_str)
@@ -467,14 +467,15 @@ mod_tmb_comp_std_df <- mod_tmb_comp_std %>%
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
   separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
   pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(Parameter != "(Intercept)") %>%
-  filter(!response %in% c("species_nb", "log_species_nb"))
+  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
+  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled"))
 mod_tmb_comp_std_df %>%
   ggplot(
     aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2)) +
-  theme(legend.position = "bottom")
+  geom_pointrange(position = position_dodge(width = .2)) 
+#+
+#  theme(legend.position = "bottom")
 ```
 
 - Summary of results (Figure \@ref(fig:mod-slp-std)):
@@ -540,26 +541,27 @@ mod_logyear_tmb_comp_std_df <-
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
   separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
   pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(Parameter != "(Intercept)") %>%
-  filter(!response %in% c("species_nb", "log_species_nb"))
+  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
+  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled"))
 mod_logyear_tmb_comp_std_df %>%
   ggplot(
     aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2)) +
-  theme(legend.position = "bottom")
+  geom_pointrange(position = position_dodge(width = .2)) 
+#+
+#  theme(legend.position = "bottom")
 ```
 
 
+```{r}
+knitr::opts_chunk$set(eval = FALSE)
+```
 
 ```{r, fig.cap="Bad looking figure from modelbased R package"}
 pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
 plot(pred)
 ```
 
-```{r}
-knitr::opts_chunk$set(eval = FALSE)
-```
 
 
 ```{r, eval=FALSE}

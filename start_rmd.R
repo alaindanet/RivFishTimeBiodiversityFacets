@@ -9,7 +9,7 @@ knitr::opts_chunk$set(
 
 source(here::here("R", "misc.R"))
 source(here::here("packages.R"))
-source_dir(here("R"))
+source_dir(here::here("R"))
 theme_set(theme_bw())
 
 tar_config_set(store = here::here("_targets"))
