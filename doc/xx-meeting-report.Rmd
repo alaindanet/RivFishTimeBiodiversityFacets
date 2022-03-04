@@ -26,18 +26,19 @@ tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
 tar_load(pca_riv_str)
 tar_load(var_analysis)
-tar_load(c(mod_tmb, mod_tmb_comp, mod_tmb_comp_std))
+tar_load(c(binded_gaussian, gaussian_comp_std, gaussian_re_self_c))
+
 tar_load(binded_gaussian_tmb)
 var_to_keep <- c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled",
   "hillebrand_dis_scaled", "appearance_scaled", "disappearance_scaled",
-  "evenness_scaled", "chao_richness", "log_total_abundance", "total_abundance_tps")
-gaussian_tmb <- binded_gaussian_tmb %>%
-  filter(year_var == "log1_year_nb", intercept == 1, response %in% var_to_keep)
+  "evenness_scaled", "log_chao_richness", "log_total_abundance")
+gaussian_tmb <- binded_gaussian %>%
+  filter(response %in% var_to_keep)
 obj_mb(gaussian_tmb)
-rm(binded_gaussian_tmb)
+rm(binded_gaussian)
 gc()
 
-tar_load(random_effect_self_c)
+tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
 ```
 
@@ -176,7 +177,8 @@ ggplot(data = world) +
   - $H^2$: Simpson
 
 We used also hill numbers with coverage-based correction proposed by
-@chao_coverage-based_2014
+@chao_coverage-based_2014. The Chao index correct the species richness for the sampling coverage. The sampling coverage of each sampling is evaluated by the total number of individual and the number of singleton and (double) species. All the sampling events were set at the same coverage of .80,
+interpolation and rarefaction for respectively low and high coverage sampling. Chao index was logged to express the temporal trends of species richness of percentage variation. The temporal trends estimated from uncorrected species richness gave the same results (Figure SXX).
 
 - Evenness:
   - Pielou: $J = H^1 / log(S)$ 
@@ -260,7 +262,7 @@ s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.
 ## Species composition change
 
 In each site and at each sampling point, we computed the dissimilarity (Jaccard,
-Appearance, Disappearance, Turnover & Nestedness) between the time step and the
+Appearance, Disappearance, Turnover & Nestedness) between each time step and the
 reference time, i.e. the first year of sampling. Regarding the reference time
 step, there are two different strategies. First is to include it, i.e. setting a
 dissimilarity of 0 at each beginning of a time series [@blowes_geography_2019].
@@ -276,20 +278,6 @@ highly non linear (like a Michaelis-Menten), we decided to relax the intercept.
 
 ## Model 
 
-- Simple linear models by site: [@rigal_method_2020]
-  - Fit a polynomial in each site and characterize linear slope
-  - Pro: easy to implement
-  - Cons: necessitates a lot of points to work
-
-- Model all in one:
-  - Pro:
-    - Necessitates less data per site
-    - Take in account variability in all sites 
-  - Cons:
-    - Complicated models that takes a long time to run.
-    - Basically we try to model a lot more variables (biodiversity dimensions)
-      than previous studies at this scale [@dornelas_assemblage_2014;
-      @blowes_geography_2019; @klink_meta-analysis_2020]
 
 
 ### Turnover
@@ -299,23 +287,65 @@ hillebrand were modelled in two ways, Beta and gaussian regression. Beta
 regressions are more appropriate for distribution borned by [0,1] and are
 linearized by a logit link. Logit links have the cons that coefficients are less
 easy to interpret. So we run both gaussian and beta regressions and investigate
-the relationship among coefficients of those type modelling types. Values of
+the sensivity of our results to modelling choice. Values of
 turnover were slightly transformed such as values of one and zero fitted beta
 regression requirements ($x' = \dfrac{x \times (N - 1) + 0.5}{N}$).
 
 The model is defined like this: 
 
 $$
-B_i = \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + \epsilon
+B_i = \beta_0Y_i +  \beta_1Y_iR_i + \beta_2Y_iH_i + \epsilon
 $$
 where
 
+$$
 \begin{align}
-\\ \alpha&=\alpha_0 + u_{0i|j}
-\\ \beta_{0}&=\beta_0 + u_{0i|j} + u_{0k}
-\\ \beta_{2}&=\beta_{2} + u_{2j}
-\\ \beta_{4}&=\beta_{4} +u_{4j}
+\\ \beta_{0}&=\beta_0 + u_{0i|j} + u_{0i}
 \end{align}
+$$
+
+- where:
+  - $\beta$: slope
+  - $u$: random effect
+  - $i$: site 
+  - $j$: basin
+
+- The model formula in:
+
+```{r}
+"biodiv_facet ~ 
+0 + year/river_structure + year/human_footprint_diff +
+(0 +  year | basin/site)
+```
+
+- `year`: logged number of year (+1) since the beginning of the monitoring (site scale) 
+- `river_structure`: PCA from upstream to downstream (centered and scaled)
+- `human_footprint_diff`: difference between 1993 and 2009 (centered and scaled)
+- `basin`: Hydrographic basin
+- `site`: site 
+
+As temporal trends of biodiversity facets had a Michaelis-Menten shape,
+we linearized the trends by taking the log of year number added to 1. Models
+with logged year had a lower AIC, up to twice (Table SXX).
+
+At each site, all the dissimilarity indices had a value of 0 the first year. Then we constrained the intercept to 0 and kept only random effect on the slope. Models comparison shows that the results are qualitatively the same.
+
+
+### Species richness
+
+At the difference with dissimilarity index, we modelled species richness with the intercept and the main effect of ecological drivers. We modeled species richness with Chao index. 
+
+$$
+B_i = \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + \epsilon
+$$
+
+where
+$$
+\begin{align}
+\\ \alpha&=\alpha_0 + u_{0i|j} + u_{0j}
+\\ \beta_{0}&=\beta_0 + u_{0i|j} + u_{0j}
+\end{align}
+$$
 
 - where:
   - $\alpha$: intercept
@@ -323,38 +353,38 @@ where
   - $u$: random effect
   - $i$: site 
   - $j$: basin
-  - $k$: span period in a site 
 
-- The model formula in:
+### Total abundance
 
-```{r}
-"biodiv_facet ~ 
-1 + year * river_structure + year * human_footprint_diff +
-(1 +  year | basin/site) +
-(0 +  year | span) +
-(0 +  year:human_footprint_diff | basin) +
-(0 +  year:river_structure | basin)"
-```
+In the dataset, total abundance was described as raw count, counts by $100m^2$,
+CPUE, and Leslie index representing respectively XX% of the site. To account for
+this hererogeneity, we included the unit of measurement as a main affect explaining total abundance but also
+as an interaction with the year effect, in a similar way than previous studies [@klink_meta-analysis_2020].
+Similar to species richness modelling, we modelled the log of total abundances. 
 
-- `year`: number of year since the beginning of the monitoring (site scale) 
-- `river_structure`: PCA from upstream to downstream (centered and scaled)
-- `human_footprint_diff`: difference between 1993 and 2009 (centered and scaled)
-- `basin`: Hydrographic basin
-- `site`: site 
-- `span`: Number of years between the end and the beginning of the monitoring in
-  a given site
 
-Our objective was to assess the temporal turnover and its ecological drivers. We
-estimated the effects of the basin and of the site on the temporal trends (`1 +
-year | basin/site`), the site effect being nested in the basin effect.
-We also evaluated the effects of the span of monitoring on the temporal trends,
-because it is generally expected that longer timeseries displays stronger
-temporal trends. We also captured the effect of human pressure and river
-structure on temporal trends will be different according to basin. As an example, 
-we consider that the effects of river structure (related to
-upstream/downstream gradient) on temporal trends will depend on basin because
-they are highly different in their network structure and their sampling
-locations along this network.
+$$
+B_i = \alpha + \beta_0Y_i + \beta_1U_i + \beta_2Y_iU_i + \beta_3R_i + \beta_4Y_iR_i + \beta_5H_i + \beta_6Y_iH_i + \epsilon
+$$
+
+where
+$$
+\begin{align}
+\\ \alpha&=\alpha_0 + u_{0i|j} + u_{0j}
+\\ \beta_{0}&=\beta_0 + u_{0i|j} + u_{0j}
+\end{align}
+$$
+
+- where:
+  - $\alpha$: intercept
+  - $\beta$: slope
+  - $u$: random effect
+  - $i$: site 
+  - $j$: basin
+  - $U$: abundance unit
+
+
+### Implementation
 
 All the statistical models were computed in R with the `glmmTMB` package. In
 order to facilitate the comparison of the effects, the reported slope
@@ -369,19 +399,18 @@ sum of the random effects and its corresponding fixed effects, known as BLUPs
 (Best Linear Unbiased Predictions, `coef.merMod` in R). However, the associated 
 standard errors and confidence intervals are not computable on BLUPs. As an
 example, it means that while we are able to compute the temporal trends as each
-site, those temporal trends have no associated errors.
+site and basin, those temporal trends have no associated errors.
 
 ```{r}
-site_temporal_trends <- random_effect_self_c %>%
-  filter(intercept == 1, year_var == "year_nb") %>%
+site_temporal_trends <- gaussian_re_self_c %>%
   select(response, random_site) %>%
   unnest(random_site) %>%
-  select(response, siteid, year_nb)
+  select(response, siteid, log1_year_nb)
 ```
 
 ```{r}
 site_temporal_trends %>%
-  ggplot(aes(x = year_nb)) +
+  ggplot(aes(x =log1_year_nb)) +
   geom_histogram() +
   facet_wrap(vars(response), scales = "free")
 ```

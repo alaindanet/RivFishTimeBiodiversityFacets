@@ -26,6 +26,7 @@ library(factoextra)
 tar_load(c( modelling_data))
 tar_load(c(abun_var, var_jaccard, rich_var))
 tar_load(c(binded_gaussian_tmb_no_evt_re))
+tar_load(tps_model_for_comp)
 ```
 
 
@@ -234,6 +235,8 @@ anova(dis3, dis2)
 
 ## Delete intercept for log year model ? 
 
+The following plots displaying the coefficients of models with constrained intercept at 0 or not, main effect of environment or just the interaction with temporal trends, shows that the models for dissimilarity indices without main effects have the same interpretation. First the models with constrained intercept have a stronger coefficients of temporal trends. Second, in the models without main effect of environment, the interactions capture what was in the main effects before. 
+
 - Test with jaccard model:
 
 ```{r}
@@ -273,7 +276,7 @@ comp_intercept %>%
 
 ```
 
-- test with nestedness:
+- Nestedness:
 
 ```{r}
 ne <- glmmTMB(formula = nestedness_scaled ~
@@ -333,20 +336,8 @@ model_comp_interp_int <- function(resp =NULL, df = modelling_data) {
 
 
 ```{r}
-comp_intercept <- compare_models(ne, ne0, ne0_no_main, effects = "fixed")
-comp_intercept %>%
-  as_tibble() %>%
-  select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
-  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
-  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
-  pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
-  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled")) %>%
-  ggplot(
-    aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
-      xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2))
-
+comp_ne <- compare_models(ne, ne0, ne0_no_main, effects = "fixed")
+#HERE display plot
 ```
 
 - Turnover:
@@ -359,24 +350,6 @@ aic <- map_dfr(tu_comp, broom.mixed::glance, .id = "name")
 round(exp((min(aic$AIC) - aic$AIC)/2), 3)
 ```
 
-```{r}
-plot_model_comp_coeff <- function(model_list = NULL) {
-
-  comp_intercept <- compare_models(model_list, effects = "fixed")
-  comp_intercept %>%
-    as_tibble() %>%
-    select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
-    pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
-    separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
-    pivot_wider(names_from = "type", values_from = "values") %>%
-    filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
-    filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled")) %>%
-    ggplot(
-      aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
-        xmax = CI_high)) +
-    geom_pointrange(position = position_dodge(width = .2))
-}
-```
 
 ```{r}
 plot_model_comp_coeff(model_list = tu_comp)

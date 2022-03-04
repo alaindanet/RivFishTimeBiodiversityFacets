@@ -157,4 +157,5 @@ use_r("pca_methods")
 use_r("glmmTMB_helpers")
 use_rmd("xx-meeting-report")
 use_rmd("ag-biodiversity-facets-support")
+use_r("plot_model")
 

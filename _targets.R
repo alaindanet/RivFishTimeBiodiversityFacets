@@ -788,6 +788,24 @@ tar_target(neutral_turnover,
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),
+  tar_target(gaussian_comp_std,
+    # Drop the main effect
+    compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "basic")
+    ),
+  tar_target(gaussian_re_self_c,
+    binded_gaussian %>%
+      mutate(
+        random_site = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "siteid:main_bas")
+            )),
+        random_basin = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "main_bas")
+            ))
+        ) %>%
+      select(-mod)
+    ),
   tar_target(tps_model_for_comp,
     tibble(
       response = tps_var,
