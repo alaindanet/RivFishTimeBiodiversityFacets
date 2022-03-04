@@ -59,6 +59,7 @@ get_formula_non_tps <- function(resp = NULL) {
 get_formula_abun <- function(resp = NULL) {
 
   rhs <- "log1_year_nb * riv_str_rc1 +
+  log1_year_nb * unitabundance +
     log1_year_nb * hft_ix_c9309_diff_scaled +
     (1 + log1_year_nb | main_bas/siteid)"
 

@@ -511,7 +511,7 @@ tar_target(neutral_turnover,
       "jaccard_dis", "jaccard_dis_scaled",
       "turnover", "turnover_scaled", "nestedness", "nestedness_scaled",
       "species_nb", "log_species_nb", "species_nb_tps", "species_nb_tps_scaled",
-      "chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
+      "chao_richness", "log_chao_richness", "chao_richness_tps", "chao_richness_tps_scaled",
       "unitabundance",
       "total_abundance", "total_abundance_tps", "log_total_abundance", "total_abundance_scaled",
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
@@ -788,9 +788,10 @@ tar_target(neutral_turnover,
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),
-  tar_target(gaussian_comp_std,
+  tar_target(
+    gaussian_comp_std,
     # Drop the main effect
-    compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "basic")
+    compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "refit")
     ),
   tar_target(gaussian_re_self_c,
     binded_gaussian %>%

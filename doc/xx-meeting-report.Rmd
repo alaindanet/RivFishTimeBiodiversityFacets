@@ -23,20 +23,21 @@ library(factoextra)
 ```{r load-targets, include=FALSE}
 tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
-
 tar_load(pca_riv_str)
-tar_load(var_analysis)
+tar_load(c(var_analysis, tps_var))
 tar_load(c(binded_gaussian, gaussian_comp_std, gaussian_re_self_c))
 
-tar_load(binded_gaussian_tmb)
 var_to_keep <- c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled",
   "hillebrand_dis_scaled", "appearance_scaled", "disappearance_scaled",
   "evenness_scaled", "log_chao_richness", "log_total_abundance")
 gaussian_tmb <- binded_gaussian %>%
   filter(response %in% var_to_keep)
+
+
 obj_mb(gaussian_tmb)
 rm(binded_gaussian)
 gc()
+
 
 tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
@@ -315,7 +316,7 @@ $$
 ```{r}
 "biodiv_facet ~ 
 0 + year/river_structure + year/human_footprint_diff +
-(0 +  year | basin/site)
+(0 +  year | basin/site)"
 ```
 
 - `year`: logged number of year (+1) since the beginning of the monitoring (site scale) 
@@ -480,109 +481,79 @@ plot(mod_tmb_comp) +
 
 ```{r}
 mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
-  Coefficients are stardardized by the standard deviation of each variable
-  (response and predictor). Cleaner way of standardize would be to refit the
-  models with all the variables being scaled. Note that for hillebrand, the
-  temporal trends is negative. That is because it is a similarity index, that is
-  meaning that similarity is decreasing through time in average. Bars represent
-  CI at 95% computed with Wald approximation.")
+  Coefficients were standardized by refiting the models with scaled response and
+  explicative variables. Bars represent CI at 95% computed with Wald
+  approximation.")
 ```
 
 
 ```{r mod-slp-std, fig.cap=mod_slp_std_cap}
-mod_tmb_comp_std_df <- mod_tmb_comp_std %>%
+mod_tmb_comp_std_df <- gaussian_comp_std %>%
   as_tibble() %>%
-  select(Parameter, starts_with("CI_"), starts_with("Std_")) %>%
+  select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
   separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
   pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
-  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled"))
+  filter(
+    !Parameter %in% "(Intercept)",
+    !str_detect(Parameter, "unitabundance"),
+    response %in% var_to_keep
+  ) %>%
+  mutate(response = get_var_replacement()[response],
+    Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
+    Parameter = str_replace_all(Parameter, get_model_term_replacement()) 
+  )
+
 mod_tmb_comp_std_df %>%
   ggplot(
-    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
+    aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2)) 
-#+
-#  theme(legend.position = "bottom")
+  geom_pointrange(position = position_dodge(width = .2)) + 
+  labs(x = "Standardized coefficients", colour = "Response variables")
 ```
+
+```{r}
+```
+
 
 - Summary of results (Figure \@ref(fig:mod-slp-std)):
-  - Temporal trends (year nb effect):
-    - Overall the magnitude of the effect of temporal trend was higher than the
-      environmental variables
+  - Temporal trends:
     - All the dissimiliraty indices increased in time :
-      - Hillebrand, Jaccard and Appearance have the higher temporal trends
+      - Jaccard, abundance dissimiliraty and appearance have the higher temporal trends
         ($r_\delta$ around 0.37), followed by disappearance, nestedness and
         turnover ($r_\delta$ around 0.25)
-    - Species richness has a tiny increase around 0.02 (ten time less) and
+    - Species richness and total abundance has a tiny increase around 0.025 (ten time less) and
       evenness did not change through time in average
   - River structure (upstream -> downstream, called hereafter stream gradient):
-    - Species richness was higher toward downstream, as well as species appearance and disappearance
-    - Linked to last point, jaccard dissimilarity and hillebrand similarity were
-      respectively higher and lower downstream
-    - The stream gradient had an effect of the same magnitude for turnover and
-      jaccard dissimilarity ($r_\delta$ around 0.12) but was 0 for nestedness.
-      It means that temporal jaccard dissimilarity downstream is due to 
-      change in species identity (turnover) rather than change in number of
-      species (nestedness).
-    - Appearance and Disappearance were also higher downstream but the effect is
-      the effect is half as great as for the other dissimilarity indices.
-  - Human footprint difference (2009 - 1993):
-    - Overall effect of human footprint difference is half as great as the
-      effect of stream gradient
-    - All variables but evenness increased with human footprint difference
-      - It means that for example jaccard dissimilarity is overall lower when
-        human footprint had decreased and that jaccard dissimilarity is overall
-        higher when human footprint had increased (which makes sense but check
-        difference in human footprint is not related to something else)
+    - Species richness was higher toward downstream
+    - But had no effect on total abundance
+  - Human footprint change (1993-2009):
+    - Species richness was overall lower where pressure increased
+    - Total abundance was overall higher where pressure increased
   - Interaction between temporal trends and stream gradient (year nb riv str rc1 effect):
-    - Stream gradient had not significant effects on the temporal trends of
-      biodiversity indices.
+    - Trends of total abundance and species richness were higher downstream than
+      upstream
+    - Turnover (i.e. change in species identity) was higher downstream than
+      upstream but we found the opposite for Nestedness, which was lower downstream than
+      upstream. Overall Jaccard was not affected by stream gradient (logical:
+      knowing that turnover = 1 - nestedness; if jaccard is not affected by
+      stream gradient, turnover and nestedness display necesseraly antagonistic effects).
+    - Temporal trends of Appearance and Disappearance were not affected by
+      stream gradient 
+    - The trends of abundance dissimiliraty index was higher downstream then
+      upstream but not the one base on presence / absence. 
   - Interaction between temporal trends and human footprint difference (year nb
      effect):
-     - The interactions are slightly significant and negative for the
-       nestedness, appearance and richness (chao richness). Since the global
-       temporal trends are positive for those variables (see year nb effect), it
-       means that the effect of human footprint difference is antagonistic. 
-       It means that species richness increase less (or worse) where human
-       footprint increased and conversely that species richness increase more
-       when human footprint decreased (!!!).
-       Idem for appearance and nestedness, which are kind of linked to species
-       richnness variation (I find this result so cool).
+     - temporal change in Human footprint had a negative effect on trends of species richness but not
+       on total abundance trends 
+    - Increase Turnover 
+    - Increase dissimiliraty of dominant species 
+    - Increase disappearance?
 
-```{r, eval = FALSE}
-# just to guide me
-mod_tmb_comp_std_df %>%
-  filter(Parameter == "year nb * hft ix c9309 diff scaled") %>%
-  filter(CI_low > 0 | CI_high < 0)
-```
-
-```{r est-log-year}
-mod_logyear_tmb_comp_std <- compare_parameters(
-  setNames(gaussian_tmb$mod, gaussian_tmb$response),
-  standardize = "basic")
-
-mod_logyear_tmb_comp_std_df <-
-  mod_logyear_tmb_comp_std %>%
-  as_tibble() %>%
-  select(Parameter, starts_with("CI_"), starts_with("Std_")) %>%
-  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
-  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
-  pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(!Parameter %in% "(Intercept)", !str_detect(Parameter, "unitabundance")) %>%
-  filter(!response %in% c("species_nb", "log_species_nb", "total_abundance", "total_abundance_scaled"))
-mod_logyear_tmb_comp_std_df %>%
-  ggplot(
-    aes(y = Parameter, x = Std_Coefficient, color = response, xmin = CI_low,
-      xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2)) 
-#+
-#  theme(legend.position = "bottom")
-```
 
 
 ```{r}
+HERE
 knitr::opts_chunk$set(eval = FALSE)
 ```
 

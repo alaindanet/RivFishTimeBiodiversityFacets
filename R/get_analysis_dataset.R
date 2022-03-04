@@ -85,6 +85,7 @@ get_analysis_dataset <- function(
         appearance_scaled = transform01(appearance),
         disappearance_scaled = transform01(disappearance),
         evenness_scaled = transform01(evenness),
+        log_chao_richness = log(chao_richness),
         chao_richness_tps_scaled = transform01(chao_richness_tps),
         species_nb_tps_scaled = transform01(species_nb_tps),
 

@@ -8,7 +8,7 @@ tar_make_future(workers = min(future::availableCores() - 1, 24))
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = gaussian_abun_tmb)
+tar_make(names = gaussian_re_self_c)
 
 
 source(file = "start_rmd.R")

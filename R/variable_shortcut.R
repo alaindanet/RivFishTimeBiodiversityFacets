@@ -14,27 +14,45 @@ get_var_protocol <- function () {
 
 get_var_replacement <- function() {
   c(
-  log_species_nb = "Log species richness",
-  species_nb = "Species richness",
-  log_total_abundance = "Log total abundance",
-  total_abundance = "Total abundance",
-  chao_richness = "Chao species richness",
-  chao_shannon = "Chao shannon",
-  chao_simpson = "Chao simpson",
-  chao_evenness = "Chao evenness",
-  evenness = "Evenness",
-  jaccard_dis = "Jaccard (binary, dissimilarity)",
-  jaccard = "Jaccard (binary, similarity)",
-  horn = "Horn (binary, similarity)",
-  "chao" = "Chao (binary, similarity)",
-  hillebrand = "SER_a (rel abundance)",
-  total  = "Total turnover (codyn)",
-  appearance = "Appearance",
-  disappearance = "Disappearance",
-  shannon = "Shannon",
-  simpson = "Simpson",
-  nestedness = "Nestedness (jaccard)",
-  turnover = "Turnover (jaccard)"
+    log_species_nb = "Log species richness",
+    species_nb = "Species richness",
+    log_total_abundance = "Log total abundance",
+    total_abundance = "Total abundance",
+    chao_richness = "Chao species richness",
+    log_chao_richness = "Log Chao species richness",
+    chao_shannon = "Chao shannon",
+    chao_simpson = "Chao simpson",
+    chao_evenness = "Chao evenness",
+    evenness = "Evenness",
+    evenness_scaled = "Evenness",
+    jaccard_dis = "Jaccard (binary, dissimilarity)",
+    jaccard_dis_scaled = "Jaccard (binary, dissimilarity)",
+    jaccard = "Jaccard (binary, similarity)",
+    horn = "Horn (binary, similarity)",
+    "chao" = "Chao (binary, similarity)",
+    hillebrand = "SER_a (rel abundance)",
+    hillebrand_dis_scaled = "Dissimiliraty (Simpson index)",
+    total  = "Total turnover (codyn)",
+    appearance = "Appearance",
+    appearance_scaled = "Appearance",
+    disappearance_scaled = "Disappearance",
+    shannon = "Shannon",
+    simpson = "Simpson",
+    nestedness = "Nestedness (jaccard)",
+    nestedness_scaled = "Nestedness (jaccard)",
+    turnover = "Turnover (jaccard)",
+    turnover_scaled = "Turnover (jaccard)"
+  )
+}
+
+get_model_term_replacement <- function() {
+  c(
+    log1_year_nb = "Log (Year nb + 1)",
+    year_nb = "Year nb",
+    riv_str_rc1 = "PCA1\nstream gradient",
+    hft_ix_c9309_diff_scaled = "Human footprint\nchange (1993-2009)",
+    main_bas = "Basin",
+    siteid = "Site"
   )
 }
 
