@@ -102,6 +102,7 @@ get_analysis_dataset <- function(
         hft_ix_c9309_log_ratio = log(hft_ix_c9309_ratio),
         hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
         hft_ix_c9309_diff_scaled = scale(hft_ix_c9309_diff),
+        hft_c9309_scaled_no_center = scale(hft_ix_c9309_diff, center = FALSE),
         #riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
         #riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"],
         main_bas = as.factor(main_bas),

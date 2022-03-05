@@ -517,7 +517,7 @@ tar_target(neutral_turnover,
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
       "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
-      "hft_ix_c9309_diff_scaled")
+      "hft_ix_c9309_diff_scaled", "hft_c9309_scaled_no_center")
     ),
   tar_target(modelling_data,
     analysis_dataset %>%

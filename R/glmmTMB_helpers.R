@@ -40,7 +40,7 @@ plot_pred_obs_glmmtmb <- function(x = NULL) {
 get_formula_tps_indices <- function(resp = NULL) {
 
   rhs <- "0 + log1_year_nb / riv_str_rc1 +
-    log1_year_nb / hft_ix_c9309_diff_scaled +
+    log1_year_nb /hft_c9309_scaled_no_center +
     (0 + log1_year_nb | main_bas/siteid)"
 
   form <- as.formula(paste0(resp, " ~ ", rhs))
@@ -50,7 +50,7 @@ get_formula_tps_indices <- function(resp = NULL) {
 get_formula_non_tps <- function(resp = NULL) {
 
   rhs <- "log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
+    log1_year_nb *hft_c9309_scaled_no_center +
     (1 + log1_year_nb | main_bas/siteid)"
 
   form <- as.formula(paste0(resp, " ~ ", rhs))
@@ -60,7 +60,7 @@ get_formula_abun <- function(resp = NULL) {
 
   rhs <- "log1_year_nb * riv_str_rc1 +
   log1_year_nb * unitabundance +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
+    log1_year_nb *hft_c9309_scaled_no_center +
     (1 + log1_year_nb | main_bas/siteid)"
 
   form <- as.formula(paste0(resp, " ~ ", rhs))
@@ -71,7 +71,7 @@ model_comp_interp_int <- function(resp =NULL, df = modelling_data) {
 
   ne <- glmmTMB(formula = as.formula(paste0(resp, "~
         log1_year_nb * riv_str_rc1 +
-        log1_year_nb * hft_ix_c9309_diff_scaled +
+        log1_year_nb *hft_c9309_scaled_no_center +
         (0 + log1_year_nb | main_bas/siteid)")),
   data = df 
   )
@@ -79,14 +79,14 @@ model_comp_interp_int <- function(resp =NULL, df = modelling_data) {
   ne0 <- update(ne,
     formula = as.formula(paste0(resp, "~
         0 + log1_year_nb * riv_str_rc1 +
-        log1_year_nb * hft_ix_c9309_diff_scaled +
+        log1_year_nb *hft_c9309_scaled_no_center +
         (0 + log1_year_nb | main_bas/siteid)"))
   )
 
   ne0_no_main <- update(ne,  
     formula = as.formula(paste0(resp, "~
         0 + log1_year_nb / riv_str_rc1 +
-        log1_year_nb / hft_ix_c9309_diff_scaled +
+        log1_year_nb /hft_c9309_scaled_no_center +
         (0 + log1_year_nb | main_bas/siteid)"))
   )
 
