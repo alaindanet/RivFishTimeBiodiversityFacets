@@ -26,6 +26,7 @@ library(factoextra)
 tar_load(c( modelling_data))
 tar_load(c(abun_var, var_jaccard, rich_var))
 tar_load(c(binded_gaussian_tmb_no_evt_re))
+tar_load(c(binded_gaussian_tmb_no_evt_re))
 tar_load(tps_model_for_comp)
 ```
 
@@ -62,6 +63,13 @@ tar_load(tps_model_for_comp)
     multiply by 100. Example: For every 20% increase in the independent
     variable, our dependent variable increases by about $(1.20^0.198 – 1) * 100$ =
     3.7 percent.
+
+# Model with or without interaction
+
+```{r}
+tar_load(gaussian_int_env)
+```
+
 
 # Assess if log-year or year is the best model
 
@@ -138,6 +146,7 @@ model_parameters(x)
 ```
 
 ```{r}
+tps_model_for_comp
 y <- update(x,
   formula = jaccard_dis_scaled ~ log1_year_nb * riv_str_rc1 + log1_year_nb *
     hft_ix_c9309_diff_scaled + (1 | main_bas/siteid) 
@@ -260,7 +269,9 @@ anova(zc0_no_main, zc0 ,zc)
 ```
 
 ```{r}
-comp_intercept <- compare_models(zc, zc0, zc0_no_main, effects = "fixed")
+comp_intercept <- compare_models(
+  tps_model_for_comp[
+    tps_model_for_comp$response == "jaccard_dis_scaled", ]$mod[[1]], effects = "fixed")
 comp_intercept %>%
   as_tibble() %>%
   select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
@@ -279,30 +290,8 @@ comp_intercept %>%
 - Nestedness:
 
 ```{r}
-ne <- glmmTMB(formula = nestedness_scaled ~
-    log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid),
-  data = modelling_data 
-)
-
-ne0 <- update(ne,
-  formula = nestedness_scaled ~
-    0 + log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid)
-)
-
-ne0_no_main <- update(ne,  
-  formula = nestedness_scaled ~
-    0 + log1_year_nb/riv_str_rc1 +
-    log1_year_nb/hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid)
-)
-```
-
-```{r}
-anova(ne0_no_main, ne0 , ne)
+anova(tps_model_for_comp[
+    tps_model_for_comp$response == "nestedness_scaled", ]$mod[[1]])
 ```
 
 ```{r}
@@ -336,7 +325,8 @@ model_comp_interp_int <- function(resp =NULL, df = modelling_data) {
 
 
 ```{r}
-comp_ne <- compare_models(ne, ne0, ne0_no_main, effects = "fixed")
+comp_ne <- compare_models(tps_model_for_comp[tps_model_for_comp$response == "nestedness_scaled", ]$mod[[1]], effects = "fixed")
+
 #HERE display plot
 ```
 
@@ -344,7 +334,7 @@ comp_ne <- compare_models(ne, ne0, ne0_no_main, effects = "fixed")
 
 
 ```{r}
-tu_comp <- model_comp_interp_int(resp = "turnover_scaled")
+tu_comp <- tps_model_for_comp[tps_model_for_comp$response == "turnover_scaled", ]$mod[[1]]
 anova(tu_comp[[1]], tu_comp[[2]], tu_comp[[3]])
 aic <- map_dfr(tu_comp, broom.mixed::glance, .id = "name")
 round(exp((min(aic$AIC) - aic$AIC)/2), 3)
@@ -369,11 +359,6 @@ plot_model_comp_coeff(model_list = appearance_comp)
 
 ## Variable distribution
 
-
-```{r}
-skim(analysis_dataset, starts_with("chao_"), "species_nb", "shannon", "simpson",
-"evenness")
-```
 
 ```{r}
 skim(modelling_data, "jaccard_dis", "turnover", "nestedness", "appearance",

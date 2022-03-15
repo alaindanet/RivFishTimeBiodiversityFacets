@@ -3,12 +3,14 @@ library(tarchetypes)
 
 tar_make()
 
-tar_make_future(workers = min(future::availableCores() - 1, 24))
+tar_make_future(workers = min(future::availableCores() - 1, 24),
+                names = !c(starts_with("beta_"),
+                           "biodiversity_facets_support", "meeting_report", "ah_clust_tps", "pred_gaussian"))
 
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = gaussian_re_self_c)
+tar_make(names = ah_clust_tps)
 
 
 source(file = "start_rmd.R")

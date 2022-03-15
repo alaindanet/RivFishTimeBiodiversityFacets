@@ -494,6 +494,20 @@ skim(riv)
 hist(riveratlas_site$hft_ix_c09 - riveratlas_site$hft_ix_c93)
 hist(riveratlas_site$hft_ix_u09 - riveratlas_site$hft_ix_u93)
 ```
+- Diff scaled no center:
+
+```{r}
+hist(scale(riveratlas_site$hft_ix_c09 - riveratlas_site$hft_ix_c93, center =
+    FALSE))
+```
+
+- Ratio and log ratio: 
+```{r}
+hist(riveratlas_site$hft_ix_c09 / riveratlas_site$hft_ix_c93)
+hist(log2(riveratlas_site$hft_ix_c09 / riveratlas_site$hft_ix_c93))
+```
+
+
 ```{r}
 loc_hft <- loc %>%
   left_join(riveratlas_site %>%

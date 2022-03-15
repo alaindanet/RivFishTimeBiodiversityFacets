@@ -32,7 +32,7 @@ get_var_replacement <- function() {
     "chao" = "Chao (binary, similarity)",
     hillebrand = "SER_a (rel abundance)",
     hillebrand_dis_scaled = "Dissimiliraty (Simpson index)",
-    total  = "Total turnover (codyn)",
+    total = "Total turnover (codyn)",
     appearance = "Appearance",
     appearance_scaled = "Appearance",
     disappearance_scaled = "Disappearance",
@@ -50,6 +50,7 @@ get_model_term_replacement <- function() {
     log1_year_nb = "Log (Year nb + 1)",
     year_nb = "Year nb",
     riv_str_rc1 = "PCA1\nstream gradient",
+    hft_c9309_scaled_no_center = "Human footprint\nchange (1993-2009)",
     hft_ix_c9309_diff_scaled = "Human footprint\nchange (1993-2009)",
     main_bas = "Basin",
     siteid = "Site"

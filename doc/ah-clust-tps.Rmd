@@ -1,0 +1,580 @@
+---
+title: "Clustering analysis"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::html_document2:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+library(ade4)
+library(factoextra)
+old <- par()
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(modelling_data, binded_gaussian, filtered_dataset))
+tar_load(c(abun_var, var_jaccard, rich_var))
+tar_load(c(gaussian_re_self_c, gaussian_no_drivers_re_self_c))
+tar_load(c(basin_no_drivers, basin_tps, site_no_drivers, site_tps))
+tar_load(site_env)
+```
+
+
+# Clusters
+
+## Basin
+
+```{r}
+# Ward Hierarchical Clustering
+d <- dist(basin_tps,
+method = "euclidean"
+) # distance matrix
+fit <- hclust(d, method="ward")
+plot(fit) # display dendogram
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red") 
+
+groups <- cutree(fit, k=4) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=4, border="red") 
+```
+
+### Effect of numbers of clusters and outliers removal 
+
+```{r}
+# tclust
+library(tclust)
+clust_curv <- ctlcurves(na.omit(basin_no_drivers),
+  k = 1:6, alpha = seq(0, .2, by = .05)) 
+clust_curv_scaled <- ctlcurves(scale(na.omit(basin_no_drivers)),
+  k = 1:6, alpha = seq(0, .2, by = .05)) 
+par(mfrow = c(1, 2))
+plot(clust_curv)
+plot(clust_curv_scaled)
+```
+
+#### Plot  clusters
+
+```{r}
+plot(tkmeans(basin_no_drivers, k = 3, alpha = 0.03), jitter = TRUE)
+plot(tkmeans(basin_no_drivers, k = 4, alpha = 0.03), jitter = TRUE)
+```
+
+```{r}
+plot_clust_centroid <- function(x = NULL, k = 3, scale = FALSE) {
+
+  if (scale) {
+    x <- scale(x, center = FALSE)
+  }
+
+  cluster_centroid <- 
+    tclust(x, k = k, alpha = 0.05, iter.max = 150, restr.fact = 1)$centers %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "response") %>%
+    as_tibble %>%
+    pivot_longer(-response, names_to = "cluster", values_to = "centroid")
+
+  cluster_centroid$response <- get_var_replacement()[cluster_centroid$response]
+
+  cluster_centroid %>%
+    ggplot(aes(x = response, y = centroid, color = cluster)) +
+    geom_point(size = 4, position = position_dodge(width=0.3)) +
+    geom_hline(yintercept = 0) +
+    theme(axis.text.x = element_text(angle = 20, hjust = 1))
+}
+```
+
+#### Cluster centroid
+
+```{r}
+plot_clust_centroid(x = basin_no_drivers, k = 4)
+plot_clust_centroid(x = basin_no_drivers, k = 2)
+```
+
+- Same with scaling trends: 
+  - Clusters are driven mainly by trends in richness and abundances
+  - Higher richness and abundance change means higher dissimilarity in general 
+  - Lowest absolute trends in richness associated with high dissimilarity 
+
+
+```{r}
+plot_clust_centroid(x = scale(basin_no_drivers, center = FALSE), k = 4)
+plot_clust_centroid(x = scale(basin_no_drivers, center = FALSE), k = 3)
+plot_clust_centroid(x = scale(basin_no_drivers, center = FALSE), k = 2)
+```
+
+- With the model with environmental covariates, we see things: It is some good news 
+
+```{r}
+plot_clust_centroid(x = scale(basin_tps, center = FALSE), k = 4)
+plot_clust_centroid(x = scale(basin_tps, center = FALSE), k = 3)
+plot_clust_centroid(x = scale(basin_tps, center = FALSE), k = 2)
+```
+ 
+### PCA
+
+```{r, fig.height = 12}
+pca_basin_tps <- dudi.pca(df = scale(basin_tps), scannf = FALSE, nf = 3)
+p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
+  ~fviz_pca_var(pca_basin_tps,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+plot_grid(plotlist = p_pca, ncol = 1)
+```
+
+- We find well the two axis: richness and turnover
+- Appearance and disappearance are orthogonal (by construction) 
+- nestedness and turnover are orthogonal (by construction) 
+- Hillebrand and Jaccard are collinear: recomposition depends largely on
+  dominant species
+- So we find what we already know so far 
+
+
+## Site scale
+
+```{r}
+# Ward Hierarchical Clustering
+d <- dist(na.omit(site_no_drivers),
+method = "euclidean"
+) # distance matrix
+fit <- hclust(d, method="ward")
+plot(fit) # display dendogram
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red") 
+
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red") 
+```
+
+```{r}
+# Ward Hierarchical Clustering
+d <- dist(scale(site_no_drivers, center = FALSE),
+method = "euclidean"
+) # distance matrix
+fit <- hclust(d, method="ward")
+plot(fit) # display dendogram
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red") 
+
+groups <- cutree(fit, k=5) # cut tree into 5 clusters
+# draw dendogram with red borders around the 5 clusters
+rect.hclust(fit, k=5, border="red") 
+```
+
+### Effect of cluster number and outliers removal
+
+```{r}
+# tclust
+clust_curv_scaled <- ctlcurves(
+  x = scale(site_no_drivers, center = FALSE),
+  k = 1:12,
+  alpha = seq(0, .3, by = .05),
+  iter.max = 100,
+  restr.fact = 1 
+
+) 
+par(mfrow = c(1, 1))
+clust_curv_scaled
+plot(clust_curv_scaled)
+```
+```{r}
+k6 <- tclust(scale(site_no_drivers, center = FALSE),
+  iter.max = 100, 
+  k = 6, alpha = 0.05)
+k6$size
+```
+
+- Strong restriction factor works well: 
+
+```{r}
+tar_load(c(k6_fac_1, k12_fac_1))
+```
+```{r}
+k6_fac_1$size
+```
+```{r}
+k12_fac_1$size
+```
+
+- Let's look at the silhouette: 
+
+```{r}
+tar_load(discr_k6_fac_1)
+plot(discr_k6_fac_1)
+```
+
+
+```{r}
+tar_load(c(k7_fac_1, discr_k7_fac_1))
+k7_fac_1$size
+plot(discr_k7_fac_1)
+```
+
+### Centroid plot
+
+- Unscaled: 
+
+```{r}
+plot_clust_centroid(x = site_no_drivers, k = 6)
+plot_clust_centroid(x = site_no_drivers, k = 5)
+plot_clust_centroid(x = site_no_drivers, k = 4)
+plot_clust_centroid(x = site_no_drivers, k = 3)
+plot_clust_centroid(x = site_no_drivers, k = 2)
+```
+
+- Scaled
+
+```{r}
+plot_clust_centroid(x = scale(site_no_drivers, center = FALSE), k = 6)
+plot_clust_centroid(x = scale(site_no_drivers, center = FALSE), k = 5)
+plot_clust_centroid(x = scale(site_no_drivers, center = FALSE), k = 4)
+plot_clust_centroid(x = scale(site_no_drivers, center = FALSE), k = 3)
+plot_clust_centroid(x = scale(site_no_drivers, center = FALSE), k = 2)
+```
+
+```{r, eval=FALSE}
+intern <- clValid(
+  scale(site_no_drivers, center = FALSE),
+  2:10,
+  method = "ward",
+  clMethods=c("hierarchical", "kmeans"),
+  validation = "internal", maxitems = 10000)
+par(mfrow = c(2, 2))
+plot(intern)
+optimalScores(intern)
+par(old)
+```
+
+```{r, eval=FALSE}
+stab <- clValid(
+  scale(site_no_drivers, center = FALSE),
+  2:6,
+  method = "ward",
+  clMethods = c("hierarchical", "kmeans"),
+  validation = "stability", maxitems = 10000)
+par(mfrow = c(2,2))
+plot(stab)
+optimalScores(stab)
+par(old)
+```
+
+
+- Hierarchical clustering: 
+
+- K6:
+
+```{r}
+library(cluster)
+xx <- scale(site_no_drivers, center = FALSE)
+k6 <- tclust(
+  x = xx,
+  k = 6,
+  alpha = 0.05,
+  nstart = 50, iter.max = 100
+)
+sil <- silhouette(k6$cluster, dist(xx))
+fviz_silhouette(sil)
+```
+
+```{r}
+#colnames(site_no_drivers)
+col_indep <- c("log_chao_richness",
+  "turnover_scaled",
+  "log_total_abundance"
+)
+intern_indep_var <- clValid(
+  scale(site_no_drivers[, col_indep], center = FALSE),
+  2:8,
+  method = "ward",
+  clMethods=c("hierarchical", "kmeans"),
+  validation = "internal", maxitems = 10000)
+par(mfrow = c(2,2))
+plot(intern_indep_var)
+optimalScores(intern_indep_var)
+par(old)
+```
+
+```{r}
+stab_indep_var <- clValid(
+  scale(site_no_drivers[, col_indep], center = FALSE),
+  2:8,
+  method = "ward",
+  clMethods=c("hierarchical", "kmeans"),
+  validation = "stability", maxitems = 10000)
+par(mfrow = c(2,2))
+plot(stab_indep_var)
+optimalScores(stab_indep_var)
+par(old)
+```
+
+
+### PCA
+
+```{r, fig.height = 12}
+pca_site_no_drivers <- dudi.pca(df = scale(site_no_drivers), scannf = FALSE, nf = 3)
+p_pca <- map(list(c(1,2), c(2, 3), c(1, 3)),
+  ~fviz_pca_var(pca_site_no_drivers,
+    axes = .x,
+    col.var = "contrib", # Color by contributions to the PC
+    gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+    repel = TRUE     # Avoid text overlapping
+    ) +
+  theme(legend.position = "none") + labs(title = "")
+)
+plot_grid(plotlist = p_pca, ncol = 1)
+```
+
+# Multinomial logit model
+
+```{r}
+library(nnet)
+```
+
+```{r}
+plot_clust_centroid(site_no_drivers, k = 6, scale = TRUE)
+```
+
+```{r}
+tar_load(k6_fac_1)
+site_cl <- get_cluster_df(
+  tclust_obj = k6_fac_1,
+  site_env = site_env,
+  assign_threshold = .1,
+  clean_method = "0"
+  )
+```
+
+```{r}
+tmp <- site_cl %>%
+  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
+  pivot_longer(-c(siteid, cl), names_to = "resp", values_to = "value")
+
+boxplot_cl <- tmp %>%
+  ggplot(aes(x = resp, y = value, color = cl)) +
+  geom_boxplot() +
+  geom_hline(yintercept = 0)
+boxplot_cl
+```
+
+```{r}
+# exclude sites without cluster 
+site_cl <- get_cluster_df(
+  tclust_obj = k6_fac_1,
+  site_env = site_env,
+  assign_threshold = .1,
+  clean_method = "rm"
+  )
+# Set first cluster as reference:
+site_cl$cl <- relevel(as.factor(site_cl$cl), ref = 1)
+table(site_cl$cl)
+```
+
+```{r}
+cl_mod <- multinom(
+  cl ~ riv_str_rc1 + hft_c9309_scaled_no_center,
+  data = site_cl)
+cl_mod_int <- multinom(
+  cl ~ riv_str_rc1 * hft_c9309_scaled_no_center,
+  data = site_cl)
+cl_mod_riv <- multinom(
+  cl ~ riv_str_rc1,
+  data = site_cl)
+cl_mod_hft <- multinom(
+  cl ~ hft_c9309_scaled_no_center,
+  data = site_cl)
+cl_mod0 <- multinom(
+  cl ~ 1,
+  data = site_cl)
+
+anova(cl_mod_int, cl_mod, cl_mod_riv, cl_mod_hft, cl_mod0)
+```
+
+- CI: 
+```{r}
+confint(cl_mod)
+```
+
+- Exponential odd:
+  - Interpretation
+
+```{r}
+exp(coef(cl_mod))
+```
+- Z-score:
+```{r}
+z <- summary(cl_mod)$coefficients / summary(cl_mod)$standard.errors
+z
+```
+- P-value: 
+```{r}
+p <- (1 - pnorm(abs(z), 0, 1)) * 2 
+apply(p, 2, function (x) p.adjust(x, "BH"))
+```
+
+```{r}
+ti <- parameters(cl_mod) %>%
+  as_tibble() %>%
+  clean_names() %>%
+  mutate(
+    rel_prob = exp(coefficient),
+    ci_low_prob = exp(ci_low),
+    ci_high_prob = exp(ci_high)
+    ) %>%
+  select(response, parameter, coefficient, rel_prob,  everything()) %>%
+  select(-ci, -t, -df_error)
+```
+```{r}
+ti %>%
+  select(response, parameter, rel_prob, ci_low_prob, ci_high_prob)
+```
+
+
+## Cluster  
+
+```{r}
+tar_load(p_clust_prop)
+plot_grid(plotlist = p_clust_prop) 
+```
+
+```{r}
+tar_load(c(world_site_sf, site_cl_na))
+
+plot_loc_cluster(
+  cluster_df = site_cl_na,
+  world_site = world_site_sf,
+  pays = "ESP" 
+)
+```
+
+
+
+# RDA
+
+### Basin
+
+```{r}
+
+d <- dist(basin_no_drivers,
+method = "euclidean"
+) # distance matrix
+```
+```{r}
+basin_env <- modelling_data %>%
+  filter(main_bas %in% row.names(basin_no_drivers)) %>%
+  group_by(main_bas) %>%
+  summarise(across(where(is.numeric), mean))
+
+basin_no_drivers <- 
+  basin_no_drivers[
+match(row.names(basin_no_drivers), basin_env$main_bas), ]
+all(row.names(basin_no_drivers) == as.character(basin_env$main_bas))
+
+rda_tree = rda(basin_no_drivers ~ riv_str_rc1 + hft_c9309_scaled_no_center,
+  data = basin_env)
+```
+
+```{r}
+RsquareAdj(rda_tree)
+anova(rda_tree)
+```
+
+### Site
+
+```{r}
+
+site_no_drivers <- 
+  site_no_drivers[
+match(row.names(site_no_drivers), site_env$siteid), ]
+all(row.names(site_no_drivers) == as.character(site_env$siteid))
+
+rda_site = rda(scale(site_no_drivers) ~ riv_str_rc1 + hft_c9309_scaled_no_center,
+  data = site_env)
+```
+```{r}
+rs <- summary(rda_site)
+rs$species
+```
+
+```{r}
+RsquareAdj(rda_site)
+anova(rda_site)
+plot(rda_site)
+```
+
+```{r}
+ordiplot(rda_site, scaling = 1, type = "text")
+title("Scaling preserving distance among biodiversity facets")
+ordiplot(rda_site, scaling = 2, type = "text")
+title("Scaling preserving relations between exp variables and facets")
+```
+
+#### Location constrained 
+
+```{r}
+site_env2 <- site_env %>%
+  left_join(filtered_dataset$location, by = "siteid")
+
+
+rda_site = rda(
+  scale(site_no_drivers, center = FALSE) ~ riv_str_rc1 + hft_c9309_scaled_no_center +
+    Condition(latitude + longitude + ecoregion),
+  data = site_env2)
+```
+```{r}
+rse <- summary(rda_site)
+```
+
+```{r}
+RsquareAdj(rda_site)
+anova(rda_site)
+plot(rda_site)
+```
+
+
+
+
+
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

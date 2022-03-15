@@ -7,7 +7,7 @@ tar_option_set(packages = c(
     "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
     "rnaturalearth", "rnaturalearthdata", "terra", "cowplot", "viridis",
     "janitor", "codyn", "vegan", "slider", "future", "INLA", "inlatools",
-    "glmmTMB", "easystats", "ggeffects"))
+    "glmmTMB", "easystats", "ggeffects", "tclust", "clValid"))
 
 library(future.callr)
 plan(callr)
@@ -408,7 +408,14 @@ tar_target(neutral_turnover,
         snap_list = snapped_site_river) %>%
       janitor::clean_names()
     ),
-
+  tar_target(riveratlas_total,
+    get_full_riveratlas(
+      river_shp_files = map_chr(riveratlas_shp_files,
+        ~get_full_file_name(filename = .x)),
+      river_id = "HYRIV_ID",
+      var_to_collect = get_river_atlas_significant_var() 
+    )
+    ),
   tar_target(water_temperature,
     extract_water_temperature_values(
       raster_path = water_temperature_file,
@@ -517,13 +524,22 @@ tar_target(neutral_turnover,
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
       "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
-      "hft_ix_c9309_diff_scaled", "hft_c9309_scaled_no_center")
+      "hft_ix_c9309_diff_scaled", "hft_c9309_scaled_no_center", "hft_ix_c9309_log2_ratio")
     ),
   tar_target(modelling_data,
     analysis_dataset %>%
       select(all_of(var_analysis)) %>%
       na.omit()
     ),
+  tar_target(site_env,
+    modelling_data %>%
+      filter(siteid %in% row.names(site_no_drivers)) %>% 
+      group_by(siteid) %>%
+      summarise(across(where(is.numeric), mean), .groups = "drop") %>%
+      arrange(match(siteid, row.names(site_no_drivers))) %>%
+      left_join(filtered_dataset$location, by = "siteid")
+    ),
+
   tar_target(var_jaccard,
     c("jaccard_dis_scaled", "turnover_scaled",
       "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
@@ -753,12 +769,12 @@ tar_target(neutral_turnover,
   tar_target(tps_var, c("jaccard_dis_scaled", "turnover_scaled",
       "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
       "disappearance_scaled", "chao_richness_tps_scaled",
-      "species_nb_tps_scaled")),
+      "species_nb_tps_scaled", "total_abundance_tps")),
   tar_target(gaussian_tps,
     tibble(
       response = tps_var,
       mod = list(try(glmmTMB(
-              formula = get_formula_tps_indices(resp = tps_var),
+              formula = get_formula_tps(resp = tps_var),
               data = modelling_data,
               family = gaussian(link = "identity"))
               )
@@ -770,7 +786,7 @@ tar_target(neutral_turnover,
     tibble(
       response = log_rich_var,
       mod = list(try(glmmTMB(
-            formula = get_formula_non_tps(resp = log_rich_var),
+            formula = get_formula_no_tps(resp = log_rich_var),
             data = modelling_data,
             family = gaussian(link = "identity"))))
       ),
@@ -785,16 +801,68 @@ tar_target(neutral_turnover,
             family = gaussian(link = "identity"))))
       )
     ),
+  tar_target(facet_var, c(tps_var, log_rich_var, "log_total_abundance")),
+  tar_target(gaussian_no_drivers,
+    tibble(
+      response = facet_var,
+      mod = list(try(glmmTMB(
+            formula = fun_no_driver_formula(x = facet_var),
+            data = modelling_data,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_int_env,
+    tibble(
+      response = facet_var,
+      mod = list(try(glmmTMB(
+            formula = fun_int_env_formula(x = facet_var),
+            data = modelling_data,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_log_hft,
+    tibble(
+      response = facet_var,
+      mod = list(try(glmmTMB(
+            formula = fun_hft_formula(x = facet_var,
+              int4env = FALSE,
+              hft_var = "hft_ix_c9309_log2_ratio"),
+            data = modelling_data,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_int_env_comp_std,
+    # Drop the main effect
+    compare_parameters(
+      setNames(gaussian_int_env$mod, gaussian_int_env$response),
+      standardize = "refit")
+    ),
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),
-  tar_target(
-    gaussian_comp_std,
+  tar_target(gaussian_comp_std,
     # Drop the main effect
     compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "refit")
     ),
   tar_target(gaussian_re_self_c,
     binded_gaussian %>%
+      mutate(
+        random_site = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "siteid:main_bas")
+            )),
+        random_basin = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "main_bas")
+            ))
+        ) %>%
+      select(-mod)
+    ),
+  tar_target(gaussian_no_drivers_re_self_c,
+    gaussian_no_drivers %>%
       mutate(
         random_site = map(mod,
           ~try(get_random_effect_glmmTMB(
@@ -816,122 +884,264 @@ tar_target(neutral_turnover,
     pattern = map(tps_var)
     ),
   tar_target(mod_tmb,
-                        rbind(
-                          gaussian_jaccard_tmb %>%
-                            filter(intercept == 1 & year_var == "year_nb") %>%
-                            select(-intercept), 
-                          gaussian_rich_tmb %>%
-                            filter(year_var == "year_nb"),
-                          gaussian_abun_tmb %>%
-                            filter(year_var == "year_nb")
-                          ) %>%
-                        filter(!response %in% c("species_nb", "log_species_nb"))
-                      ),
-                    tar_target(mod_tmb_comp,
-                      # Drop the main effect
-                      compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
-                      ),
-                    tar_target(mod_tmb_comp_std,
-                      # Drop the main effect
-                      compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
-                      ),
-                    # Binding
-                    tar_target(binded_gaussian_tmb,
-                      rbind(gaussian_jaccard_tmb,
-                        mutate(gaussian_rich_tmb, intercept = 1),
-                        mutate(gaussian_abun_tmb, intercept = 1)
-                        )),
-                    tar_target(binded_gaussian_tmb_simple,
-                      rbind(gaussian_jaccard_tmb_simple,
-                        gaussian_rich_tmb_simple,
-                        gaussian_abun_tmb_simple
-                        )),
-                    tar_target(binded_gaussian_tmb_no_evt_re,
-                      rbind(gaussian_rich_jaccard_tmb_no_evt_re,
-                        gaussian_abun_tmb_no_evt_re)),
-                    tar_target(binded_gaussian_tmb_no_int_re,
-                      rbind(gaussian_rich_jaccard_tmb_no_int_re,
-                        gaussian_abun_tmb_no_int_re)),
+    rbind(
+      gaussian_jaccard_tmb %>%
+        filter(intercept == 1 & year_var == "year_nb") %>%
+        select(-intercept), 
+      gaussian_rich_tmb %>%
+        filter(year_var == "year_nb"),
+      gaussian_abun_tmb %>%
+        filter(year_var == "year_nb")) %>%
+    filter(!response %in% c("species_nb", "log_species_nb"))),
+  tar_target(mod_tmb_comp,
+    # Drop the main effect
+    compare_parameters(setNames(mod_tmb$mod, mod_tmb$response), drop = "^scaled")
+    ),
+  tar_target(mod_tmb_comp_std,
+    # Drop the main effect
+    compare_parameters(
+      setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
+    ),
+  # Binding
+  tar_target(binded_gaussian_tmb,
+    rbind(gaussian_jaccard_tmb,
+      mutate(gaussian_rich_tmb, intercept = 1),
+      mutate(gaussian_abun_tmb, intercept = 1)
+      )),
+  tar_target(binded_gaussian_tmb_simple,
+    rbind(gaussian_jaccard_tmb_simple,
+      gaussian_rich_tmb_simple,
+      gaussian_abun_tmb_simple
+      )),
+  tar_target(binded_gaussian_tmb_no_evt_re,
+    rbind(gaussian_rich_jaccard_tmb_no_evt_re,
+      gaussian_abun_tmb_no_evt_re)),
+  tar_target(binded_gaussian_tmb_no_int_re,
+    rbind(gaussian_rich_jaccard_tmb_no_int_re,
+      gaussian_abun_tmb_no_int_re)),
 
-                    # Random effects
-                    tar_target(random_effects,
-                      binded_gaussian_tmb %>%
-                        mutate(random_effects = map(mod,
-                            ~try(
-                              parameters(
-                                .x,
-                                group_level = TRUE
-                                ) %>%
-                              as_tibble() %>%
-                              clean_names() %>%
-                              select(-all_of(c("se", "ci", "component", "effects")))
-                            )
-                        )
-                          ) %>%
-                      select(-mod)
-                    ),
-                  tar_target(random_effect_self_c,
-                    binded_gaussian_tmb %>%
-                      filter(intercept == 1, year_var == "year_nb")  %>%
-                      mutate(
-                        random_site = map(mod,
-                          ~try(get_random_effect_glmmTMB(
-                              .x, effect = "siteid:main_bas")
-                            )),
-                        random_basin = map(mod,
-                          ~try(get_random_effect_glmmTMB(
-                              .x, effect = "main_bas")
-                            )),
-                        random_span = map(mod,
-                          ~try(get_random_effect_glmmTMB(
-                              .x, effect = "span")
-                            )),
-                        ) %>%
-                      select(-mod)
-                    ),
-                  tar_target(pred_gaussian_tmb,
-                    binded_gaussian_tmb %>%
-                      mutate(pred_riv = furrr::future_map2(
-                          mod, year_var,
-                          ~ggemmeans(.x,
-                            terms = c(.y, "riv_str_rc1 [quart2]"),
-                            type = "fe")
-                          ),
-                        pred_plot_riv = furrr::future_map(pred_riv, plot),
-                        pred_hft = furrr::future_map2(
-                          mod, year_var,
-                          ~ggemmeans(.x,
-                            terms = c(.y, "hft_ix_c9309_diff_scaled [quart2]"),
-                            type = "fe")
-                          ),
-                        pred_plot_hft = furrr::future_map(pred_hft, plot)
-                        ) %>%
-                    select(-mod)
-                  ),
-                # tar_target(nb_sp_rich_tmb,
-                #   glmmTMB::glmmTMB(species_nb ~
-                #     year_nb * scaled_dist_up_km +
-                #     (1 + year_nb | main_bas / siteid) +
-                #     (1 + year_nb | span) +
-                #     (1 + scaled_dist_up_km | main_bas),
-                #   offset = NULL,
-                #   dispformula = ~ siteid,
-                #   family = nbinom2(link = "log"),
-                #   data = na.omit(analysis_dataset[, var_analysis]))
-                #   ),
+  # Random effects
+  tar_target(random_effects,
+    binded_gaussian_tmb %>%
+      mutate(random_effects = map(mod,
+          ~try(
+            parameters(
+              .x,
+              group_level = TRUE
+              ) %>%
+            as_tibble() %>%
+            clean_names() %>%
+            select(-all_of(c("se", "ci", "component", "effects")))
+          )
+      )
+        ) %>%
+    select(-mod)
+  ),
+tar_target(random_effect_self_c,
+  binded_gaussian_tmb %>%
+    filter(intercept == 1, year_var == "year_nb")  %>%
+    mutate(
+      random_site = map(mod,
+        ~try(get_random_effect_glmmTMB(
+            .x, effect = "siteid:main_bas")
+          )),
+      random_basin = map(mod,
+        ~try(get_random_effect_glmmTMB(
+            .x, effect = "main_bas")
+          )),
+      random_span = map(mod,
+        ~try(get_random_effect_glmmTMB(
+            .x, effect = "span")
+          )),
+      ) %>%
+    select(-mod)
+  ),
 
-                # Report
-                tar_render(intro, here("vignettes/intro.Rmd")),
-                tar_render(report, here("doc/aa-research-questions.Rmd")),
-                tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
-                tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
-                tar_render(community_structure, "doc/aca-community-structure.Rmd"),
-                tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
-                tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
-                tar_render(meeting_slides, here("talk/meeting.Rmd")),
-                tar_render(explain_high_turnover,
-                  here("doc/af-explain-high-turnover.Rmd")),
-                tar_render(biodiversity_facets_support,
-                  here("doc/ag-biodiversity-facets-support.Rmd"))
+#tar_target(pred_gaussian,
+  #binded_gaussian %>%
+    #mutate(pred_riv = furrr::future_map(
+        #mod,
+        #~ggemmeans(.x,
+          #terms = c("log1_year_nb", "riv_str_rc1 [quart2]"),
+          #type = "fe")
+        #),
+      #pred_plot_riv = furrr::future_map(pred_riv, plot),
+      #pred_hft = furrr::future_map(
+        #mod, 
+        #~ggemmeans(.x,
+          #terms = c("log1_year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
+          #type = "fe")
+        #),
+      #pred_plot_hft = furrr::future_map(pred_hft, plot)
+      #) %>%
+  #select(-mod)
+#),
+  tar_target(clust_var,
+    c("log_total_abundance", "log_chao_richness",
+      "jaccard_dis_scaled", "hillebrand_dis_scaled",
+      "appearance_scaled", "disappearance_scaled",
+      "turnover_scaled", "nestedness_scaled")
+    ),
+  tar_target(basin_no_drivers,
+    na.omit(
+      get_random_effect_df(
+        x = gaussian_no_drivers_re_self_c,
+        type = "basin",
+        resp = clust_var,
+        modelling_data = modelling_data
+     )
+   )
+   ),
+ tar_target(basin_tps,
+   na.omit(
+     get_random_effect_df(
+        x = gaussian_re_self_c,
+        type = "basin",
+        resp = clust_var,
+        modelling_data = modelling_data
+     )
+   )
+   ),
+ tar_target(site_tps,
+   na.omit(
+     get_random_effect_df(
+        x = gaussian_re_self_c,
+        type = "site",
+        resp = clust_var,
+        modelling_data = modelling_data
+        )
+   )
+   ),
+ tar_target(site_no_drivers,
+   na.omit(
+     get_random_effect_df(
+       x = gaussian_no_drivers_re_self_c,
+       type = "site",
+       resp = clust_var,
+       modelling_data = modelling_data
+     )
+   )
+   ),
+ tar_target(clust_curv_site,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers, center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .3, by = .05),
+     restr.fact = 1
+     )
+   ),
+ tar_target(clust_curv_site_fac_50,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers, center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .3, by = .05),
+     restr.fact = 50 
+     )
+   ),
+ tar_target(k6_fac_1, 
+   tclust(
+     x = scale(site_no_drivers, center = FALSE),
+     iter.max = 100, 
+     k = 6,
+     alpha = 0.05,
+     restr.fact = 1,
+     warnings = 2
+   )
+   ),
+ tar_target(k6_fac_50, 
+   tclust(
+     x = scale(site_no_drivers, center = FALSE),
+     iter.max = 100, 
+     k = 6,
+     alpha = 0.05,
+     restr.fact = 50,
+     warnings = 2
+   )
+   ),
+ tar_target(k7_fac_1,
+   tclust(scale(site_no_drivers, center = FALSE), iter.max = 100, 
+     k = 7, alpha = 0.05, restr.fact = 1)),
+ tar_target(k12_fac_1,
+   tclust(x = scale(site_no_drivers, center = FALSE),
+     iter.max = 100, 
+     k = 12, alpha = 0.05,
+     restr.fact = 1, warnings = 2)
+ ),
+ tar_target(discr_k6_fac_1, DiscrFact(k6_fac_1, threshold = 0.5)),
+ tar_target(discr_k6_fac_50, DiscrFact(k6_fac_50, threshold = 0.5)),
+ tar_target(discr_k12_fac_1, DiscrFact(k12_fac_1, threshold = 0.5)),
+ tar_target(discr_k7_fac_1, DiscrFact(k7_fac_1, threshold = 0.5)),
+ tar_target(clustering_site_check,
+   tibble(
+     type = c("internal", "stability"),
+     clvalid = list(purrr::map(type,
+         ~clValid::clValid(
+           obj = scale(site_no_drivers, center = FALSE),
+           nClust = 2:12,
+           method = "ward",
+           clMethods = c("hierarchical", "kmeans", "pam"),
+           validation = .x,
+           maxitems = 10000
+         )
+        )
+     )  
+   )
+   ),
+ tar_target(p_clust_prop, 
+   plot_cluster_proportion(
+     cluster_df = site_cl_0,
+     site_env = site_env,
+     loc_var = ecoregion
+     )),
+ tar_target(site_cl_0,
+   get_cluster_df(
+     tclust_obj = k6_fac_1,
+     site_env = site_env,
+     assign_threshold = .1,
+     clean_method = "0"
+     )),
+ tar_target(site_cl_rm,
+   get_cluster_df(
+     tclust_obj = k6_fac_1,
+     site_env = site_env,
+     assign_threshold = .1,
+     clean_method = "rm"
+     )),
+ tar_target(site_cl_na,
+   get_cluster_df(
+     tclust_obj = k6_fac_1,
+     site_env = site_env,
+     assign_threshold = .1,
+     clean_method = "na"
+     )),
+ tar_target(country_to_plot, c("USA", "FRA","GRB", "SWE")),
+ tar_target(p_cluster_country,
+   tibble(
+     country = country_to_plot,
+     p = list(plot_loc_cluster(
+         cluster_df = site_cl_na,
+         world_site = world_site_sf,
+         pays = country_to_plot 
+         ))),
+   pattern = map(country_to_plot)
+   ),
 
-                            )
+
+ # Report
+ tar_render(intro, here("vignettes/intro.Rmd")),
+ tar_render(report, here("doc/aa-research-questions.Rmd")),
+ tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+ tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+ tar_render(community_structure, "doc/aca-community-structure.Rmd"),
+ tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+ tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
+ tar_render(meeting_slides, here("talk/meeting.Rmd")),
+ tar_render(explain_high_turnover,
+   here("doc/af-explain-high-turnover.Rmd")),
+ tar_render(biodiversity_facets_support,
+   here("doc/ag-biodiversity-facets-support.Rmd")),
+ tar_render(ah_clust_tps,
+   here("doc/ah-clust-tps.Rmd"))
+
+
+                )

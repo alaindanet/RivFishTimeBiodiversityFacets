@@ -14,8 +14,6 @@ bibliography: "bibliography.bib"
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
 #knitr::opts_chunk$set(cache = TRUE)
-library(dotwhisker)
-library(broom.mixed)
 library(ade4)
 library(factoextra)
 ```
@@ -25,19 +23,11 @@ tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
 tar_load(pca_riv_str)
 tar_load(c(var_analysis, tps_var))
-tar_load(c(binded_gaussian, gaussian_comp_std, gaussian_re_self_c))
+tar_load(c(gaussian_comp_std, gaussian_int_env_comp_std, gaussian_re_self_c))
 
 var_to_keep <- c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled",
   "hillebrand_dis_scaled", "appearance_scaled", "disappearance_scaled",
   "evenness_scaled", "log_chao_richness", "log_total_abundance")
-gaussian_tmb <- binded_gaussian %>%
-  filter(response %in% var_to_keep)
-
-
-obj_mb(gaussian_tmb)
-rm(binded_gaussian)
-gc()
-
 
 tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
@@ -250,9 +240,11 @@ h_hft_cap <- "Distribution of difference between human footprint in 1993 and
 
 
 ```{r h-hft, fig.cap = h_hft_cap}
-hist(analysis_dataset$hft_ix_c9309_diff)
+hist(analysis_dataset$hft_ix_c9309_diff,
+  xlab ="human footprint difference (1993-2009)")
 s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.rm = T))
 ```
+
 - The human footprint difference between 1993 and 2009 is biaised toward an
   decrease of human footprint (average difference (sd):
   `r s_hft_diff["mean"]` (`r s_hft_diff["sd"]`)), meaning that in average the
@@ -275,7 +267,10 @@ more sense more it removes to sensibility to community changes happening just
 after the references year.
 
 However as the relationship between most dissimilarity indices and time is
-highly non linear (like a Michaelis-Menten), we decided to relax the intercept.
+highly non linear (like a Michaelis-Menten), we logged the year to linearize the
+relationship. AIC of the models with logged year were up to twice lower (Table
+SXX).
+
 
 ## Model 
 
@@ -329,7 +324,10 @@ As temporal trends of biodiversity facets had a Michaelis-Menten shape,
 we linearized the trends by taking the log of year number added to 1. Models
 with logged year had a lower AIC, up to twice (Table SXX).
 
-At each site, all the dissimilarity indices had a value of 0 the first year. Then we constrained the intercept to 0 and kept only random effect on the slope. Models comparison shows that the results are qualitatively the same.
+At each site, all the dissimilarity indices had a value of 0 the first year.
+Then we constrained the intercept to 0 and kept only random effect on the slope.
+Models comparison shows that the results are qualitatively the same (Appendix
+SXX).
 
 
 ### Species richness
@@ -416,9 +414,13 @@ site_temporal_trends %>%
   facet_wrap(vars(response), scales = "free")
 ```
 
+The estimated temporal trends of total abundance were corrected according to
+abundance units, with the estimated fixed effect from the model.
+
 ## Cluster analysis
 
 ```{r}
+tar_load(c(clust_curv_site_fac_1, k6_fac_1))
 wide_site_tps <- site_temporal_trends  %>%
   pivot_wider(names_from = "response", values_from = "year_nb")
 ```
@@ -434,30 +436,17 @@ kmeans_opt_nb_gr_sil_cap <- "Optimal number of clusters according to silhouette
 criteria and kmeans clustering."
 ```
 ```{r cl-sil, fig.cap=kmeans_opt_nb_gr_sil_cap}
-fviz_nbclust(scale(site_tps_clust), kmeans, method = "silhouette")
-kclust_tps <- kmeans(scale(site_tps_clust), centers = 4, iter.max = 10, nstart = 25)
+library(tclust)
+plot(k6_fac_1)
 ```
 Site were clustered based on the temporal trends of biodiversity facets using
-k-means method. Temporal trends were scaled before clustering. According to the
-silhouette method, the optimal number of clusters was four (Fig.
-\@ref(fig:cl-sil)). We used Hartigan and Wong partition algorithm with 25 random
-starts and a maximum of 10 iterations. Clustering was computed with
-`stats::kmeans` R function.
-
-```{r}
-# Composition of groups 
-group_tps <- wide_site_tps %>%
-  select(-species_nb, -log_species_nb) %>%
-  left_join(enframe(kclust_tps$cluster, name = "siteid", value = "cluster"),
-    by = "siteid"
-  ) 
-
-clust_var_summary <- group_tps %>% 
-  pivot_longer(-c(cluster, siteid), names_to = "variable", values_to = "values") %>%
-  group_by(cluster, variable) %>%
-  summarise(mean = mean(values), se = sd(values) / sqrt(n()), .groups = "drop") %>%
-  mutate(ci_low = mean - 1.96 * se, ci_high = mean + 1.96 * se)
-```
+trimmed robust cluster method [REF]. Temporal trends were scaled but not
+centered before clustering.  According to the cluster curver, the optimal
+number of clusters was four (Fig. \@ref(fig:cl-sil)). We used 25 starting
+positions and a maximum of 100 iterations. We trimmed 5% of outliers in the
+multidimentional space. We set cluster assignement as NA for sites that had an
+assignement improvement of 50% in another cluster. Clustering was computed with
+`tclust` R package. 
 
 We then analysed the composition of the groups by computing the average temporal
 trends by cluster groups and their confidence intervals at 95% (CI width: $1.96
@@ -466,18 +455,6 @@ trends by cluster groups and their confidence intervals at 95% (CI width: $1.96
 # Results
 
 ## Model
-
-- Effect of models: 
-
-```{r}
-mod_slp_unstd_cap <- paste0("Estimated effects of the gaussian models.
-  Coefficients are unstardardized. See the other plot for standized effects.")
-```
-
-```{r mod-slp-unstd, fig.cap=mod_slp_unstd_cap}
-plot(mod_tmb_comp) +
-  theme(legend.position = "bottom")
-```
 
 ```{r}
 mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
@@ -488,7 +465,7 @@ mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
 
 
 ```{r mod-slp-std, fig.cap=mod_slp_std_cap}
-mod_tmb_comp_std_df <- gaussian_comp_std %>%
+mod_comp_std_df <- gaussian_comp_std %>%
   as_tibble() %>%
   select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
@@ -503,18 +480,14 @@ mod_tmb_comp_std_df <- gaussian_comp_std %>%
     Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
     Parameter = str_replace_all(Parameter, get_model_term_replacement()) 
   )
-
-mod_tmb_comp_std_df %>%
+filter(mod_comp_std_df, is.na(CI_low))
+mod_comp_std_df %>%
   ggplot(
     aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
   geom_pointrange(position = position_dodge(width = .2)) + 
   labs(x = "Standardized coefficients", colour = "Response variables")
 ```
-
-```{r}
-```
-
 
 - Summary of results (Figure \@ref(fig:mod-slp-std)):
   - Temporal trends:
@@ -550,114 +523,6 @@ mod_tmb_comp_std_df %>%
     - Increase dissimiliraty of dominant species 
     - Increase disappearance?
 
-
-
-```{r}
-HERE
-knitr::opts_chunk$set(eval = FALSE)
-```
-
-```{r, fig.cap="Bad looking figure from modelbased R package"}
-pred <- estimate_relation(gaussian_jaccard_tmb$mod[[2]])
-plot(pred)
-```
-
-
-
-```{r, eval=FALSE}
-tar_load(pred_gaussian_tmb)
-```
-
-
-```{r p-pred-riv, fig.height = 16}
-pred_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
-  filter(year_var == "year_nb", intercept == 1) %>%
-  mutate(pred = map(mod,
-      ~ggemmeans(.x,
-        terms = c("year_nb", "riv_str_rc1 [quart2]"),
-        type = "fe") 
-      ),
-    pred_plot = map(pred, plot),
-    pred_plot = map(pred_plot, 
-                    ~.x +
-        theme(legend.position = "bottom") +
-          labs(title ="")
-          
-        )
-  ) %>%
-  select(-mod)
-plot_grid(plotlist = pred_year_riv_str_fe$pred_plot, ncol = 2)
-```
-```{r, fig.height = 16}
-pred_log1_year_riv_str_fe <- gaussian_jaccard_tmb  %>%
-  filter(year_var == "log1_year_nb", intercept == 1) %>%
-  mutate(pred = map(mod,
-      ~ggemmeans(.x,
-        terms = c("log1_year_nb", "riv_str_rc1 [quart2]"),
-        type = "fe")
-      ),
-    pred_plot = map(pred, plot),
-    pred_plot = map(pred_plot, 
-                    ~.x +
-        theme(legend.position = "bottom") +
-          labs(title ="")
-          
-        )
-  ) %>%
-  select(-mod)
-plot_grid(plotlist = pred_log1_year_riv_str_fe$pred_plot, ncol = 2)
-```
-
-```{r, fig.height=16}
-pred_year_hft_fe <- gaussian_jaccard_tmb  %>%
-  filter(year_var == "year_nb", intercept == 1) %>%
-  mutate(pred = map(mod,
-      ~ggemmeans(.x,
-        terms = c("year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
-        type = "fe")
-      ),
-    pred_plot = map(pred, plot),
-    pred_plot = map(pred_plot, 
-                    ~.x +
-        theme(legend.position = "bottom") +
-          labs(title ="")
-          
-        )
-  ) %>%
-  select(-mod)
-plot_grid(plotlist = pred_year_hft_fe$pred_plot, ncol = 2)
-```
-```{r, fig.height=16}
-pred_log1_year_hft_fe <- gaussian_jaccard_tmb  %>%
-  filter(year_var == "log1_year_nb", intercept == 1) %>%
-  mutate(pred = map(mod,
-      ~ggemmeans(.x,
-        terms = c("log1_year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
-        type = "fe")
-      ),
-    pred_plot = map(pred, plot),
-    pred_plot = map(pred_plot, 
-                    ~.x +
-        theme(legend.position = "bottom") +
-          labs(title ="")
-        )
-  ) %>%
-  select(-mod)
-plot_grid(plotlist = pred_log1_year_hft_fe$pred_plot, ncol = 2)
-```
-
-
-## Species richness
-
-```{r, eval = FALSE}
-
-lry <- gaussian_rich_tmb$mod[[5]]
-cry <- gaussian_rich_tmb$mod[[1]]
-```
-
-```{r}
-knitr::opts_chunk$set(eval = TRUE)
-```
 
 
 ## Cluster 

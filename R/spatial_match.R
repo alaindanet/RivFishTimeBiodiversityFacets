@@ -289,3 +289,26 @@ target_extract_chelsa_data <- function(
   return(out)
 
 }
+
+get_full_riveratlas <- function(
+  river_shp_files = NULL,
+  river_id = "HYRIV_ID",
+  var_to_collect = get_river_atlas_significant_var() 
+  ) {
+
+  out <- map_dfr(river_shp_files,
+    function(shp, col_names) {
+
+      river <- sf::read_sf(shp) %>%
+        st_drop_geometry()
+
+      river <- janitor::clean_names(river)
+      
+
+      river <- river[, tolower(col_names)]
+      return(river)
+
+    }, col_names = c(river_id, var_to_collect))
+
+  return(out)
+}

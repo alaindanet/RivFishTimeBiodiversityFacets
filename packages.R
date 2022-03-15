@@ -41,6 +41,9 @@ library(glmmTMB)
 library(easystats)
 library(ggeffects)
 
+# cluster
+library(tclust)
+
 conflict_prefer("filter", "dplyr")
 conflict_prefer("select", "dplyr")
 

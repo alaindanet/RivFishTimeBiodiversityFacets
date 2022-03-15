@@ -158,4 +158,5 @@ use_r("glmmTMB_helpers")
 use_rmd("xx-meeting-report")
 use_rmd("ag-biodiversity-facets-support")
 use_r("plot_model")
-
+use_rmd("ah-clust-tps")
+use_r("clustering_methods")
