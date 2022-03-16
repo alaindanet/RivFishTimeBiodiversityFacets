@@ -30,9 +30,12 @@ tar_load(pca_riv_str)
 tar_load(c(var_analysis, tps_var))
 tar_load(c(gaussian_comp_std, gaussian_int_env_comp_std, gaussian_re_self_c))
 
-var_to_keep <- c("jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled",
-  "hillebrand_dis_scaled", "appearance_scaled", "disappearance_scaled",
-  "evenness_scaled", "log_chao_richness", "log_total_abundance")
+var_to_keep <- c(
+  "jaccard_dis_scaled", "turnover_scaled",
+  "nestedness_scaled", "hillebrand_dis_scaled",
+  "appearance_scaled", "disappearance_scaled"
+  "log_chao_richness", "log_total_abundance"
+)
 
 tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
@@ -445,6 +448,7 @@ kmeans_opt_nb_gr_sil_cap <- "Objective function value according to the
 proportion of outliers data trimmed and the number of cluster(colored lines). Up
 to 6 cluster, the proportion of trimmed data does not change the ranking of the clustering. We chose to stick with 6 clusters with a removal 0.05 of the outliers"
 ```
+
 ```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap}
 plot(clust_curv_site_fac_50)
 ```
@@ -467,10 +471,6 @@ positions and a maximum of 100 iterations. We trimmed 5% of outliers in the
 multidimentional space. We set cluster assignement as NA for sites that had an
 assignement improvement of 50% in another cluster. Clustering was computed with
 `tclust` R package. 
-
-We then analysed the composition of the groups by computing the average temporal
-trends by cluster groups and their confidence intervals at 95% (CI width: $1.96
-\sigma/\sqrt{N}$).
 
 # Results
 
@@ -577,11 +577,14 @@ ggplot(data = world) +
 
 
 - Cluster analysis: 
-  - Cluster 1: low appearance + decrease richness
-  - Cluster 2: low jaccard dis + increase richness
-  - Cluster 3: high jaccard dis + high turnover + low nestedness + increase richness
-  - Cluster 4: high richness increase + high evenness + high jaccard dis + high nestedness +
-   low turnover
+  - Cluster 1: Low change 
+  - Cluster 2: decrease abundance + medium dissimilarity 
+  - Cluster 3: increase abundance + medium dissimilarity + low richness change 
+  - Cluster 4: increase abundance + medium dissimilarity + increase richness +
+    high nestedness 
+  - Cluster 5: medium increase abundance + high dissimilarity +  medium increase richness +
+    high turnover 
+  - Cluster 6: No abundance change + medium dissimilarity + decrease richness
 
 ```{r}
 clust_var_summary %>%
