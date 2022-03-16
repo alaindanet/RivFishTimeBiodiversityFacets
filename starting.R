@@ -160,3 +160,6 @@ use_rmd("ag-biodiversity-facets-support")
 use_r("plot_model")
 use_rmd("ah-clust-tps")
 use_r("clustering_methods")
+
+# Template for scientific paper
+install.packages("distill")

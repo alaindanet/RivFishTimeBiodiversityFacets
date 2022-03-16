@@ -3,6 +3,10 @@ title: "Meeting report"
 author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
+  distill::distill_article:
+    toc: true
+    toc_float: true
+    code_folding: true
   bookdown::html_document2:
     toc: true
     toc_float: true
@@ -16,6 +20,7 @@ source(here::here("start_rmd.R"))
 #knitr::opts_chunk$set(cache = TRUE)
 library(ade4)
 library(factoextra)
+library(tclust)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -420,7 +425,11 @@ abundance units, with the estimated fixed effect from the model.
 ## Cluster analysis
 
 ```{r}
-tar_load(c(clust_curv_site_fac_1, k6_fac_1))
+tar_load(c(
+    clust_curv_site, k6_fac_1,
+    clust_curv_site_fac_50, k6_fac_50,
+    discr_k6_fac_50
+    ))
 wide_site_tps <- site_temporal_trends  %>%
   pivot_wider(names_from = "response", values_from = "year_nb")
 ```
@@ -432,13 +441,24 @@ site_tps_clust <- wide_site_tps %>%
 rownames(site_tps_clust) <- wide_site_tps$siteid
 ```
 ```{r}
-kmeans_opt_nb_gr_sil_cap <- "Optimal number of clusters according to silhouette
-criteria and kmeans clustering."
+kmeans_opt_nb_gr_sil_cap <- "Objective function value according to the
+proportion of outliers data trimmed and the number of cluster(colored lines). Up
+to 6 cluster, the proportion of trimmed data does not change the ranking of the clustering. We chose to stick with 6 clusters with a removal 0.05 of the outliers"
 ```
-```{r cl-sil, fig.cap=kmeans_opt_nb_gr_sil_cap}
-library(tclust)
-plot(k6_fac_1)
+```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap}
+plot(clust_curv_site_fac_50)
 ```
+
+```{r}
+kmeans_sites <- "Distribution of the sites in discriminant space, colored by
+their cluster assignement (left). Stilhouette profile. Black points represent sites that have been trimmed
+at the 5% threshold."
+```
+
+```{r cl-p, fig.cap=kmeans_sites}
+plot(discr_k6_fac_50)
+```
+
 Site were clustered based on the temporal trends of biodiversity facets using
 trimmed robust cluster method [REF]. Temporal trends were scaled but not
 centered before clustering.  According to the cluster curver, the optimal
