@@ -16,6 +16,7 @@ bibliography: "bibliography.bib"
 source(here::here("start_rmd.R"))
 library(ade4)
 library(factoextra)
+library(nnet)
 old <- par()
 ```
 
@@ -344,7 +345,6 @@ plot_grid(plotlist = p_pca, ncol = 1)
 # Multinomial logit model
 
 ```{r}
-library(nnet)
 ```
 
 ```{r}

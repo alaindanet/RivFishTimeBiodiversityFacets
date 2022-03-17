@@ -1,17 +1,12 @@
 ---
 title: "Meeting report"
 author: "Alain Danet"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: "`r format(Sys.time(), '%B %d %Y')`"
 output: 
   distill::distill_article:
     toc: true
     toc_float: true
     code_folding: true
-  bookdown::html_document2:
-    toc: true
-    toc_float: true
-    theme: "readable"
-    code_folding: hide
 bibliography: "bibliography.bib"
 ---
 
@@ -21,24 +16,30 @@ source(here::here("start_rmd.R"))
 library(ade4)
 library(factoextra)
 library(tclust)
+library(hrbrthemes)
 ```
 
 ```{r load-targets, include=FALSE}
 tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
 tar_load(pca_riv_str)
-tar_load(c(var_analysis, tps_var))
-tar_load(c(gaussian_comp_std, gaussian_int_env_comp_std, gaussian_re_self_c))
-
-var_to_keep <- c(
-  "jaccard_dis_scaled", "turnover_scaled",
-  "nestedness_scaled", "hillebrand_dis_scaled",
-  "appearance_scaled", "disappearance_scaled"
-  "log_chao_richness", "log_total_abundance"
-)
+tar_load(c(var_analysis, tps_var, clust_var))
+tar_load(c(
+    gaussian_comp_std,
+    gaussian_int_env_comp_std,
+    gaussian_re_self_c))
 
 tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
+
+tar_load(p_clust_prop)
+
+tar_load(c(
+    clust_curv_site, k6_fac_1,
+    clust_curv_site_fac_50, k6_fac_50,
+    discr_k6_fac_50,
+    site_cl_rm
+    ))
 ```
 
 ```{r map-setup, include=FALSE}
@@ -49,11 +50,13 @@ loc <- world_site_sf$site
 # Abstract/summary (so far)
 
 - Downstream gradient is related more dissimilarity through time  
-- Cluster analysis reveals that there are only 4 scenarios of biodiversity
+- Human pressure recent increase is related more dissimilarity through time and 
+  less species richness increase 
+- Cluster analysis reveals that there are only 6 scenarios of biodiversity
   trends, indicating a low dimensionality of biodiversity trends
-- Cluster analysis seems reveal that biodiversity changes are
-  heterogenous at lower scale that previously shown [@blowes_geography_2019;
-  @klink_meta-analysis_2020]
+- Cluster analysis seems reveal that the spatial heterogeneity of biodiversity
+  changes takes place at lower scale that previously shown
+  [@blowes_geography_2019; @klink_meta-analysis_2020]
 
 # Introduction 
 
@@ -77,54 +80,10 @@ loc <- world_site_sf$site
 
 ## Research gap
 
-- Biodiversity trends are all about geographical variation, i.e. few ecological drivers are involved
+- Biodiversity trends are often analysed one facet at a time 
+- Ecological drivers are often not included in Biodiversity trends assessment at global scale 
+- Spatial grain is often at the continental scale, hiding more local variation
 
-## Research questions 
-
-### Drivers of temporal changes 
-
-- What are the drivers of community changes ?
-  - Climate change: more appearance and disappearance in the upper basin
-  - More species turnover far from the source because of dispersal ability
-
-```{r}
-cap_turn <- paste0(
-  "The hypothesis is that sites located at the middle of the stream network
-  will experience the more composition change through time because of two
-  opposites constraints. Climate change is expected to drive species upward in
-  the stream network but an opposite constrain gathered into hydrological
-  contrain, such as water flowand obstacles to migration will restrain the
-  upward migration. The sum of those constrains is hypothesized to result in a
-  quadratic relationship between jaccard turnover and distance from source.")
-```
-
-
-```{r, fig.cap=cap_turn}
-knitr::include_graphics(here::here("doc/fig/turnover_hyp.png"))
-```
-
-### Within and basin scale 
-
-- Temporal homogeneization at the basin scale?
-
-```{r}
-dis_cap <- paste0("If sites within basin becomes more dissimilar from their
-  reference (first year of observation), we
-  should observe at the same time an homogeneization of sites at the basin scale")
-```
-
-```{r, fig.cap=dis_cap}
-ggplot(tibble(x = c(0, .1)), aes(x)) +
-  stat_function(fun = function(x) x, geom = "line") +
-  labs(
-    x = "Average temporal dissimalitiry within basin",
-    y = "Temporal similarity at the basin scale"
-  )
-```
-
-
-- Product:
-  - Map of temperature and distance to effect on turnover by basin ?
 
 ## Fish freshwater in streams 
 
@@ -168,21 +127,22 @@ ggplot(data = world) +
 
 ## Biodiversity
 
-### Quantity
+### Total abundance
 
-- Hill numbers 
-  - $H^0$: Species richness 
-  - $H^1$: Shannon
-  - $H^2$: Simpson
+Total abundance was reported in four different units: Count, Count by 100m^2,
+Leslie index & CPUE. The two first units account for 80% of the data.
 
-We used also hill numbers with coverage-based correction proposed by
-@chao_coverage-based_2014. The Chao index correct the species richness for the sampling coverage. The sampling coverage of each sampling is evaluated by the total number of individual and the number of singleton and (double) species. All the sampling events were set at the same coverage of .80,
-interpolation and rarefaction for respectively low and high coverage sampling. Chao index was logged to express the temporal trends of species richness of percentage variation. The temporal trends estimated from uncorrected species richness gave the same results (Figure SXX).
+### Species richness 
 
-- Evenness:
-  - Pielou: $J = H^1 / log(S)$ 
-
-
+We computed species richness with coverage-based correction proposed by
+@chao_coverage-based_2014. The Chao index correct the species richness for the
+sampling coverage. The sampling coverage of each sampling is evaluated by the
+total number of individual and the number of singleton and (double) species. All
+the sampling events were set at the same coverage of .80,
+interpolation and rarefaction for respectively low and high coverage sampling.
+Chao index was logged to express the temporal trends of species richness of
+percentage variation. The temporal trends estimated from uncorrected species
+richness gave the same results (Figure SXX).
 
 ### Betadiversity 
 
@@ -193,7 +153,6 @@ first year of sampling.
 - Species exchange index: [@hillebrand_biodiversity_2018]
   - Presence-absence: $J = SER_r = \dfrac{S_{imm} + S_{lost}}{S_{tot}}$
   - Relative abundance: $SER_a = \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}$ 
-
   - $S_{imm}$, $S_{lost}$, $S_{tot}$: number of immigrant, lost and total species respectively
   - $i$: species $i$, $p$: relative abundance, $\prime$: second community
   - $J$: Jaccard index
@@ -275,23 +234,22 @@ more sense more it removes to sensibility to community changes happening just
 after the references year.
 
 However as the relationship between most dissimilarity indices and time is
-highly non linear (like a Michaelis-Menten), we logged the year to linearize the
-relationship. AIC of the models with logged year were up to twice lower (Table
+highly non linear (like a Michaelis-Menten), we logged the number of year since
+the first year of sampling (plus one)  to linearize the relationship. AIC of
+the models with logged years were up to twice lower (Table
 SXX).
 
 
 ## Model 
 
-
-
 ### Turnover
 
 Jaccard dissimilarity, nestedness, turnover, appearance, disappearance and
 hillebrand were modelled in two ways, Beta and gaussian regression. Beta
-regressions are more appropriate for distribution borned by [0,1] and are
+regressions are more appropriate for distribution bounded by [0,1] and are
 linearized by a logit link. Logit links have the cons that coefficients are less
 easy to interpret. So we run both gaussian and beta regressions and investigate
-the sensivity of our results to modelling choice. Values of
+the sensitivity of our results to modelling choice. Values of
 turnover were slightly transformed such as values of one and zero fitted beta
 regression requirements ($x' = \dfrac{x \times (N - 1) + 0.5}{N}$).
 
@@ -340,7 +298,9 @@ SXX).
 
 ### Species richness
 
-At the difference with dissimilarity index, we modelled species richness with the intercept and the main effect of ecological drivers. We modeled species richness with Chao index. 
+At the difference with dissimilarity index, we modelled species richness with
+the intercept and the main effect of ecological drivers. We modelled logged species
+richness with Chao index. 
 
 $$
 B_i = \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + \epsilon
@@ -364,10 +324,11 @@ $$
 ### Total abundance
 
 In the dataset, total abundance was described as raw count, counts by $100m^2$,
-CPUE, and Leslie index representing respectively XX% of the site. To account for
-this hererogeneity, we included the unit of measurement as a main affect explaining total abundance but also
-as an interaction with the year effect, in a similar way than previous studies [@klink_meta-analysis_2020].
-Similar to species richness modelling, we modelled the log of total abundances. 
+CPUE, and Leslie index representing respectively XX% of the sites. To account
+for this hererogeneity, we included the unit of measurement as a main affect
+explaining total abundance but also as an interaction with the year effect, in a
+similar way than previous studies [@klink_meta-analysis_2020].  Similar to
+species richness modelling, we modelled the log of total abundances. 
 
 
 $$
@@ -417,7 +378,9 @@ site_temporal_trends <- gaussian_re_self_c %>%
 
 ```{r}
 site_temporal_trends %>%
-  ggplot(aes(x =log1_year_nb)) +
+  filter(response %in% clust_var) %>%
+  mutate(response = get_var_replacement()[response]) %>%
+  ggplot(aes(x = log1_year_nb)) +
   geom_histogram() +
   facet_wrap(vars(response), scales = "free")
 ```
@@ -428,18 +391,13 @@ abundance units, with the estimated fixed effect from the model.
 ## Cluster analysis
 
 ```{r}
-tar_load(c(
-    clust_curv_site, k6_fac_1,
-    clust_curv_site_fac_50, k6_fac_50,
-    discr_k6_fac_50
-    ))
 wide_site_tps <- site_temporal_trends  %>%
-  pivot_wider(names_from = "response", values_from = "year_nb")
+  pivot_wider(names_from = "response", values_from = "log1_year_nb")
 ```
 
 ```{r}
 site_tps_clust <- wide_site_tps %>%
-  select(-siteid, -species_nb, -log_species_nb) %>%
+  select(all_of(clust_var)) %>%
   as.data.frame()
 rownames(site_tps_clust) <- wide_site_tps$siteid
 ```
@@ -449,7 +407,7 @@ proportion of outliers data trimmed and the number of cluster(colored lines). Up
 to 6 cluster, the proportion of trimmed data does not change the ranking of the clustering. We chose to stick with 6 clusters with a removal 0.05 of the outliers"
 ```
 
-```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap}
+```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap, fig.height=7}
 plot(clust_curv_site_fac_50)
 ```
 
@@ -465,26 +423,18 @@ plot(discr_k6_fac_50)
 
 Site were clustered based on the temporal trends of biodiversity facets using
 trimmed robust cluster method [REF]. Temporal trends were scaled but not
-centered before clustering.  According to the cluster curver, the optimal
-number of clusters was four (Fig. \@ref(fig:cl-sil)). We used 25 starting
+centered before clustering.  According to the optimal function, the optimal
+number of clusters was between 6 and 8 (Fig. \@ref(fig:cl-curve)). We used 25 starting
 positions and a maximum of 100 iterations. We trimmed 5% of outliers in the
 multidimentional space. We set cluster assignement as NA for sites that had an
-assignement improvement of 50% in another cluster. Clustering was computed with
+assignement improvement of 10% in another cluster. Clustering was computed with
 `tclust` R package. 
 
 # Results
 
-## Model
+## Temporal trends of biodiversity facets
 
 ```{r}
-mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
-  Coefficients were standardized by refiting the models with scaled response and
-  explicative variables. Bars represent CI at 95% computed with Wald
-  approximation.")
-```
-
-
-```{r mod-slp-std, fig.cap=mod_slp_std_cap}
 mod_comp_std_df <- gaussian_comp_std %>%
   as_tibble() %>%
   select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
@@ -494,413 +444,352 @@ mod_comp_std_df <- gaussian_comp_std %>%
   filter(
     !Parameter %in% "(Intercept)",
     !str_detect(Parameter, "unitabundance"),
-    response %in% var_to_keep
+    response %in% clust_var 
   ) %>%
   mutate(response = get_var_replacement()[response],
     Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
     Parameter = str_replace_all(Parameter, get_model_term_replacement()) 
   )
-filter(mod_comp_std_df, is.na(CI_low))
-mod_comp_std_df %>%
+```
+
+```{r}
+mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
+  Coefficients were standardized by refiting the models with scaled response and
+  explicative variables. Bars represent CI at 95% computed with Wald
+  approximation.")
+```
+
+```{r mod-slp-std, fig.cap=mod_slp_std_cap, layout="l-page", fig.width=8, fig.height=6}
+source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
+
+pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
+pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
+
+
+p <- mod_comp_std_df %>%
   ggplot(
     aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
-  geom_pointrange(position = position_dodge(width = .2)) + 
-  labs(x = "Standardized coefficients", colour = "Response variables")
+  geom_vline(xintercept = 0) +
+  geom_pointrange(position = position_dodge(width = .7)) +
+  labs(x = "Standardized coefficients", colour = "Response variables") +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+
+withr::with_options(
+  list(ggplot2.discrete.colour = pal),
+  print(p + scale_color_discrete())
+)
+
 ```
 
-- Summary of results (Figure \@ref(fig:mod-slp-std)):
-  - Temporal trends:
-    - All the dissimiliraty indices increased in time :
-      - Jaccard, abundance dissimiliraty and appearance have the higher temporal trends
+- In average, all biodiversity facets had a positive temporal trend:
+  - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
         ($r_\delta$ around 0.37), followed by disappearance, nestedness and
         turnover ($r_\delta$ around 0.25)
-    - Species richness and total abundance has a tiny increase around 0.025 (ten time less) and
-      evenness did not change through time in average
-  - River structure (upstream -> downstream, called hereafter stream gradient):
-    - Species richness was higher toward downstream
-    - But had no effect on total abundance
-  - Human footprint change (1993-2009):
-    - Species richness was overall lower where pressure increased
-    - Total abundance was overall higher where pressure increased
-  - Interaction between temporal trends and stream gradient (year nb riv str rc1 effect):
-    - Trends of total abundance and species richness were higher downstream than
-      upstream
-    - Turnover (i.e. change in species identity) was higher downstream than
-      upstream but we found the opposite for Nestedness, which was lower downstream than
-      upstream. Overall Jaccard was not affected by stream gradient (logical:
-      knowing that turnover = 1 - nestedness; if jaccard is not affected by
-      stream gradient, turnover and nestedness display necesseraly antagonistic effects).
-    - Temporal trends of Appearance and Disappearance were not affected by
-      stream gradient 
-    - The trends of abundance dissimiliraty index was higher downstream then
-      upstream but not the one base on presence / absence. 
-  - Interaction between temporal trends and human footprint difference (year nb
-     effect):
-     - temporal change in Human footprint had a negative effect on trends of species richness but not
-       on total abundance trends 
-    - Increase Turnover 
-    - Increase dissimiliraty of dominant species 
-    - Increase disappearance?
+  - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
+- Stream gradient (upstream -> downstream, called hereafter stream gradient):
+  - Total abundance was higher toward downstream
+  - No effect on species richness
+- Human footprint change (1993-2009):
+  - Species richness was overall lower where pressure increased
+  - Total abundance was overall higher where pressure increased
+- Effect of stream gradient on temporal trends:
+  - **Higher increase in dissimilarity downstream**: turnover and abundance based dissimilarity
+  - **Higher increase in total abundance and species richness downstream**
+  - No effect on Jaccard, appearance and disappearance
+- Effect of human footprint change (1993-2009) on temporal trends: 
+  - **Higher increase in turnover and abundance based dissimilarity where
+    pressure increased** (change in species identity)
+  - **Lower increase in species richness where pressure increased**
 
 
+## Typology of biodiversity trends 
 
-## Cluster 
 
 ```{r}
-kclust_cap <- "PCA on the temporal trends with identified clusters based on
-kmeans method (See methods). Convex ellipses are displayed."
-```
-```{r, fig.cap=kclust_cap}
-# Kmeans
-p_pca_clust <- fviz_cluster(
-  object = kclust_tps,
-  data = site_tps_clust,
-  geom = "point",
-  ellipse.type = "convex", 
-  ggtheme = theme_bw()
-)
-```
-
-```{r}
-# Map
-cluster_loc <- loc %>%
-  left_join(enframe(kclust_tps$cluster, name = "siteid", value = "cluster"),
-    by = "siteid"
-    ) %>%
-filter(!is.na(cluster))
-ggplot(data = world) +
-  geom_sf() +
-  geom_sf(data = cluster_loc, aes(color = as.factor(cluster)), shape = 16) +
-  theme(legend.position = "bottom")
-```
-
-
-- Cluster analysis: 
-  - Cluster 1: Low change 
-  - Cluster 2: decrease abundance + medium dissimilarity 
-  - Cluster 3: increase abundance + medium dissimilarity + low richness change 
-  - Cluster 4: increase abundance + medium dissimilarity + increase richness +
-    high nestedness 
-  - Cluster 5: medium increase abundance + high dissimilarity +  medium increase richness +
-    high turnover 
-  - Cluster 6: No abundance change + medium dissimilarity + decrease richness
-
-```{r}
-clust_var_summary %>%
-  ggplot(
-    aes(
-      x = variable, y = mean,
-      ymin = ci_low, ymax = ci_high,
-      color = as.factor(cluster))
-    ) +
-  geom_pointrange(position = position_dodge(width = .2)) +
+p_cl_dist <- site_cl_rm %>%
+  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
+  pivot_longer(-c(siteid, cl),
+    names_to = "variable",
+    values_to = "value") %>%
+  mutate(variable = get_var_replacement()[variable]) %>%
+  ggplot(aes(x = variable, y = value, color = as.factor(cl))) +
+  geom_boxplot() +
   geom_hline(yintercept = 0) +
-  theme(legend.position = "bottom")
+  theme(axis.text.x = element_text(angle = 20, hjust = 1)) +
+  labs(x = "Response variable",
+    y = "Scaled values",
+    color = "Cluster")
 ```
-
-
 ```{r}
-knitr::opts_chunk$set(eval = FALSE)
+cl_dist_cap <- "Distribution of variable values by cluster"
 ```
 
-- Map:
 
-
-```{r}
-pred_slope <- gaussian_jaccard_tmb %>%
-  mutate(
-    site_slope = map(mod, function(m) {
-      coef(m)$cond[["siteid:main_bas"]] %>%
-        rownames_to_column(var = "siteid_main_bas") %>%
-        separate(
-          col = "siteid_main_bas",
-          into = c("siteid", "main_bas"),
-          sep = ":") %>%
-        select(-main_bas)
-    }),
-    basin_slope = map(mod, function(m) {
-      coef(m)$cond[["main_bas"]] %>%
-        rownames_to_column(var = "main_bas") 
-    }),
-  ) %>%
-select(-mod)
-pred_slope$basin_slope[[1]] %>%
-  as_tibble()
-
-pred_slope <- pred_slope %>%
-  mutate(
-    sf_site = map(site_slope,
-      ~left_join(.x, select(loc, siteid, geometry), by = "siteid") %>%
-        st_as_sf()
-      ),
-    sf_basin = map(basin_slope,
-      ~left_join(.x, loc %>%
-        mutate(main_bas = as.character(main_bas)) %>%
-        select(main_bas, geometry), by = "main_bas") %>%
-        st_as_sf()
-      ),
-    sf_site_map = map2(sf_site, year_var,
-      ~ggplot(data = world) +
-        geom_sf() +
-        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
-        scale_color_viridis() +
-        theme(legend.position = "bottom")),
-    sf_basin_map = map2(sf_basin, year_var,
-      ~ggplot(data = world) +
-        geom_sf() +
-        geom_sf(data = .x, aes_string(color = .y), shape = 16) +
-        scale_color_viridis() +
-        theme(legend.position = "bottom"))
-  )
-```
-
-#### Site
-
-```{r}
-pred_slope$sf_site_map[[1]] +
-  labs(title = "Jaccard")
-
-pred_slope$sf_site_map[[3]] +
-  labs(title = "Turnover")
-
-pred_slope$sf_site_map[[5]] +
-  labs(title = "Nestedness")
-```
-
-#### Basin
-
-```{r}
-pred_slope$sf_basin_map[[1]] +
-  labs(title = "Jaccard")
-
-pred_slope$sf_basin_map[[3]] +
-  labs(title = "Turnover")
-
-pred_slope$sf_basin_map[[5]] +
-  labs(title = "Nestedness")
-```
-
-```{r, eval=FALSE}
-paste0(var_temporal_trends,
-  " ~ ",
-  "dist_up_km + tmp_dc_cyr +
-  (1 + dist_up_km + tmp_dc_cyr | main_bas)"
-) %>%
-as.formula
-```
-
-```{r}
-library(spaMM)
-```
-
-```{r}
-ti_trends <- map(var_temporal_trends,
-  ~fitme(
-  as.formula(paste0("scale(", .x, ") ~ dist_up_km + tmp_c_cyr + (1 | main_bas)")),
-  data = slp_env[,
-    colnames(slp_env) %in%
-    c(.x, "siteid", "dist_up_km", "tmp_c_cyr", "main_bas", "ecoregion")
-  ]
-  )
+```{r cl-bp, fig.cap=cl_dist_cap, layout="l-body-outset"}
+cl_label <- c(
+  "1: No change",
+  "2: High turnover",
+  "3: Increase of species richness",
+  "4: Decrease of species richness",
+  "5: Decrease of abundance",
+  "6: Increase of abundance"
 )
-names(ti_trends) <- var_temporal_trends
-```
 
-```{r}
-ci <- map_dfr(ti_trends[names(ti_trends) %in% c("log_total_abundance", "log_species_nb", "jaccard",
-      "appearance", "disappearance", "turnover",
-      "nestedness", "hillebrand")], function(v) {
-  x <- confint(v, c("dist_up_km", "tmp_c_cyr"), verbose = FALSE)
-  tmp <- map_dfr(x, function(x) {
-    tm <- x$interval
-    names(tm) <- c("lower", "upper")
-    return(tm)
-  }, .id = "parm"
+p_cl_dist +
+  scale_color_discrete(
+    name = "Cluster",
+    breaks = seq_len(6),
+    labels = cl_label
   )
-  return(tmp)
-}, .id = "response")
-ci %>%
-  kable(.,
-    caption = "Confidence interval (bootstrap)")
 ```
+
+- Cluster signification (Figure \@ref(fig:cl-bp)):
+  - Cluster 1: Low change 
+  - Cluster 2: High turnover + medium increase abundance + high dissimilarity +
+    medium increase richness
+  - Cluster 3: High increase richness + high nestedness + increase abundance +
+    medium dissimilarity
+  - Cluster 4: Decrease richness + No abundance change + medium dissimilarity
+  - Cluster 5: Decrease abundance + medium dissimilarity 
+  - Cluster 6: Increase abundance + medium dissimilarity + low richness change 
+
+- Summary: **Cluster are determined by abundance, species richness and turnover,
+  meaning that there isa  low dimensionality of biodiversity trends**
+
 
 ```{r}
-from_data_to_predict <- function(
-  model_list = NULL,
-  dataset = NULL,
-  re = NULL
-) {
+world_site_sf$cl <- world_site_sf$site %>%
+    left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
+    mutate(cl = relevel(as.factor(cl), ref = 1))
 
-  pred <- na.omit(dataset)
-  for (i in seq_along(names(model_list))) {
-    tmp <- predict(model_list[[i]],
-      re.form = as.formula(re),
-      intervals = "predVar"
-      )[,1]
-    names(tmp) <- NULL
-    pred[[names(model_list)[i]]] <- tmp
-  }
-  return(pred)
-}
-```
+main_map <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(color = cl))
 
-```{r, eval = FALSE}
-xx <- list(
-    tmp_c_cyr = seq(min(na.omit(slp_env$tmp_c_cyr)), max(na.omit(slp_env$tmp_c_cyr)), length.out = 10),
-    dist_up_km = seq(min(na.omit(slp_env$dist_up_km)), max(na.omit(slp_env$dist_up_km)), length.out = 10),
-    main_bas = unique(na.omit(slp_env$main_bas))
+zoom_map <- list(
+  north_am = "USA",
+  south_eu = c("FRA", "GBR", "HUN", "ESP", "BEL"),
+  north_eu = c("FIN", "NOR", "SWE"),
+  aus = "AUS"
 )
-new_data <- expand.grid(xx) %>%
-    as_tibble()
-pred <- predict(ti_trends[[1]], newdata = new_data, re.form = re, intervals="predVar")
-int <- cbind(pred[,1], attr(pred, "intervals")) %>%
-    as_tibble() %>%
-    rename(y = V1)
-```
-```{r, eval = FALSE}
-xxx <- cbind(int, new_data) %>%
-    as_tibble
-xxx %>%
-    ggplot(aes(y = y, x = dist_up_km, color = main_bas)) +
-    geom_point() +
+
+zoom_map_coord <- map(zoom_map,
+  ~world_site_sf$cl %>%
+    filter(country %in% .x) %>%
+    st_bbox()
+)
+
+zoom_map_coord_df <- map_dfr(zoom_map_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(label = LETTERS[seq_len(4)])
+
+main_map_rect <- main_map +
+  geom_rect(
+    data = zoom_map_coord_df,
+  aes(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax),
+    fill = NA,
+    colour = "black",
+    size = 0.6) +
+  geom_text(
+    data = zoom_map_coord_df,
+    aes(x = xmin, y = ymax, label = label),
+    vjust = 1, hjust = 1, size = 15
+  )
+
+p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
+  ~main_map_rect +
+    coord_sf(
+      xlim = .x[c("xmin", "xmax")],
+      ylim = .x[c("ymin", "ymax")],
+      expand = FALSE) +
+    annotate("text", x = .x["xmin"], y = .x["ymax"],
+      label = .y, size = 15, vjust = 1, hjust = 0) +
     theme(legend.position = "none")
-```
-
-
-
-```{r}
-re <- paste0("~ tmp_c_cyr + (1 | main_bas)")
-pred_tmp <- from_data_to_predict(
-  model_list = ti_trends,
-  dataset = slp_env,
-  re = re
-)
-p_tmp <- map(
-  c(
-      "log_total_abundance", "log_species_nb", "jaccard",
-      "appearance", "disappearance", "turnover",
-      "nestedness", "hillebrand"),
-  function(x) {
-    pred_tmp %>%
-      ggplot(aes(
-          y = !!sym(x),
-          x = tmp_c_cyr,
-          color = main_bas
-          )) +
-      geom_line() +
-      theme(legend.position = "none")
-  }
-)
-plot_grid(plotlist = p_tmp, ncol = 3)
-```
-
-```{r}
-re <- paste0("~ dist_up_km + (1 | main_bas)")
-pred <- na.omit(slp_env)
-for (i in seq_along(var_temporal_trends)) {
-  tmp <- predict(trend_env[[i]],
-    re.form = as.formula(re)
-    )[, 1]
-  names(tmp) <- NULL
-  pred[[var_temporal_trends[i]]] <- tmp
-}
-p <- map(
-  c("log_total_abundance", "log_species_nb", "jaccard",
-      "appearance", "disappearance", "turnover",
-      "nestedness", "hillebrand"),
-  function(x) {
-
-    pred %>%
-      ggplot(aes(
-          y = !!sym(x),
-          x = dist_up_km,
-          color = as.factor(main_bas),
-          shape = as.factor(ecoregion)
-          )) +
-      geom_line() +
-      theme(legend.position = "none")
-  }
-)
-plot_grid(plotlist = p, ncol = 3)
-```
-
-```{r}
-re <- paste0("~ tmp_dc_cyr + (1 | main_bas)")
-pred_tmp <- from_data_to_predict(
-  model_list = trend_env,
-  dataset = slp_env,
-  re = re
-)
-p_tmp <- map(
-  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
-  function(x) {
-    pred_tmp %>%
-      ggplot(aes(
-          y = !!sym(x),
-          x = tmp_dc_cyr,
-          color = as.factor(main_bas)
-          )) +
-      geom_line() +
-      theme(legend.position = "none")
-  }
-)
-plot_grid(plotlist = p_tmp, ncol = 3)
-```
-
-- Ecoregion:
-
-```{r}
-re <- paste0("~ dist_up_km + (1 + dist_up_km | ecoregion)")
-pred_dist_ecoregion <- from_data_to_predict(
-  model_list = trend_env,
-  dataset = slp_env,
-  re = re
 )
 ```
 
-```{r}
-p_dist_ecoregion <- map(
-  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
-  function(x) {
-
-    pred_dist_ecoregion %>%
-      ggplot(aes(
-          y = !!sym(x),
-          x = dist_up_km,
-          color = as.factor(ecoregion)
-          )) +
-      geom_line() +
-      theme(legend.position = "none")
-  }
+```{r cl-heat}
+te <- expand.grid(
+  list(
+    cluster = c(seq_len(6)),
+    response = clust_var
+  )
 )
-plot_grid(plotlist = p_dist_ecoregion, ncol = 3)
+
+avg_cl_var <- site_cl_rm %>%
+  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
+  pivot_longer(-c(siteid, cl),
+    names_to = "response",
+    values_to = "value") %>%
+  group_by(cl, response) %>%
+  summarise(value = median(value), .groups = "drop") %>%
+  rename(cluster = cl)
+
+# Ajouter moyenne par cluster
+te <- te %>%
+  left_join(avg_cl_var, by = c("cluster", "response"))
+
+heat_map_df <- te %>%
+  pivot_wider(names_from = "response", values_from = "value")
 ```
 
 ```{r}
-re <- paste0("~ tmp_dc_cyr + (1 + tmp_dc_cyr | ecoregion)")
-pred_tmp_ecoregion <- from_data_to_predict(
-  model_list = trend_env,
-  dataset = slp_env,
-  re = re
-)
+heat_cl <- te %>%
+  ggplot(aes(
+      x = get_var_replacement()[response],
+      y = str_replace_all(as.character(cluster),
+        setNames(cl_label, seq_len(6))),
+      fill = value)) +
+  geom_tile() +
+  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
+  coord_fixed() +
+  scale_fill_gradient2(
+    high = muted("red"),
+    mid = "white",
+    low = muted("blue"),
+    midpoint = 0,
+    space = "Lab") +
+  labs(x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
 ```
 
 ```{r}
-p_tmp_ecoregion <- map(
-  c("log_species_nb", "jaccard", "appearance", "disappearance", "turnover", "hillebrand"),
-  function(x) {
-    pred_tmp_ecoregion %>%
-      ggplot(aes(
-          y = !!sym(x),
-          x = tmp_dc_cyr,
-          color = as.factor(main_bas)
-          )) +
-      geom_line() +
-      theme(legend.position = "none")
-  }
+# Build heatmap
+site_cl_rm$cl <- relevel(as.factor(site_cl_rm$cl), ref = 1)
+
+cl_mod <- nnet::multinom(
+  cl ~ riv_str_rc1 + hft_c9309_scaled_no_center,
+  data = site_cl_rm)
+```
+
+```{r}
+ci_cl_mod <- exp(confint(cl_mod)) - 1
+exp_cl_mod <- exp(coef(cl_mod))
+z_cl_mod <- summary(cl_mod)$coefficients / summary(cl_mod)$standard.errors
+
+
+s_cl_mod <- map_dfr(list(exp_coef = exp_cl_mod, z = z_cl_mod),
+  ~.x[, c("riv_str_rc1", "hft_c9309_scaled_no_center")] %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "cluster"), .id = "type"
+) %>%
+  pivot_longer(c("riv_str_rc1", "hft_c9309_scaled_no_center"),
+    names_to = "variable", values_to = "value") %>%
+  pivot_wider(names_from = "type", values_from = "value") %>%
+  mutate(pc = exp_coef - 1)
+```
+
+```{r}
+p_cl_mod <- s_cl_mod %>%
+  ggplot(aes(
+      x = get_model_term_replacement()[variable],
+      y = str_replace_all(as.character(cluster),
+        setNames(cl_label, seq_len(6))),
+      fill = pc 
+      )) +
+  geom_tile(aes(alpha = abs(z))) +
+  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
+  scale_fill_continuous(labels = scales::percent_format(accuracy = 1)) +
+  coord_fixed() +
+  labs(x = "", y = "", alpha = "Z-score", fill = "Probability") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
+```{r}
+map_cl_cap <- "(a) Distribution of the cluster biodiversity trends. NAs cluster
+displays sites that could not be attributed clearly to one cluster (cf methods).
+(b) Median of the scaled variables (but not centered) for each cluster. (c)
+Results of the multinomial model. Color scale displays exponentiated
+coefficients minus 1 while opacity displays absolute Z-scores. Color scale means that
+a site has XX% more probability to be in cluster Y than in cluster 1.
+"
+```
+
+
+```{r}
+p_map_cl <- plot_grid(
+  plot_grid(main_map_rect, heat_cl, p_cl_mod, nrow = 1, labels = "auto"),
+  plot_grid(plotlist = p_zoom_map, nrow = 1),
+  nrow = 2
 )
-plot_grid(plotlist = p_tmp_ecoregion, ncol = 3)
+save_plot(here("doc/fig/p_map_cl.png"),
+  p_map_cl, base_height = 4, nrow = 2, ncol = 3)
+```
+
+```{r map-cl, layout="l-page", fig.height=16, fig.width = 12, fig.cap=map_cl_cap}
+knitr::include_graphics(here("doc/fig/p_map_cl.png"))
+```
+
+
+- Results of the multinomial model: 
+  - 72% more probable to be in cluster 2 (high turnover) than in cluster 1 (no
+    change) if PCA coordinates related to stream gradient increase by 1% 
+  - 76% more probable to be in cluster 6 (increase in abundance) than in cluster
+    1 if PCA coordinates related to stream gradient increase by 1% 
+  - *I have to find a more clear story for this*
+  - **We basically find the same results than the general model but more blurry**
+
+
+```{r, layout="l-page", fig.height=10, fig.width = 14}
+main_map_rect
+heat_cl
+p_cl_mod
+p_zoom_map
+```
+
+```{r}
+map(p_clust_prop,
+  ~.x +
+  scale_fill_discrete(
+    name = "Cluster",
+    breaks = c(0, seq_len(6)),
+    labels = c("NA: undefined cluster", cl_label)
+  )
+)
+```
+
+
+# Discussion 
+
+- We find in average an increase in species richness and total abundance
+- Environmental drivers and pressure explain temporal trends 
+- The different biodiversity facets are necessary to characterize the change
+  scenario: abundance change or presence/absence, change in identity or
+  nestedness 
+- The typology of temporal trends reveals that only three dimensions matters:
+  total abundance, species richness, turnover. The combination of their
+  temporal trends characterize the 6 clusters
+- The spatial heterogeneity of the cluster distribution is pretty high ! 
+
+# References {-}
+
+<div id="refs"></div>
+
+# (APPENDIX) Appendix {-} 
+
+
+## Correlation among temporal trends 
+
+```{r}
+cor_site_tps_tmp_cap <-  "Spearman correlation among the temporal trends of
+biodiversity facets. Temporal trends at each site computed as BLUPs predictions
+(i.e. estimated from random effects). " 
+
+```
+
+```{r, fig.cap=cor_site_tps_tmp_cap}
+cor_site_tps <- cor(
+  as.matrix(select(wide_site_tps, -siteid)),
+  method = "spearman")
+corrplot::corrplot(cor_site_tps)
 ```
 
 ## Analysis
@@ -928,28 +817,4 @@ sessionInfo()
 ```
 
 </details>
-
-# References {-}
-
-<div id="refs"></div>
-
-# (APPENDIX) Appendix {-} 
-
-
-## Correlation among temporal trends 
-
-```{r}
-cor_site_tps_tmp_cap <-  "Spearman correlation among the temporal trends of
-biodiversity facets. Temporal trends at each site computed as BLUPs predictions
-(i.e. estimated from random effects). " 
-
-```
-
-```{r, fig.cap=cor_site_tps_tmp_cap}
-cor_site_tps <- cor(
-  as.matrix(select(wide_site_tps, -siteid)),
-  method = "spearman")
-corrplot::corrplot(cor_site_tps)
-```
-
 
