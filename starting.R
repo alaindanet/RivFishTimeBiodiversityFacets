@@ -163,3 +163,4 @@ use_r("clustering_methods")
 
 # Template for scientific paper
 install.packages("distill")
+

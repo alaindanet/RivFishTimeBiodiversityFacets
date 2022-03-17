@@ -174,3 +174,45 @@ plot_temporal_population <- function(
 
 
 }
+
+plot_density_fq <- function(
+  df = riveratlas_total,
+  x_var = "hft_ix_c93",
+  col_var = "rivfishtime") {
+
+  var_name <- c(get_river_atlas_significant_var(),
+    "Human footprint log2 ratio (1993-2009)" = "hft_ix_c9309_log2_ratio",
+    "Human footprint difference (1993-2009)" = "hft_ix_c9309_diff"
+  )
+
+  df %>%
+    ggplot(aes_string(x = x_var, y =  "after_stat(density)", color = col_var)) +
+    geom_freqpoly() + labs(y = "Density",
+      color = "RivFishTime",
+      x = names(
+        var_name[
+          var_name == x_var 
+          ]
+      )
+    )
+}
+
+target_plot_rivatlas_rivfishtime_env <- function(
+  riveratlas_total = NULL,
+  riveratlas_site = NULL,
+  variable = c(setNames(get_river_atlas_significant_var(), NULL),
+  "hft_ix_c9309_diff", "hft_ix_c9309_log2_ratio")
+  ) {
+
+  # Which reach is in rivfishtime 
+  riveratlas_total$rivfishtime <- riveratlas_total$hyriv_id %in%
+    riveratlas_site$hyriv_id
+
+  riveratlas_total$hft_ix_c9309_diff <- riveratlas_total$hft_ix_c09 - riveratlas_total$hft_ix_c93
+  riveratlas_total$hft_ix_c9309_log2_ratio <- log2(riveratlas_total$hft_ix_c09 / riveratlas_total$hft_ix_c93)
+
+  p_riveratlas <- map(variable,
+    ~plot_density_fq(x_var = .x))
+  names(p_riveratlas) <- variable
+  return(p_riveratlas)
+}

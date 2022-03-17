@@ -416,6 +416,13 @@ tar_target(neutral_turnover,
       var_to_collect = get_river_atlas_significant_var() 
     )
     ),
+  tar_target(p_atlas_rivfishtime_env,
+    target_plot_rivatlas_rivfishtime_env(
+      riveratlas_total = riveratlas_total,
+      riveratlas_site = riveratlas_site,
+      variable = c(setNames(get_river_atlas_significant_var(), NULL),
+        "hft_ix_c9309_diff", "hft_ix_c9309_log2_ratio")
+    )),
   tar_target(water_temperature,
     extract_water_temperature_values(
       raster_path = water_temperature_file,
