@@ -870,7 +870,7 @@ tar_target(neutral_turnover,
       ~broom.mixed::tidy(.x), .id = "response"
       )),
   tar_target(gaussian_re_sd,
-    binded_gaussian_coef %>%
+    gaussian_coef %>%
       filter(
         effect == "ran_pars",
         group != "Residual",

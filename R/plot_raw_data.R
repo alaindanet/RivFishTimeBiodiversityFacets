@@ -212,7 +212,7 @@ target_plot_rivatlas_rivfishtime_env <- function(
   riveratlas_total$hft_ix_c9309_log2_ratio <- log2(riveratlas_total$hft_ix_c09 / riveratlas_total$hft_ix_c93)
 
   p_riveratlas <- map(variable,
-    ~plot_density_fq(x_var = .x))
+    ~plot_density_fq(df = riveratlas_total, x_var = .x))
   names(p_riveratlas) <- variable
   return(p_riveratlas)
 }
