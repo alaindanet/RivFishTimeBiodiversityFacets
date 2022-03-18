@@ -7,6 +7,12 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
       legend.position = "none"
     )
 
+  x <- x +
+    geom_hline(yintercept = 0) +
+    geom_boxplot(outlier.colour = NA, outlier.fill = NA,
+      outlier.size = NA,
+      aes(colour = {{aes_col}}, fill = {{aes_col}}))
+
   dat_tmp <- ggplot_build(x)$data
   if (length(dat_tmp) == 1) {
     dat <- dat_tmp[[1]]
@@ -16,10 +22,6 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
 
 
   x +
-    geom_hline(yintercept = 0) +
-    geom_boxplot(outlier.colour = NA, outlier.fill = NA,
-      outlier.size = NA,
-      aes(colour = {{aes_col}}, fill = {{aes_col}})) +
     labs(x = "Response variable", y = "Scaled values") +
     scale_x_discrete(position = "top") +
     geom_segment(data = dat,
@@ -47,4 +49,4 @@ target_bp_cl_dist <- function(cl_obj = site_cl_rm) {
 
     make_custom_boxplot(bp_cl_dist)
 
-} 
+}
