@@ -819,6 +819,17 @@ tar_target(neutral_turnover,
       ),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_no_drivers_scale,
+    tibble(
+      response = facet_var,
+      mod = list(try(glmmTMB(
+            formula = fun_no_driver_formula(x = facet_var),
+            data = modelling_data %>%
+              mutate(across(all_of(facet_var), ~scale(.)[,1])),
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_int_env,
     tibble(
       response = facet_var,
@@ -854,6 +865,36 @@ tar_target(neutral_turnover,
     # Drop the main effect
     compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "refit")
     ),
+  tar_target(gaussian_coef,
+    map_dfr(setNames(binded_gaussian$mod, binded_gaussian$response),
+      ~broom.mixed::tidy(.x), .id = "response"
+      )),
+  tar_target(gaussian_re_sd,
+    binded_gaussian_coef %>%
+      filter(
+        effect == "ran_pars",
+        group != "Residual",
+        term == "sd__log1_year_nb",
+        response %in% clust_var
+        ) %>%
+    select(response, group, estimate) %>%
+    mutate(
+      group = get_model_term_replacement()[group],
+      response = get_var_replacement()[response]
+      )),
+  tar_target(p_re_sd, 
+    gaussian_re_sd %>%
+      ggplot(aes(x = estimate, y = response, color = group)) +
+      geom_point(size  = 3) +
+      theme_minimal() +
+      labs(x = "Standard deviation") +
+      theme(
+        axis.title.y = element_blank(),
+        panel.background = element_rect(colour = "white"),
+        legend.title = element_blank(),
+        panel.grid.major.y = element_blank(),
+        legend.position = c(.6, .4)
+        )),
   tar_target(gaussian_re_self_c,
     binded_gaussian %>%
       mutate(
@@ -1094,7 +1135,7 @@ tar_target(random_effect_self_c,
      )  
    )
    ),
- tar_target(p_clust_prop, 
+ tar_target(p_clust_prop,
    plot_cluster_proportion(
      cluster_df = site_cl_0,
      site_env = site_env,
@@ -1121,6 +1162,9 @@ tar_target(random_effect_self_c,
      assign_threshold = .1,
      clean_method = "na"
      )),
+ tar_target(bp_cl_dist,
+   target_bp_cl_dist(cl_obj = site_cl_rm)
+   ),
  tar_target(country_to_plot, c("USA", "FRA","GRB", "SWE")),
  tar_target(p_cluster_country,
    tibble(

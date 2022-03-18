@@ -53,7 +53,9 @@ get_model_term_replacement <- function() {
     hft_c9309_scaled_no_center = "Human footprint\nchange (1993-2009)",
     hft_ix_c9309_diff_scaled = "Human footprint\nchange (1993-2009)",
     main_bas = "Basin",
-    siteid = "Site"
+    siteid = "Site",
+    `siteid:main_bas` = "Site"
+
   )
 }
 
