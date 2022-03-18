@@ -882,18 +882,19 @@ tar_target(neutral_turnover,
       group = get_model_term_replacement()[group],
       response = get_var_replacement()[response]
       )),
-  tar_target(p_re_sd, 
+  tar_target(p_re_sd,
     gaussian_re_sd %>%
       ggplot(aes(x = estimate, y = response, color = group)) +
       geom_point(size  = 3) +
       theme_minimal() +
-      labs(x = "Standard deviation") +
+      labs(x = "Random effect on temporal trends (standard deviation)") +
       theme(
         axis.title.y = element_blank(),
         panel.background = element_rect(colour = "white"),
         legend.title = element_blank(),
         panel.grid.major.y = element_blank(),
-        legend.position = c(.6, .4)
+        legend.position = "top",
+        legend.direction = "horizontal"
         )),
   tar_target(gaussian_re_self_c,
     binded_gaussian %>%
