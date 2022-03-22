@@ -62,7 +62,7 @@ match_river_site <- function(
     site <- sf::st_transform(site, crs = metric_crs)
     river <- sf::st_transform(river, crs = metric_crs)
   }
-  
+
 
   if (is.null(buffer_dist)) {
     stopifnot(!is.null(max_dist))
@@ -88,7 +88,7 @@ match_river_site <- function(
   )
 
   if (return_snapped_pt) {
-    
+
     mask_na <- function(x, ...) {
       if(is.na(x)) {
         return(NA)
@@ -102,7 +102,7 @@ match_river_site <- function(
       siteid = site[[site_id]]
     )
     return(out)
-    
+
   } else {
     return(nearest_snapped_pt)
   }
@@ -111,10 +111,10 @@ match_river_site <- function(
 }
 
 get_nearest_pt <- function(snapped_pt = NULL, max_dist = NULL) {
-  
+
   nrst_len <- st_length(snapped_pt)
   nrst_mn <- which.min(nrst_len)
-  
+
   if (as.vector(nrst_len[nrst_mn]) > max_dist) {
     return(NA)
   }

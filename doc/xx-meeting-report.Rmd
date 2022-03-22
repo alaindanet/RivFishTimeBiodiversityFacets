@@ -78,6 +78,11 @@ loc <- world_site_sf$site
     been reported to be the major change, i.e. change in species identity, which
     is coherent with the absence of species richness trends  
 
+### Environment
+
+- Human footprint decreased between 1993 and 2009 in Occidental countries:
+  https://www.nature.com/articles/ncomms12558
+
 ## Research gap
 
 - Biodiversity trends are often analysed one facet at a time 

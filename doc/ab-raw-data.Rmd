@@ -793,6 +793,133 @@ wt_check %>%
 
 ```
 
+# Exotic species
+
+```{r basin-exo}
+tar_load(c(world_site_sf, filtered_dataset))
+loc <- world_site_sf$site
+basin_tedesco <- read_sf(here("inst", "extdata", "Tedesco_2017", "Basin042017_3119.shp")) %>%
+  clean_names()
+plot(st_geometry(basin_tedesco))
+```
+
+```{r}
+occ_exotic <- read_csv(
+  here("inst", "extdata", "Tedesco_2017", "Occurrence_Table_12092019.csv"),
+  col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%
+janitor::clean_names() %>%
+rename_with(~str_remove(.x, "^x\\d_")) %>%
+mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))
+```
+
+```{r}
+summary_exotic <- occ_exotic %>%
+  group_by(basin_name, native_exotic_status) %>%
+  summarise(nb_species = length(unique(species)), .groups = "drop")  %>%
+  pivot_wider(names_from = "native_exotic_status", values_from = "nb_species") %>%
+  mutate(across(where(is.integer), ~ifelse(is.na(.), 0, .))) %>%
+  mutate(per_exo = exotic / (exotic + native))
+
+summary_exotic %>%
+  ggplot(aes(x = per_exo)) +
+  geom_histogram()
+```
+
+- Match basin and site: 
+
+```{r}
+loc_buffer <- loc %>%
+  st_buffer(dist = .1)
+plot(sample_n(loc_buffer, 50)["siteid"])
+plot(sample_n(loc, 50)["siteid"], add = T)
+within <- st_within(loc, basin_tedesco)
+
+exo_basin_site <- tibble(
+  siteid = loc$siteid,
+  basin_name = map(within, ~basin_tedesco[.x, ]$basin_name)) %>%
+unnest(basin_name)
+```
+
+- Missing sites:
+
+```{r}
+world_site_sf$world %>%
+  ggplot() +
+  geom_sf() +
+  geom_sf(data = loc %>%
+  filter(!siteid %in% exo_basin_site$siteid)
+  )
+```
+
+```{r}
+exo_sp_site <- exo_basin_site %>%
+  left_join(occ_exotic %>%
+    select(basin_name, species, native_exotic_status),
+  by = "basin_name") %>%
+select(-basin_name)
+
+meas_exo <- filtered_dataset$measurement %>%
+  left_join(exo_sp_site, by = c("siteid", "species"))
+
+exo_sp_site %>%
+  filter(str_detect(species, "Ang*")) 
+
+sum(is.na(meas_exo$native_exotic_status))
+meas_exo %>%
+  filter(is.na(native_exotic_status)) %>% 
+  filter(siteid %in% exo_basin_site$siteid)
+```
+
+```{r}
+meas_exo %>%
+  filter(is.na(native_exotic_status)) %>% 
+  filter(siteid %in% exo_basin_site$siteid) %>%
+  summarise(across(where(is.character), ~length(unique(.))))
+```
+
+```{r}
+abun_rich_exo <- meas_exo %>%
+  group_by(op_id) %>%
+  summarise(
+    species_nb = length(unique(species)),
+    total_abundance = sum(abundance),
+    na_exo_abun = sum(abundance[is.na(native_exotic_status)]),
+    na_exo_sp = length(unique(species[is.na(native_exotic_status)])),
+    species_nb_nat = length(unique(species[native_exotic_status == "native"])),
+    species_nb_exo = length(unique(species[native_exotic_status == "exotic"]))
+  ) %>%
+  mutate(
+    perc_na_exo_abun = na_exo_abun / total_abundance,
+    perc_na_exo_sp = na_exo_sp / species_nb,
+    perc_exo_sp = species_nb_exo / species_nb 
+  )
+
+```
+
+```{r}
+summary(abun_rich_exo)
+```
+
+```{r}
+abun_rich_exo %>%
+  filter(perc_na_exo_abun >= 0.05)
+```
+
+```{r}
+abun_rich_exo %>%
+  filter(!perc_na_exo_abun >= 0.05) %>%
+  select(op_id, species_nb_nat, species_nb_exo,
+    perc_na_exo_abun, perc_na_exo_sp, perc_exo_sp)
+```
+
+```{r}
+ti <- abun_rich_exo %>%
+  left_join(select(filtered_dataset$abun_rich_op, op_id, siteid, year), by =
+    "op_id"
+  )
+
+
+```
 
 
 

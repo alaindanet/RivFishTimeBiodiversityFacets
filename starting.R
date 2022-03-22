@@ -165,3 +165,22 @@ use_r("clustering_methods")
 install.packages("distill")
 
 use_r("plot_paper")
+
+
+# Create symbolic links for tedesco data
+
+## Create symbolic link
+files <- c("Tedesco_2017", "Script_NativeStatusTedesco.R")
+
+links <- paste0(here("inst", "extdata", files))
+targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
+#for windows
+#targets <- paste0("L:/", "ENV_LAYERS/", c(files))
+
+for (i in seq_along(files)) {
+  R.utils::createLink(
+    link = links[i],
+    target = targets[i],
+    overwrite = TRUE
+  )
+}
