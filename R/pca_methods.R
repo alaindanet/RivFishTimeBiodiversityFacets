@@ -51,3 +51,61 @@ plot_rotated_pca <- function(pca_rotated = NULL, axis = c(1, 2)) {
   )
   return(list(rotated = rotated_plot, normal = pca_plot))
 }
+
+
+my_pca_plot <- function(
+  .data = NULL,
+  xaxis = "RC1", yaxis = "RC2",
+  ctb_thld = .4, label_size = 2,
+  force = 10,  force_pull = 1,
+  seed = NA,
+  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var())
+  ) {
+
+  pca_data <- .data$loadings[1:nrow(.data$loadings), ] %>%
+    as.data.frame() %>%
+    rownames_to_column("variable") %>%
+    as_tibble()
+
+  pca_data %<>%
+    mutate(variable = replace_var[variable])
+
+    pca_label <- pca_data %>%
+      filter(
+        abs(.data[[xaxis]]) > ctb_thld |
+          abs(.data[[yaxis]]) > ctb_thld
+      )
+
+    var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
+
+    ggplot() +
+      ggforce::geom_circle(aes(x0 = 0, y0 = 0, r = 1),
+        inherit.aes = FALSE
+        ) +
+      geom_segment(
+        data = tibble(
+          x = c(-1, 0), xend = c(1, 0),
+          y = c(0, -1), yend = c(0, 1)
+          ),
+        aes(x = x, y = y, xend = xend, yend = yend),
+        size = .25
+        ) +
+      xlim(-1, 1) +
+      ylim(-1, 1) +
+      labs(
+        x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
+        y = paste0(yaxis, " (", var_exp[yaxis], "%)")
+        ) +
+      geom_segment(data = pca_data,
+        aes_string(x = 0, y = 0, xend = xaxis, yend = yaxis),
+        arrow = ggplot2::arrow(angle = 20, length = unit(0.05, "inches"),
+          ends = "last", type = "open"),
+        size = .25
+        ) +
+      ggrepel::geom_label_repel(data = pca_label,
+        aes_string(x = xaxis, y = yaxis, label = "variable"),
+        size = label_size,
+        force = force, force_pull = force_pull, seed = seed,
+        box.padding = .1, label.padding = .1
+      )
+}

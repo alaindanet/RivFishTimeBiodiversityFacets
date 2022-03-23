@@ -23,13 +23,13 @@ library(factoextra)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c( modelling_data))
+tar_load(c(modelling_data, analysis_dataset))
 tar_load(c(abun_var, var_jaccard, rich_var))
-tar_load(c(binded_gaussian_tmb_no_evt_re))
-tar_load(c(binded_gaussian_tmb_no_evt_re))
+tar_load(c(binded_gaussian_tmb_no_evt_re,
+    gaussian_no_drivers_re_self_c))
 tar_load(tps_model_for_comp)
+tar_load(gaussian_int_env)
 ```
-
 
 # Notes on transformed variables 
 
@@ -64,12 +64,31 @@ tar_load(tps_model_for_comp)
     variable, our dependent variable increases by about $(1.20^0.198 – 1) * 100$ =
     3.7 percent.
 
-# Model with or without interaction
+# Environmental variables 
 
 ```{r}
-tar_load(gaussian_int_env)
+cor_hft <- cor(analysis_dataset[,
+    c("hft_c9309_scaled_no_center", "hft_ix_c9309_log2_ratio", "hft_ix_c93", "hft_ix_c09",
+      "log_dist_up_km")
+    ] %>%
+      na.omit(),
+  method = "spearman"
+)
+dimnames(cor_hft) <- map(
+  dimnames(cor_hft),
+  ~get_hft_riv_var()[.x]
+)
+ggcorrplot::ggcorrplot(
+  cor_hft, hc.order = TRUE, type = "lower",
+  lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
+theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
+guides(colour = guide_legend(title.position = "top"))
 ```
 
+
+# Model with or without interaction
+
+- TO ADD
 
 # Assess if log-year or year is the best model
 
@@ -359,11 +378,18 @@ plot_model_comp_coeff(model_list = appearance_comp)
 
 ## Variable distribution
 
+###
 
 ```{r}
-skim(modelling_data, "jaccard_dis", "turnover", "nestedness", "appearance",
-  "disappearance", "hillebrand", "chao_richness")
+skim(modelling_data,
+  "jaccard_dis", "turnover", "nestedness", "appearance",
+  "disappearance", "hillebrand", "log_chao_richness",
+  "log_total_abundance")
 ```
+
+
+
+###
 
 ## Analysis
 

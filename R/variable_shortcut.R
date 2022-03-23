@@ -81,3 +81,21 @@ get_river_atlas_significant_var <- function() {
     "Human footprint 2009 (index)" = "hft_ix_c09"
   )
 }
+
+get_rev_vec_name_val <- function(x = NULL) {
+  y <- names(x)
+  names(y) <- x
+  return(y)
+}
+
+get_hft_riv_var <- function() {
+  c(
+    log_dist_up_km = "Log source distance (km)",
+    hft_c9309_scaled_no_center = "Human footprint\nchange (93-09)\n scaled no center",
+    hft_ix_c9309_diff_scaled = "Human footprint\nchange (93-09)\nscaled",
+    hft_ix_c93 = "Human footprint 93",
+    hft_ix_c09 = "Human footprint 09",
+    hft_ix_c9309_log2_ratio = "Human footprint\nlog2 ratio (93-09)"
+  )
+
+}

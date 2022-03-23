@@ -24,14 +24,11 @@ tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
 
 tar_load(pca_riv_str)
 tar_load(c(var_analysis, tps_var, clust_var))
-tar_load(c(
-    gaussian_comp_std,
+tar_load(c(gaussian_comp_std,
     gaussian_int_env_comp_std,
-    gaussian_re_self_c))
+    gaussian_no_drivers_re_self_c))
 
-tar_load(gaussian_re_self_c)
 tar_load(world_site_sf)
-
 tar_load(p_clust_prop)
 
 tar_load(c(
@@ -203,7 +200,7 @@ axis was included in the analysis"
 
 ```{r p-rot-pca-riv-str, fig.cap=fig_cap_pca}
 p <- plot_rotated_pca(pca_riv_str)
-p$rotated
+my_pca_plot(pca_riv_str$rotated)
 ```
 ```{r}
 h_hft_cap <- "Distribution of difference between human footprint in 1993 and
@@ -213,7 +210,7 @@ h_hft_cap <- "Distribution of difference between human footprint in 1993 and
 
 ```{r h-hft, fig.cap = h_hft_cap}
 hist(analysis_dataset$hft_ix_c9309_diff,
-  xlab ="human footprint difference (1993-2009)")
+  xlab = "human footprint difference (1993-2009)")
 s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.rm = T))
 ```
 
@@ -375,7 +372,7 @@ example, it means that while we are able to compute the temporal trends as each
 site and basin, those temporal trends have no associated errors.
 
 ```{r}
-site_temporal_trends <- gaussian_re_self_c %>%
+site_temporal_trends <- gaussian_no_drivers_re_self_c %>%
   select(response, random_site) %>%
   unnest(random_site) %>%
   select(response, siteid, log1_year_nb)
@@ -449,11 +446,13 @@ mod_comp_std_df <- gaussian_comp_std %>%
   filter(
     !Parameter %in% "(Intercept)",
     !str_detect(Parameter, "unitabundance"),
-    response %in% clust_var 
+    response %in% clust_var
   ) %>%
-  mutate(response = get_var_replacement()[response],
+  mutate(
+    response = get_var_replacement()[response],
     Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
-    Parameter = str_replace_all(Parameter, get_model_term_replacement()) 
+    Parameter = str_replace_all(Parameter, get_model_term_replacement()),
+    facet = ifelse(str_detect(Parameter, "\\*"), "interaction", "main")
   )
 ```
 
@@ -472,6 +471,8 @@ pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-
 
 
 p <- mod_comp_std_df %>%
+  filter(facet == "main") %>%
+  mutate(Parameter = fct_reorder(Parameter, CI_high, .fun="max")) %>%
   ggplot(
     aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
       xmax = CI_high)) +
@@ -481,11 +482,32 @@ p <- mod_comp_std_df %>%
   theme(legend.position = "bottom") +
   guides(color = guide_legend(nrow = 4, byrow = TRUE))
 
-withr::with_options(
-  list(ggplot2.discrete.colour = pal),
-  print(p + scale_color_discrete())
-)
 
+#withr::with_options(
+#  list(ggplot2.discrete.colour = pal),
+#  print(p + scale_color_discrete())
+#)
+
+p1 <- mod_comp_std_df %>%
+  filter(facet == "interaction") %>%
+  ggplot(
+    aes(y = Parameter, x = Coefficient, color = response,
+      xmin = CI_low, xmax = CI_high)
+    ) +
+  geom_vline(xintercept = 0) +
+  geom_pointrange(position = position_dodge(width = .7)) +
+  theme(
+    axis.title = element_blank(),
+    legend.position = "none"
+    )
+
+p2 <- p +
+  theme(
+    plot.margin = margin(0, 5.5, 6, 64),
+    axis.title.y = element_blank()
+  )
+
+p_mod_coef <- plot_grid(p1, p2, nrow = 2)
 ```
 
 - In average, all biodiversity facets had a positive temporal trend:
@@ -508,47 +530,65 @@ withr::with_options(
     pressure increased** (change in species identity)
   - **Lower increase in species richness where pressure increased**
 
+```{r}
+cor_site_tps <- cor(site_tps_clust,
+  method = "spearman"
+)
+dimnames(cor_site_tps) <- map(
+  dimnames(cor_site_tps),
+  ~get_var_replacement()[.x]
+)
+#corrplot::corrplot(cor_clust, type = "upper", diag = FALSE, tl.srt = 15)
+cor_p <- ggcorrplot::ggcorrplot(
+  cor_site_tps, hc.order = TRUE, type = "lower",
+  lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
+theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
+guides(colour = guide_legend(title.position = "top"))
+```
+
+```{r}
+pca_clust <- compute_rotated_pca(site_tps_clust)
+p_pca_clust <- plot_rotated_pca(pca_clust)
+p_rotated_pca_clust <- my_pca_plot(
+  pca_clust$rotated,
+  replace_var = get_var_replacement())
+tt <- pca_clust$rotated$scores %>%
+  as.data.frame() %>%
+  rownames_to_column("siteid") %>%
+  as_tibble() %>%
+  left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
+  na.omit()
+p_rot_clust_ell <- p_rotated_pca_clust +
+  geom_point(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl))) +
+  stat_ellipse(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl)), level = .9)
+```
+
+
+```{r}
+mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
+  Coefficients were standardized by refiting the models with scaled response and
+  explicative variables. Bars represent CI at 95% computed with Wald
+  approximation.",
+  " (B) Spearman correlation among temporal trends.",
+  " (C) Rotated PCA on temporal trends."
+)
+```
+
+```{r mod-tps, fig.cap=mod_slp_std_cap, fig.height=10}
+leg <- get_legend(p2 + theme(legend.direction = "vertical"))
+
+plot_grid(
+  plot_grid(p1, p2 + theme(legend.position = "none"), nrow = 2) ,
+  plot_grid(cor_p, p_rotated_pca_clust, leg, nrow = 1, labels = c("B", "C")),
+  nrow = 2,
+  labels = c("A", "")
+)
+```
+
+
+
 
 ## Typology of biodiversity trends 
-
-
-```{r}
-p_cl_dist <- site_cl_rm %>%
-  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
-  pivot_longer(-c(siteid, cl),
-    names_to = "variable",
-    values_to = "value") %>%
-  mutate(variable = get_var_replacement()[variable]) %>%
-  ggplot(aes(x = variable, y = value, color = as.factor(cl))) +
-  geom_boxplot() +
-  geom_hline(yintercept = 0) +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1)) +
-  labs(x = "Response variable",
-    y = "Scaled values",
-    color = "Cluster")
-```
-```{r}
-cl_dist_cap <- "Distribution of variable values by cluster"
-```
-
-
-```{r cl-bp, fig.cap=cl_dist_cap, layout="l-body-outset"}
-cl_label <- c(
-  "1: No change",
-  "2: High turnover",
-  "3: Increase of species richness",
-  "4: Decrease of species richness",
-  "5: Decrease of abundance",
-  "6: Increase of abundance"
-)
-
-p_cl_dist +
-  scale_color_discrete(
-    name = "Cluster",
-    breaks = seq_len(6),
-    labels = cl_label
-  )
-```
 
 - Cluster signification (Figure \@ref(fig:cl-bp)):
   - Cluster 1: Low change 
