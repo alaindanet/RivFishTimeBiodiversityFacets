@@ -41,6 +41,7 @@ get_formula_tps <- function(resp = NULL, int_env = FALSE,
   hft = "hft_c9309_scaled_no_center") {
 
   rhs_fixed <- paste0("0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_ix_c93 +
     log1_year_nb /", hft)
   rhs_random <- "+ (0 + log1_year_nb | main_bas/siteid)"
   
@@ -68,6 +69,7 @@ get_formula_no_tps <- function(resp = NULL,
   int_env = FALSE, hft = "hft_c9309_scaled_no_center") {
 
   rhs_fixed <- paste0("log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c93 +
     log1_year_nb * ", hft) 
   rhs_random <- "+ (1 + log1_year_nb | main_bas/siteid)"
   
@@ -94,11 +96,13 @@ get_formula_no_tps_no_drivers <- function(resp = NULL) {
 get_formula_abun <- function(resp = NULL, int_env = FALSE,
   hft = "hft_c9309_scaled_no_center") {
 
-  rhs_fixed <- paste0("log1_year_nb * unitabundance + log1_year_nb * riv_str_rc1 +
+  rhs_fixed <- paste0("
+    log1_year_nb * unitabundance +
+    log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c93 +
     log1_year_nb *", hft) 
   rhs_random <- "+ (1 + log1_year_nb | main_bas/siteid)"
-  
-  
+
   if (int_env) {
     int <- paste0("+ log1_year_nb:riv_str_rc1:", hft)
   } else {

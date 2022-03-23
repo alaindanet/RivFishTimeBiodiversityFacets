@@ -530,7 +530,7 @@ tar_target(neutral_turnover,
       "total_abundance", "total_abundance_tps", "log_total_abundance", "total_abundance_scaled",
       "hillebrand", "hillebrand_dis", "hillebrand_dis_scaled",
       "appearance", "appearance_scaled", "disappearance",
-      "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1",
+      "disappearance_scaled", "evenness", "evenness_scaled", "riv_str_rc1", "hft_ix_c93",
       "hft_ix_c9309_diff_scaled", "hft_c9309_scaled_no_center", "hft_ix_c9309_log2_ratio")
     ),
   tar_target(modelling_data,

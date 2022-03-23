@@ -184,3 +184,7 @@ for (i in seq_along(files)) {
     overwrite = TRUE
   )
 }
+
+# Tmp figure script
+file.create(here("doc", "tmp_figures.R"))
+
