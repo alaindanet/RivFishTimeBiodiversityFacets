@@ -85,6 +85,54 @@ theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
 guides(colour = guide_legend(title.position = "top"))
 ```
 
+# Test model with short-long term changes
+
+- There is no multicollinearity among variables
+- Human footprint 1993 =  lg term pressure / human footprint (1993-2009):
+  short-term change 
+
+```{r}
+# Check the presence of multicollinearity without interaction
+chao_mod_hft93 <- glmmTMB(log_chao_richness ~
+   log1_year_nb + riv_str_rc1 +
+     hft_ix_c9309_log2_ratio +
+    hft_ix_c93 +
+    (1 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+check_collinearity(chao_mod_hft93)
+```
+
+- Model with interaction between HFT 93 and river structure:
+
+```{r}
+chao_mod_hft93_int_riv <- glmmTMB(log_chao_richness ~
+   log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_log2_ratio +
+    log1_year_nb * hft_ix_c93 +
+    log1_year_nb * hft_ix_c93 * riv_str_rc1 +
+    (1 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(chao_mod_hft93_int_riv)
+summary(chao_mod_hft93_int_riv)
+```
+
+```{r}
+chao_mod_hft93_dbl_int_riv <- glmmTMB(log_chao_richness ~
+   log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_log2_ratio +
+    log1_year_nb * hft_ix_c93 +
+    log1_year_nb * hft_ix_c93 * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_log2_ratio * riv_str_rc1 +
+    (1 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(chao_mod_hft93_dbl_int_riv)
+summary(chao_mod_hft93_dbl_int_riv)
+```
+
+
 
 # Model with or without interaction
 
