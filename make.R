@@ -9,7 +9,7 @@ tar_make_future(workers = min(future::availableCores() - 1, 24),
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = bp_cl_dist)
+tar_make(names = meeting_report)
 
 
 source(file = "start_rmd.R")

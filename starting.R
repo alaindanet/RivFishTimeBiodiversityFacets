@@ -29,7 +29,12 @@ devtools::check(vignettes = FALSE)
 use_data_raw()
 
 # Copy the address of the Lise shared drive
-server_mounted_location <- "/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/" 
+machine_login <- Sys.info()["login"]
+if (machine_login == "alain") {
+  server_mounted_location <- "/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/" 
+} else if (machine_login == "ahdanet") {
+  server_mounted_location <- "L://"
+}
 
 # Local storage dir:
 dir.create(here("inst", "extdata"), recursive = TRUE)
@@ -172,15 +177,17 @@ use_r("plot_paper")
 ## Create symbolic link
 files <- c("Tedesco_2017", "Script_NativeStatusTedesco.R")
 
-links <- paste0(here("inst", "extdata", files))
+
+links <- here("inst", "extdata", files)
 targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
 #for windows
-#targets <- paste0("L:/", "ENV_LAYERS/", c(files))
+targets <- paste0("L:/", "ENV_LAYERS/", c(files))
 
 for (i in seq_along(files)) {
   R.utils::createLink(
     link = links[i],
     target = targets[i],
+    method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
     overwrite = TRUE
   )
 }

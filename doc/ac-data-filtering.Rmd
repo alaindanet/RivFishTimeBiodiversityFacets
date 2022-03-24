@@ -839,9 +839,6 @@ skim(analysis_dataset)
 ```
 
 
-
-
-
 ## Analysis
 
 ## Reproducibility
@@ -856,6 +853,7 @@ Sys.time()
 if(requireNamespace('git2r', quietly = TRUE)) {
   git2r::repository()
 } else {
+  c(
     system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
     system2("git", args = c("remote", "-v"), stdout = TRUE)
   )
