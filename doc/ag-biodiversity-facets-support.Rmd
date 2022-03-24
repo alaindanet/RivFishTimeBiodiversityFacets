@@ -132,11 +132,111 @@ diagnose(chao_mod_hft93_dbl_int_riv)
 summary(chao_mod_hft93_dbl_int_riv)
 ```
 
+- Below I test how much interaction the model can evaluate 
+  - I show that the interaction among long-term, short-term changes of human
+    footprint, stream gradient, and temporal trends (quadruple interaction)
+    cannot be evaluated safely
+  - However each triple interaction works!
+
+```{r}
+hb_mod <- glmmTMB(hillebrand_dis_scaled ~
+  0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio +
+    (0 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+summary(hb_mod)
+
+hb_mod_hft93 <- glmmTMB(hillebrand_dis_scaled ~
+  0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93 +
+    log1_year_nb / hft_ix_c93:hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93:riv_str_rc1 +
+    (0 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+summary(hb_mod_hft93)
+diagnose(hb_mod_hft93)
+
+hb_mod_hft_full_int <- glmmTMB(hillebrand_dis_scaled ~
+  0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93 +
+    log1_year_nb / hft_ix_c93:hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93:riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    log1_year_nb / hft_ix_c93:hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    (0 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+summary(hb_mod_hft_full_int)
+diagnose(hb_mod_hft_full_int)
+# Necessitate to delete the triple interaction?
+
+chao_mod_hft_full_int <- glmmTMB(log_chao_richness ~
+   log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_log2_ratio +
+    log1_year_nb * hft_ix_c93 +
+    log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio +
+    log1_year_nb:hft_ix_c93:riv_str_rc1 +
+    log1_year_nb:hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    (1 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(hb_mod_hft_full_int)
+# Confirmed that we should remove the
+summary(chao_mod_hft_full_int)
+check_collinearity(chao_mod_hft_full_int)
 
 
-# Model with or without interaction
+hb_mod_hft_int_ok <- glmmTMB(hillebrand_dis_scaled ~
+  0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93 +
+    log1_year_nb / hft_ix_c93:hft_ix_c9309_log2_ratio +
+    log1_year_nb / hft_ix_c93:riv_str_rc1 +
+    log1_year_nb / hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    (0 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(hb_mod_hft_int_ok)
+summary(hb_mod_hft_int_ok)
 
-- TO ADD
+chao_mod_hft_int_ok <- glmmTMB(log_chao_richness ~
+   log1_year_nb * riv_str_rc1 +
+    log1_year_nb * hft_ix_c9309_log2_ratio +
+    log1_year_nb * hft_ix_c93 +
+    log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio +
+    log1_year_nb:hft_ix_c93:riv_str_rc1 +
+    log1_year_nb:hft_ix_c9309_log2_ratio:riv_str_rc1 +
+    (1 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(chao_mod_hft_int_ok)
+# Confirmed that we should remove the
+summary(chao_mod_hft_int_ok)
+```
+
+-
+
+```{r}
+hb_mod_hft_scaled_int_ok <- glmmTMB(hillebrand_dis_scaled ~
+  0 + log1_year_nb / riv_str_rc1 +
+    log1_year_nb / hft_c9309_scaled_no_center +
+    log1_year_nb / hft_ix_c93 +
+    log1_year_nb / hft_ix_c93:hft_c9309_scaled_no_center +
+    log1_year_nb / hft_ix_c93:riv_str_rc1 +
+    log1_year_nb / hft_c9309_scaled_no_center:riv_str_rc1 +
+    (0 + log1_year_nb | main_bas/siteid),
+  modelling_data
+)
+diagnose(hb_mod_hft_int_ok)
+summary(hb_mod_hft_int_ok)
+compare_parameters(hb_mod_hft_int_ok, hb_mod_hft_scaled_int_ok)
+```
+
 
 # Assess if log-year or year is the best model
 

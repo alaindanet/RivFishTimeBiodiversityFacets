@@ -38,17 +38,21 @@ plot_pred_obs_glmmtmb <- function(x = NULL) {
 }
 
 get_formula_tps <- function(resp = NULL, int_env = FALSE,
-  hft = "hft_c9309_scaled_no_center") {
+  hft = "hft_ix_c9309_log2_ratio") {
 
   rhs_fixed <- paste0("0 + log1_year_nb / riv_str_rc1 +
     log1_year_nb / hft_ix_c93 +
     log1_year_nb /", hft)
   rhs_random <- "+ (0 + log1_year_nb | main_bas/siteid)"
-  
+
   if (int_env) {
-    int <- paste0("+ log1_year_nb:riv_str_rc1:", hft)
+    int <- paste0(
+      "+ log1_year_nb:riv_str_rc1:", hft,
+      "+ log1_year_nb:riv_str_rc1:hft_ix_c93",
+      "+ log1_year_nb:hft_ix_c93:", hft
+    )
   } else {
-   int <- "" 
+   int <- ""
 
   }
 
@@ -66,18 +70,22 @@ get_formula_tps_no_drivers <- function(resp = NULL) {
 }
 
 get_formula_no_tps <- function(resp = NULL,
-  int_env = FALSE, hft = "hft_c9309_scaled_no_center") {
+  int_env = FALSE, hft = "hft_ix_c9309_log2_ratio") {
 
-  rhs_fixed <- paste0("log1_year_nb * riv_str_rc1 +
+  rhs_fixed <- paste0("
+    log1_year_nb * riv_str_rc1 +
     log1_year_nb * hft_ix_c93 +
-    log1_year_nb * ", hft) 
+    log1_year_nb * ", hft)
   rhs_random <- "+ (1 + log1_year_nb | main_bas/siteid)"
-  
-  
+
   if (int_env) {
-    int <- paste0("+ log1_year_nb:riv_str_rc1:", hft)
+    int <- paste0(
+      "+ log1_year_nb:riv_str_rc1:", hft,
+      "+ log1_year_nb:riv_str_rc1:hft_ix_c93",
+      "+ log1_year_nb:hft_ix_c93:", hft
+    )
   } else {
-   int <- "" 
+   int <- ""
   }
 
   form <- as.formula(paste0(resp, " ~ ", rhs_fixed, int, rhs_random))
@@ -94,7 +102,7 @@ get_formula_no_tps_no_drivers <- function(resp = NULL) {
 }
 
 get_formula_abun <- function(resp = NULL, int_env = FALSE,
-  hft = "hft_c9309_scaled_no_center") {
+  hft = "hft_ix_c9309_log2_ratio") {
 
   rhs_fixed <- paste0("
     log1_year_nb * unitabundance +
@@ -104,7 +112,11 @@ get_formula_abun <- function(resp = NULL, int_env = FALSE,
   rhs_random <- "+ (1 + log1_year_nb | main_bas/siteid)"
 
   if (int_env) {
-    int <- paste0("+ log1_year_nb:riv_str_rc1:", hft)
+    int <- paste0(
+      "+ log1_year_nb:riv_str_rc1:", hft,
+      "+ log1_year_nb:riv_str_rc1:hft_ix_c93",
+      "+ log1_year_nb:hft_ix_c93:", hft
+    )
   } else {
    int <- ""
   }
@@ -139,7 +151,7 @@ fun_no_driver_formula <- function(x = NULL) {
 
 fun_int_env_formula <- function(x = NULL) {
   tar_load(c(tps_var, log_rich_var))
-  
+
   if (x %in% tps_var) {
     return(get_formula_tps(resp = x, int_env = TRUE))
   } else if (x %in% log_rich_var) {

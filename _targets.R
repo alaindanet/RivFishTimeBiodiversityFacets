@@ -951,6 +951,17 @@ tar_target(neutral_turnover,
     compare_parameters(
       setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
     ),
+tar_target(vif,
+  glmmTMB(
+    log_chao_richness ~
+      log1_year_nb + riv_str_rc1 +
+      hft_ix_c9309_log2_ratio +
+      hft_ix_c93 +
+      (1 + log1_year_nb | main_bas/siteid),
+    modelling_data
+    ) %>%
+  check_collinearity()
+),
   # Binding
   tar_target(binded_gaussian_tmb,
     rbind(gaussian_jaccard_tmb,
