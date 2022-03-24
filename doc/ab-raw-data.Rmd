@@ -798,7 +798,14 @@ wt_check %>%
 ```{r basin-exo}
 tar_load(c(world_site_sf, filtered_dataset))
 loc <- world_site_sf$site
-basin_tedesco <- read_sf(here("inst", "extdata", "Tedesco_2017", "Basin042017_3119.shp")) %>%
+#https://github.com/ropensci/rfishbase
+# check function validate names
+# Missing basin: distance bw site and basin
+# closest basin, same country
+# NAS USGS
+basin_tedesco <- read_sf(
+  here("inst", "extdata", "Tedesco_2017", "Basin042017_3119.shp")
+  ) %>%
   clean_names()
 plot(st_geometry(basin_tedesco))
 ```
@@ -825,12 +832,19 @@ summary_exotic %>%
   geom_histogram()
 ```
 
+```{r}
+library(rfishbase)
+val_names_tedesco <- validate_names(unique(occ_exotic$species))
+sum(is.na(val_names))
+
+val_name_rivfishtime <- validate_names(unique(occ_exotic$species))
+```
+
+
 - Match basin and site: 
 
 ```{r}
-loc_buffer <- loc %>%
-  st_buffer(dist = .1)
-plot(sample_n(loc_buffer, 50)["siteid"])
+plot(st_geometry(world_site_sf$world))
 plot(sample_n(loc, 50)["siteid"], add = T)
 within <- st_within(loc, basin_tedesco)
 
@@ -838,7 +852,32 @@ exo_basin_site <- tibble(
   siteid = loc$siteid,
   basin_name = map(within, ~basin_tedesco[.x, ]$basin_name)) %>%
 unnest(basin_name)
+length(unique(exo_basin_site$siteid)) == nrow(exo_basin_site)
 ```
+```{r}
+missed_sites_loc <- loc %>%
+  filter(!siteid %in% exo_basin_site$siteid)
+zoom_map <- st_bbox(missed_sites_loc)
+basin_tedesco %>%
+  ggplot() +
+  geom_sf() +
+  geom_sf(data = missed_sites_loc) +
+  coord_sf(
+    xlim = c(zoom_map["xmin"], zoom_map["xmax"]),
+    ylim = c(zoom_map["ymin"], zoom_map["ymax"]))
+```
+
+```{r}
+m_sites_buf <- missed_sites_loc %>%
+  st_buffer(dist = .5)
+within <- st_nearest_points(basin_tedesco, missed_sites_loc)
+exo_basin_m_site <- tibble(
+  siteid = m_sites_buf$siteid,
+  basin_name = map(within, ~basin_tedesco[.x, ]$basin_name)) %>%
+unnest(basin_name)
+```
+
+
 
 - Missing sites:
 
@@ -862,7 +901,7 @@ meas_exo <- filtered_dataset$measurement %>%
   left_join(exo_sp_site, by = c("siteid", "species"))
 
 exo_sp_site %>%
-  filter(str_detect(species, "Ang*")) 
+  filter(str_detect(species, "Ang*"))
 
 sum(is.na(meas_exo$native_exotic_status))
 meas_exo %>%

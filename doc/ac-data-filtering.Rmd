@@ -364,6 +364,7 @@ plot(spde)
 tar_load(c(at_mv_avg, wt_mv_avg))
 
 awt <- full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year"))
+write_csv(awt, file = here("data", "awt.csv"))
 skim(awt)
 ```
 
@@ -424,6 +425,7 @@ ti <- analysis_dataset %>%
   skim_tee() %>%
   mutate(
     w_tmp_na = is.na(tmp_w_ama),
+    a_tmp_na = is.na(tmp_a_ana),
     a_tmp_na = is.na(tmp_a_ana),
     tmp_w_ama = ifelse( is.na(tmp_w_ama) & !is.na(tmp_a_ana),
       tmp_a_ana, tmp_w_ama)
@@ -854,7 +856,6 @@ Sys.time()
 if(requireNamespace('git2r', quietly = TRUE)) {
   git2r::repository()
 } else {
-  c(
     system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
     system2("git", args = c("remote", "-v"), stdout = TRUE)
   )
