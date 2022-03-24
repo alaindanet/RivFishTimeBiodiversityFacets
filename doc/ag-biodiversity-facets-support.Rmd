@@ -24,8 +24,8 @@ library(factoextra)
 
 ```{r load-targets, include=FALSE}
 tar_load(c(modelling_data, analysis_dataset))
-tar_load(c(abun_var, var_jaccard, rich_var))
-tar_load(c(binded_gaussian_tmb_no_evt_re,
+tar_load(c(abun_var, var_jaccard, rich_var, clust_var))
+tar_load(c(binded_gaussian_tmb_no_evt_re, rigal_trends,
     gaussian_no_drivers_re_self_c))
 tar_load(tps_model_for_comp)
 tar_load(gaussian_int_env)
@@ -165,7 +165,8 @@ model_parameters(x)
 ```
 
 ```{r}
-tps_model_for_comp
+comp_jac <- tps_model_for_comp[tps_model_for_comp$response == "jaccard_dis_scaled",]$mod[[1]]
+
 y <- update(x,
   formula = jaccard_dis_scaled ~ log1_year_nb * riv_str_rc1 + log1_year_nb *
     hft_ix_c9309_diff_scaled + (1 | main_bas/siteid) 
@@ -198,12 +199,8 @@ zb <- update(x,
 )
 diagnose(zb)
 
-zc <- update(x,
-  formula = jaccard_dis_scaled ~
-    log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid)
-)
+zc <- comp_jac[["main0"]]
+
 diagnose(zc)
 parameters(zc)
 confint(zc)
@@ -234,23 +231,13 @@ walk2(model_to_compare$mod, model_to_compare$response,
 - Disappearance:
 
 ```{r}
-dis <- model_to_compare[model_to_compare$response == "disappearance_scaled", ]$mod[[1]]
-dis2 <- update(dis,
-  formula = disappearance_scaled ~
-    log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid),
-  REML = TRUE
-)
+comp_dis <- tps_model_for_comp[tps_model_for_comp$response == "disappearance_scaled",]$mod[[1]]
+dis <- comp_dis[["main"]] 
+dis2 <-  comp_dis[["main0"]]
 
 model_parameters(dis2)
 
-dis3 <- update(dis,
-  formula = disappearance_scaled ~
-    log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (1 + log1_year_nb | main_bas/siteid),
-  REML = TRUE)
+dis3 <- comp_dis[["no_main0"]] 
 ```
 
 It seems that I have unusually large statistics (Large Z) when the estimate  
@@ -268,19 +255,10 @@ The following plots displaying the coefficients of models with constrained inter
 - Test with jaccard model:
 
 ```{r}
-zc0 <- update(zc,
-  formula = jaccard_dis_scaled ~
-    0 + log1_year_nb * riv_str_rc1 +
-    log1_year_nb * hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid)
-)
 
-zc0_no_main <- update(zc,  
-  formula = jaccard_dis_scaled ~
-    0 + log1_year_nb/riv_str_rc1 +
-    log1_year_nb/hft_ix_c9309_diff_scaled +
-    (0 + log1_year_nb | main_bas/siteid)
-)
+zc0 <- comp_jac[["main0"]]
+
+zc0_no_main <- comp_jac[["no_main0"]] 
 ```
 
 ```{r}
@@ -309,8 +287,8 @@ comp_intercept %>%
 - Nestedness:
 
 ```{r}
-anova(tps_model_for_comp[
-    tps_model_for_comp$response == "nestedness_scaled", ]$mod[[1]])
+comp_nestedness <- tps_model_for_comp[tps_model_for_comp$response == "nestedness_scaled", ]$mod[[1]]
+anova(comp_nestedness[["main"]], comp_nestedness[["main0"]], comp_nestedness[["no_main0"]])
 ```
 
 ```{r}
@@ -403,7 +381,7 @@ ti <- map_dfr(rigal_trends, ~tabyl_df(x = .x, group = "direction"),
   .id = "response"
 )
 ti %>%
-  filter(direction != "Total", response %in% var_analysis) %>%
+  filter(direction != "Total", response %in% clust_var) %>%
   select(response, direction, percent) %>%
   mutate(response = str_replace_all(response, get_var_replacement())) %>%
   pivot_wider(names_from = "direction", values_from = "percent") %>%
@@ -428,73 +406,13 @@ ti %>%
 #### Comparison of our results with previous studies (rigal method)
 
 ```{r}
-slope <- map_dfr(rigal_trends,
-  ~.x %>%
-  select(siteid, linear_slope),
-.id = "response"
-)
+tar_load(rigal_slp_df)
 ```
 
-```{r}
-rigal_trends_df <-  map2_dfr(
-  rigal_trends, names(rigal_trends),
-  ~.x %>% mutate(variable = .y)
-  ) %>%
-select(variable, siteid, linear_slope) %>%
-pivot_wider(names_from = "variable", values_from = "linear_slope")
-```
 
 
 ```{r}
-summary_slope <- slope %>%
-  filter(response %in% var_analysis) %>%
-  group_by(response) %>%
-  summarise(summ = list(enframe(summary_distribution(linear_slope, na.rm = TRUE)))) %>%
-  unnest(cols = summ) %>%
-  pivot_wider(names_from = "name", values_from = "value") %>%
-  select(response, mean, median, sd)
-summary_slope %>%
-  mutate(response = get_var_replacement()[response]) %>%
-  kable() %>%
-  kable_styling(bootstrap_options = c("striped", "bordered", "hover")) %>%
-  scroll_box(width = "100%", height = "1000px")
-```
-```{r, include=FALSE}
-j_med_tr <- summary_slope[summary_slope$response == "jaccard", ]$median
-r_med_tr <- summary_slope[summary_slope$response == "log_species_nb", ]$median
-```
-
-```{r}
-p_jt_sup_ne <- sum( abs(rigal_trends_df$turnover) >
-  abs(rigal_trends_df$nestedness)) / nrow(rigal_trends_df)
-```
-```{r, include=FALSE}
-cor(rigal_trends_df$hillebrand, rigal_trends_df$jaccard, method = "spearman")
-cor(rigal_trends_df$hillebrand, rigal_trends_df$evenness, method = "spearman")
-```
-
-- To compare with @dornelas_assemblage_2014:
-  - Species richness:
-    - @dornelas_assemblage_2014: 1557 measurements of species richness in two
-      consecutive times, 629 (40%) increase, 624 (40%) decrease, and 304 (20%)
-      do not change.
-    - Our study: 13% increase, 7% decrease, 78% do not change, 
-      median: + `r percent(r_med_tr * 10)` species by decade (i.e from 2 to 3
-      species, 10 to 15 species in 10 years)
-  - Jaccard:
-    - 10% species replaced per decade [@dornelas_assemblage_2014] 
-    - 28% of species replaced per decade [@blowes_geography_2019]
-    - our study: `r percent(abs(j_med_tr) * 10)` of species per decade
-  - Turnover / nestedness:
-    - @blowes_geography_2019: 97% of study shows turnover exceeding nestedness
-    - our study: `r percent(p_jt_sup_ne)`
-  - Jaccard vs dominance-based SER:
-    - low correlation: $0.52$
-
-## Relationships between temporal trends 
-
-```{r}
-knitr::include_graphics(here("doc", "fig", "p_cor_slope_tot.png"))
+knitr::opts_chunk$set(eval = FALSE)
 ```
 
 

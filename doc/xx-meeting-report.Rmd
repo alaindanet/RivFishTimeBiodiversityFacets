@@ -3,10 +3,10 @@ title: "Meeting report"
 author: "Alain Danet"
 date: "`r format(Sys.time(), '%B %d %Y')`"
 output: 
-  distill::distill_article:
+  bookdown::html_document2:
     toc: true
     toc_float: true
-    code_folding: true
+    code_folding: "hide" 
 bibliography: "bibliography.bib"
 ---
 
@@ -687,6 +687,13 @@ heat_map_df <- te %>%
 ```
 
 ```{r}
+cl_label <- c(
+  "1: No change",
+  "2: High turnover",
+  "3: Increase of species richness",
+  "4: Decrease of species richness",
+  "5: Decrease of abundance",
+  "6: Increase of abundance")
 heat_cl <- te %>%
   ggplot(aes(
       x = get_var_replacement()[response],
