@@ -1,0 +1,209 @@
+---
+title: "Untitled Draft"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source(here("start_rmd.R"))
+## target knits Rmds in their own session, so load libraries here.
+## source("here::here(packages.R"))
+```
+
+```{r load-targets, include=FALSE}
+# tar_load(c(target_1, target_2, target_3))
+
+# # If your chunk output is shown in-line, then you'll need to wrap tar_load()
+# # like so:
+# 
+# withr::with_dir(here::here(), {
+#   tar_load(c(target_1, target_2, target_3))
+# })
+# 
+# # This is not needed when using tar_make() to render the document.
+```
+
+# Test
+
+```{r}
+labels <- c(
+  setosa = "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/8/86/Iris_setosa.JPG/180px-Iris_setosa.JPG'
+    width='100' /><br>*I. setosa*",
+  virginica = "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/3/38/Iris_virginica_-_NRCS.jpg/320px-Iris_virginica_-_NRCS.jpg'
+    width='100' /><br>*I. virginica*",
+  versicolor = "<img src='https://upload.wikimedia.org/wikipedia/commons/thumb/2/27/20140427Iris_versicolor1.jpg/320px-20140427Iris_versicolor1.jpg'
+    width='100' /><br>*I. versicolor*"
+) 
+```
+
+
+```{r}
+data(iris)
+ggplot(iris, aes(Species, Sepal.Width)) +
+  geom_boxplot() +
+  scale_x_discrete(
+    name = NULL,
+    labels = labels
+  ) +
+  theme(
+    axis.text.x = element_markdown(color = "black", size = 11)
+  )
+```
+
+
+```{r}
+set.seed(1)
+abun_dist <- round(rexp(5, .1))  %>%
+  sort(., decreasing = TRUE)
+ 
+abun_dist <- abun_dist / max(abun_dist) * 10
+names(abun_dist) <- LETTERS[seq_len(5)]
+abun_df <- enframe(abun_dist, name = "species", value = "abun")
+```
+
+```{r}
+p_abun <- abun_df %>%
+  ggplot(aes(x = species, y = abun, fill = species)) +
+  geom_col()
+
+theme_set(theme_cowplot() +
+  theme(
+    legend.position = "none",
+    axis.text.x = element_blank(),
+    axis.ticks = element_blank()
+    ))
+p_abun +
+  labs(x = "Species", y = "Abundance")
+
+```
+
+```{r}
+make_matrix <- function(df,rownames = NULL){
+  my_matrix <-  as.matrix(df)
+  if(!is.null(rownames))
+    rownames(my_matrix) = rownames
+  my_matrix
+}
+get_mat_from_sp_abun <- function(x = NULL, y = NULL) {
+
+  if (all(map_lgl(list(x,y), is.vector))) {
+    x <- enframe(x, name = "species", value = "abun")
+    y <- enframe(y, name = "species", value = "abun")
+  }
+
+
+  change_ref_df <- map_dfr(
+    list(ref = x, change = y),
+    ~.x, .id = "tps") %>%
+  pivot_wider(names_from = "species", values_from = "abun", values_fill = 0)
+
+make_matrix(df = select(change_ref_df, -tps),
+  rownames = pull(change_ref_df, tps))
+}
+
+set_total_abun <- function(x = NULL, tot = NULL) {
+  x / sum(x) * tot
+}
+```
+
+```{r}
+## Scenario Low change, increase in richness, abun total = , increase in
+## nestedness and turnover
+low_change_abun <- c(
+  abun_dist[names(abun_dist) != "C"],
+  F = 6, G = 6)
+low_change_abun <- low_change_abun / sum(low_change_abun) * sum(abun_dist)
+low_change_abun_df <- enframe(low_change_abun, name = "species", value = "abun")
+
+p_low_change <- low_change_abun_df %>%
+  ggplot(aes(x = species, y = abun, fill = species)) +
+  geom_col()
+```
+
+
+```{r}
+low_change_ref_mat <- get_mat_from_sp_abun(x = abun_dist, y = low_change_abun)
+
+compute_jaccard_decomp(
+  x = low_change_ref_mat[1, ],
+  y = low_change_ref_mat[2, ])
+plot_grid(p_abun, p_low_change)
+```
+
+```{r}
+ref <- c(A = 8, B = 4, C = 2)
+
+scenar <- list(
+  ref = ref,
+  low_change = c(ref[!names(ref) %in% c("B")], D = 4, E = 2) %>%
+    set_total_abun(., sum(ref)),
+
+  high_turn = c(
+    ref[!names(ref) %in% c("A", "B")],
+    D = 4, E = 2, F = 4, G = 4, H = 4
+    ) %>%
+  set_total_abun(., sum(ref) + 10
+    ),
+
+  high_nest = c(ref, D = 4, E = 2, F = 4, G = 4, H = 4) %>%
+    set_total_abun(., sum(ref) + 10),
+
+  desc_rich = c(ref[!names(ref) %in% c("B")]) %>%
+    set_total_abun(., sum(ref)),
+
+  desc_abun = c(ref[!names(ref) %in% c("B")], D = 4) %>%
+    set_total_abun(., sum(ref) - 5),
+
+  inc_abun = c(ref[!names(ref) %in% c("B")], D = 4) %>%
+    set_total_abun(., sum(ref) + 10)
+)
+
+l_mat <- map(scenar[-1],
+  ~get_mat_from_sp_abun(x = scenar$ref, y = .x)
+)
+
+dissimilarity <- map_dfr(l_mat,
+  ~c(
+    compute_jaccard_decomp(x = .x["ref", ], y = .x["change", ]),
+    hillebrand = compute_abundance_turnover_two_timesteps(
+      t1 = enframe(.x["ref", ], name = "species", value = "rel_abundance"),
+      t2 = enframe(.x["change", ], name = "species", value = "rel_abundance")
+    )
+    ),
+  .id = "scenario"
+)
+dissimilarity
+```
+
+
+
+
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

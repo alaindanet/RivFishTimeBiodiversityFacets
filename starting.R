@@ -195,3 +195,5 @@ for (i in seq_along(files)) {
 # Tmp figure script
 file.create(here("doc", "tmp_figures.R"))
 
+# Conceptual figures 
+use_rmd("xxa-conceptual-figures")
