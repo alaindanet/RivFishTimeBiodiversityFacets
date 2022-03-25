@@ -1177,6 +1177,11 @@ tar_target(random_effect_self_c,
  tar_target(bp_cl_dist,
    target_bp_cl_dist(cl_obj = site_cl_rm)
    ),
+ tar_target(bp_random_effect,
+   gaussian_re_sd %>%
+     ggplot(aes(y = estimate, x = group, fill = group)) %>%
+     make_custom_boxplot(., aes_col = group)
+   ),
  tar_target(country_to_plot, c("USA", "FRA","GRB", "SWE")),
  tar_target(p_cluster_country,
    tibble(

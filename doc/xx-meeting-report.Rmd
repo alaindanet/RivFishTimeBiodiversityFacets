@@ -437,7 +437,8 @@ assignement improvement of 10% in another cluster. Clustering was computed with
 ## Temporal trends of biodiversity facets
 
 ```{r}
-mod_comp_std_df <- gaussian_comp_std %>%
+tar_load(gaussian_int_env_comp_std)
+mod_comp_std_df <- gaussian_int_env_comp_std %>%
   as_tibble() %>%
   select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
   pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
@@ -451,8 +452,12 @@ mod_comp_std_df <- gaussian_comp_std %>%
   mutate(
     response = get_var_replacement()[response],
     Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
+    Parameter = str_remove_all(Parameter, "[()]"),
     Parameter = str_replace_all(Parameter, get_model_term_replacement()),
-    facet = ifelse(str_detect(Parameter, "\\*"), "interaction", "main")
+    facet = ifelse(
+      str_detect(Parameter, "\\*"),
+      ifelse(str_count(Parameter, "\\*") == 2, "dbl_interaction", "interaction"),
+      "main")
   )
 ```
 
@@ -463,7 +468,7 @@ mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
   approximation.")
 ```
 
-```{r mod-slp-std, fig.cap=mod_slp_std_cap, layout="l-page", fig.width=8, fig.height=6}
+```{r mod-slp-std, fig.cap=mod_slp_std_cap, fig.width=10, fig.height=10}
 source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
 
 pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
@@ -480,7 +485,7 @@ p <- mod_comp_std_df %>%
   geom_pointrange(position = position_dodge(width = .7)) +
   labs(x = "Standardized coefficients", colour = "Response variables") +
   theme(legend.position = "bottom") +
-  guides(color = guide_legend(nrow = 4, byrow = TRUE))
+  guides(color = guide_legend(nrow = 2, byrow = TRUE))
 
 
 #withr::with_options(
@@ -501,13 +506,30 @@ p1 <- mod_comp_std_df %>%
     legend.position = "none"
     )
 
+p3 <- mod_comp_std_df %>%
+  filter(facet == "dbl_interaction") %>%
+  ggplot(
+    aes(y = Parameter, x = Coefficient, color = response,
+      xmin = CI_low, xmax = CI_high)
+    ) +
+  geom_vline(xintercept = 0) +
+  geom_pointrange(position = position_dodge(width = .7)) +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_blank()
+    )
+
+leg <- get_legend({p + theme(legend.direction = "horizontal")})
 p2 <- p +
   theme(
     plot.margin = margin(0, 5.5, 6, 64),
-    axis.title.y = element_blank()
+    axis.title = element_blank(),
+    legend.position = "none"
   )
 
-p_mod_coef <- plot_grid(p1, p2, nrow = 2)
+p_mod_coef <- plot_grid(p2, p1, p3, leg,
+  nrow = 4,
+  rel_heights = c(1, 1, 1, .2))
 ```
 
 - In average, all biodiversity facets had a positive temporal trend:
@@ -548,16 +570,121 @@ guides(colour = guide_legend(title.position = "top"))
 
 ```{r}
 pca_clust <- compute_rotated_pca(site_tps_clust)
-p_pca_clust <- plot_rotated_pca(pca_clust)
 p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
-tt <- pca_clust$rotated$scores %>%
-  as.data.frame() %>%
-  rownames_to_column("siteid") %>%
-  as_tibble() %>%
-  left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
-  na.omit()
+```
+
+```{r}
+plot_pca_clust <- function(
+  .data = NULL,
+  site_cl = NULL,
+  xaxis = "RC1", yaxis = "RC2",
+  ctb_thld = .4, label_size = 2,
+  size_abscisse_segment = .25,
+  size_arrows_segment = .25,
+  force = 10, force_pull = 1,
+  seed = NA,
+  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
+  add_variable = TRUE,
+  add_point = TRUE,
+  add_ellipse = TRUE,
+  alpha_point = 1,
+  lim_x_y = c(-1, 1)
+) {
+
+  pca_data <- .data$loadings[1:nrow(.data$loadings), ] %>%
+    as.data.frame() %>%
+    rownames_to_column("variable") %>%
+    as_tibble()
+
+  tt <- pca_clust$rotated$scores %>%
+    as.data.frame() %>%
+    rownames_to_column("siteid") %>%
+    as_tibble() %>%
+    left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
+    na.omit()
+
+  pca_data %<>%
+    mutate(variable = replace_var[variable])
+
+
+  var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
+
+  p <- ggplot() +
+    geom_segment(
+      data = tibble(x = c(lim_x_y[1], 0), xend = c(lim_x_y[2], 0),
+        y = c(0, lim_x_y[1]), yend = c(0, lim_x_y[2])),
+      aes(x = x, y = y, xend = xend, yend = yend),
+      size = size_abscisse_segment) +
+    lims(x = lim_x_y, y = lim_x_y) +
+    coord_cartesian(
+      expand = FALSE
+    ) +
+    labs(x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
+      y = paste0(yaxis, " (", var_exp[yaxis], "%)"))
+
+  if (add_point) {
+    p <- p +
+      geom_point(data = tt,
+        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        alpha = alpha_point
+      )
+  }
+  if (add_ellipse) {
+    p <- p +
+      stat_ellipse(
+        data = tt,
+        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        segments = 100,
+        level = .9
+      )
+  }
+
+  if (add_variable) {
+
+    pca_label <- pca_data %>%
+      filter(
+        abs(.data[[xaxis]]) > ctb_thld |
+          abs(.data[[yaxis]]) > ctb_thld
+      )
+    p <- p +
+      geom_segment(data = pca_data,
+        aes_string(x = 0, y = 0, xend = xaxis, yend = yaxis),
+        arrow = ggplot2::arrow(angle = 20, length = unit(0.05, "inches"),
+          ends = "last", type = "open"),
+        size = size_arrows_segment
+        ) +
+      ggrepel::geom_label_repel(data = pca_label,
+        aes_string(x = xaxis, y = yaxis, label = "variable"),
+        size = label_size,
+        force = force, force_pull = force_pull, seed = seed,
+        box.padding = .1, label.padding = .35
+      )
+  }
+  return(p)
+}
+
+```
+
+```{r}
+p <- plot_pca_clust(
+  .data = pca_clust$rotated,
+  site_cl = site_cl_rm,
+  replace_var = get_var_replacement(),
+  size_arrows_segment = 1,
+  label_size = 6,
+  alpha_point = .2,
+  lim_x_y = c(-3.5, 3.5),
+  force_pull = 2,
+  force = 80
+)
+```
+
+
+
+
+```{r, results = "hide"}
 p_rot_clust_ell <- p_rotated_pca_clust +
   geom_point(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl))) +
   stat_ellipse(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl)), level = .9)
@@ -574,18 +701,21 @@ mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
 )
 ```
 
-```{r mod-tps, fig.cap=mod_slp_std_cap, fig.height=10}
-leg <- get_legend(p2 + theme(legend.direction = "vertical"))
+```{r mod-tps, fig.cap=mod_slp_std_cap, fig.height=16}
+p_mod_coef
+```
 
-plot_grid(
-  plot_grid(p1, p2 + theme(legend.position = "none"), nrow = 2) ,
-  plot_grid(cor_p, p_rotated_pca_clust, leg, nrow = 1, labels = c("B", "C")),
-  nrow = 2,
-  labels = c("A", "")
-)
+```{r}
+p +
+  theme_cowplot()
+cor_p
 ```
 
 
+```{r}
+str(k6_fac_50)
+dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
+```
 
 
 ## Typology of biodiversity trends 
@@ -745,7 +875,7 @@ p_cl_mod <- s_cl_mod %>%
       x = get_model_term_replacement()[variable],
       y = str_replace_all(as.character(cluster),
         setNames(cl_label, seq_len(6))),
-      fill = pc 
+      fill = pc
       )) +
   geom_tile(aes(alpha = abs(z))) +
   hrbrthemes::theme_ipsum(base_family = "Helvetica") +
@@ -791,10 +921,12 @@ knitr::include_graphics(here("doc/fig/p_map_cl.png"))
 
 
 ```{r, layout="l-page", fig.height=10, fig.width = 14}
+tar_load(bp_random_effect)
 main_map_rect
 heat_cl
 p_cl_mod
 p_zoom_map
+bp_random_effect
 ```
 
 ```{r}

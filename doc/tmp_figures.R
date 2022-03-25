@@ -197,19 +197,3 @@ bp_theme = theme_minimal( ) +
   theme(legend.position="top", legend.title=element_blank(), panel.grid.major.x=element_blank())
 
 save_plot(p_bp_cl_dist)
-
-tar_load(c(binded_gaussian, clust_var, gaussian_re_sd))
-
-xxx <- gaussian_re_sd %>%
-  ggplot(aes(x = estimate, y = response, color = group)) +
-  geom_point(size  = 3) +
-  theme_minimal() +
-  labs(x = "Random effect on temporal trends (standard deviation)") +
-  theme(
-    axis.title.y = element_blank(),
-    panel.background = element_rect(colour = "white"),
-    legend.title = element_blank(),
-    panel.grid.major.y = element_blank(),
-    legend.position = "top",
-    legend.direction = "horizontal"
-  )
