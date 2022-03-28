@@ -654,21 +654,12 @@ p <- plot_pca_clust(
   site_cl = site_cl_rm,
   replace_var = get_var_replacement(),
   size_arrows_segment = 1,
-  label_size = 6,
+  label_size = 4,
   alpha_point = .2,
   lim_x_y = c(-3.5, 3.5),
   force_pull = 2,
   force = 80
 )
-```
-
-
-
-
-```{r, results = "hide"}
-p_rot_clust_ell <- p_rotated_pca_clust +
-  geom_point(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl))) +
-  stat_ellipse(data = tt, aes(x = RC1, y = RC2, colour = as.factor(cl)), level = .9)
 ```
 
 
@@ -694,7 +685,6 @@ cor_p
 
 
 ```{r}
-str(k6_fac_50)
 dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
 ```
 
@@ -786,7 +776,7 @@ a site has XX% more probability to be in cluster Y than in cluster 1.
 
 ```{r}
 p_map_cl <- plot_grid(
-  plot_grid(main_map_rect, p_cl_mod, nrow = 1, labels = "auto"),
+  main_map_rect,
   plot_grid(plotlist = p_zoom_map, nrow = 1),
   nrow = 2
 )
@@ -804,12 +794,19 @@ knitr::include_graphics(here("doc/fig/p_map_cl.png"))
 ```{r, layout="l-page", fig.height=10, fig.width = 14}
 tar_load(bp_random_effect)
 main_map_rect
-p_cl_mod
 p_zoom_map
 bp_random_effect
 ```
 
 ```{r}
+cl_label <- c(
+  "1: No change",
+  "2: High turnover",
+  "3: Increase of species richness",
+  "4: Decrease of species richness",
+  "5: Decrease of abundance",
+  "6: Increase of abundance")
+
 map(p_clust_prop,
   ~.x +
   scale_fill_discrete(

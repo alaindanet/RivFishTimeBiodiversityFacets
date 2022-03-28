@@ -10,6 +10,7 @@ tar_meta()
 tar_visnetwork()
 
 tar_make(names = meeting_report)
+tar_make(names = biodiversity_facets_support)
 
 
 source(file = "start_rmd.R")
