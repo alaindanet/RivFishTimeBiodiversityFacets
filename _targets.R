@@ -858,6 +858,33 @@ tar_target(neutral_turnover,
       setNames(gaussian_int_env$mod, gaussian_int_env$response),
       standardize = "refit")
     ),
+  tar_target(mod_comp_std_df,
+    gaussian_int_env_comp_std %>%
+      as_tibble() %>%
+      select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
+      pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+      separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+      pivot_wider(names_from = "type", values_from = "values") %>%
+      filter(
+        !Parameter %in% "(Intercept)",
+        !str_detect(Parameter, "unitabundance"),
+        response %in% clust_var
+        ) %>%
+      mutate(
+        response = get_var_replacement()[response],
+        Parameter = str_replace_all(Parameter,
+          "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
+        Parameter = str_remove_all(Parameter, "[()]"),
+        Parameter = str_replace_all(Parameter, get_model_term_replacement()),
+        facet = ifelse(
+          str_detect(Parameter, "\\*"),
+          ifelse(
+            str_count(Parameter, "\\*") == 2,
+            "dbl_interaction", "interaction"),
+          "main")
+      )
+
+    ),
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),

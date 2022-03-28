@@ -31,6 +31,71 @@ tar_load(tps_model_for_comp)
 tar_load(gaussian_int_env)
 ```
 
+# Visualise interactions 
+
+```{r}
+jaccard <- gaussian_int_env$mod[[1]]
+nestedness <- gaussian_int_env$mod[[3]]
+slopes <- estimate_slopes(nestedness, trend = "log1_year_nb", at = c("riv_str_rc1",
+    "hft_ix_c93"))
+plot(slopes)
+```
+
+# Heat map
+
+```{r}
+tar_load(mod_comp_std_df)
+x <- mod_comp_std_df %>%
+  filter(facet == "dbl_interaction") %>%
+  mutate(Parameter = str_remove(Parameter, "Log \\(Year nb \\+ 1\\) \\* ")) %>%
+  separate(Parameter, c("Parameter", "interaction"), sep = " \\* ")
+unique(x$Parameter)
+unique(x$interaction)
+
+xx <- mod_comp_std_df %>%
+  filter(facet == "interaction") %>%
+  mutate(Parameter = str_remove(Parameter, "Log \\(Year nb \\+ 1\\) \\* "))
+unique(xx$Parameter)
+
+
+te <- expand.grid(list(
+    Parameter = unique(x$Parameter),
+    interaction = unique(x$interaction),
+    response = get_var_replacement()[clust_var]
+    ))
+te2 <- te %>%
+  left_join(x %>%
+    select(Parameter, interaction, response, Coefficient),
+  by = c("response", "interaction", "Parameter")) %>%
+left_join(xx %>%
+    select(Parameter, response, Coefficient) %>%
+    rename(simple = Coefficient),
+  by = c("response", "Parameter"))
+
+row_to_keep <- te2$Parameter != te2$interaction
+te2[row_to_keep, ][1:3, ]
+x %>%
+  filter(str_detect(Parameter, "PCA1"))
+
+
+te1 <- te %>%
+  left_join(xx %>%
+    select(Parameter, response, Coefficient),
+  by = c("response", "Parameter"))
+
+
+
+avg_cl_var <- site_cl_rm %>%
+  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
+  pivot_longer(-c(siteid, cl),
+    names_to = "response",
+    values_to = "value") %>%
+  group_by(cl, response) %>%
+  summarise(value = median(value), .groups = "drop") %>%
+  rename(cluster = cl)
+```
+
+
 # Notes on transformed variables 
 
 - Notes:
@@ -84,6 +149,110 @@ ggcorrplot::ggcorrplot(
 theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
 guides(colour = guide_legend(title.position = "top"))
 ```
+# Heatmap cluster and multinomial model  
+
+```{r cl-heat}
+te <- expand.grid(
+  list(
+    cluster = c(seq_len(6)),
+    response = clust_var
+  )
+)
+
+avg_cl_var <- site_cl_rm %>%
+  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
+  pivot_longer(-c(siteid, cl),
+    names_to = "response",
+    values_to = "value") %>%
+  group_by(cl, response) %>%
+  summarise(value = median(value), .groups = "drop") %>%
+  rename(cluster = cl)
+
+# Ajouter moyenne par cluster
+te <- te %>%
+  left_join(avg_cl_var, by = c("cluster", "response"))
+
+heat_map_df <- te %>%
+  pivot_wider(names_from = "response", values_from = "value")
+```
+
+```{r}
+cl_label <- c(
+  "1: No change",
+  "2: High turnover",
+  "3: Increase of species richness",
+  "4: Decrease of species richness",
+  "5: Decrease of abundance",
+  "6: Increase of abundance")
+heat_cl <- te %>%
+  ggplot(aes(
+      x = get_var_replacement()[response],
+      y = str_replace_all(as.character(cluster),
+        setNames(cl_label, seq_len(6))),
+      fill = value)) +
+  geom_tile() +
+  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
+  coord_fixed() +
+  scale_fill_gradient2(
+    high = muted("red"),
+    mid = "white",
+    low = muted("blue"),
+    midpoint = 0,
+    space = "Lab") +
+  labs(x = "", y = "") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+```
+
+```{r}
+# Build heatmap
+site_cl_rm$cl <- relevel(as.factor(site_cl_rm$cl), ref = 1)
+
+cl_mod <- nnet::multinom(
+  cl ~ riv_str_rc1 + hft_c9309_scaled_no_center,
+  data = site_cl_rm)
+```
+
+```{r}
+ci_cl_mod <- exp(confint(cl_mod)) - 1
+exp_cl_mod <- exp(coef(cl_mod))
+z_cl_mod <- summary(cl_mod)$coefficients / summary(cl_mod)$standard.errors
+
+
+s_cl_mod <- map_dfr(list(exp_coef = exp_cl_mod, z = z_cl_mod),
+  ~.x[, c("riv_str_rc1", "hft_c9309_scaled_no_center")] %>%
+    as.data.frame() %>%
+    rownames_to_column(var = "cluster"), .id = "type"
+) %>%
+  pivot_longer(c("riv_str_rc1", "hft_c9309_scaled_no_center"),
+    names_to = "variable", values_to = "value") %>%
+  pivot_wider(names_from = "type", values_from = "value") %>%
+  mutate(pc = exp_coef - 1)
+```
+
+```{r}
+p_cl_mod <- s_cl_mod %>%
+  ggplot(aes(
+      x = get_model_term_replacement()[variable],
+      y = str_replace_all(as.character(cluster),
+        setNames(cl_label, seq_len(6))),
+      fill = pc
+      )) +
+  geom_tile(aes(alpha = abs(z))) +
+  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
+  scale_fill_continuous(labels = scales::percent_format(accuracy = 1)) +
+  coord_fixed() +
+  labs(x = "", y = "", alpha = "Z-score", fill = "Probability") +
+  theme(axis.text.x = element_text(angle = 20, hjust = 1))
+p_cl_mod
+```
+
+- Results of the multinomial model: 
+  - 72% more probable to be in cluster 2 (high turnover) than in cluster 1 (no
+    change) if PCA coordinates related to stream gradient increase by 1% 
+  - 76% more probable to be in cluster 6 (increase in abundance) than in cluster
+    1 if PCA coordinates related to stream gradient increase by 1% 
+  - *I have to find a more clear story for this*
+  - **We basically find the same results than the general model but more blurry**
 
 # Test model with short-long term changes
 

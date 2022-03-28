@@ -437,28 +437,7 @@ assignement improvement of 10% in another cluster. Clustering was computed with
 ## Temporal trends of biodiversity facets
 
 ```{r}
-tar_load(gaussian_int_env_comp_std)
-mod_comp_std_df <- gaussian_int_env_comp_std %>%
-  as_tibble() %>%
-  select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
-  pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
-  separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
-  pivot_wider(names_from = "type", values_from = "values") %>%
-  filter(
-    !Parameter %in% "(Intercept)",
-    !str_detect(Parameter, "unitabundance"),
-    response %in% clust_var
-  ) %>%
-  mutate(
-    response = get_var_replacement()[response],
-    Parameter = str_replace_all(Parameter, "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
-    Parameter = str_remove_all(Parameter, "[()]"),
-    Parameter = str_replace_all(Parameter, get_model_term_replacement()),
-    facet = ifelse(
-      str_detect(Parameter, "\\*"),
-      ifelse(str_count(Parameter, "\\*") == 2, "dbl_interaction", "interaction"),
-      "main")
-  )
+tar_load(c(gaussian_int_env_comp_std, mod_comp_std_df))
 ```
 
 ```{r}
@@ -791,99 +770,6 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
 )
 ```
 
-```{r cl-heat}
-te <- expand.grid(
-  list(
-    cluster = c(seq_len(6)),
-    response = clust_var
-  )
-)
-
-avg_cl_var <- site_cl_rm %>%
-  select(-riv_str_rc1, -hft_c9309_scaled_no_center) %>%
-  pivot_longer(-c(siteid, cl),
-    names_to = "response",
-    values_to = "value") %>%
-  group_by(cl, response) %>%
-  summarise(value = median(value), .groups = "drop") %>%
-  rename(cluster = cl)
-
-# Ajouter moyenne par cluster
-te <- te %>%
-  left_join(avg_cl_var, by = c("cluster", "response"))
-
-heat_map_df <- te %>%
-  pivot_wider(names_from = "response", values_from = "value")
-```
-
-```{r}
-cl_label <- c(
-  "1: No change",
-  "2: High turnover",
-  "3: Increase of species richness",
-  "4: Decrease of species richness",
-  "5: Decrease of abundance",
-  "6: Increase of abundance")
-heat_cl <- te %>%
-  ggplot(aes(
-      x = get_var_replacement()[response],
-      y = str_replace_all(as.character(cluster),
-        setNames(cl_label, seq_len(6))),
-      fill = value)) +
-  geom_tile() +
-  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
-  coord_fixed() +
-  scale_fill_gradient2(
-    high = muted("red"),
-    mid = "white",
-    low = muted("blue"),
-    midpoint = 0,
-    space = "Lab") +
-  labs(x = "", y = "") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
-```
-
-```{r}
-# Build heatmap
-site_cl_rm$cl <- relevel(as.factor(site_cl_rm$cl), ref = 1)
-
-cl_mod <- nnet::multinom(
-  cl ~ riv_str_rc1 + hft_c9309_scaled_no_center,
-  data = site_cl_rm)
-```
-
-```{r}
-ci_cl_mod <- exp(confint(cl_mod)) - 1
-exp_cl_mod <- exp(coef(cl_mod))
-z_cl_mod <- summary(cl_mod)$coefficients / summary(cl_mod)$standard.errors
-
-
-s_cl_mod <- map_dfr(list(exp_coef = exp_cl_mod, z = z_cl_mod),
-  ~.x[, c("riv_str_rc1", "hft_c9309_scaled_no_center")] %>%
-    as.data.frame() %>%
-    rownames_to_column(var = "cluster"), .id = "type"
-) %>%
-  pivot_longer(c("riv_str_rc1", "hft_c9309_scaled_no_center"),
-    names_to = "variable", values_to = "value") %>%
-  pivot_wider(names_from = "type", values_from = "value") %>%
-  mutate(pc = exp_coef - 1)
-```
-
-```{r}
-p_cl_mod <- s_cl_mod %>%
-  ggplot(aes(
-      x = get_model_term_replacement()[variable],
-      y = str_replace_all(as.character(cluster),
-        setNames(cl_label, seq_len(6))),
-      fill = pc
-      )) +
-  geom_tile(aes(alpha = abs(z))) +
-  hrbrthemes::theme_ipsum(base_family = "Helvetica") +
-  scale_fill_continuous(labels = scales::percent_format(accuracy = 1)) +
-  coord_fixed() +
-  labs(x = "", y = "", alpha = "Z-score", fill = "Probability") +
-  theme(axis.text.x = element_text(angle = 20, hjust = 1))
-```
 
 ```{r}
 map_cl_cap <- "(a) Distribution of the cluster biodiversity trends. NAs cluster
@@ -898,7 +784,7 @@ a site has XX% more probability to be in cluster Y than in cluster 1.
 
 ```{r}
 p_map_cl <- plot_grid(
-  plot_grid(main_map_rect, heat_cl, p_cl_mod, nrow = 1, labels = "auto"),
+  plot_grid(main_map_rect, p_cl_mod, nrow = 1, labels = "auto"),
   plot_grid(plotlist = p_zoom_map, nrow = 1),
   nrow = 2
 )
@@ -911,19 +797,11 @@ knitr::include_graphics(here("doc/fig/p_map_cl.png"))
 ```
 
 
-- Results of the multinomial model: 
-  - 72% more probable to be in cluster 2 (high turnover) than in cluster 1 (no
-    change) if PCA coordinates related to stream gradient increase by 1% 
-  - 76% more probable to be in cluster 6 (increase in abundance) than in cluster
-    1 if PCA coordinates related to stream gradient increase by 1% 
-  - *I have to find a more clear story for this*
-  - **We basically find the same results than the general model but more blurry**
 
 
 ```{r, layout="l-page", fig.height=10, fig.width = 14}
 tar_load(bp_random_effect)
 main_map_rect
-heat_cl
 p_cl_mod
 p_zoom_map
 bp_random_effect
@@ -965,8 +843,7 @@ map(p_clust_prop,
 ```{r}
 cor_site_tps_tmp_cap <-  "Spearman correlation among the temporal trends of
 biodiversity facets. Temporal trends at each site computed as BLUPs predictions
-(i.e. estimated from random effects). " 
-
+(i.e. estimated from random effects). "
 ```
 
 ```{r, fig.cap=cor_site_tps_tmp_cap}
