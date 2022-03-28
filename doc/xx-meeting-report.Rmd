@@ -37,6 +37,8 @@ tar_load(c(
     discr_k6_fac_50,
     site_cl_rm
     ))
+
+tar_load(p_int_mod)
 ```
 
 ```{r map-setup, include=FALSE}

@@ -50,3 +50,50 @@ target_bp_cl_dist <- function(cl_obj = site_cl_rm) {
     make_custom_boxplot(bp_cl_dist)
 
 }
+
+make_interaction_heatmap_tps_env <- function(data = NULL) {
+
+  x <- data %>%
+    filter(facet == "dbl_interaction", !is.na(Coefficient)) %>%
+    mutate(Parameter = str_remove(Parameter,
+        "Log \\(Year nb \\+ 1\\) \\* ")
+      ) %>%
+    separate(Parameter, c("Parameter", "interaction"), sep = " \\* ")
+
+  xx <- data %>%
+    filter(facet == "interaction") %>%
+    mutate(Parameter = str_remove(Parameter, "Log \\(Year nb \\+ 1\\) \\* "))
+
+  te <- expand.grid(list(
+      Parameter = unique(x$Parameter),
+      interaction = unique(x$interaction),
+      response = get_var_replacement()[clust_var]
+      ))
+
+  te2 <- te %>%
+    left_join(x %>%
+      select(Parameter, interaction, response, Coefficient),
+    by = c("response", "interaction", "Parameter")) %>%
+  left_join(xx %>%
+    select(Parameter, response, Coefficient) %>%
+    rename(simple = Coefficient), by = c("response", "Parameter")) %>%
+  filter(!is.na(Coefficient)) %>%
+  mutate(outcome = Coefficient * simple)
+
+te2 %>%
+  mutate(term = str_c(Parameter, " / ", interaction)) %>%
+  ggplot(aes(x = response, y = term, fill = outcome)) +
+  geom_tile() +
+  geom_text(aes(label = formatC(outcome, digits = 1, format = "e"))) +
+  scale_fill_distiller(
+    type = "div",
+    direction = -1,
+    labels = scales::label_scientific(digits = 1),
+    palette = "RdBu") +
+  labs(
+    fill = "Standardized coefficients"
+    ) +
+  theme_minimal()
+
+
+}

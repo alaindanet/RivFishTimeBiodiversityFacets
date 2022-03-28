@@ -959,6 +959,9 @@ tar_target(neutral_turnover,
       mutate(p = purrr::map(mod, ~plot_model_comp_coeff(model_list = .x))),
     pattern = map(tps_var)
     ),
+  tar_target(p_int_mod,
+    make_interaction_heatmap_tps_env(data = mod_comp_std_df)
+    ),
   tar_target(mod_tmb,
     rbind(
       gaussian_jaccard_tmb %>%
