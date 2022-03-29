@@ -1208,9 +1208,11 @@ tar_target(random_effect_self_c,
    ),
  tar_target(p_clust_prop,
    plot_cluster_proportion(
-     cluster_df = site_cl_0,
+     cluster_df = site_cl_rm,
      site_env = site_env,
-     loc_var = ecoregion
+     loc_var = ecoregion,
+     vjust = 2.5,
+     size = 5
      )),
  tar_target(site_cl_0,
    get_cluster_df(

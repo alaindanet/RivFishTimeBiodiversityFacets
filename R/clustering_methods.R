@@ -42,15 +42,16 @@ get_cluster_df <- function(
 plot_cluster_proportion <- function(
   cluster_df = NULL,
   site_env = NULL,
-  loc_var = ecoregion
-){
+  loc_var = ecoregion,
+  vjust = 1.5,
+  size = 4
+  ){
 
   cl_region <- cluster_df %>%
     select(siteid, cl) %>%
     mutate(cl = as.factor(cl)) %>%
     left_join(select(site_env, siteid, {{loc_var}}), by = "siteid") %>%
     filter(! ecoregion %in% c("Afrotropics", "Neotropics"))
-
 
   p_nb_cl <-  cl_region %>%
     ggplot(aes(y = {{loc_var}}, fill = cl)) +
@@ -65,9 +66,24 @@ plot_cluster_proportion <- function(
   p_prop_cl <- cl_region_pc %>%
     ggplot(aes(x = {{loc_var}}, y = pc, fill = cl)) +
     geom_col() +
-    geom_text(aes(label = scales::percent(pc)),
-      position="stack",vjust=+2.1,col="firebrick",size=3)+
-    scale_y_continuous(label = scales::percent)
+    geom_text(
+      aes(label = scales::percent(pc, accuracy = 1)),
+      position = "stack",
+      vjust = vjust,
+      col = "white",
+      size = size) +
+    scale_y_continuous(label = scales::percent) +
+    hrbrthemes::theme_ipsum(base_family = "Helvetica") +
+    coord_cartesian(
+      expand = FALSE
+      ) +
+    theme(
+      legend.position = "none",
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      panel.grid.minor.y = element_blank(),
+      panel.grid.major.y = element_blank()
+    )
 
   return(list(nb_cl = p_nb_cl, prop_cl = p_prop_cl))
 }

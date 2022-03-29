@@ -10,6 +10,14 @@ output:
 bibliography: "bibliography.bib"
 ---
 
+<style type="text/css">
+.main-container {
+  max-width: 1600px !important;
+  margin: auto;
+}
+</style>
+
+
 ```{r setup, include=FALSE}
 source(here::here("start_rmd.R"))
 #knitr::opts_chunk$set(cache = TRUE)
@@ -78,8 +86,13 @@ loc <- world_site_sf$site
     been reported to be the major change, i.e. change in species identity, which
     is coherent with the absence of species richness trends  
 
-### Environment
+## Multiple facets of biodiversity
 
+- To complete
+
+## Long-term and short term pressure 
+
+- Occidental environment has been the most modified
 - Human footprint decreased between 1993 and 2009 in Occidental countries:
   https://www.nature.com/articles/ncomms12558
 
@@ -87,10 +100,10 @@ loc <- world_site_sf$site
 
 - Biodiversity trends are often analysed one facet at a time 
 - Ecological drivers are often not included in Biodiversity trends assessment at global scale 
-- Spatial grain is often at the continental scale, hiding more local variation
+- Spatial grain is often at the continental scale, hiding more local
+  heterogeneity
 
-
-## Fish freshwater in streams 
+## Fish freshwater in streams
 
 - Streams are a good model to study turnover:  
   - They are spatially delimited at the basin level
@@ -104,7 +117,8 @@ loc <- world_site_sf$site
 
 - Unique protocol and unique unit of abundance by site
 - One sampling by year and site
-- In each site, samplings should be in the median (more or less one month and half, i.e. 1.5 month)
+- In each site, samplings should be in the median (more or less one month and
+  half, i.e. 1.5 month)
 - 5 samplings by site, span 10 years 
 
 ```{r}
@@ -439,7 +453,7 @@ proportion of outliers data trimmed and the number of cluster(colored lines). Up
 to 6 cluster, the proportion of trimmed data does not change the ranking of the clustering. We chose to stick with 6 clusters with a removal 0.05 of the outliers"
 ```
 
-```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap, fig.height=7}
+```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap, fig.height=7, include=FALSE}
 plot(clust_curv_site_fac_50)
 ```
 
@@ -449,7 +463,7 @@ their cluster assignement (left). Stilhouette profile. Black points represent si
 at the 5% threshold."
 ```
 
-```{r cl-p, fig.cap=kmeans_sites}
+```{r cl-p, fig.cap=kmeans_sites, include=FALSE}
 plot(discr_k6_fac_50)
 ```
 
@@ -470,14 +484,8 @@ assignement improvement of 10% in another cluster. Clustering was computed with
 tar_load(c(gaussian_int_env_comp_std, mod_comp_std_df))
 ```
 
-```{r}
-mod_slp_std_cap <- paste0("Estimated fixed effects of the gaussian models.
-  Coefficients were standardized by refiting the models with scaled response and
-  explicative variables. Bars represent CI at 95% computed with Wald
-  approximation.")
-```
 
-```{r mod-slp-std, fig.cap=mod_slp_std_cap, fig.width=10, fig.height=10}
+```{r mod-slp-std, include=FALSE}
 source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
 
 pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
@@ -528,7 +536,9 @@ p3 <- mod_comp_std_df %>%
     axis.title.y = element_blank()
     )
 
-leg <- get_legend({p + theme(legend.direction = "horizontal")})
+leg <- get_legend({p +
+  theme(legend.direction = "horizontal") +
+  guides(colour = guide_legend(nrow = 3))})
 p2 <- p +
   theme(
     plot.margin = margin(0, 5.5, 6, 64),
@@ -649,7 +659,7 @@ plot_pca_clust <- function(
         aes_string(x = xaxis, y = yaxis, label = "variable"),
         size = label_size,
         force = force, force_pull = force_pull, seed = seed,
-        box.padding = .1, label.padding = .35
+        box.padding = .1, label.padding = .15
       )
   }
   return(p)
@@ -662,10 +672,10 @@ p_pca_ok <- plot_pca_clust(
   site_cl = site_cl_rm,
   replace_var = get_var_replacement(),
   size_arrows_segment = 1,
-  label_size = 4,
+  label_size = 2.5,
   alpha_point = .2,
   lim_x_y = c(-3.5, 3.5),
-  force_pull = 2,
+  force_pull = 1,
   force = 80
 )
 ```
@@ -675,83 +685,92 @@ p_pca_ok <- plot_pca_clust(
 mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
   Coefficients were standardized by refiting the models with scaled response and
   explicative variables. Bars represent CI at 95% computed with Wald
-  approximation.",
-  " (B) Spearman correlation among temporal trends.",
-  " (C) Rotated PCA on temporal trends."
-)
+  approximation. (B) Interactions effects of pressures on temporal trends
+  (Antagonistic or synergetic).")
 ```
 
-```{r mod-tps, fig.cap=mod_slp_std_cap, fig.height=16}
-p_int_mod <- make_interaction_heatmap_tps_env(data = mod_comp_std_df)
+```{r mod-tps, fig.height = 16, fig.cap=mod_slp_std_cap}
+p_int_mod <- make_interaction_heatmap_tps_env(data = mod_comp_std_df) +
+  theme(
+    legend.position = "bottom",
+    axis.text.x = element_text(angle = 20),
+    axis.title = element_blank(),
+    
+  )
 plot_grid(
   p_mod_coef,
   p_int_mod,
   nrow = 2,
   labels = "AUTO",
-  rel_heights = c(.8, .2)
+  rel_heights = c(.7, .3)
 )
 ```
 
 1. Main effects
-  1. Stream gradient (upstream -> downstream, called hereafter stream gradient):
-    - Total abundance was higher toward downstream
-    - No effect on species richness
-  1. Human footprint (1993):
-    - Species richness was higher when human pressure was high
-    - Total abundance was not related to long term pressure  
-  1. Human footprint change (1993-2009):
-    - Species richness was overall lower where pressure increased
-    - Total abundance was overall higher where pressure increased
-  1. Temporal trend:
-    - All temporal trends were positive in average: including species richness,
-      total abundance and dissimilarity index
-    - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
-          ($r_\delta$ around 0.37), followed by disappearance, nestedness and
-          turnover ($r_\delta$ around 0.25)
-    - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
+    1. Stream gradient (upstream -> downstream, called hereafter stream gradient):
+        - Total abundance was higher toward downstream
+        - No effect on species richness
+    1. Human footprint (1993):
+        - Species richness was higher when human pressure was high
+        - Total abundance was not related to long term pressure  
+    1. Human footprint change (1993-2009):
+        - Species richness was overall lower where pressure increased
+        - Total abundance was overall higher where pressure increased
+    1. Temporal trend:
+        - All temporal trends were positive in average: including species richness,
+          total abundance and dissimilarity index
+        - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
+              ($r_\delta$ around 0.37), followed by disappearance, nestedness and
+              turnover ($r_\delta$ around 0.25)
+        - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
 1. Effect of environmental pressure on temporal trends 
-  1. Effect of stream gradient:
-    - **Higher increase in dissimilarity downstream**: Jaccard, turnover and
-      abundance based dissimilarity
-    - **Higher increase in total abundance downstream**
-    - **Nestedness and appearance temporal trends decrease downstream** 
-  1. Effect of long term pressure, human footprint (1993)
-     - **Higher increase in dissimilarity and appearance** in historically
-       degraded sites
-     - **Higher increase in total abundance and species richness** in
-       historically degraded sites
-     - **Lower species loss** in historically degraded sites
-  1. Effect of short term pressure, human footprint (1993-2009): 
-    - **Higher increase in dissimilarity** where pressure increased recently
-      (Jaccard, abundance based dissimilarity) and driven by changes in species
-      identity (turnover)
-    - **Higher increase in species disparition** when pressure increased
-      recently
-    - **Lower species richness increase** where pressure increased
-      recently
-    - **But no effect on total abundance**
+    1. Effect of stream gradient:
+         - **Higher increase in dissimilarity downstream**: Jaccard, turnover and
+           abundance based dissimilarity
+         - **Higher increase in total abundance downstream**
+         - **Nestedness and appearance temporal trends decrease downstream** 
+    1. Effect of long term pressure, human footprint (1993)
+         - **Higher increase in dissimilarity and appearance** in historically
+           degraded sites
+         - **Higher increase in total abundance and species richness** in
+           historically degraded sites
+         - **Lower species loss** in historically degraded sites
+    1. Effect of short term pressure, human footprint (1993-2009): 
+        - **Higher increase in dissimilarity** where pressure increased recently
+          (Jaccard, abundance based dissimilarity) and driven by changes in species
+          identity (turnover)
+        - **Higher increase in species disparition** when pressure increased
+          recently
+        - **Lower species richness increase** where pressure increased
+          recently
+        - **But no effect on total abundance**
 1. Effect of interaction between pressure on temporal trends 
-  1. Short-term pressure on the stream gradient:
-    - Mainly very little effect
-    - Antagonistic effects on turnover and appearance, i.e. short-term changes decrease the effect on stream gradient 
-  1. Long-term pressure on the stream gradient: 
-    - Mainly very little effect
-    - Antagonistic effects on abundance based dissimilarity, on turnover: i.e. long-term changes decrease the effect on stream gradient on turnover and abundance-based dissimilarity
-    - Synergistic effects on Nestedness: symmetric regarding turnover  
-  1. Short-term pressures on long term pressures:
-     - Synergistic effect on abundance based dissimilarity, jaccard and turnover 
-     - Antagonistic effects on disappearance and species richness:
-       - Disappearance trends are negative in more long-term degraded sites but
-         not in the ones that have been degraded recently    
-       - Species richness trends are more positive in long-term degraded sites
-         but not in the ones that have been degraded recently
+    1. Short-term pressure on the stream gradient:
+        - Mainly very little effect
+        - Antagonistic effects on turnover and appearance, i.e. short-term changes
+          decrease the effect on stream gradient 
+    1. Long-term pressure on the stream gradient: 
+        - Mainly very little effect
+        - Antagonistic effects on abundance based dissimilarity, on turnover: i.e.
+          long-term changes decrease the effect on stream gradient on turnover and
+          abundance-based dissimilarity
+        - Synergistic effects on Nestedness: symmetric regarding turnover  
+    1. Short-term pressures on long term pressures:
+         - Synergistic effect on abundance based dissimilarity, jaccard and turnover 
+         - Antagonistic effects on disappearance and species richness:
+           - Disappearance trends are negative in more long-term degraded sites but
+             not in the ones that have been degraded recently    
+           - Species richness trends are more positive in long-term degraded sites
+             but not in the ones that have been degraded recently
 
 
 ## Typology of biodiversity trends 
 
 
 ```{r}
-pca_clust_cap <- "(A) PCA biplot on site temporal trends (model without drivers). The sites are colored by their cluster belongings. (B) Correlation among temporal trends."
+pca_clust_cap <- "(A) PCA biplot on site temporal trends (model without
+drivers). The sites are colored by their cluster belongings. (B) Correlation
+among temporal trends."
 ```
 
 
@@ -770,18 +789,18 @@ dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
 ```
 
 1. Links among temporal trends:
-  - Dissimilarity orthogonal to species richness 
-  - Disappearance orthogonal to Nestedness and Appearance 
-  - Total abundance weakly linked with species richness and dissimilarity
+    - Dissimilarity orthogonal to species richness 
+    - Disappearance orthogonal to Nestedness and Appearance 
+    - Total abundance weakly linked with species richness and dissimilarity
 1. Cluster signification (Figure \@ref(fig:pca-cor-tps)A):
-  - Cluster 1: Low change 
-  - Cluster 2: High turnover + medium increase abundance + high dissimilarity +
-    medium increase richness
-  - Cluster 3: High increase richness + high nestedness + increase abundance +
-    medium dissimilarity
-  - Cluster 4: Decrease richness + No abundance change + medium dissimilarity
-  - Cluster 5: Decrease abundance + medium dissimilarity 
-  - Cluster 6: Increase abundance + medium dissimilarity + low richness change 
+    - Cluster 1: Low change 
+    - Cluster 2: High turnover + medium increase abundance + high dissimilarity +
+      medium increase richness
+    - Cluster 3: High increase richness + high nestedness + increase abundance +
+      medium dissimilarity
+    - Cluster 4: Decrease richness + No abundance change + medium dissimilarity
+    - Cluster 5: Decrease abundance + medium dissimilarity 
+    - Cluster 6: Increase abundance + medium dissimilarity + low richness change 
 
 - Summary: **Cluster are determined by abundance, species richness and turnover,
   meaning that there is a low dimensionality of biodiversity trends**
@@ -844,14 +863,11 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
 )
 ```
 
-
 ```{r}
-map_cl_cap <- "(a) Distribution of the cluster biodiversity trends. NAs cluster
-displays sites that could not be attributed clearly to one cluster (cf methods).
-(b) Median of the scaled variables (but not centered) for each cluster. (c)
-Results of the multinomial model. Color scale displays exponentiated
-coefficients minus 1 while opacity displays absolute Z-scores. Color scale means that
-a site has XX% more probability to be in cluster Y than in cluster 1.
+map_cl_cap <- "Distribution of the clusters of biodiversity trends (without
+cluster being NAs). Bottom boxplots display the distribution of the biodiversity
+trends (scaled) by cluster and facets. On the left is displayed the proportion
+of cluster by realm for the three main ones.
 "
 ```
 
@@ -866,36 +882,16 @@ save_plot(here("doc/fig/p_map_cl.png"),
   p_map_cl, base_height = 4, nrow = 2, ncol = 3)
 ```
 
-```{r map-cl, layout="l-page", fig.height=16, fig.width = 12, fig.cap=map_cl_cap}
-knitr::include_graphics(here("doc/fig/p_map_cl.png"))
-```
-
-
-```{r}
-cl_label <- c(
-  "1: No change",
-  "2: High turnover",
-  "3: Increase of species richness",
-  "4: Decrease of species richness",
-  "5: Decrease of abundance",
-  "6: Increase of abundance")
-
-map(p_clust_prop,
-  ~.x +
-  scale_fill_discrete(
-    name = "Cluster",
-    breaks = c(0, seq_len(6)),
-    labels = c("NA: undefined cluster", cl_label)
-  )
-)
+```{r map-cl, fig.height=16, fig.width = 16*1.618, fig.cap=map_cl_cap}
+knitr::include_graphics(here("doc/fig/map_cluster.png"))
 ```
 
 1. Low scale heterogeneity: 
-  - Cluster distribution is similar across ecoregion
-  - Variability on temporal trends is twice higher on site than basin: low scale
-    heterogeneity
+    - Cluster distribution is similar across ecoregion
+    - Variability on temporal trends is twice higher on site than basin: low scale
+      heterogeneity
 
-```{r, fig.height=10, fig.width = 14}
+```{r, fig.height=10, fig.width=14, include=FALSE}
 main_map_rect
 p_zoom_map
 bp_random_effect
@@ -903,15 +899,31 @@ bp_random_effect
 
 # Discussion 
 
-- We find in average an increase in species richness and total abundance
-- Environmental drivers and pressure explain temporal trends 
-- The different biodiversity facets are necessary to characterize the change
-  scenario: abundance change or presence/absence, change in identity or
-  nestedness 
-- The typology of temporal trends reveals that only three dimensions matters:
-  total abundance, species richness, turnover. The combination of their
-  temporal trends characterize the 6 clusters
-- The spatial heterogeneity of the cluster distribution is pretty high ! 
+1. We find in average an increase in species richness, total abundance and
+   dissimilarity:
+   - in accordance with @klink_meta-analysis_2020, @dornelas_assemblage_2014,
+     @blowes_geography_2019
+   - Dissimilarity mainly due to change in species composition and abundant
+     species
+1. Stream gradient and human pressure drive temporal changes 
+   1. Downstream areas becomes more dissimilar than upstream, by higher changes
+     in species identity [REF] 
+   1. Most degraded have higher increase in species richness, dissimilarity and
+     appearance [REF]
+   1. Recent increase in degradation decresase species richness but increase
+      dissimilarity
+1. Interactions between pressures
+   1. Long-term and short term increase in human pressure counteract effect of
+      stream gradient
+   1. Synergistic effects of long-term and short term pressures on change in
+      species identity
+1. Clusters reveals that scenarios of biodiversity change are driven by few
+   variables: change in species composition, total abundance and species
+   richness
+1. High local heterogeneity in biodiversity changes:
+   - Same cluster composition by realms 
+   - In contrast with @blowes_geography_2019, @klink_meta-analysis_2020
+   - Due to freshwater systems?
 
 # References {-}
 

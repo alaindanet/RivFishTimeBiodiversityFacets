@@ -77,7 +77,7 @@ main_map_rect <- main_map +
   geom_text(
     data = zoom_map_coord_df,
     aes(x = xmin, y = ymax, label = label),
-    vjust = 1, hjust = 1, size = 15
+    vjust = 1, hjust = 1, size = 8 
   ) +
 theme(legend.position = "none") +
   coord_sf(expand = FALSE) +
@@ -94,7 +94,7 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
       ylim = .x[c("ymin", "ymax")],
       expand = FALSE) +
     annotate("text", x = .x["xmin"], y = .x["ymax"],
-      label = .y, size = 15, vjust = 1, hjust = 0) +
+      label = .y, size = 8, vjust = 1, hjust = 0) +
     theme(legend.position = "none",
       panel.background = element_rect(fill = "white"))
 )
@@ -125,22 +125,38 @@ full_map <- ggdraw(main_map_rect) +
   )
 
 
-p_re_sd2 <- p_re_sd +
-  theme(
-    panel.background = element_rect(colour = "black", size = 1),
-    legend.position = c(.8, .04)
+tar_load(site_env)
+p_clust_prop <- plot_cluster_proportion(
+    cluster_df = site_cl_rm,
+    site_env = site_env,
+    loc_var = ecoregion,
+    vjust = 2.5,
+    size = 5
   )
+p_clust_prop$prop_cl +
+  labs(y = "Proportion of sites")
+
 # Legend cluster:
 legend_cluster <- get_legend(
   main_map_rect + theme(legend.position = "right"))
 
-full_map +
-  draw_plot({p_re_sd2},
-    x = .00, y = 0.25,
-    width = 0.26, height = 0.25) +
+p_cl_map <- full_map +
+  draw_plot({bp_random_effect},
+    x = .15, y = 0.22,
+    width = 0.10, height = 0.25) +
+  draw_plot({p_clust_prop$prop_cl},
+    x = -.02, y = 0.18,
+    width = 0.18, height = 0.6) +
   draw_plot({legend_cluster},
     x = .89, y = 0.48,
-    width = 0.1, height = 0.25) 
+    width = 0.25, height = 0.25)
+
+save_plot(
+  here("doc", "fig", "map_cl.png"),
+  p_cl_map,
+  base_width = 30 / 2.54,
+  base_asp = 1.618
+)
 
 
 

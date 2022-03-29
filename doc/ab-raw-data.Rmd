@@ -407,7 +407,6 @@ knitr::opts_chunk$set(eval=FALSE)
 
 ```{r}
 #
-
 eu_shp <- rvat_shp_files[stringr::str_detect(rvat_shp_files, "eu.shp$")]
 eu_shp_layers <- sf::st_layers(eu_shp, do_count = TRUE)
 
@@ -821,11 +820,52 @@ summary_exotic %>%
 
 ```{r}
 library(rfishbase)
-val_names_tedesco <- validate_names(unique(occ_exotic$species))
-sum(is.na(val_names))
+sp_rivfishtime <- unique(
+  filtered_dataset$measurement$species)
+sp_tedesco <- unique(occ_exotic$species)
 
-val_name_rivfishtime <- validate_names(unique(occ_exotic$species))
+val_name_tedesco <- validate_names(sp_tedesco)
+sum(is.na(val_name_tedesco))
+# Check which names are not valid
+sp_tedesco[is.na(val_name_tedesco)]
+
+val_name_rivfishtime <- validate_names(
+  sp_rivfishtime
+)
+ti <- map(sp_rivfishtime, validate_names)
+sum(is.na(val_name_rivfishtime))
 ```
+
+```{r}
+sum(val_name_rivfishtime == sp_rivfishtime) /
+  length(sp_rivfishtime)
+
+sum(val_name_tedesco == sp_tedesco) /
+  length(sp_tedesco)
+```
+
+```{r}
+df_syn_rivfishtime <- filtered_dataset$measurement$species %>%
+  synonyms() %>%
+  select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
+  as_tibble()
+df_syn_tedesco <- occ_exotic$species %>%
+  synonyms() %>%
+  select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
+  as_tibble()
+unique(df_syn_tedesco$Comment)
+df_syn_tedesco %>%
+  filter(is.na(Comment))
+
+df_syn_tedesco %>%
+  filter(Comment == "accepted name") %>%
+  filter(provided_name != valid_name)
+df_syn_rivfishtime %>%
+  filter(Comment == "accepted name") %>%
+  filter(provided_name != valid_name)
+
+```
+
 
 
 - Match basin and site: 
