@@ -67,7 +67,7 @@ make_interaction_heatmap_tps_env <- function(data = NULL) {
   te <- expand.grid(list(
       Parameter = unique(x$Parameter),
       interaction = unique(x$interaction),
-      response = get_var_replacement()[unique(x$response)]
+      response = unique(x$response)
       ))
 
   te2 <- te %>%

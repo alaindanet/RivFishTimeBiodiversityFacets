@@ -48,7 +48,9 @@ plot_cluster_proportion <- function(
   cl_region <- cluster_df %>%
     select(siteid, cl) %>%
     mutate(cl = as.factor(cl)) %>%
-    left_join(select(site_env, siteid, {{loc_var}}), by = "siteid")
+    left_join(select(site_env, siteid, {{loc_var}}), by = "siteid") %>%
+    filter(! ecoregion %in% c("Afrotropics", "Neotropics"))
+
 
   p_nb_cl <-  cl_region %>%
     ggplot(aes(y = {{loc_var}}, fill = cl)) +

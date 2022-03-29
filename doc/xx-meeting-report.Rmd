@@ -39,6 +39,7 @@ tar_load(c(
     ))
 
 tar_load(p_int_mod)
+tar_load(bp_random_effect)
 ```
 
 ```{r map-setup, include=FALSE}
@@ -201,19 +202,27 @@ axis was included in the analysis"
 ```
 
 ```{r p-rot-pca-riv-str, fig.cap=fig_cap_pca}
-p <- plot_rotated_pca(pca_riv_str)
 my_pca_plot(pca_riv_str$rotated)
 ```
 ```{r}
-h_hft_cap <- "Distribution of difference between human footprint in 1993 and
-2009."
+h_hft_cap <- "Distribution of log base 2 ratio between human footprint in 1993 and
+2009. -1 and +1 means an Human footprint respectively divided and multiplied by
+      two"
 ```
 
 
 ```{r h-hft, fig.cap = h_hft_cap}
-hist(analysis_dataset$hft_ix_c9309_diff,
-  xlab = "human footprint difference (1993-2009)")
-s_hft_diff <- round(summary_distribution(analysis_dataset$hft_ix_c9309_diff, na.rm = T))
+modelling_data %>%
+  group_by(siteid) %>%
+  summarise(hft_ix_c9309_log2_ratio = unique(hft_ix_c9309_log2_ratio)) %>%
+  ggplot(aes(x = hft_ix_c9309_log2_ratio)) +
+  geom_histogram() +
+  labs(
+    x = "Human footprint ratio (1993-2009, Log base 2)",
+    y = "Number of sites"
+  ) +
+theme_cowplot()
+s_hft_diff <- round(summary_distribution(modelling_data$hft_ix_c9309_log2_ratio, na.rm = T), 2)
 ```
 
 - The human footprint difference between 1993 and 2009 is biaised toward an
@@ -259,10 +268,21 @@ regression requirements ($x' = \dfrac{x \times (N - 1) + 0.5}{N}$).
 
 The model is defined like this: 
 
+
 $$
-B_i = \beta_0Y_i +  \beta_1Y_iR_i + \beta_2Y_iH_i + \epsilon
+\begin{align}
+\\ B_i &= \beta_0Y_i +  \beta_1Y_iR_i + \beta_2Y_iH_i + \beta_3Y_i{HD}_i + 
+\\& \beta_4Y_iR_iH_i + \beta_5Y_iR_i{HD}_i +
+\\& \beta_6Y_iH_i{HD}_i + \epsilon
+\end{align}
 $$
-where
+
+- where:
+  - $Y$: log year number + 1 
+  - $R$: First component of the PCA on the river structure related to the
+    distance from spring, annual discharge, stralher order
+  - $H$: Human footprint of 1993
+  - ${HD}$: Log 2 of Human footprint ratio (1993-2009)
 
 $$
 \begin{align}
@@ -307,10 +327,13 @@ the intercept and the main effect of ecological drivers. We modelled logged spec
 richness with Chao index. 
 
 $$
-B_i = \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + \epsilon
+\begin{align}
+\\ B_i &= \alpha + \beta_0Y_i + \beta_1R_i + \beta_2Y_iR_i + \beta_3H_i + \beta_4Y_iH_i + 
+\\& \beta_5Y_iR_iH_i + \beta_6Y_iR_i{HD}_i +
+\\& \beta_7Y_iH_i{HD}_i + \epsilon
+\end{align}
 $$
 
-where
 $$
 \begin{align}
 \\ \alpha&=\alpha_0 + u_{0i|j} + u_{0j}
@@ -336,7 +359,12 @@ species richness modelling, we modelled the log of total abundances.
 
 
 $$
-B_i = \alpha + \beta_0Y_i + \beta_1U_i + \beta_2Y_iU_i + \beta_3R_i + \beta_4Y_iR_i + \beta_5H_i + \beta_6Y_iH_i + \epsilon
+\begin{align}
+\\ B_i &= \alpha + \beta_0Y_i + \beta_1U_i + \beta_2Y_iU_i + \beta_3R_i + 
+\\& \beta_4Y_iR_i + \beta_5H_i + \beta_6Y_iH_i + 
+\\& \beta_7Y_iR_iH_i + \beta_8Y_iR_i{HD}_i +
+\\& \beta_9Y_iH_i{HD}_i + \epsilon
+\end{align}
 $$
 
 where
@@ -426,7 +454,7 @@ plot(discr_k6_fac_50)
 ```
 
 Site were clustered based on the temporal trends of biodiversity facets using
-trimmed robust cluster method [REF]. Temporal trends were scaled but not
+trimmed robust cluster method [@fritz_tclust_2012]. Temporal trends were scaled but not
 centered before clustering.  According to the optimal function, the optimal
 number of clusters was between 6 and 8 (Fig. \@ref(fig:cl-curve)). We used 25 starting
 positions and a maximum of 100 iterations. We trimmed 5% of outliers in the
@@ -436,7 +464,7 @@ assignement improvement of 10% in another cluster. Clustering was computed with
 
 # Results
 
-## Temporal trends of biodiversity facets
+## Temporal trends of biodiversity facets and its drivers
 
 ```{r}
 tar_load(c(gaussian_int_env_comp_std, mod_comp_std_df))
@@ -507,31 +535,12 @@ p2 <- p +
     axis.title = element_blank(),
     legend.position = "none"
   )
-
 p_mod_coef <- plot_grid(p2, p1, p3, leg,
   nrow = 4,
   rel_heights = c(1, 1, 1, .2))
 ```
 
-- In average, all biodiversity facets had a positive temporal trend:
-  - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
-        ($r_\delta$ around 0.37), followed by disappearance, nestedness and
-        turnover ($r_\delta$ around 0.25)
-  - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
-- Stream gradient (upstream -> downstream, called hereafter stream gradient):
-  - Total abundance was higher toward downstream
-  - No effect on species richness
-- Human footprint change (1993-2009):
-  - Species richness was overall lower where pressure increased
-  - Total abundance was overall higher where pressure increased
-- Effect of stream gradient on temporal trends:
-  - **Higher increase in dissimilarity downstream**: turnover and abundance based dissimilarity
-  - **Higher increase in total abundance and species richness downstream**
-  - No effect on Jaccard, appearance and disappearance
-- Effect of human footprint change (1993-2009) on temporal trends: 
-  - **Higher increase in turnover and abundance based dissimilarity where
-    pressure increased** (change in species identity)
-  - **Lower increase in species richness where pressure increased**
+
 
 ```{r}
 cor_site_tps <- cor(site_tps_clust,
@@ -645,11 +654,10 @@ plot_pca_clust <- function(
   }
   return(p)
 }
-
 ```
 
 ```{r}
-p <- plot_pca_clust(
+p_pca_ok <- plot_pca_clust(
   .data = pca_clust$rotated,
   site_cl = site_cl_rm,
   replace_var = get_var_replacement(),
@@ -674,13 +682,86 @@ mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
 ```
 
 ```{r mod-tps, fig.cap=mod_slp_std_cap, fig.height=16}
-p_mod_coef
+p_int_mod <- make_interaction_heatmap_tps_env(data = mod_comp_std_df)
+plot_grid(
+  p_mod_coef,
+  p_int_mod,
+  nrow = 2,
+  labels = "AUTO",
+  rel_heights = c(.8, .2)
+)
 ```
 
+1. Main effects
+  1. Stream gradient (upstream -> downstream, called hereafter stream gradient):
+    - Total abundance was higher toward downstream
+    - No effect on species richness
+  1. Human footprint (1993):
+    - Species richness was higher when human pressure was high
+    - Total abundance was not related to long term pressure  
+  1. Human footprint change (1993-2009):
+    - Species richness was overall lower where pressure increased
+    - Total abundance was overall higher where pressure increased
+  1. Temporal trend:
+    - All temporal trends were positive in average: including species richness,
+      total abundance and dissimilarity index
+    - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
+          ($r_\delta$ around 0.37), followed by disappearance, nestedness and
+          turnover ($r_\delta$ around 0.25)
+    - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
+1. Effect of environmental pressure on temporal trends 
+  1. Effect of stream gradient:
+    - **Higher increase in dissimilarity downstream**: Jaccard, turnover and
+      abundance based dissimilarity
+    - **Higher increase in total abundance downstream**
+    - **Nestedness and appearance temporal trends decrease downstream** 
+  1. Effect of long term pressure, human footprint (1993)
+     - **Higher increase in dissimilarity and appearance** in historically
+       degraded sites
+     - **Higher increase in total abundance and species richness** in
+       historically degraded sites
+     - **Lower species loss** in historically degraded sites
+  1. Effect of short term pressure, human footprint (1993-2009): 
+    - **Higher increase in dissimilarity** where pressure increased recently
+      (Jaccard, abundance based dissimilarity) and driven by changes in species
+      identity (turnover)
+    - **Higher increase in species disparition** when pressure increased
+      recently
+    - **Lower species richness increase** where pressure increased
+      recently
+    - **But no effect on total abundance**
+1. Effect of interaction between pressure on temporal trends 
+  1. Short-term pressure on the stream gradient:
+    - Mainly very little effect
+    - Antagonistic effects on turnover and appearance, i.e. short-term changes decrease the effect on stream gradient 
+  1. Long-term pressure on the stream gradient: 
+    - Mainly very little effect
+    - Antagonistic effects on abundance based dissimilarity, on turnover: i.e. long-term changes decrease the effect on stream gradient on turnover and abundance-based dissimilarity
+    - Synergistic effects on Nestedness: symmetric regarding turnover  
+  1. Short-term pressures on long term pressures:
+     - Synergistic effect on abundance based dissimilarity, jaccard and turnover 
+     - Antagonistic effects on disappearance and species richness:
+       - Disappearance trends are negative in more long-term degraded sites but
+         not in the ones that have been degraded recently    
+       - Species richness trends are more positive in long-term degraded sites
+         but not in the ones that have been degraded recently
+
+
+## Typology of biodiversity trends 
+
+
 ```{r}
-p +
-  theme_cowplot()
-cor_p
+pca_clust_cap <- "(A) PCA biplot on site temporal trends (model without drivers). The sites are colored by their cluster belongings. (B) Correlation among temporal trends."
+```
+
+
+```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
+plot_grid(
+  p_pca_ok + theme_cowplot(),
+  cor_p,
+  nrow = 2,
+  labels = "AUTO"
+)
 ```
 
 
@@ -688,10 +769,11 @@ cor_p
 dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
 ```
 
-
-## Typology of biodiversity trends 
-
-- Cluster signification (Figure \@ref(fig:cl-bp)):
+1. Links among temporal trends:
+  - Dissimilarity orthogonal to species richness 
+  - Disappearance orthogonal to Nestedness and Appearance 
+  - Total abundance weakly linked with species richness and dissimilarity
+1. Cluster signification (Figure \@ref(fig:pca-cor-tps)A):
   - Cluster 1: Low change 
   - Cluster 2: High turnover + medium increase abundance + high dissimilarity +
     medium increase richness
@@ -702,7 +784,7 @@ dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
   - Cluster 6: Increase abundance + medium dissimilarity + low richness change 
 
 - Summary: **Cluster are determined by abundance, species richness and turnover,
-  meaning that there isa  low dimensionality of biodiversity trends**
+  meaning that there is a low dimensionality of biodiversity trends**
 
 
 ```{r}
@@ -789,15 +871,6 @@ knitr::include_graphics(here("doc/fig/p_map_cl.png"))
 ```
 
 
-
-
-```{r, layout="l-page", fig.height=10, fig.width = 14}
-tar_load(bp_random_effect)
-main_map_rect
-p_zoom_map
-bp_random_effect
-```
-
 ```{r}
 cl_label <- c(
   "1: No change",
@@ -817,6 +890,16 @@ map(p_clust_prop,
 )
 ```
 
+1. Low scale heterogeneity: 
+  - Cluster distribution is similar across ecoregion
+  - Variability on temporal trends is twice higher on site than basin: low scale
+    heterogeneity
+
+```{r, fig.height=10, fig.width = 14}
+main_map_rect
+p_zoom_map
+bp_random_effect
+```
 
 # Discussion 
 
@@ -836,21 +919,6 @@ map(p_clust_prop,
 
 # (APPENDIX) Appendix {-} 
 
-
-## Correlation among temporal trends 
-
-```{r}
-cor_site_tps_tmp_cap <-  "Spearman correlation among the temporal trends of
-biodiversity facets. Temporal trends at each site computed as BLUPs predictions
-(i.e. estimated from random effects). "
-```
-
-```{r, fig.cap=cor_site_tps_tmp_cap}
-cor_site_tps <- cor(
-  as.matrix(select(wide_site_tps, -siteid)),
-  method = "spearman")
-corrplot::corrplot(cor_site_tps)
-```
 
 ## Analysis
 
