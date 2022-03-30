@@ -51,12 +51,25 @@ list(
       col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%
     janitor::clean_names() %>%
     rename_with(~str_remove(.x, "^x\\d_")) %>%
-    mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))
-  ),
+    mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
-    clean_names()
-  ),
+      clean_names()
+    ),
+  tar_target(measurement_exo,
+    get_measurement_exo(
+      occ_exotic = occ_exotic,
+      measurement = filtered_dataset$measurement
+      )),
+  tar_target(abun_rich_exo,
+    get_abun_rich_exo(measurement_exo = measurement_exo)
+    ),
+  tar_target(filtered_abun_rich_exo,
+    get_filtered_abun_rich_exo(
+      abun_rich = abun_rich_exo,
+      perc_na_abun_thld = 0.05,
+      min_nb_sampling_by_site = 5)
+    ),
   tar_target(site_desc_loc,
     get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
@@ -94,7 +107,8 @@ list(
       measurement = measurement,
       site_desc_loc = site_desc_loc,
       add_var_from_protocol = c("siteid", "year")
-      )),
+      )
+    ),
   tar_target(measurement_avg3y, tar_avg_first_year_measurement(
       dataset = filtered_dataset$measurement,
       nb_sampling_to_average = 3

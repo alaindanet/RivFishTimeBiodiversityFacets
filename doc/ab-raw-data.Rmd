@@ -10,6 +10,7 @@ output:
 ```{r setup, include=FALSE}
 ## target knits Rmds in their own session, so load libraries here.
 source(here::here("start_rmd.R"))
+library(rfishbase)
 ```
 
 ```{r load-targets, include=FALSE}
@@ -795,8 +796,9 @@ wt_check %>%
 # Exotic species
 
 ```{r basin-exo}
-tar_load(c(world_site_sf, filtered_dataset))
+tar_load(c(filtered_dataset))
 tar_load(c(basin_tedesco, occ_exotic, exo_basin_site))
+tar_load(world_site_sf)
 loc <- world_site_sf$site
 #https://github.com/ropensci/rfishbase
 # check function validate names
@@ -804,6 +806,8 @@ loc <- world_site_sf$site
 # closest basin, same country
 # NAS USGS
 ```
+
+
 
 ```{r}
 summary_exotic <- occ_exotic %>%
@@ -819,7 +823,6 @@ summary_exotic %>%
 ```
 
 ```{r}
-library(rfishbase)
 sp_rivfishtime <- unique(
   filtered_dataset$measurement$species)
 sp_tedesco <- unique(occ_exotic$species)
@@ -844,28 +847,29 @@ sum(val_name_tedesco == sp_tedesco) /
   length(sp_tedesco)
 ```
 
-```{r}
-df_syn_rivfishtime <- filtered_dataset$measurement$species %>%
-  synonyms() %>%
-  select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
-  as_tibble()
-df_syn_tedesco <- occ_exotic$species %>%
-  synonyms() %>%
-  select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
-  as_tibble()
-unique(df_syn_tedesco$Comment)
-df_syn_tedesco %>%
-  filter(is.na(Comment))
 
-df_syn_tedesco %>%
-  filter(Comment == "accepted name") %>%
-  filter(provided_name != valid_name)
-df_syn_rivfishtime %>%
-  filter(Comment == "accepted name") %>%
-  filter(provided_name != valid_name)
+```{r}
+tar_load(measurement_exo)
+measurement_exo %>%
+  filter(is.na(native_exotic_status))
 
 ```
 
+```{r}
+tar_load(abun_rich_exo)
+summary(abun_rich_exo)
+```
+
+
+
+```{r}
+ti <- abun_rich_exo %>%
+  left_join(select(filtered_dataset$abun_rich_op, op_id, siteid, year), by =
+    "op_id"
+  )
+
+
+```
 
 
 - Match basin and site: 
@@ -928,49 +932,6 @@ meas_exo %>%
   summarise(across(where(is.character), ~length(unique(.))))
 ```
 
-```{r}
-abun_rich_exo <- meas_exo %>%
-  group_by(op_id) %>%
-  summarise(
-    species_nb = length(unique(species)),
-    total_abundance = sum(abundance),
-    na_exo_abun = sum(abundance[is.na(native_exotic_status)]),
-    na_exo_sp = length(unique(species[is.na(native_exotic_status)])),
-    species_nb_nat = length(unique(species[native_exotic_status == "native"])),
-    species_nb_exo = length(unique(species[native_exotic_status == "exotic"]))
-  ) %>%
-  mutate(
-    perc_na_exo_abun = na_exo_abun / total_abundance,
-    perc_na_exo_sp = na_exo_sp / species_nb,
-    perc_exo_sp = species_nb_exo / species_nb 
-  )
-
-```
-
-```{r}
-summary(abun_rich_exo)
-```
-
-```{r}
-abun_rich_exo %>%
-  filter(perc_na_exo_abun >= 0.05)
-```
-
-```{r}
-abun_rich_exo %>%
-  filter(!perc_na_exo_abun >= 0.05) %>%
-  select(op_id, species_nb_nat, species_nb_exo,
-    perc_na_exo_abun, perc_na_exo_sp, perc_exo_sp)
-```
-
-```{r}
-ti <- abun_rich_exo %>%
-  left_join(select(filtered_dataset$abun_rich_op, op_id, siteid, year), by =
-    "op_id"
-  )
-
-
-```
 
 
 

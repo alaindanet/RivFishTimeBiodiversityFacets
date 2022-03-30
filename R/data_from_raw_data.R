@@ -225,3 +225,84 @@ get_toy_dataset <- function(
   return(toy_dataset)
 
 }
+
+get_measurement_exo <- function(
+  occ_exotic = occ_exotic,
+  measurement = filtered_dataset$measurement
+  ) {
+
+  # Get fishbase species synonyms
+  df_syn_rivfishtime <- unique(measurement$species) %>%
+    rfishbase::synonyms() %>%
+    select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
+    as_tibble()
+  df_syn_tedesco <- unique(occ_exotic$species) %>%
+    rfishbase::synonyms() %>%
+    select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
+    as_tibble()
+
+  # Join synonyms to occ_exotic dataset 
+  occ_exotic_fb <- occ_exotic %>%
+    select(basin_name, species, native_exotic_status) %>%
+    left_join(
+      df_syn_tedesco %>%
+        filter(Comment == "accepted name") %>%
+        select(provided_name, valid_name) %>%
+        rename(species = provided_name, fishbase_name = valid_name),
+      by = "species"
+    )
+    # match species of sp_rivfishtime with tedesco based on fishbase species
+    # name 
+    basin_sp_status <- df_syn_rivfishtime %>%
+      filter(Comment == "accepted name") %>%
+      select(provided_name, valid_name) %>%
+      rename(species = provided_name, fishbase_name = valid_name) %>%
+      left_join(
+        occ_exotic_fb %>%
+          select(-species),
+        by = "fishbase_name"
+        ) %>%
+      select(-fishbase_name)
+
+    # match site and species based on basin_name
+    site_sp_status <- exo_basin_site %>%
+      # add species and status
+      left_join(
+        basin_sp_status,
+        by = c("basin_name")
+        ) %>%
+    select(-basin_name)
+
+  measurement_exo <- measurement %>%
+    left_join(site_sp_status, by = c("siteid", "species"))
+
+  return(measurement_exo)
+
+}
+
+get_abun_rich_exo <- function(
+  measurement_exo = NULL
+  ) {
+
+  measurement_exo %>%
+    group_by(op_id) %>%
+    summarise(
+      siteid = unique(siteid),
+      species_nb = length(unique(species)),
+      total_abundance = sum(abundance),
+      nat_abun = sum(abundance[native_exotic_status == "native"]),
+      exo_abun = sum(abundance[native_exotic_status == "exotic"]),
+      na_exo_abun = sum(abundance[is.na(native_exotic_status)]),
+      na_exo_sp = length(unique(species[is.na(native_exotic_status)])),
+      species_nb_nat = length(unique(species[native_exotic_status == "native"])),
+      species_nb_exo = length(unique(species[native_exotic_status == "exotic"]))
+      ) %>%
+    mutate(
+      perc_na_exo_abun = na_exo_abun / total_abundance,
+      perc_na_exo_sp = na_exo_sp / species_nb,
+      perc_exo_sp = species_nb_exo / species_nb,
+      perc_nat_sp = species_nb_nat / species_nb,
+      perc_exo_abun = exo_abun / total_abundance,
+      perc_nat_abun = nat_abun / total_abundance
+    )
+}
