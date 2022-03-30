@@ -11,6 +11,7 @@ library("scales")
 library("rmarkdown")
 
 library("sf")
+sf_use_s2(use_s2 = FALSE)
 library("rnaturalearth")
 library("rnaturalearthdata")
 library(terra)

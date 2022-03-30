@@ -14,5 +14,3 @@ source(here::here("packages.R"))
 theme_set(theme_bw())
 
 tar_config_set(store = here::here("_targets"))
-
-sf_use_s2(use_s2 = FALSE)

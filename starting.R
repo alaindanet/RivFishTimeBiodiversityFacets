@@ -182,6 +182,7 @@ links <- here("inst", "extdata", files)
 targets <- paste0(server_mounted_location, "ENV_LAYERS/", c(files))
 #for windows
 targets <- paste0("L:/", "ENV_LAYERS/", c(files))
+links <- paste0("L:/", "alain/RivFishTimeBiodiversityFacets/inst/extdata/", c(files))
 
 for (i in seq_along(files)) {
   R.utils::createLink(
@@ -191,6 +192,11 @@ for (i in seq_along(files)) {
     overwrite = TRUE
   )
 }
+shell(sprintf('mklink "%s" "%s"', 
+              normalizePath(links[1], mustWork = FALSE),
+              normalizePath(targets[1])
+))
+
 
 # Tmp figure script
 file.create(here("doc", "tmp_figures.R"))

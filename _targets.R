@@ -28,13 +28,35 @@ list(
     error = "continue"
     ),
   tar_target(water_temperature_file,
-    here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc"),
+    here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
+      R.utils::filePath(., expandLinks = "any"),
     format = "file",
     error = "continue"
+    ),
+  tar_target(basin_tedesco_shp,
+     here("inst", "extdata", "Tedesco_2017", "Basin042017_3119.shp") %>%
+      R.utils::filePath(., expandLinks = "any"),
+    format = "file",
+    error = "continue"
+    ),
+  tar_target(occ_exotic_file,
+    R.utils::filePath(here("inst", "extdata", "Tedesco_2017", "Occurrence_Table_12092019.csv"),
+    expandLinks = "any")
     ),
   tar_target(timeseries,
     load_time_series_data(raw_data_file)
     ),
+  tar_target(occ_exotic,
+    read_csv(occ_exotic_file,
+      col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%
+    janitor::clean_names() %>%
+    rename_with(~str_remove(.x, "^x\\d_")) %>%
+    mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))
+  ),
+  tar_target(basin_tedesco,
+    read_sf(basin_tedesco_shp) %>%
+    clean_names()
+  ),
   tar_target(site_desc_loc,
     get_site_desc_loc(ts_data = timeseries)),
   tar_target(abun_rich_op, get_abun_rich_op(ts_data = measurement)),
@@ -408,6 +430,13 @@ tar_target(neutral_turnover,
         snap_list = snapped_site_river) %>%
       janitor::clean_names()
     ),
+  tar_target(exo_basin_site,
+    match_tedesco_basin_site(
+      site = world_site_sf$site,
+      basin = basin_tedesco,
+      buffer_size_site = .3,
+      seed = 123)
+  ),
   tar_target(riveratlas_total,
     get_full_riveratlas(
       river_shp_files = map_chr(riveratlas_shp_files,

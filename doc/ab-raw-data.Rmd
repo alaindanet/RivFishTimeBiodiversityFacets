@@ -797,26 +797,13 @@ wt_check %>%
 
 ```{r basin-exo}
 tar_load(c(world_site_sf, filtered_dataset))
+tar_load(c(basin_tedesco, occ_exotic, exo_basin_site))
 loc <- world_site_sf$site
 #https://github.com/ropensci/rfishbase
 # check function validate names
 # Missing basin: distance bw site and basin
 # closest basin, same country
 # NAS USGS
-basin_tedesco <- read_sf(
-  here("inst", "extdata", "Tedesco_2017", "Basin042017_3119.shp")
-  ) %>%
-  clean_names()
-plot(st_geometry(basin_tedesco))
-```
-
-```{r}
-occ_exotic <- read_csv(
-  here("inst", "extdata", "Tedesco_2017", "Occurrence_Table_12092019.csv"),
-  col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%
-janitor::clean_names() %>%
-rename_with(~str_remove(.x, "^x\\d_")) %>%
-mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))
 ```
 
 ```{r}
@@ -846,14 +833,10 @@ val_name_rivfishtime <- validate_names(unique(occ_exotic$species))
 ```{r}
 plot(st_geometry(world_site_sf$world))
 plot(sample_n(loc, 50)["siteid"], add = T)
-within <- st_within(loc, basin_tedesco)
-
-exo_basin_site <- tibble(
-  siteid = loc$siteid,
-  basin_name = map(within, ~basin_tedesco[.x, ]$basin_name)) %>%
-unnest(basin_name)
-length(unique(exo_basin_site$siteid)) == nrow(exo_basin_site)
 ```
+```{r}
+```
+
 ```{r}
 missed_sites_loc <- loc %>%
   filter(!siteid %in% exo_basin_site$siteid)
@@ -867,26 +850,15 @@ basin_tedesco %>%
     ylim = c(zoom_map["ymin"], zoom_map["ymax"]))
 ```
 
-```{r}
-m_sites_buf <- missed_sites_loc %>%
-  st_buffer(dist = .5)
-within <- st_nearest_points(basin_tedesco, missed_sites_loc)
-exo_basin_m_site <- tibble(
-  siteid = m_sites_buf$siteid,
-  basin_name = map(within, ~basin_tedesco[.x, ]$basin_name)) %>%
-unnest(basin_name)
-```
-
-
-
 - Missing sites:
 
 ```{r}
 world_site_sf$world %>%
   ggplot() +
   geom_sf() +
-  geom_sf(data = loc %>%
-  filter(!siteid %in% exo_basin_site$siteid)
+  geom_sf(
+    data = loc %>%
+    filter(!siteid %in% exo_basin_site$siteid)
   )
 ```
 

@@ -312,3 +312,42 @@ get_full_riveratlas <- function(
 
   return(out)
 }
+
+
+match_tedesco_basin_site <- function(
+  site = NULL,
+  basin = NULL,
+  buffer_size_site = .3,
+  seed = 123
+  ) {
+  
+  within <- st_within(site, basin)
+
+  exo_basin_site <- tibble(
+    siteid = site$siteid,
+    basin_name = map(within, ~basin[.x, ]$basin_name)
+    ) %>%
+    unnest(basin_name) 
+  
+  m_sites_buf <- site %>%
+    filter(!siteid %in% exo_basin_site$siteid) %>%
+    st_buffer(dist = buffer_size_site)
+  
+  within <- st_intersects(m_sites_buf, basin)
+  exo_basin_m_site <- tibble(
+    siteid = m_sites_buf$siteid,
+    basin_name = map(within, ~basin[.x, ]$basin_name)) %>%
+  unnest(basin_name)
+  
+  set.seed(seed)
+  u_exo_basin_m_site <- exo_basin_m_site %>%
+    group_by(siteid) %>%
+    sample_n(1) %>%
+    ungroup()
+  
+  site_basin <-
+    rbind(exo_basin_site, u_exo_basin_m_site)
+  stopifnot(nrow(site_basin) == length(unique(site_basin$siteid)))
+  
+  return(site_basin)
+}
