@@ -153,3 +153,32 @@ get_rigal_analysis_dataset <- function(
       main_bas = as.factor(main_bas)
     )
 }
+
+get_modelling_data_exo <- function(
+  abun_rich = filtered_abun_rich_exo,
+  model_data = modelling_data,
+  ana_data = analysis_dataset
+) {
+
+  var_modelling_data_4_exo_analysis <- c(
+    "siteid", "main_bas",
+    "year", "year_nb", "log1_year_nb",
+    "unitabundance", "riv_str_rc1",
+    "hft_ix_c93", "hft_ix_c9309_diff_scaled",
+    "hft_c9309_scaled_no_center", "hft_ix_c9309_log2_ratio"
+  )
+
+  output <- abun_rich %>%
+    left_join(
+      select(ana_data, op_id, siteid, year),
+      by = c("siteid", "op_id")
+      ) %>%
+  left_join(
+    model_data[, var_modelling_data_4_exo_analysis],
+    by = c("siteid", "year")
+    ) %>%
+  na.omit()
+
+return(output)
+
+}

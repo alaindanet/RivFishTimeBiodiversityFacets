@@ -163,6 +163,28 @@ fun_int_env_formula <- function(x = NULL) {
   }
 }
 
+fun_int_env_formula_exo <- function(x = NULL) {
+  tps_var <- NULL
+  rich_var <- c(
+    "species_nb", "species_nb_nat", "species_nb_exo",
+    "perc_exo_sp", "perc_nat_sp", "perc_exo_abun",
+    "perc_nat_abun"
+  )
+  abun_var <- c(
+    "total_abundance", "nat_abun", "exo_abun" 
+  )
+
+  if (x %in% tps_var) {
+    return(get_formula_tps(resp = x, int_env = TRUE))
+  } else if (x %in% rich_var) {
+    return(get_formula_no_tps(resp = x, int_env = TRUE))
+  } else if (x %in% abun_var) {
+    return(get_formula_abun(resp = x, int_env = TRUE))
+  } else {
+    stop("no defined variables")
+  }
+}
+
 fun_hft_formula <- function(x = NULL,
   int4env = FALSE,
   hft_var = "hft_ix_c9309_log2_ratio") {
@@ -276,3 +298,4 @@ get_random_effect_df <- function(x = NULL,
   row.names(basin_tps_clust_df) <- basin_tps_clust[[1]]
   return(basin_tps_clust_df)
 }
+

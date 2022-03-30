@@ -582,6 +582,12 @@ tar_target(neutral_turnover,
       select(all_of(var_analysis)) %>%
       na.omit()
     ),
+  tar_target(modelling_data_exo,
+    get_modelling_data_exo(
+      abun_rich = filtered_abun_rich_exo,
+      model_data = modelling_data,
+      ana_data = analysis_dataset
+    )),
   tar_target(site_env,
     modelling_data %>%
       filter(siteid %in% row.names(site_no_drivers)) %>% 
@@ -1025,17 +1031,38 @@ tar_target(neutral_turnover,
     compare_parameters(
       setNames(mod_tmb$mod, mod_tmb$response), standardize = "basic")
     ),
-tar_target(vif,
-  glmmTMB(
-    log_chao_richness ~
-      log1_year_nb + riv_str_rc1 +
-      hft_ix_c9309_log2_ratio +
-      hft_ix_c93 +
-      (1 + log1_year_nb | main_bas/siteid),
-    modelling_data
-    ) %>%
-  check_collinearity()
-),
+  tar_target(vif,
+    glmmTMB(
+      log_chao_richness ~
+        log1_year_nb + riv_str_rc1 +
+        hft_ix_c9309_log2_ratio +
+        hft_ix_c93 +
+        (1 + log1_year_nb | main_bas/siteid),
+      modelling_data
+      ) %>%
+    check_collinearity()),
+  tar_target(exo_resp_var,
+    c("species_nb", "species_nb_nat", "species_nb_exo",
+      "perc_exo_sp", "perc_nat_sp", "perc_exo_abun",
+      "perc_nat_abun",
+      "total_abundance", "nat_abun", "exo_abun" 
+      )),
+  tar_target(gaussian_exo,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(glmmTMB(
+            formula = fun_int_env_formula_exo(x = exo_resp_var),
+            data = modelling_data_exo,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(exo_resp_var)
+    ),
+  tar_target(mod_exo_comp_std,
+    # Drop the main effect
+    compare_parameters(
+      setNames(gaussian_exo$mod, gaussian_exo$response),
+      standardize = "refit")
+    ),
   # Binding
   tar_target(binded_gaussian_tmb,
     rbind(gaussian_jaccard_tmb,
