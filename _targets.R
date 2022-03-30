@@ -59,6 +59,7 @@ list(
   tar_target(measurement_exo,
     get_measurement_exo(
       occ_exotic = occ_exotic,
+      exo_basin_site = exo_basin_site,
       measurement = filtered_dataset$measurement
       )),
   tar_target(abun_rich_exo,

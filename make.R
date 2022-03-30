@@ -11,7 +11,7 @@ tar_visnetwork()
 
 tar_make(names = meeting_report)
 tar_make(names = biodiversity_facets_support)
-tar_make(names = c(occ_exotic, exo_basin_site))
+tar_make(names = c(filtered_abun_rich_exo))
 
 
 source(file = "start_rmd.R")

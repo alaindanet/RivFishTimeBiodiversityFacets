@@ -228,6 +228,7 @@ get_toy_dataset <- function(
 
 get_measurement_exo <- function(
   occ_exotic = occ_exotic,
+  exo_basin_site = exo_basin_site,
   measurement = filtered_dataset$measurement
   ) {
 
