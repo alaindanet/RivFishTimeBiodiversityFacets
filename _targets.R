@@ -935,6 +935,39 @@ tar_target(neutral_turnover,
       )
 
     ),
+  tar_target(p_mod_comp_std,
+    plot_model_comp_interaction(
+      mod_comp_df = mod_comp_std_df
+      )),
+  tar_target(mod_exo_comp_std_df,
+    mod_exo_comp_std %>%
+      as_tibble() %>%
+      select(Parameter, starts_with("CI_"), starts_with("Coefficient")) %>%
+      pivot_longer(-Parameter, names_to = "names", values_to = "values") %>%
+      separate(col = names, into  = c("type", "response"), sep = "\\.") %>%
+      pivot_wider(names_from = "type", values_from = "values") %>%
+      filter(
+        !Parameter %in% "(Intercept)",
+        !str_detect(Parameter, "unitabundance")
+        ) %>%
+      mutate(
+        response = get_var_replacement()[response],
+        Parameter = str_replace_all(Parameter,
+          "([a-z|0-9])\\s([a-z|0-9])", "\\1_\\2"),
+        Parameter = str_remove_all(Parameter, "[()]"),
+        Parameter = str_replace_all(Parameter, get_model_term_replacement()),
+        facet = ifelse(
+          str_detect(Parameter, "\\*"),
+          ifelse(
+            str_count(Parameter, "\\*") == 2,
+            "dbl_interaction", "interaction"),
+          "main")
+      )
+    ),
+  tar_target(p_mod_exo_comp_std,
+    plot_model_comp_interaction(
+      mod_comp_df = mod_exo_comp_std_df
+      )),
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),

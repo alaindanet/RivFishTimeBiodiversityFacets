@@ -97,3 +97,61 @@ te2 %>%
 
 
 }
+
+plot_model_comp_interaction <- function(
+  mod_comp_df = mod_exo_comp_std_df
+) {
+  p <- mod_comp_df %>%
+    filter(facet == "main") %>%
+    mutate(Parameter = fct_reorder(Parameter, CI_high, .fun="max")) %>%
+    ggplot(
+      aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
+        xmax = CI_high)) +
+    geom_vline(xintercept = 0) +
+    geom_pointrange(position = position_dodge(width = .7)) +
+    labs(x = "Standardized coefficients", colour = "Response variables") +
+    theme(legend.position = "bottom") +
+    guides(color = guide_legend(nrow = 2, byrow = TRUE))
+
+
+  #withr::with_options(
+  #  list(ggplot2.discrete.colour = pal),
+  #  print(p + scale_color_discrete())
+  #)
+
+  p1 <- mod_comp_df %>%
+    filter(facet == "interaction") %>%
+    ggplot(
+      aes(y = Parameter, x = Coefficient, color = response,
+        xmin = CI_low, xmax = CI_high)
+      ) +
+    geom_vline(xintercept = 0) +
+    geom_pointrange(position = position_dodge(width = .7)) +
+    theme(axis.title = element_blank(), legend.position = "none")
+
+  p3 <- mod_comp_df %>%
+    filter(facet == "dbl_interaction") %>%
+    ggplot(
+      aes(y = Parameter, x = Coefficient, color = response,
+        xmin = CI_low, xmax = CI_high)
+      ) +
+    geom_vline(xintercept = 0) +
+    geom_pointrange(position = position_dodge(width = .7)) +
+    theme(legend.position = "none", axis.title.y = element_blank())
+
+  leg <- get_legend({p +
+    theme(legend.direction = "horizontal") +
+    guides(colour = guide_legend(nrow = 3))})
+  p2 <- p +
+    theme(
+      plot.margin = margin(0, 5.5, 6, 64),
+      axis.title = element_blank(),
+      legend.position = "none"
+    )
+  p_mod_coef <- plot_grid(p2, p1, p3, leg,
+    nrow = 4,
+    rel_heights = c(1, 1, 1, .2))
+
+  return(p_mod_coef)
+
+}

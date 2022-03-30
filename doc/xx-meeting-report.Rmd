@@ -763,6 +763,16 @@ plot_grid(
            - Species richness trends are more positive in long-term degraded sites
              but not in the ones that have been degraded recently
 
+## Exotic species richness and abundance 
+
+```{r mod-exo, fig.height = 12, fig.cap = "Results of gaussian model for exotic/native species"}
+tar_load(p_mod_exo_comp_std)
+p_mod_exo_comp_std
+```
+
+- Summary:
+  - Long-term and short term pressure decrease percentage of native richness and abundance
+
 
 ## Typology of biodiversity trends 
 

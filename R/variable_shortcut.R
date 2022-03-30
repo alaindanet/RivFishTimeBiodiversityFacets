@@ -41,8 +41,16 @@ get_var_replacement <- function() {
     nestedness = "Nestedness (jaccard)",
     nestedness_scaled = "Nestedness (jaccard)",
     turnover = "Turnover (jaccard)",
-    turnover_scaled = "Turnover (jaccard)"
-  )
+    turnover_scaled = "Turnover (jaccard)",
+    species_nb_nat = "Species richness (native)",
+    species_nb_exo = "Species richness (exotic)",
+    perc_exo_sp = "Percentage exotic species",
+    perc_nat_sp = "Percentage native species",
+    perc_nat_abun = "Percentage native abundance",
+    perc_exo_abun = "Percentage exotic abundance",
+    nat_abun = "Native abundance",
+    exo_abun = "Exotic abundance"
+      )
 }
 
 get_model_term_replacement <- function() {
