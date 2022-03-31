@@ -29,36 +29,44 @@ format_water_temperature <- function(
 }
 filter_water_temperature <- function(
   wt = NULL,
-  raw_tmp_threshold = 40, 
-  nb_sd_threshold = 5
+  raw_tmp_threshold = 40,
+  nb_sd_threshold = 5,
+  na_omit = TRUE
   ) {
 
   limit_abberant <- wt %>%
-    filter(tmp <= raw_tmp_threshold) %>%
     mutate(month = month(date)) %>%
     nest_by(siteid, month) %>%
     summarise(
       mean_tmp = mean(data$tmp, na.rm = T),
-      sd_tmp = sd(data$tmp, na.rm = T), 
-      .groups = "drop"
+      sd_tmp = sd(data$tmp, na.rm = T),
+      .groups = "drop")
+
+  wt_check <- wt %>%
+    mutate(month = month(date)) %>%
+    left_join(limit_abberant, by = c("siteid", "month")) %>%
+    mutate(
+      check_tmp = abs(tmp - mean_tmp) >=
+        nb_sd_threshold * sd_tmp
     )
 
-    wt_check <- wt %>%
-      mutate(month = month(date)) %>%
-      left_join(limit_abberant, by = c("siteid", "month")) %>%
-      filter(!is.na(sd_tmp)) %>%
-      filter(tmp <= raw_tmp_threshold) %>%
-      mutate(
-        check_tmp = abs(tmp - mean_tmp) >=
-          nb_sd_threshold * sd_tmp
-      )
-
+    if (na_omit) {
       out <- wt_check %>%
+        filter(!is.na(sd_tmp)) %>%
+        filter(tmp <= raw_tmp_threshold) %>%
         filter(!check_tmp) %>%
         select(siteid, date, tmp)
-      return(out)
+    } else {
+      out <- wt_check %>%
+        mutate(tmp_corrected = ifelse(
+            is.na(tmp) | is.na(sd_tmp) | tmp > raw_tmp_threshold | check_tmp,
+            NA, tmp
+            ))
+    }
 
-} 
+    return(out)
+}
+
 
 #' kelvin to celcius
 #'
@@ -72,10 +80,13 @@ get_moving_average_tmp <- function(
   wt = NULL,
   avg_by_site = FALSE,
   var_y = "tmp",
-  output_tmp_var = "tmp_w_ama") {
+  output_tmp_var = "tmp_w_ama",
+  max_prop_na = 1 / 3,
+  complete = TRUE
+  ) {
 
   sym_output_var <- sym(output_tmp_var)
-  
+
   wt_y_mw <- wt %>%
     nest_by(siteid) %>%
     mutate(
@@ -86,16 +97,19 @@ get_moving_average_tmp <- function(
           .period = "year",
           .f = ~data.frame(
             date = mean(.x$date),
-            mw_tmp = mean(.x[[var_y]])
+            mw_tmp = ifelse(
+              sum(is.na(.x[[var_y]])) / length(.x[[var_y]]) < max_prop_na,
+              mean(.x[[var_y]], na.rm = TRUE),
+              NA
+              )
             ),
           #        .f = function(x) mean(x),
           .before = 6,
           .after = 6,
-          .complete = FALSE
+          .complete = complete
         )
       )
     )
-
     out <- wt_y_mw %>%
       select(siteid, mw_tmp) %>%
       unnest(mw_tmp)
@@ -116,7 +130,7 @@ get_moving_average_tmp <- function(
 }
 
 format_air_temperature <- function(x = air_temperature) {
-  
+
   colnames(x)[!colnames(x) %in% "siteid"] <- colnames(x)[!colnames(x) %in% "siteid"] %>% 
     str_extract(., "\\d{2}_\\d{4}") %>%
     str_replace(., "_", "-") %>%

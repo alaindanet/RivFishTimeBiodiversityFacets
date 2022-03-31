@@ -473,13 +473,15 @@ tar_target(neutral_turnover,
       site = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       )),
-  tar_target(wt,
+  tar_target(formated_wt,
     format_water_temperature(
       wt = water_temperature,
       siteid = filtered_dataset$location$siteid,
-      raster_path = water_temperature_file) %>%
+      raster_path = water_temperature_file)
+    ),
+  tar_target(wt,
     filter_water_temperature(
-      wt = .,
+      wt = formated_wt,
       raw_tmp_threshold = 40,
       nb_sd_threshold = 5
     )
