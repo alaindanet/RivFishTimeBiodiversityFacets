@@ -169,8 +169,8 @@ get_modelling_data_exo <- function(
   )
 
   output <- abun_rich %>%
-    left_join(
-      select(ana_data, op_id, siteid, year),
+    left_join(ana_data %>%
+      select(op_id, siteid, year),
       by = c("siteid", "op_id")
       ) %>%
   left_join(
@@ -178,6 +178,12 @@ get_modelling_data_exo <- function(
     by = c("siteid", "year")
     ) %>%
   na.omit()
+
+output  <- output %>%
+  mutate(
+    log_species_nb = log(species_nb),
+    log_total_abundance = log(total_abundance),
+  )
 
 return(output)
 

@@ -1077,10 +1077,12 @@ tar_target(neutral_turnover,
       ) %>%
     check_collinearity()),
   tar_target(exo_resp_var,
-    c("species_nb", "species_nb_nat", "species_nb_exo",
+    c("species_nb", "log_species_nb",
+      "species_nb_nat", "species_nb_exo",
       "perc_exo_sp", "perc_nat_sp", "perc_exo_abun",
       "perc_nat_abun",
-      "total_abundance", "nat_abun", "exo_abun" 
+      "total_abundance", "log_total_abundance",
+      "nat_abun", "exo_abun"
       )),
   tar_target(gaussian_exo,
     tibble(
@@ -1091,6 +1093,12 @@ tar_target(neutral_turnover,
             family = gaussian(link = "identity"))))
       ),
     pattern = map(exo_resp_var)
+    ),
+tar_target(mod_exo_comp,
+    # Drop the main effect
+    compare_parameters(
+      setNames(gaussian_exo$mod, gaussian_exo$response),
+      standardize = "basic")
     ),
   tar_target(mod_exo_comp_std,
     # Drop the main effect

@@ -166,12 +166,13 @@ fun_int_env_formula <- function(x = NULL) {
 fun_int_env_formula_exo <- function(x = NULL) {
   tps_var <- NULL
   rich_var <- c(
-    "species_nb", "species_nb_nat", "species_nb_exo",
+    "species_nb", "log_species_nb", "species_nb_nat", "species_nb_exo",
     "perc_exo_sp", "perc_nat_sp", "perc_exo_abun",
     "perc_nat_abun"
   )
   abun_var <- c(
-    "total_abundance", "nat_abun", "exo_abun" 
+    "log_total_abundance", "total_abundance",
+    "nat_abun", "exo_abun"
   )
 
   if (x %in% tps_var) {
