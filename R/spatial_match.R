@@ -320,7 +320,8 @@ match_tedesco_basin_site <- function(
   country_missing_fishbase = c(
   FIN = "Finland", SWE = "Sweden", USA = "United States",
   FRA = "France", GBR = "United Kingdom", ESP = "Spain",
-  AUS = "Australia", BEL = "Belgium", BWA = "Botswana"
+  AUS = "Australia", BEL = "Belgium", BWA = "Botswana",
+  NOR = "Norway", CAN = "Canada"
   )
 
   ) {
