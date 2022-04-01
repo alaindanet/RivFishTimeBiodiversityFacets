@@ -448,9 +448,8 @@ tar_target(neutral_turnover,
   tar_target(exo_basin_site,
     match_tedesco_basin_site(
       site = world_site_sf$site,
-      basin = basin_tedesco,
-      buffer_size_site = .3,
-      seed = 123)
+      basin = basin_tedesco
+      )
   ),
   tar_target(riveratlas_total,
     get_full_riveratlas(

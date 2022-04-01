@@ -317,37 +317,70 @@ get_full_riveratlas <- function(
 match_tedesco_basin_site <- function(
   site = NULL,
   basin = NULL,
-  buffer_size_site = .3,
-  seed = 123
+  country_missing_fishbase = c(
+  FIN = "Finland", SWE = "Sweden", USA = "United States",
+  FRA = "France", GBR = "United Kingdom", ESP = "Spain",
+  AUS = "Australia", BEL = "Belgium", BWA = "Botswana"
+  )
+
   ) {
-  
+
   within <- st_within(site, basin)
 
   exo_basin_site <- tibble(
     siteid = site$siteid,
     basin_name = map(within, ~basin[.x, ]$basin_name)
     ) %>%
-    unnest(basin_name) 
-  
-  m_sites_buf <- site %>%
-    filter(!siteid %in% exo_basin_site$siteid) %>%
-    st_buffer(dist = buffer_size_site)
-  
-  within <- st_intersects(m_sites_buf, basin)
-  exo_basin_m_site <- tibble(
-    siteid = m_sites_buf$siteid,
-    basin_name = map(within, ~basin[.x, ]$basin_name)) %>%
-  unnest(basin_name)
-  
-  set.seed(seed)
-  u_exo_basin_m_site <- exo_basin_m_site %>%
-    group_by(siteid) %>%
-    sample_n(1) %>%
-    ungroup()
-  
+    unnest(basin_name)
+
+  # Missing sites, nearest basin
+  m_sites <- site %>%
+    filter(!siteid %in% exo_basin_site$siteid)
+
+  mask_country <- !unique(m_sites$country) %in%
+    names(country_missing_fishbase)
+
+  if (any(mask_country)) {
+    stop(paste0(
+        "missing country not in country_missing_fishbase",
+        paste0(
+          unique(m_sites$country)[mask_country],
+          collapse = ", ")
+        )
+    )
+  }
+
+  nested_basin_tedesco <- basin %>%
+    filter(country %in% country_missing_fishbase) %>%
+    group_by(country) %>%
+    nest() %>%
+    rename(basin = data)
+
+  site_missing_tedesco <- m_sites %>%
+    select(siteid, country) %>%
+    mutate(country = country_missing_fishbase[country]) %>%
+    group_by(country) %>%
+    nest() %>%
+    rename(site = data)
+
+  site_basin <- site_missing_tedesco %>%
+    left_join(nested_basin_tedesco, by = "country")
+
+  dist_match <- function(x, y) {
+    dist_matrix <- st_distance(x, y)
+    tibble(
+      siteid = y$siteid,
+      basin_name = x$basin_name[apply(dist_matrix, 2, which.min)]
+    )
+  }
+  exo_basin_m_site <- map2_dfr(
+    site_basin$basin,
+    site_basin$site,
+    dist_match)
+
   site_basin <-
-    rbind(exo_basin_site, u_exo_basin_m_site)
+    rbind(exo_basin_site, exo_basin_m_site)
   stopifnot(nrow(site_basin) == length(unique(site_basin$siteid)))
-  
+
   return(site_basin)
 }

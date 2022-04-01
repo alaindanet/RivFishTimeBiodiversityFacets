@@ -168,7 +168,8 @@ get_filtered_abun_rich_exo <- function(
 
   filtered_abun_rich_exo <- abun_rich %>%
     filter(!perc_na_exo_abun > perc_na_abun_thld) %>%
-    select(siteid, op_id,
+    select(
+      siteid, op_id,
       species_nb, species_nb_nat, species_nb_exo,
       perc_exo_sp, perc_nat_sp,
       total_abundance, nat_abun, exo_abun,
