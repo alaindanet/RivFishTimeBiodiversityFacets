@@ -361,6 +361,14 @@ plot(spde)
 ## Water and air temperature
 
 ```{r}
+#  
+tar_load(c(wt, formated_wt))
+write_csv(wt, file = here("data", "filtered_water_temperature.csv"))
+write_csv(formated_wt, file = here("data", "no_filtered_water_temperature.csv"))
+```
+
+
+```{r}
 tar_load(c(at_mv_avg, wt_mv_avg))
 
 awt <- full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year"))

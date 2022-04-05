@@ -790,7 +790,6 @@ ti[ti$siteid %in% unique(ti$siteid)[5:10], ] %>%
 wt_check %>%
   filter(!check_tmp) %>%
   select(siteid, date, tmp)
-
 ```
 
 # Exotic species

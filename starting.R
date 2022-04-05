@@ -203,5 +203,7 @@ file.create(here("doc", "tmp_figures.R"))
 
 # Conceptual figures 
 use_rmd("xxa-conceptual-figures")
+# Figure papers
+use_rmd("xxb-conceptual-figures")
 
 #

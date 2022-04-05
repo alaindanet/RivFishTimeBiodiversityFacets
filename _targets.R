@@ -19,7 +19,7 @@ source("./packages.R")
 ## tar_plan supports drake-style targets and also tar_target()
 list(
   # tar_target(target2, function_to_make2(arg)) ## targets style
-  tar_target( raw_data_file,
+  tar_target(raw_data_file,
     get_raw_file_path(),
     format = "file",
     error = "continue"),
@@ -486,6 +486,12 @@ tar_target(neutral_turnover,
     )
     ),
   tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
+  tar_target(write_temperature_mv_avg,
+    write_csv(full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year")),
+      file = here("data", "awt.csv")),
+    format = "file"
+    ),
+
   tar_target(mod_wt,
     glmmTMB(
       tmp_w_ama ~ year * ecoregion +
@@ -499,9 +505,12 @@ tar_target(neutral_turnover,
       site = filtered_dataset$location %>%
         st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
       )),
+  tar_target(formated_air_temperature,
+    format_air_temperature(air_temperature)
+    ),
   tar_target(at_mv_avg,
     get_moving_average_tmp(
-      wt = format_air_temperature(air_temperature),
+      wt = formated_air_temperature,
       var_y = "tmp_c",
       output_tmp_var = "tmp_a_ana")
     ),
