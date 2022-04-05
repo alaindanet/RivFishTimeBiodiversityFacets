@@ -262,8 +262,7 @@ get_measurement_exo <- function(
         occ_exotic_fb %>%
           select(-species),
         by = "fishbase_name"
-        ) %>%
-      select(-fishbase_name)
+        )
 
     # match site and species based on basin_name
     site_sp_status <- exo_basin_site %>%
@@ -271,8 +270,7 @@ get_measurement_exo <- function(
       left_join(
         basin_sp_status,
         by = c("basin_name")
-        ) %>%
-    select(-basin_name)
+        )
 
   measurement_exo <- measurement %>%
     left_join(site_sp_status, by = c("siteid", "species"))
