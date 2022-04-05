@@ -152,17 +152,23 @@ output <- complete_site_date %>%
           data = zoo::zoo(x[[var_y]], x$date),
           width = 12, FUN = mean, fill = NA,
           partial = 9, align = "center"
-        )
+        ) %>%
+        as.numeric() %>%
+        round(., 1)
 
         x$mv_avg_3m <- zoo::rollapplyr(
           data = zoo::zoo(x[[var_y]], x$date),
           width = 3, FUN = mean, fill = NA,
           partial = 2, align = "center"
-        )
+        ) %>%
+        as.numeric() %>%
+        round(., 1)
+
         return(x)
       })
     ) %>%
-  unnest(data)
+  unnest(data) %>%
+  ungroup()
 
 return(output)
 

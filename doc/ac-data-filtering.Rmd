@@ -377,10 +377,31 @@ skim(awt)
 ```
 
 ```{r}
+tar_load(wt_mv_avg_roll)
+```
+
+
+```{r}
 wt_site_avg <- wt_mv_avg %>%
   group_by(siteid) %>%
   summarise(avg_w_tmp = mean(tmp_w_ama))
+
+na <- ti %>%
+  mutate(year = year(date)) %>%
+  group_by(siteid, year) %>%
+  summarise(
+    avg = mean(mv_avg_12m, na.rm = TRUE),
+    n_na = sum(is.na(mv_avg_12m)),
+    .groups = "drop"
+    )
+
+na %>%
+  group_by(year) %>%
+  summarise(na_sum = sum(n_na)) %>%
+  ggplot(aes(x = year, y = na_sum)) +
+  geom_line()
 ```
+
 
 ```{r}
 loc_wt <- loc %>%
