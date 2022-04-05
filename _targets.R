@@ -486,6 +486,7 @@ tar_target(neutral_turnover,
     )
     ),
   tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
+  tar_target(wt_mv_avg_roll, get_mv_avg_rollapplyr(wt = wt)),
   tar_target(write_temperature_mv_avg,
     write_csv(full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year")),
       file = here("data", "awt.csv")),

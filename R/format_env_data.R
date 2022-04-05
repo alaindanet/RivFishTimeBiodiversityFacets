@@ -20,12 +20,13 @@ format_water_temperature <- function(
   # Add date
   wt <- wt %>%
     left_join(time, by = "col")
-  
+
   out <- wt %>%
-    select(siteid, date, tmp)
-  
+    select(siteid, date, tmp) %>%
+    mutate(date = lubridate::as_date(date))
+
   return(out)
-  
+
 }
 filter_water_temperature <- function(
   wt = NULL,
@@ -127,6 +128,42 @@ get_moving_average_tmp <- function(
     }
 
     return(out)
+}
+
+get_mv_avg_rollapplyr <- function(
+  wt = NULL,
+  var_y = "tmp") {
+
+  complete_site_date <- expand.grid(list(
+      siteid = unique(wt$siteid),
+      date = unique(wt$date)
+    )) %>%
+  as_tibble()
+
+output <- complete_site_date %>%
+  group_by(siteid) %>%
+  nest() %>%
+  mutate(
+    data = map(data,
+      function(x) {
+        x$mv_avg_12m <- rollapplyr(
+          data = zoo(x[[var_y]], x$date),
+          width = 12, FUN = mean, fill = NA,
+          partial = 9, align = "center"
+        )
+
+        x$mv_avg_3m <- rollapplyr(
+          data = zoo(x[[var_y]], x$date),
+          width = 3, FUN = mean, fill = NA,
+          partial = 2, align = "center"
+        )
+        return(x)
+      })
+    ) %>%
+  unnest(data)
+
+return(output)
+
 }
 
 format_air_temperature <- function(x = air_temperature) {
