@@ -4,7 +4,7 @@ library(tarchetypes)
 tar_make()
 
 tar_make_future(workers = min(future::availableCores() - 1, 24),
-                names = !c(starts_with("beta_"), "ah_clust_tps", "pred_gaussian"))
+                names = !c(starts_with("beta_"), "ah_clust_tps", "pred_gaussian", "filtered_data_watch"))
 
 tar_meta()
 tar_visnetwork()
@@ -12,7 +12,6 @@ tar_visnetwork()
 tar_make(names = meeting_report)
 tar_make(names = biodiversity_facets_support)
 tar_make(names = c(mod_exo_comp_std, mod_exo_comp))
-
 
 source(file = "start_rmd.R")
 tar_load(rigal_slp_df)

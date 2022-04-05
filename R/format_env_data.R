@@ -1,3 +1,4 @@
+
 # Format water_temperature
 format_water_temperature <- function(
   wt = NULL,
@@ -138,7 +139,8 @@ get_mv_avg_rollapplyr <- function(
       siteid = unique(wt$siteid),
       date = unique(wt$date)
     )) %>%
-  as_tibble()
+  as_tibble() %>%
+    left_join(wt, by = c("siteid", "date"))
 
 output <- complete_site_date %>%
   group_by(siteid) %>%
@@ -146,14 +148,14 @@ output <- complete_site_date %>%
   mutate(
     data = map(data,
       function(x) {
-        x$mv_avg_12m <- rollapplyr(
-          data = zoo(x[[var_y]], x$date),
+        x$mv_avg_12m <- zoo::rollapplyr(
+          data = zoo::zoo(x[[var_y]], x$date),
           width = 12, FUN = mean, fill = NA,
           partial = 9, align = "center"
         )
 
-        x$mv_avg_3m <- rollapplyr(
-          data = zoo(x[[var_y]], x$date),
+        x$mv_avg_3m <- zoo::rollapplyr(
+          data = zoo::zoo(x[[var_y]], x$date),
           width = 3, FUN = mean, fill = NA,
           partial = 2, align = "center"
         )

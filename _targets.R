@@ -490,7 +490,7 @@ tar_target(neutral_turnover,
   tar_target(write_temperature_mv_avg,
     write_csv(full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year")),
       file = here("data", "awt.csv")),
-    format = "file"
+    error = "continue"
     ),
 
   tar_target(mod_wt,
