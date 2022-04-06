@@ -27,7 +27,7 @@ get_filtered_dataset <- function(
       save_data = FALSE)
   }
 
-  if (type %in% c("all", "location")) {
+  if (type %in% c("all", "location", "measurement")) {
     mask <- site_desc_loc$siteid %in% op_protocol$siteid
     output$location <- site_desc_loc[mask, ]
     # Remove NZ: opportunistic fishing operation
@@ -38,7 +38,9 @@ get_filtered_dataset <- function(
   if (type %in% c("all", "measurement", "abun_rich_op")) {
     mask <- measurement$op_id %in% op_protocol$op_id
     output$measurement <- measurement[mask, ]
-
+    # Filter sites 
+    mask <- measurement$siteid %in% output$location$siteid
+    output$measurement <- measurement[mask, ]
   }
 
   if (type %in% c("all", "abun_rich_op")) {

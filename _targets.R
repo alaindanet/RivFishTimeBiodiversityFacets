@@ -61,7 +61,11 @@ list(
       occ_exotic = occ_exotic,
       exo_basin_site = exo_basin_site,
       measurement = filtered_dataset$measurement
-      )),
+      ) %>%
+    complete_native_exotic_data(
+      meas = .,
+      loc = site_desc_loc
+    )),
   tar_target(abun_rich_exo,
     get_abun_rich_exo(measurement_exo = measurement_exo)
     ),

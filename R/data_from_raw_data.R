@@ -279,6 +279,176 @@ get_measurement_exo <- function(
 
 }
 
+complete_native_exotic_data <- function(
+  meas = measurement_exo,
+  loc = site_desc_loc
+  ){
+
+  # Get synonyms bw rivfishtime and fishbase
+  df_syn_rivfishtime <- unique(meas$species) %>%
+    rfishbase::synonyms() %>%
+    select(provided_name = synonym, valid_name = Species, Comment = Status) %>%
+    as_tibble() %>%
+    filter(!Comment %in% c("misapplied name", "ambiguous synonym")) %>%
+    select(provided_name, valid_name) %>%
+    rename(species = provided_name, fishbase_name = valid_name)
+
+  # Get the missing association species / country
+  missing_species_measurement <-
+    meas %>%
+    filter(is.na(native_exotic_status)) %>%
+    select(-fishbase_name) %>%
+    # Re add fishbase name
+    left_join(df_syn_rivfishtime, by = "species") %>%
+    left_join(loc %>%
+      select(siteid, country),
+    by = c("siteid")
+    ) %>%
+    filter(country != "New Zealand") %>%
+    distinct(species, fishbase_name, country)
+
+  # Correspondence bw country in rivfishtime and fishbase
+  country_code_name <- c(
+    "USA" = "USA",
+    "FRA" = "France",
+    "SWE" = "Sweden",
+    "ESP" = "Spain",
+    "GBR" = "UK",
+    "AUS" = "Australia",
+    "BEL" = "Belgium",
+    "BWA" = "Botswana",
+    "CIV" = "Cote d'Ivoire",
+    "FIN" = "Finland",
+    "HUN" = "Hungary",
+    "BRA" = "Brazil",
+    "NOR" = "Norway",
+    "CAN" = "Canada"
+  )
+  # Check if missing country correspondence
+  stopifnot(all(
+      unique(missing_species_measurement$country) %in%
+        names(country_code_name)
+      ))
+
+  # Get the species status by country from fishbase
+  country_fishbase <- rfishbase::country(
+    species_list = unique(c(missing_species_measurement$fishbase_name,
+        missing_species_measurement$species)))
+
+  # Filter the combination species / country that we need 
+  country_fishbase_filtered <-
+    country_fishbase %>%
+    filter((Species %in% unique(
+          unlist(missing_species_measurement[,c("fishbase_name", "species")])
+          ) & str_detect(
+          country,
+          paste0(country_code_name[missing_species_measurement$country],
+            collapse = "|")
+          ))) %>%
+    select(country_fishbase = country, fishbase_name = Species, status =
+      Status) %>%
+    mutate(country = names(country_code_name)[
+      map_int(country_fishbase, ~which(str_detect(.x, country_code_name)))
+      ]
+    )
+    stopifnot(all(!is.na(country_fishbase_filtered$country)))
+    stopifnot(all(!is.na(country_fishbase_filtered$country_fishbase)))
+    stopifnot(all(!is.na(missing_species_measurement$country)))
+
+    country_fishbase_resolution <- missing_species_measurement %>%
+      left_join(country_fishbase_filtered,
+        by = c("fishbase_name", "country")) %>%
+      distinct(fishbase_name, country, status, .keep_all = TRUE)
+
+    # Check for dbl:
+    dupl_country_sp <- country_fishbase_resolution %>%
+      group_by(country, fishbase_name) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      filter(n > 1)
+
+    # Let's put it in native if GBR is a country
+    country_fishbase_resolution %>%
+      filter(country == "GBR", fishbase_name == "Gymnocephalus cernua")
+    country_fishbase_resolution <-
+      country_fishbase_resolution %>%
+      mutate(status = ifelse(
+          country_fishbase == "UK Scotland" &
+            fishbase_name == "Gymnocephalus cernua",
+          "native", status)) %>%
+      distinct(fishbase_name, country, status, .keep_all = TRUE)
+
+    # Recheck if double species / country 
+    dupl_country_sp <- country_fishbase_resolution %>%
+      group_by(country, fishbase_name) %>%
+      summarise(n = n(), .groups = "drop") %>%
+      filter(n > 1)
+    stopifnot(nrow(dupl_country_sp) == 0)
+
+    # Search manually, best way to learn about fish
+    country_fishbase_resolution <- 
+      country_fishbase_resolution %>%
+      mutate(
+        status = case_when(
+          #https://www.fishbase.de/summary/Rutilus-rutilus.html
+          country == "USA" & species == "Rutilus rutilus" ~ "introduced",
+          #https://www.gbif.org/species/5206976/metrics
+          country == "CIV" & species == "Barbus chlorotaenia" ~ "introduced",
+          # No mention found in the country, but in the neighbors country
+          country == "CIV" & species == "Barbus foutensis" ~ "introduced",
+          # No mention found in the country, but in the neighbors country
+          #https://books.google.com/books?id=9lEFfsaCDNkC&pg=PA153&lpg=PA153&dq=%22Synodontis+ocellifer%22+cote+d%27ivoire&source=bl&ots=jWOQ1OPcKE&sig=ACfU3U1aPNT3bM4XrlK1YeYeMF7JaqiGdg&hl=en&sa=X&ved=2ahUKEwiUwLWlgID3AhXTMX0KHbxXCXEQ6AF6BAgtEAM#v=onepage&q=%22Synodontis%20ocellifer%22%20cote%20d'ivoire&f=false
+          country == "CIV" & species == "Synodontis ocellifer" ~ "introduced",
+          # Native in a lot of countries around and cross Africa, so I decied to put
+          # it as native
+          #https://www.fishbase.se/Country/CountryList.php?ID=4479&GenusName=Hydrocynus&SpeciesName=vittatus
+          country == "CIV" & species == "Hydrocynus vittatus" ~ "native",
+          #https://fishesofaustralia.net.au/home/species/2693
+          country == "AUS" & species == "Carassius carassius" ~ "introduced",
+          country == "FRA" & species == "Alosa agone" ~ "native",
+          # Native from eastern Europe but introduced in several countries of
+          # northen Europe and western europe: 
+          #https://www.fishbase.se/Country/CountryList.php?ID=12019&GenusName=Neogobius&SpeciesName=melanostomus
+          country == "FRA" & species == "Neogobius melanostomus" ~ "introduced",
+          # Native from eastern Europe but introduced in several countries of
+          # central Europe: 
+          #https://www.fishbase.se/Country/CountryList.php?ID=25977&GenusName=Ponticola&SpeciesName=kessleri
+          country == "FRA" & species == "Ponticola kessleri" ~ "introduced",
+          # Native from eastern Europe but introduced in several countries of
+          # central Europe: 
+          #https://www.fishbase.de/Country/CountryList.php?ID=65128&GenusName=Proterorhinus&SpeciesName=semilunaris
+          country == "FRA" & species == "Proterorhinus semilunaris" ~ "introduced",
+          # Introduced: https://inpn.mnhn.fr/espece/cd_nom/70166
+          # first reported in 2014
+          country == "FRA" & species == "Neogobius fluviatilis" ~ "introduced",
+          # European sport fish:
+          country == "USA" & species == "Rutilus rutilus" ~ "introduced",
+          TRUE                           ~ status
+          )) %>%
+      # Fix fishbase name:
+      distinct(country, fishbase_name, status, .keep_all = TRUE)
+
+    completed_meas <- meas %>%
+      select(-fishbase_name) %>%
+      # Re add fishbase name
+      left_join(df_syn_rivfishtime, by = "species") %>%
+      left_join(loc %>%
+        select(siteid, country),
+      by = c("siteid")
+      ) %>%
+      filter(country != "New Zealand") %>%
+      left_join(country_fishbase_resolution %>%
+        select(country, fishbase_name, native_exotic_status2 = status),
+      by = c("country", "fishbase_name")) %>%
+      mutate(native_exotic_status = ifelse(is.na(native_exotic_status),
+          native_exotic_status2, native_exotic_status)) %>%
+      select(-native_exotic_status2)
+
+    stopifnot(all(!is.na(completed_meas$native_exotic_status)))
+
+    return(completed_meas)
+
+}
+
 get_abun_rich_exo <- function(
   measurement_exo = NULL
   ) {
