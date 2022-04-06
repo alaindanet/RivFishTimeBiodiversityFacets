@@ -1357,6 +1357,19 @@ tar_target(random_effect_self_c,
          ))),
    pattern = map(country_to_plot)
    ),
+ tar_target(pca_clust, compute_rotated_pca(site_no_drivers)),
+ tar_target(p_pca_clust,
+   plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_cl_rm,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80
+   )),
 
 
  # Report

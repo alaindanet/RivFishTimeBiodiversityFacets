@@ -1,0 +1,157 @@
+---
+title: "Individual figures of the paper"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::html_document2:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+## target knits Rmds in their own session, so load libraries here.
+## source("here::here(packages.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(p_mod_comp_std, mod_comp_std_df))
+tar_load(p_mod_exo_comp_std)
+```
+
+## Model figure
+
+### All in
+
+```{r}
+# Model plot and data
+#
+p_mod_comp_std
+```
+
+### Exotic species
+
+```{r}
+p_mod_exo_comp_std
+```
+
+
+
+## Typology of temporal change 
+
+
+### PCA
+
+```{r}
+tar_load(c(pca_clust, p_pca_clust, site_cl_rm))
+p_pca_clust
+```
+
+
+### Map
+
+```{r}
+world_site_sf$cl <- world_site_sf$site %>%
+
+    left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
+    mutate(cl = relevel(as.factor(cl), ref = 1))
+
+main_map <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(color = cl))
+
+zoom_map <- list(
+  north_am = "USA",
+  south_eu = c("FRA", "GBR", "HUN", "ESP", "BEL"),
+  north_eu = c("FIN", "NOR", "SWE"),
+  aus = "AUS"
+)
+
+zoom_map_coord <- map(zoom_map,
+  ~world_site_sf$cl %>%
+    filter(country %in% .x) %>%
+    st_bbox()
+)
+
+zoom_map_coord_df <- map_dfr(zoom_map_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(label = LETTERS[seq_len(4)])
+
+main_map_rect <- main_map +
+  geom_rect(
+    data = zoom_map_coord_df,
+  aes(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax),
+    fill = NA,
+    colour = "black",
+    size = 0.6) +
+  geom_text(
+    data = zoom_map_coord_df,
+    aes(x = xmin, y = ymax, label = label),
+    vjust = 1, hjust = 1, size = 15
+  )
+
+p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
+  ~main_map_rect +
+    coord_sf(
+      xlim = .x[c("xmin", "xmax")],
+      ylim = .x[c("ymin", "ymax")],
+      expand = FALSE) +
+    annotate("text", x = .x["xmin"], y = .x["ymax"],
+      label = .y, size = 15, vjust = 1, hjust = 0) +
+    theme(legend.position = "none")
+)
+```
+
+```{r, fig.height=10, fig.width=14, include=FALSE}
+main_map_rect
+p_zoom_map
+```
+
+### Cluster distribution
+
+```{r, fig.height=16}
+tar_load(c(p_cluster_country, bp_random_effect, bp_cl_dist))
+tar_load(c(p_clust_prop, site_env))
+bp_cl_dist
+bp_random_effect
+p_cluster_country
+p_clust_prop
+```
+
+
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
