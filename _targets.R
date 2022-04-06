@@ -519,6 +519,11 @@ tar_target(neutral_turnover,
       var_y = "tmp_c",
       output_tmp_var = "tmp_a_ana")
     ),
+  tar_target(at_mv_avg_roll,
+    get_mv_avg_rollapplyr(
+      wt = formated_air_temperature,
+      var_y = "tmp_c")
+    ),
   tar_target(pca_riv_str,
     compute_riv_str_pca(riv = riveratlas_site, ncomp = 2)
     ),

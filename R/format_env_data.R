@@ -148,7 +148,7 @@ output <- complete_site_date %>%
   mutate(
     data = map(data,
       function(x) {
-        x$mv_avg_12m <- zoo::rollapplyr(
+        x$mv_avg_12m <- zoo::rollapply(
           data = zoo::zoo(x[[var_y]], x$date),
           width = 12, FUN = mean, fill = NA,
           partial = 9, align = "center"
@@ -156,7 +156,7 @@ output <- complete_site_date %>%
         as.numeric() %>%
         round(., 1)
 
-        x$mv_avg_3m <- zoo::rollapplyr(
+        x$mv_avg_3m <- zoo::rollapply(
           data = zoo::zoo(x[[var_y]], x$date),
           width = 3, FUN = mean, fill = NA,
           partial = 2, align = "center"
