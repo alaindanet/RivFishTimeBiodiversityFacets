@@ -3,8 +3,10 @@ library(tarchetypes)
 
 tar_make()
 
-tar_make_future(workers = min(future::availableCores() - 1, 24),
-                names = !c(starts_with("beta_"), "ah_clust_tps", "pred_gaussian", "filtered_data_watch"))
+tar_make_future(
+  workers = min(future::availableCores() - 1, 24),
+  names = !c(starts_with("beta_"), "ah_clust_tps", "pred_gaussian", "filtered_data_watch")
+  )
 
 tar_meta()
 tar_visnetwork()

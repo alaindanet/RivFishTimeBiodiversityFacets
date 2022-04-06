@@ -39,7 +39,9 @@ get_filtered_dataset <- function(
     mask <- measurement$op_id %in% op_protocol$op_id
     output$measurement <- measurement[mask, ]
     # Filter sites 
-    mask <- measurement$siteid %in% output$location$siteid
+    opid_to_keep <- op_protocol[
+      op_protocol$siteid %in% unique(output$location$siteid), ]$op_id
+    mask <- measurement$op_id %in% unique(opid_to_keep) 
     output$measurement <- measurement[mask, ]
   }
 
