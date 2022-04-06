@@ -416,6 +416,7 @@ example, it means that while we are able to compute the temporal trends as each
 site and basin, those temporal trends have no associated errors.
 
 ```{r}
+tar_load(site_temporal_trends)
 site_temporal_trends <- gaussian_no_drivers_re_self_c %>%
   select(response, random_site) %>%
   unnest(random_site) %>%
@@ -436,17 +437,6 @@ abundance units, with the estimated fixed effect from the model.
 
 ## Cluster analysis
 
-```{r}
-wide_site_tps <- site_temporal_trends  %>%
-  pivot_wider(names_from = "response", values_from = "log1_year_nb")
-```
-
-```{r}
-site_tps_clust <- wide_site_tps %>%
-  select(all_of(clust_var)) %>%
-  as.data.frame()
-rownames(site_tps_clust) <- wide_site_tps$siteid
-```
 ```{r}
 kmeans_opt_nb_gr_sil_cap <- "Objective function value according to the
 proportion of outliers data trimmed and the number of cluster(colored lines). Up
@@ -553,7 +543,9 @@ p_mod_coef <- plot_grid(p2, p1, p3, leg,
 
 
 ```{r}
-cor_site_tps <- cor(site_tps_clust,
+
+
+cor_site_tps <- cor(site_no_drivers,
   method = "spearman"
 )
 dimnames(cor_site_tps) <- map(
@@ -569,115 +561,14 @@ guides(colour = guide_legend(title.position = "top"))
 ```
 
 ```{r}
-pca_clust <- compute_rotated_pca(site_tps_clust)
+tar_load(pca_clust)
+pca_clust <- compute_rotated_pca(site_no_drivers)
 p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
 ```
-
 ```{r}
-plot_pca_clust <- function(
-  .data = NULL,
-  site_cl = NULL,
-  xaxis = "RC1", yaxis = "RC2",
-  ctb_thld = .4, label_size = 2,
-  size_abscisse_segment = .25,
-  size_arrows_segment = .25,
-  force = 10, force_pull = 1,
-  seed = NA,
-  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
-  add_variable = TRUE,
-  add_point = TRUE,
-  add_ellipse = TRUE,
-  alpha_point = 1,
-  lim_x_y = c(-1, 1)
-) {
-
-  pca_data <- .data$loadings[1:nrow(.data$loadings), ] %>%
-    as.data.frame() %>%
-    rownames_to_column("variable") %>%
-    as_tibble()
-
-  tt <- pca_clust$rotated$scores %>%
-    as.data.frame() %>%
-    rownames_to_column("siteid") %>%
-    as_tibble() %>%
-    left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
-    na.omit()
-
-  pca_data %<>%
-    mutate(variable = replace_var[variable])
-
-
-  var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
-
-  p <- ggplot() +
-    geom_segment(
-      data = tibble(x = c(lim_x_y[1], 0), xend = c(lim_x_y[2], 0),
-        y = c(0, lim_x_y[1]), yend = c(0, lim_x_y[2])),
-      aes(x = x, y = y, xend = xend, yend = yend),
-      size = size_abscisse_segment) +
-    lims(x = lim_x_y, y = lim_x_y) +
-    coord_cartesian(
-      expand = FALSE
-    ) +
-    labs(x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
-      y = paste0(yaxis, " (", var_exp[yaxis], "%)"))
-
-  if (add_point) {
-    p <- p +
-      geom_point(data = tt,
-        aes(x = RC1, y = RC2, colour = as.factor(cl)),
-        alpha = alpha_point
-      )
-  }
-  if (add_ellipse) {
-    p <- p +
-      stat_ellipse(
-        data = tt,
-        aes(x = RC1, y = RC2, colour = as.factor(cl)),
-        segments = 100,
-        level = .9
-      )
-  }
-
-  if (add_variable) {
-
-    pca_label <- pca_data %>%
-      filter(
-        abs(.data[[xaxis]]) > ctb_thld |
-          abs(.data[[yaxis]]) > ctb_thld
-      )
-    p <- p +
-      geom_segment(data = pca_data,
-        aes_string(x = 0, y = 0, xend = xaxis, yend = yaxis),
-        arrow = ggplot2::arrow(angle = 20, length = unit(0.05, "inches"),
-          ends = "last", type = "open"),
-        size = size_arrows_segment
-        ) +
-      ggrepel::geom_label_repel(data = pca_label,
-        aes_string(x = xaxis, y = yaxis, label = "variable"),
-        size = label_size,
-        force = force, force_pull = force_pull, seed = seed,
-        box.padding = .1, label.padding = .15
-      )
-  }
-  return(p)
-}
-```
-
-```{r}
-p_pca_ok <- plot_pca_clust(
-  .data = pca_clust$rotated,
-  site_cl = site_cl_rm,
-  replace_var = get_var_replacement(),
-  size_arrows_segment = 1,
-  label_size = 2.5,
-  alpha_point = .2,
-  lim_x_y = c(-3.5, 3.5),
-  force_pull = 1,
-  force = 80
-)
+tar_load(p_pca_clust)
 ```
 
 
@@ -786,7 +677,7 @@ among temporal trends."
 
 ```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
 plot_grid(
-  p_pca_ok + theme_cowplot(),
+  p_pca_clust + theme_cowplot(),
   cor_p,
   nrow = 2,
   labels = "AUTO"

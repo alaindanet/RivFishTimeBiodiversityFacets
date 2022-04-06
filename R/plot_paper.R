@@ -155,3 +155,92 @@ plot_model_comp_interaction <- function(
   return(p_mod_coef)
 
 }
+
+plot_pca_clust <- function(
+  .data = NULL,
+  site_cl = NULL,
+  xaxis = "RC1", yaxis = "RC2",
+  ctb_thld = .4, label_size = 2,
+  size_abscisse_segment = .25,
+  size_arrows_segment = .25,
+  force = 10, force_pull = 1,
+  seed = NA,
+  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
+  add_variable = TRUE,
+  add_point = TRUE,
+  add_ellipse = TRUE,
+  alpha_point = 1,
+  lim_x_y = c(-1, 1)
+) {
+
+  pca_data <- .data$loadings[1:nrow(.data$loadings), ] %>%
+    as.data.frame() %>%
+    rownames_to_column("variable") %>%
+    as_tibble()
+
+  tt <- pca_clust$rotated$scores %>%
+    as.data.frame() %>%
+    rownames_to_column("siteid") %>%
+    as_tibble() %>%
+    left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
+    na.omit()
+
+  pca_data %<>%
+    mutate(variable = replace_var[variable])
+
+
+  var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
+
+  p <- ggplot() +
+    geom_segment(
+      data = tibble(x = c(lim_x_y[1], 0), xend = c(lim_x_y[2], 0),
+        y = c(0, lim_x_y[1]), yend = c(0, lim_x_y[2])),
+      aes(x = x, y = y, xend = xend, yend = yend),
+      size = size_abscisse_segment) +
+    lims(x = lim_x_y, y = lim_x_y) +
+    coord_cartesian(
+      expand = FALSE
+    ) +
+    labs(x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
+      y = paste0(yaxis, " (", var_exp[yaxis], "%)"))
+
+  if (add_point) {
+    p <- p +
+      geom_point(data = tt,
+        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        alpha = alpha_point
+      )
+  }
+  if (add_ellipse) {
+    p <- p +
+      stat_ellipse(
+        data = tt,
+        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        segments = 100,
+        level = .9
+      )
+  }
+
+  if (add_variable) {
+
+    pca_label <- pca_data %>%
+      filter(
+        abs(.data[[xaxis]]) > ctb_thld |
+          abs(.data[[yaxis]]) > ctb_thld
+      )
+    p <- p +
+      geom_segment(data = pca_data,
+        aes_string(x = 0, y = 0, xend = xaxis, yend = yaxis),
+        arrow = ggplot2::arrow(angle = 20, length = unit(0.05, "inches"),
+          ends = "last", type = "open"),
+        size = size_arrows_segment
+        ) +
+      ggrepel::geom_label_repel(data = pca_label,
+        aes_string(x = xaxis, y = yaxis, label = "variable"),
+        size = label_size,
+        force = force, force_pull = force_pull, seed = seed,
+        box.padding = .1, label.padding = .15
+      )
+  }
+  return(p)
+}
