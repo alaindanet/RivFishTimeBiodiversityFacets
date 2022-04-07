@@ -206,4 +206,5 @@ use_rmd("xxa-conceptual-figures")
 # Figure papers
 use_rmd("xxb-conceptual-figures")
 
-#
+# Lise
+use_rmd("lise")

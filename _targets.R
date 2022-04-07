@@ -313,10 +313,10 @@ tar_target(neutral_turnover,
       confidence_int = NULL,
       adjust_abun_density = TRUE)
     ),
-  tar_target(chao_hillnb_cov1,
+  tar_target(chao_hillnb_cov99,
     get_chao_hillnb(
       x = filtered_dataset$measurement,
-      coverage = 1,
+      coverage = .99,
       confidence_int = NULL,
       adjust_abun_density = TRUE)
     ),

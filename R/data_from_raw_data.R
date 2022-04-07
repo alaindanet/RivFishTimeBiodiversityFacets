@@ -286,7 +286,7 @@ complete_native_exotic_data <- function(
   # Register the origin of native/exotic species status
   meas <- meas %>%
     mutate(native_exotic_origin =
-      ifelse(is.na(natnative_exotic_originive_exotic_status),
+      ifelse(is.na(native_exotic_status),
         NA, "tedesco"
       )
     )
