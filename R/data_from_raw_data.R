@@ -281,8 +281,15 @@ get_measurement_exo <- function(
 
 complete_native_exotic_data <- function(
   meas = measurement_exo,
-  loc = site_desc_loc
-  ){
+  loc = site_desc_loc) {
+
+  # Register the origin of native/exotic species status
+  meas <- meas %>%
+    mutate(native_exotic_origin =
+      ifelse(is.na(natnative_exotic_originive_exotic_status),
+        NA, "tedesco"
+      )
+    )
 
   # Get synonyms bw rivfishtime and fishbase
   df_syn_rivfishtime <- unique(meas$species) %>%
@@ -304,7 +311,6 @@ complete_native_exotic_data <- function(
       select(siteid, country),
     by = c("siteid")
     ) %>%
-    filter(country != "New Zealand") %>%
     distinct(species, fishbase_name, country)
 
   # Correspondence bw country in rivfishtime and fishbase
@@ -377,7 +383,7 @@ complete_native_exotic_data <- function(
           "native", status)) %>%
       distinct(fishbase_name, country, status, .keep_all = TRUE)
 
-    # Recheck if double species / country 
+    # Recheck if double species / country
     dupl_country_sp <- country_fishbase_resolution %>%
       group_by(country, fishbase_name) %>%
       summarise(n = n(), .groups = "drop") %>%
@@ -385,8 +391,10 @@ complete_native_exotic_data <- function(
     stopifnot(nrow(dupl_country_sp) == 0)
 
     # Search manually, best way to learn about fish
-    country_fishbase_resolution <- 
+    country_fishbase_resolution <-
       country_fishbase_resolution %>%
+      mutate(native_exotic_origin2 = ifelse(is.na(status), "handmade",
+          "autofishbase")) %>%
       mutate(
         status = case_when(
           #https://www.fishbase.de/summary/Rutilus-rutilus.html
@@ -433,15 +441,20 @@ complete_native_exotic_data <- function(
       left_join(df_syn_rivfishtime, by = "species") %>%
       left_join(loc %>%
         select(siteid, country),
-      by = c("siteid")
+      by = c("siteid")) %>%
+      left_join(
+        country_fishbase_resolution %>%
+          select(country, fishbase_name, native_exotic_status2 = status, native_exotic_origin2),
+        by = c("country", "fishbase_name")
       ) %>%
-      filter(country != "New Zealand") %>%
-      left_join(country_fishbase_resolution %>%
-        select(country, fishbase_name, native_exotic_status2 = status),
-      by = c("country", "fishbase_name")) %>%
-      mutate(native_exotic_status = ifelse(is.na(native_exotic_status),
-          native_exotic_status2, native_exotic_status)) %>%
-      select(-native_exotic_status2)
+      mutate(
+        native_exotic_status = ifelse(is.na(native_exotic_status),
+          native_exotic_status2, native_exotic_status),
+        native_exotic_origin = ifelse(is.na(native_exotic_origin),
+          native_exotic_origin2, native_exotic_origin),
+
+        ) %>%
+      select(-native_exotic_status2, -native_exotic_origin2)
 
     stopifnot(all(!is.na(completed_meas$native_exotic_status)))
 
