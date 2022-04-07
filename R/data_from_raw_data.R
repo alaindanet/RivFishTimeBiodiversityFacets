@@ -445,6 +445,23 @@ complete_native_exotic_data <- function(
 
     stopifnot(all(!is.na(completed_meas$native_exotic_status)))
 
+    # Stick to two native exotic status 
+
+    completed_meas <- completed_meas %>% 
+      mutate(native_exotic_status = case_when(
+          native_exotic_status == "introduced" ~ "exotic",
+          native_exotic_status == "not established" ~ "exotic",
+          native_exotic_status == "endemic" ~ "native",
+          native_exotic_status == "misidentification" ~ "native",
+          TRUE ~ native_exotic_status
+      )
+      )
+
+    stopifnot(all(
+        completed_meas$native_exotic_status
+        %in% c("native", "exotic")
+      ))
+
     return(completed_meas)
 
 }
