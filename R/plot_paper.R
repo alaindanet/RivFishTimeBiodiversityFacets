@@ -178,7 +178,7 @@ plot_pca_clust <- function(
     rownames_to_column("variable") %>%
     as_tibble()
 
-  tt <- pca_clust$rotated$scores %>%
+  tt <- .data$scores %>%
     as.data.frame() %>%
     rownames_to_column("siteid") %>%
     as_tibble() %>%
