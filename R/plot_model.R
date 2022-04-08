@@ -18,3 +18,83 @@ plot_model_comp_coeff <- function(model_list = NULL) {
         xmax = CI_high)) +
     geom_pointrange(position = position_dodge(width = .2))
 }
+
+###########################################################################
+#                            INLA                             #
+###########################################################################
+
+plot_credible_interval <- function (model = NULL) {
+
+  # Borrowed from
+  # https://github.com/roelvanklink/Final-insect-abundance-changes/blob/master/Full%20INLA%20analysis%20FINAL%20cleaned%2020191230.R 
+  ggplot(data.frame(ABSlope)) +
+    geom_errorbar(aes(x = Unit, ymin = X0.025quant, ymax = X0.975quant, color = Realm),
+      alpha = 0.5,
+      size = 1, width = 0, position = position_dodge(width = 0.7)
+    ) +
+    geom_errorbar(aes(x = Unit, ymin = X0.05quant, ymax = X0.95quant, color = Realm),
+      alpha = 0.75,
+      size = 2, width = 0, position = position_dodge(width = 0.7)
+    ) +
+    geom_errorbar(aes(x = Unit, ymin = X0.1quant, ymax = X0.9quant, color = Realm),
+      alpha = 1,
+      size = 3, width = 0, position = position_dodge(width = 0.7)
+    ) +
+    geom_point(aes(x = Unit, y = mean, shape = Realm),
+      size = 2.5, position = position_dodge(width = 0.7),
+      color = "black", fill = "black", alpha = 1
+    ) +
+    scale_color_manual(values = col.scheme.realm) +
+    scale_fill_manual(values = col.scheme.realm) +
+    scale_shape_manual(values = shps) +
+    geom_hline(yintercept = 0, linetype = "dashed") +
+    coord_flip()
+
+}
+
+plot_obs_fitted_inla <- function(
+  mod_inla = NULL,
+  dataset = NULL,
+  resp = NULL) {
+
+  obs_fit <- tibble(
+    fit = mod_inla$summary.fitted.values[, "mean"],
+    obs = dataset[[resp]]
+  )
+  obs_fit %>%
+    ggplot(aes(x = fit, y = obs)) +
+    geom_point(alpha = .5, size = 2) +
+    geom_abline(intercept = 0, slope = 1, color = "red") +
+    labs(x = "Fitted values", y = "Observed values")
+}
+
+plot_posterior_gaussian_sd <- function(inla_mod = NULL) {
+
+  hyper_tb <-
+    inla_mod$marginals.hyperpar[["Precision for the Gaussian observations"]]
+  sigma_dist <- inla.tmarginal(tau_to_sigma, hyper_tb) %>%
+    as_tibble
+
+  sigma_dist %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line() +
+    labs(x = expression(sigma), y = expression(paste("P(", sigma, " | Data)")))
+}
+
+plot_posterior_fixed <- function(inla_mod = NULL, scales = "free", ncol = 4) {
+
+  sum_fix <- inla_mod$marginals.fixed
+
+  dist_term <- purrr::map_dfr(sum_fix,
+    ~inla.smarginal(.x) %>%
+    as_tibble(),
+  .id = "term")
+
+  dist_term %>%
+    mutate(term = str_replace_all(term, get_model_term_replacement())) %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line() +
+    facet_wrap(vars(term), ncol = ncol, scales = scales) +
+    labs(x = expression(beta), y = expression(paste("P(", beta, " | Data)")))
+}
+

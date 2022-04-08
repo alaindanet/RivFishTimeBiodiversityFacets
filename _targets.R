@@ -909,7 +909,7 @@ tar_target(neutral_turnover,
       mod = list(try(glmmTMB(
             formula = fun_no_driver_formula(x = facet_var),
             data = modelling_data %>%
-              mutate(across(all_of(facet_var), ~scale(.)[,1])),
+              mutate(across(all_of(facet_var), ~scale(.)[, 1])),
             family = gaussian(link = "identity"))))
       ),
     pattern = map(facet_var)
@@ -923,6 +923,72 @@ tar_target(neutral_turnover,
             family = gaussian(link = "identity"))))
       ),
     pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data
+            )))),
+    pattern = map(facet_var)
+    ),
+  target(main_effect_var,
+    names(get_model_term_replacement())[
+      !str_detect(
+        names(get_model_term_replacement()),
+        "siteid|main_bas"
+      )
+      ]
+  ),
+  tar_target(gaussian_inla_std,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data %>%
+              mutate(
+                across(all_of(c(main_effect_var, facet_var)),
+                  ~scale(., center = FALSE)[, 1])
+              )
+            )))
+      ),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_exo,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = exo_resp_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data_exo
+            )))),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_exo_std,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = exo_resp_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data %>%
+              mutate(
+                across(all_of(c(main_effect_var, exo_resp_var)),
+                  ~scale(., center = FALSE)[, 1])
+              )
+            )))
+      ),
+    pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_log_hft,
     tibble(
@@ -1109,13 +1175,7 @@ tar_target(neutral_turnover,
       ) %>%
     check_collinearity()),
   tar_target(exo_resp_var,
-    c("species_nb", "log_species_nb",
-      "species_nb_nat", "species_nb_exo",
-      "perc_exo_sp", "perc_nat_sp", "perc_exo_abun",
-      "perc_nat_abun",
-      "total_abundance", "log_total_abundance",
-      "nat_abun", "exo_abun"
-      )),
+    c("perc_exo_sp", "perc_exo_abun")),
   tar_target(gaussian_exo,
     tibble(
       response = exo_resp_var,

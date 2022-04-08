@@ -47,3 +47,73 @@ plot_uniform_quantile_inla <- function(mod_inla = NULL) {
     geom_abline(slope = 1, intercept = 0) +
     labs(x = "uniform quantiles", y = "Sorted PIT values")
 }
+
+tau_to_sigma <- function(x) {
+  1 / sqrt(x)
+}
+
+get_formula_inla_no_tps <- function(resp = NULL) {
+  form <- paste0(resp,
+    "~
+    log1_year_nb + riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
+    log1_year_nb : riv_str_rc1 +
+    log1_year_nb : hft_ix_c93 +
+    log1_year_nb : hft_ix_c9309_log2_ratio +
+    log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+    log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
+    f(main_bas, log1_year_nb, model = 'iid') +
+    f(siteid:main_bas, log1_year_nb, model = 'iid')")
+
+  as.formula(form)
+
+}
+
+get_formula_inla_abun <- function(resp = NULL) {
+  form <- paste0(resp,
+    "~ 
+    unitabundance +
+    log1_year_nb + riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
+    log1_year_nb : unitabundance +
+    log1_year_nb : riv_str_rc1 +
+    log1_year_nb : hft_ix_c93 +
+    log1_year_nb : hft_ix_c9309_log2_ratio +
+    log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+    log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
+    f(main_bas, log1_year_nb, model = 'iid') +
+    f(siteid:main_bas, log1_year_nb, model = 'iid')")
+  as.formula(form)
+}
+
+get_formula_inla_tps <- function(resp = NULL) {
+  form <- paste0(resp,
+    "~
+    0 +
+    log1_year_nb +
+    log1_year_nb : riv_str_rc1 +
+    log1_year_nb : hft_ix_c93 +
+    log1_year_nb : hft_ix_c9309_log2_ratio +
+    log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+    log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
+    f(main_bas, log1_year_nb, model = 'iid') +
+    f(siteid:main_bas, log1_year_nb, model = 'iid')"
+  )
+  as.formula(form)
+}
+
+fun_int_env_formula_inla <- function(x = NULL) {
+  tar_load(c(tps_var, log_rich_var))
+
+  if (x %in% tps_var) {
+    return(get_formula_inla_tps(resp = x))
+  } else if (x %in% log_rich_var) {
+    return(get_formula_inla_no_tps(resp = x))
+  } else if (x == "log_total_abundance") {
+    return(get_formula_inla_abun(resp = x))
+  } else {
+    stop("no defined variables")
+  }
+}
+

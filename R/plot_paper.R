@@ -132,7 +132,9 @@ plot_model_comp_interaction <- function(
   p3 <- mod_comp_df %>%
     filter(facet == "dbl_interaction") %>%
     ggplot(
-      aes(y = Parameter, x = Coefficient, color = response,
+      aes(
+        y = Parameter, x = Coefficient,
+        color = response,
         xmin = CI_low, xmax = CI_high)
       ) +
     geom_vline(xintercept = 0) +
