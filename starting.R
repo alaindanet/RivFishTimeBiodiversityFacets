@@ -208,3 +208,4 @@ use_rmd("xxb-conceptual-figures")
 
 # Lise
 use_rmd("lise")
+usethis::use_git_ignore("doc/lise*")

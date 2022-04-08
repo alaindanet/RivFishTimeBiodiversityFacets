@@ -15,3 +15,4 @@ draft.R
 *.pdf
 *_cache/
 for_lise
+doc/lise*

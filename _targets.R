@@ -1212,6 +1212,29 @@ tar_target(random_effect_self_c,
       #) %>%
   #select(-mod)
 #),
+tar_target(mod_sampling_eff,
+  glmmTMB::glmmTMB(
+    formula = raw_chao_richness_ratio ~
+      log1_year_nb * riv_str_rc1 +
+      log1_year_nb * hft_ix_c93 +
+      log1_year_nb * hft_ix_c9309_log2_ratio +
+      log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+      log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+      log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
+      (0 + log1_year_nb | siteid),
+    data = modelling_data %>%
+      mutate(raw_chao_richness_ratio = species_nb / chao_richness),
+    family = gaussian(link = "identity"),
+    offset = NULL,
+    ziformula = ~0,
+    dispformula = ~1)
+  ),
+  tar_target(comp_samp_eff,
+  compare_parameters(
+    list(sampling_effort = mod_sampling_eff,
+         log_chao_richness = gaussian_int_env[gaussian_int_env$response == "log_chao_richness", ]$mod[[1]]),
+    standardize = "refit")
+),
   tar_target(clust_var,
     c("log_total_abundance", "log_chao_richness",
       "jaccard_dis_scaled", "hillebrand_dis_scaled",
