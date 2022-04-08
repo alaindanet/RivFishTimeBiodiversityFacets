@@ -936,7 +936,7 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
-  target(main_effect_var,
+  tar_target(main_effect_var,
     names(get_model_term_replacement())[
       !str_detect(
         names(get_model_term_replacement()),
