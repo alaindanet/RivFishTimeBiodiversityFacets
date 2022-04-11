@@ -23,11 +23,12 @@ plot_model_comp_coeff <- function(model_list = NULL) {
 #                            INLA                             #
 ###########################################################################
 
-plot_credible_interval <- function (model = NULL) {
+plot_credible_interval <- function (dataset) {
 
   # Borrowed from
   # https://github.com/roelvanklink/Final-insect-abundance-changes/blob/master/Full%20INLA%20analysis%20FINAL%20cleaned%2020191230.R 
-  ggplot(data.frame(ABSlope)) +
+  dataset %>%
+  ggplot() +
     geom_errorbar(aes(x = Unit, ymin = X0.025quant, ymax = X0.975quant, color = Realm),
       alpha = 0.5,
       size = 1, width = 0, position = position_dodge(width = 0.7)
@@ -44,9 +45,9 @@ plot_credible_interval <- function (model = NULL) {
       size = 2.5, position = position_dodge(width = 0.7),
       color = "black", fill = "black", alpha = 1
     ) +
-    scale_color_manual(values = col.scheme.realm) +
-    scale_fill_manual(values = col.scheme.realm) +
-    scale_shape_manual(values = shps) +
+    #scale_color_manual(values = col.scheme.realm) +
+    #scale_fill_manual(values = col.scheme.realm) +
+    #scale_shape_manual(values = shps) +
     geom_hline(yintercept = 0, linetype = "dashed") +
     coord_flip()
 

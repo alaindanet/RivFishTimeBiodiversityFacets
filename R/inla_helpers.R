@@ -22,8 +22,10 @@ get_hpdmarginal_inla <- function(
 
   if (type == "fixed") {
     m <- inla_mod$marginals.fixed
+    mi <- inla_mod$summary.fixed
   } else if (type == "rand") {
     m <- inla_mod$marginals.hyperpar
+    mi <- inla_mod$summary.hyperpar
   }
   output <- map_dfr(m,
     ~inla.hpdmarginal(marginal = .x, p = c(.80, .90, 0.95)) %>%
@@ -32,12 +34,22 @@ get_hpdmarginal_inla <- function(
   .id = "term"
   )
 
+  ## Add mean
+  output <- output %>%
+    left_join(
+      mi%>%
+        rownames_to_column("term") %>%
+        as_tibble %>%
+        select(term, mean),
+      by = "term"
+    )
+ 
+
   if (type == "rand") {
     output[c("low", "high")] <- map(output[c("low", "high")], tau_to_sigma)
   }
 
   return(output)
-
 }
 
 plot_uniform_quantile_inla <- function(mod_inla = NULL) {
