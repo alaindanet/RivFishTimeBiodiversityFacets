@@ -1,0 +1,278 @@
+---
+title: "Untitled Draft"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+## target knits Rmds in their own session, so load libraries here.
+## source("here::here(packages.R"))
+```
+
+```{r load-targets, include=FALSE}
+# tar_load(c(target_1, target_2, target_3))
+
+# # If your chunk output is shown in-line, then you'll need to wrap tar_load()
+# # like so:
+# 
+# withr::with_dir(here::here(), {
+#   tar_load(c(target_1, target_2, target_3))
+# })
+# 
+# # This is not needed when using tar_make() to render the document.
+```
+
+## 
+
+```{r}
+prec.prior <- list(prec = list(param = c(0.001, 0.001)))
+data(sleepstudy, package = "lme4")
+tmb_sleep <- glmmTMB(
+  Reaction ~ Days +
+  (1 | Subject),
+data = sleepstudy)
+diagnose(tmb_sleep)
+inla_mod_sleep <- inla(
+  Reaction ~ Days +
+    f(Subject, model = 'iid'),
+  data = sleepstudy)
+
+broom.mixed::tidy(tmb_sleep)
+1 / sqrt(inla_mod_sleep$summary.hyperpar)
+inla_mod_sleep$summary.fixed
+```
+
+
+### With random slope only 
+
+```{r}
+data(sleepstudy, package = "lme4")
+tmb_sleep <- glmmTMB(
+  Reaction ~ Days +
+  (0 + Days | Subject),
+data = sleepstudy)
+diagnose(tmb_sleep)
+inla_mod_sleep <- inla(
+  Reaction ~ Days +
+    f(Subject, Days, model = 'iid'),
+  data = sleepstudy)
+
+broom.mixed::tidy(tmb_sleep)
+1 / sqrt(inla_mod_sleep$summary.hyperpar)
+inla_mod_sleep$summary.fixed
+```
+
+### With random slope and intercept
+
+```{r}
+tmb_sleep <- glmmTMB(
+  Reaction ~ Days +
+  (1 + Days | Subject),
+data = sleepstudy)
+broom.mixed::tidy(tmb_sleep)[, c("effect", "group", "term", "estimate")]
+diagnose(tmb_sleep)
+
+inla_mod_sleep_copy_subject <- inla(
+  Reaction ~ Days +
+    f(Subject1, model = 'iid') +
+    f(Subject, Days, model = 'iid', hyper = prec.prior),
+  data = sleepstudy %>%
+    mutate(Subject1 = Subject)
+)
+
+inla_mod_sleep_copy_subject_factor <- inla(
+  Reaction ~ Days +
+    f(Subject, model = 'iid') +
+    f(Subject1, Days, model = 'iid', hyper = prec.prior),
+  data = sleepstudy %>%
+    mutate(Subject1 = Subject)
+)
+
+inla_mod_sleep_id_subject_factor <- inla(
+  Reaction ~ Days +
+    f(Subject, model = 'iid') +
+    f(Subject1, Days, model = 'iid', hyper = prec.prior),
+  data = sleepstudy %>%
+    mutate(Subject1 = as.factor(paste0("Subject", as.character(Subject))))
+)
+
+inla_mod_sleep_id_subject <- inla(
+  Reaction ~ Days +
+    f(Subject1, model = 'iid') +
+    f(Subject, Days, model = 'iid', hyper = prec.prior),
+  data = sleepstudy %>%
+    mutate(Subject1 = paste0("Subject", Subject))
+)
+
+broom.mixed::tidy(tmb_sleep)[, c("effect", "group", "term", "estimate")]
+1 / sqrt(inla_mod_sleep_copy_subject$summary.hyperpar[, "mean"])
+1 / sqrt(inla_mod_sleep_copy_subject$summary.hyperpar)
+1 / sqrt(inla_mod_sleep_copy_subject_factor$summary.hyperpar[, "mean"])
+1 / sqrt(inla_mod_sleep_id_subject_factor$summary.hyperpar[, "mean"])
+1 / sqrt(inla_mod_sleep_id_subject$summary.hyperpar[, "mean"])
+```
+
+```{r}
+data(eggs, package = "faraway")
+summary(eggs)
+```
+As much lines than obs: one colum for each effect: 
+
+```{r}
+library(reprex)
+library(glmmTMB)
+library(INLA)
+# Example from https://becarioprecario.bitbucket.io/inla-gitbook/ch-multilevel.html#multilevel-models-with-random-effects
+data(eggs, package = "faraway")
+summary(eggs)
+
+glmeggs <- glmmTMB(
+  Fat ~ 1 +
+  (1 | Lab + Lab:Technician + Lab:Technician:Sample),
+  data = eggs)
+
+Zlt <- as(model.matrix( ~ 0 + Lab:Technician, data = eggs), "Matrix")
+Zlt
+Zlts <- as(model.matrix( ~ 0 + Lab:Technician:Sample, data = eggs), "Matrix")
+Zlts
+
+# Index for lab:techinician
+eggs$IDt <- 1:nrow(eggs)
+# Index for lab:technician:sample
+eggs$IDts <- 1:nrow(eggs)
+
+inla.eggs <- inla(Fat ~ 1 +
+  f(Lab, model = "iid") +
+  f(IDts, model = "z", Z = Zlts) +
+  f(IDt, model = "z", Z = Zlt),
+  data = eggs, control.predictor = list(compute = TRUE))
+
+inla.eggs2 <- inla(Fat ~ 1 +
+  f(Lab, model = "iid") +
+  f(Lab:Technician, model = "iid") +
+  f(Lab:Technician:Sample, model = "iid"),
+  data = eggs, control.predictor = list(compute = TRUE))
+
+broom.mixed::tidy(glmeggs)[, c("effect", "group", "term", "estimate")]
+round(1 / sqrt(inla.eggs$summary.hyperpar), 3)
+round(1 / sqrt(inla.eggs2$summary.hyperpar), 3)
+```
+
+```{r}
+inla.eggs_prior <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+    f(IDt, model = "z", Z = Zlt, hyper = prec.prior) +
+    f(IDts, model = "z", Z = Zlts, hyper = prec.prior),
+  data = eggs, control.predictor = list(compute = TRUE))
+
+inla.eggs_prior2 <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+  f(Lab:Technician, model = "iid", hyper = prec.prior) +
+  f(Lab:Technician:Sample, model = "iid", hyper = prec.prior),
+  data = eggs, control.predictor = list(compute = TRUE))
+round(1 / sqrt(inla.eggs_prior2$summary.hyperpar), 3)
+1 / (1 / sqrt(inla.eggs_prior2$summary.hyperpar))^2
+
+eggs$labtech <- as.factor(apply(Zlt, 1, function(x){names(x)[x == 1]}))
+eggs$labtechsamp <- as.factor(apply(Zlts, 1, function(x){names(x)[x == 1]}))
+
+ 
+inla.eggs_prior3 <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+  f(labtech, model = "iid", hyper = prec.prior) +
+  f(labtechsamp, model = "iid", hyper = prec.prior),
+  data = eggs, control.predictor = list(compute = TRUE))
+
+
+broom.mixed::tidy(glmeggs)[, c("effect", "group", "term", "estimate")]
+round(1 / sqrt(inla.eggs_prior$summary.hyperpar), 3)
+round(1 / sqrt(inla.eggs_prior2$summary.hyperpar), 3)
+round(1 / sqrt(inla.eggs_prior3$summary.hyperpar), 3)
+```
+
+```{r}
+eggs$Lab
+eggs$labtech
+```
+```{r}
+inla.eggs_prior3 <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+  f(labtech, model = "iid", hyper = prec.prior) +
+  f(labtechsamp, model = "iid", hyper = prec.prior),
+  data = eggs %>%
+    mutate_at(c("Lab", "Technician", "Sample", "labtech", "labtechsamp"), as.character),
+  control.predictor = list(compute = TRUE)
+)
+ti <- eggs %>%
+    mutate_at(c("Lab", "labtech", "labtechsamp"), as.character)
+round(1 / sqrt(inla.eggs_prior3$summary.hyperpar), 3)
+```
+
+```{r}
+eggs2 <- eggs %>%
+  mutate(
+    labtechtest = paste0(Lab, ":", Technician),
+    labtechsamptest = paste0(Lab, ":", Technician, ":", Sample)
+  )
+inla.eggs_test_random <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+  f(labtechtest, model = "iid", hyper = prec.prior) +
+  f(labtechsamptest, model = "iid", hyper = prec.prior),
+  data = eggs2,
+  control.predictor = list(compute = TRUE)
+)
+
+broom.mixed::tidy(glmeggs)[, c("effect", "group", "term", "estimate")]
+round(1 / sqrt(inla.eggs_test_random$summary.hyperpar), 3)
+
+
+# N'importe quoi, should fail:
+eggs2 <- eggs %>%
+  mutate(
+    labtechtest = seq_len(nrow(eggs)),
+    labtechsamptest = LETTERS[seq_len(nrow(eggs))]
+  )
+inla.eggs_test_random2 <- inla(Fat ~ 1 +
+  f(Lab, model = "iid", hyper = prec.prior) +
+  f(labtechtest, model = "iid", hyper = prec.prior) +
+  f(labtechsamptest, model = "iid", hyper = prec.prior),
+  data = eggs2,
+  control.predictor = list(compute = TRUE)
+)
+# fail, good
+round(1 / sqrt(inla.eggs_test_random2$summary.hyperpar), 3)
+```
+
+
+```{r}
+
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
