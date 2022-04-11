@@ -624,6 +624,11 @@ tar_target(neutral_turnover,
         intercept_main_bassiteid = as.integer(as.factor(paste0("main_bas", main_bas, ":", "siteid", siteid))),
       )
       ),
+  tar_target(modelling_data_scaled, modelling_data %>%
+    mutate(
+      across(all_of(c(main_effect_var, facet_var)),
+        ~scale(., center = FALSE)[, 1])
+              )),
   tar_target(modelling_data_exo,
     get_modelling_data_exo(
       abun_rich = filtered_abun_rich_exo,
@@ -637,6 +642,11 @@ tar_target(neutral_turnover,
         intercept_main_bas = as.integer(as.factor(main_bas)),
         intercept_main_bassiteid = as.integer(as.factor(paste0("main_bas", main_bas, ":", "siteid", siteid))),
       )),
+  tar_target(modelling_data_exo_scaled, modelling_data_exo %>%
+    mutate(
+      across(all_of(c(main_effect_var, exo_resp_var)),
+        ~scale(., center = FALSE)[, 1])
+              )),
   tar_target(site_env,
     modelling_data %>%
       filter(siteid %in% row.names(site_no_drivers)) %>% 
@@ -943,7 +953,7 @@ tar_target(neutral_turnover,
     tibble(
       response = facet_var,
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var),
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = FALSE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
@@ -960,7 +970,7 @@ tar_target(neutral_turnover,
         )
         ),
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var, tau_prior = TRUE),
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = TRUE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             control.family = list(hyper = tau_prior),
@@ -985,12 +995,25 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data %>%
-              mutate(
-                across(all_of(c(main_effect_var, facet_var)),
-                  ~scale(., center = FALSE)[, 1])
-              )
-            )))
+            data = modelling_data_scaled)))
+      ),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_prior_std,
+    tibble(
+      response = facet_var,
+      tau_prior = list(
+        prec = list( prior="pc.prec", param =
+          # normally, should be three of the scaled values right? 
+          c(3*sd(modelling_data[[facet_var]]), 0.01)
+        )),
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            control.family = list(hyper = tau_prior),
+            verbose = F,
+            data = modelling_data_scaled))))
       ),
     pattern = map(facet_var)
     ),
@@ -1010,18 +1033,33 @@ tar_target(neutral_turnover,
     tibble(
       response = exo_resp_var,
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = exo_resp_var),
+            formula = fun_int_env_formula_inla(x = exo_resp_var, drivers = TRUE, tau_prior = TRUE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
+            control.family = list(hyper = tau_prior),
             verbose = F,
-            data = modelling_data %>%
-              mutate(
-                across(all_of(c(main_effect_var, exo_resp_var)),
-                  ~scale(., center = FALSE)[, 1])
-              )
-            )))
+            data = modelling_data_exo_scaled)))
       ),
     pattern = map(exo_resp_var)
+    ),
+  tar_target(gaussian_inla_exo_prior_std,
+    tibble(
+      response = exo_resp_var,
+      tau_prior = list(
+        prec = list( prior="pc.prec", param =
+          # normally, should be three of the scaled values right?
+          c(3*sd(modelling_data[[facet_var]]), 0.01)
+        )),
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            control.family = list(hyper = tau_prior),
+            verbose = F,
+            data = modelling_data_exo_scaled
+            )))
+      ),
+    pattern = map(facet_var)
     ),
   tar_target(gaussian_log_hft,
     tibble(
