@@ -25,12 +25,19 @@ get_hpdmarginal_inla <- function(
   } else if (type == "rand") {
     m <- inla_mod$marginals.hyperpar
   }
-  map_dfr(m,
+  output <- map_dfr(m,
     ~inla.hpdmarginal(marginal = .x, p = c(.80, .90, 0.95)) %>%
     as.data.frame() %>%
     rownames_to_column("ci_level"),
   .id = "term"
   )
+
+  if (type == "rand") {
+    output[c("low", "high")] <- map(output[c("low", "high")], tau_to_sigma)
+  }
+
+  return(output)
+
 }
 
 plot_uniform_quantile_inla <- function(mod_inla = NULL) {

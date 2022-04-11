@@ -961,6 +961,20 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_effects,
+    gaussian_inla %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
+    ),
   tar_target(gaussian_inla_prior,
     tibble(
       response = facet_var,
@@ -987,6 +1001,20 @@ tar_target(neutral_turnover,
       )
       ]
   ),
+  tar_target(gaussian_inla_prior_effects,
+    gaussian_inla_prior %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
+    ),
   tar_target(gaussian_inla_std,
     tibble(
       response = facet_var,
@@ -998,6 +1026,20 @@ tar_target(neutral_turnover,
             data = modelling_data_scaled)))
       ),
     pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_std_effects,
+    gaussian_inla_std %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
     ),
   tar_target(gaussian_inla_prior_std,
     tibble(
@@ -1013,9 +1055,23 @@ tar_target(neutral_turnover,
             control.predictor = list(link = 1, compute = T),
             control.family = list(hyper = tau_prior),
             verbose = F,
-            data = modelling_data_scaled))))
+            data = modelling_data_scaled)))
       ),
     pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_prior_std_effects,
+    gaussian_inla_prior_std %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
     ),
   tar_target(gaussian_inla_exo,
     tibble(
@@ -1028,6 +1084,20 @@ tar_target(neutral_turnover,
             data = modelling_data_exo
             )))),
     pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_exo_effects,
+    gaussian_inla_exo %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
     ),
   tar_target(gaussian_inla_exo_std,
     tibble(
@@ -1042,6 +1112,20 @@ tar_target(neutral_turnover,
       ),
     pattern = map(exo_resp_var)
     ),
+  tar_target(gaussian_inla_exo_std_effects,
+    gaussian_inla_exo_std %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x, type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
+    ),
   tar_target(gaussian_inla_exo_prior_std,
     tibble(
       response = exo_resp_var,
@@ -1051,7 +1135,8 @@ tar_target(neutral_turnover,
           c(3*sd(modelling_data[[facet_var]]), 0.01)
         )),
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = TRUE),
+            formula = fun_int_env_formula_inla(x = facet_var,
+              drivers = TRUE, tau_prior = TRUE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             control.family = list(hyper = tau_prior),
@@ -1060,6 +1145,22 @@ tar_target(neutral_turnover,
             )))
       ),
     pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_exo_prior_std_effects,
+    gaussian_inla_exo_prior_std %>%
+      mutate(
+        hpd_fixed = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x,
+            type = "fixed", p = c(.80, .90, .95))
+          ),
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(inla_mod = .x,
+            type = "rand", p = c(.80, .90, .95))
+          ),
+        ) %>%
+    select(-mod)
     ),
   tar_target(gaussian_log_hft,
     tibble(
