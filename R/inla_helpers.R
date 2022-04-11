@@ -52,41 +52,129 @@ tau_to_sigma <- function(x) {
   1 / sqrt(x)
 }
 
-get_formula_inla_no_tps <- function(resp = NULL) {
-  form <- paste0(resp,
-    "~
-    log1_year_nb + riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
+sigma_to_tau <- function(x) {
+  1 / (x^2)
+}
+
+get_formula_inla_no_tps <- function(resp = NULL, drivers = TRUE, tau_prior = NULL) {
+
+  fixed_min <- "log1_year_nb"
+
+  if (drivers) {
+
+    fixed_part <- paste0(fixed_min, " + ",
+      "riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
+      log1_year_nb : riv_str_rc1 +
+      log1_year_nb : hft_ix_c93 +
+      log1_year_nb : hft_ix_c9309_log2_ratio +
+      log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+      log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+      log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio")
+  } else {
+    fixed_part <- fixed_min
+  }
+
+  if (!is.null(tau_prior)) {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid', hyper = ", tau_prior, ") +
+        f(main_bas1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ") +
+        f(intercept_main_bassiteid, model = 'iid', hyper = ", tau_prior, ") +
+        f(siteid1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ")"
+      )
+  } else {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid') +
+        f(main_bas1, log1_year_nb, model = 'iid') +
+        f(intercept_main_bassiteid, model = 'iid') +
+        f(siteid1, log1_year_nb, model = 'iid')")
+  }
+
+  form <- paste0(resp, " ~\n", fixed_part, " +\n", rand_part)
+  as.formula(form)
+}
+
+get_formula_inla_abun <- function(resp = NULL, drivers = TRUE, tau_prior = NULL) {
+
+  fixed_min <- "log1_year_nb + unitabundance + log1_year_nb : unitabundance "
+
+  if (drivers) {
+
+    fixed_part <- paste0(fixed_min, " + ",
+      "riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
     log1_year_nb : riv_str_rc1 +
     log1_year_nb : hft_ix_c93 +
     log1_year_nb : hft_ix_c9309_log2_ratio +
     log1_year_nb : riv_str_rc1 : hft_ix_c93 +
     log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
-    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
-    f(main_bas, log1_year_nb, model = 'iid') +
-    f(siteid:main_bas, log1_year_nb, model = 'iid')")
+    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio")
 
+  } else {
+    fixed_part <- fixed_min
+  }
+
+  if (!is.null(tau_prior)) {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid', hyper = ", tau_prior, ") +
+        f(main_bas1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ") +
+        f(intercept_main_bassiteid, model = 'iid', hyper = ", tau_prior, ") +
+        f(siteid1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ")"
+      )
+  } else {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid') +
+        f(main_bas1, log1_year_nb, model = 'iid') +
+        f(intercept_main_bassiteid, model = 'iid') +
+        f(siteid1, log1_year_nb, model = 'iid')")
+  }
+
+  form <- paste0(resp, " ~\n", fixed_part, " +\n", rand_part)
   as.formula(form)
 
 }
 
-get_formula_inla_abun <- function(resp = NULL) {
-  form <- paste0(resp,
-    "~ 
-    unitabundance +
-    log1_year_nb + riv_str_rc1 + hft_ix_c93 + hft_ix_c9309_log2_ratio +
-    log1_year_nb : unitabundance +
-    log1_year_nb : riv_str_rc1 +
-    log1_year_nb : hft_ix_c93 +
-    log1_year_nb : hft_ix_c9309_log2_ratio +
-    log1_year_nb : riv_str_rc1 : hft_ix_c93 +
-    log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
-    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
-    f(main_bas, log1_year_nb, model = 'iid') +
-    f(siteid:main_bas, log1_year_nb, model = 'iid')")
-  as.formula(form)
-}
+get_formula_inla_tps <- function(resp = NULL, drivers = TRUE, tau_prior = NULL) {
 
-get_formula_inla_tps <- function(resp = NULL) {
+  fixed_min <- "0 +
+    log1_year_nb"
+
+  if (drivers) {
+
+    fixed_part <- paste0(fixed_min, " + ",
+      " log1_year_nb : riv_str_rc1 +
+      log1_year_nb : hft_ix_c93 +
+      log1_year_nb : hft_ix_c9309_log2_ratio +
+      log1_year_nb : riv_str_rc1 : hft_ix_c93 +
+      log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
+      log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio")
+
+  } else {
+    fixed_part <- fixed_min
+  }
+
+  if (!is.null(tau_prior)) {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid', hyper = ", tau_prior, ") +
+        f(main_bas1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ") +
+        f(intercept_main_bassiteid, model = 'iid', hyper = ", tau_prior, ") +
+        f(siteid1, log1_year_nb, model = 'iid', hyper = ", tau_prior, ")"
+      )
+  } else {
+    rand_part <-
+      paste0(
+        "f(intercept_main_bas, model = 'iid') +
+        f(main_bas1, log1_year_nb, model = 'iid') +
+        f(intercept_main_bassiteid, model = 'iid') +
+        f(siteid1, log1_year_nb, model = 'iid')")
+  }
+
+  form <- paste0(resp, " ~\n", fixed_part, " +\n", rand_part)
+  as.formula(form)
+
   form <- paste0(resp,
     "~
     0 +
@@ -103,17 +191,52 @@ get_formula_inla_tps <- function(resp = NULL) {
   as.formula(form)
 }
 
-fun_int_env_formula_inla <- function(x = NULL) {
+fun_int_env_formula_inla <- function(x = NULL, drivers = TRUE, tau_prior = NULL) {
   tar_load(c(tps_var, log_rich_var))
 
   if (x %in% tps_var) {
-    return(get_formula_inla_tps(resp = x))
+    return(get_formula_inla_tps(resp = x, drivers = drivers, tau_prior = tau_prior))
   } else if (x %in% log_rich_var) {
-    return(get_formula_inla_no_tps(resp = x))
+    return(get_formula_inla_no_tps(resp = x, drivers = drivers, tau_prior = tau_prior))
   } else if (x == "log_total_abundance") {
-    return(get_formula_inla_abun(resp = x))
+    return(get_formula_inla_abun(resp = x, drivers = drivers, tau_prior = tau_prior))
   } else {
     stop("no defined variables")
   }
 }
 
+get_random_effect_inla <- function(
+  inla_mod = NULL,
+  effect = NULL,
+  exponentiate = FALSE) {
+
+  output <- inla_mod$summary.random[[effect]] %>%
+    as_tibble() %>%
+    rename(
+      quant0.025 = `0.025quant`,
+      quant0.975 = `0.975quant`,
+      quant0.5 = `0.5quant`
+    ) %>% 
+    select(-kld)
+
+  if (exponentiate) {
+    output <- output %>%
+      mutate(across(where(is.double), ~exp(. - 1)))
+  }
+
+  if (str_detect(effect, "siteid:main_bas")) {
+    colnames(output)[colnames(output) == "ID"] <- "siteid"
+  } else if (str_detect(effect, "main_bas")) {
+    colnames(output)[colnames(output) == "ID"] <- "main_bas"
+  }
+  return(output)
+}
+
+HC.prior  = "expression:
+  sigma = exp(-theta/2);
+  gamma = 25;
+  log_dens = log(2) - log(pi) - log(gamma);
+  log_dens = log_dens - log(1 + (sigma / gamma)^2);
+  log_dens = log_dens - log(2) - theta / 2;
+  return(log_dens);
+"
