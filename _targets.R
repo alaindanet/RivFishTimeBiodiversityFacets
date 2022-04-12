@@ -1093,7 +1093,7 @@ tar_target(neutral_turnover,
             verbose = F,
             data = modelling_data_exo
             )))),
-    pattern = map(facet_var)
+    pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_effects,
     gaussian_inla_exo %>%
@@ -1154,7 +1154,7 @@ tar_target(neutral_turnover,
             data = modelling_data_exo_scaled
             )))
       ),
-    pattern = map(facet_var)
+    pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_prior_std_effects,
     gaussian_inla_exo_prior_std %>%
