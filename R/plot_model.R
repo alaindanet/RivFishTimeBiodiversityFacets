@@ -116,3 +116,99 @@ plot_posterior_fixed <- function(inla_mod = NULL, scales = "free", ncol = 4) {
     labs(x = expression(beta), y = expression(paste("P(", beta, " | Data)")))
 }
 
+plot_inla_fixed_effect <- function(
+  dataset = NULL,
+  xaxis_title = FALSE,
+  yaxis_title = FALSE,
+  legend_present = FALSE
+  ) {
+
+  p <- dataset %>%
+  ggplot() +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_errorbar(
+    aes(y = term, x = mean,
+      xmin = low, xmax = high,
+      color = response,
+      size = width_bar, width = 0),
+    alpha = 0.5,
+    position = position_dodge(width = 0.7)
+    ) +
+  geom_point(aes(x = mean, y = term, color = response),
+    alpha = 1, size = 5,
+    position = position_dodge(width = 0.7)
+  )
+
+  if (!xaxis_title) {
+    p <- p +
+      theme(axis.title.x = element_blank())
+  }
+
+  if (!yaxis_title) {
+    p <- p +
+      theme(axis.title.y = element_blank())
+  }
+
+  if (!legend_present) {
+    p <- p +
+      theme(legend.position = "none")
+  }
+
+  return(p)
+}
+
+format_inla_model_list <- function(
+  x = gaussian_inla_prior_std,
+  response_to_skip = c(
+    "species_nb", "log_species_nb", "species_nb_tps_scaled",
+    "chao_richness_tps_scaled", "total_abundance",
+    "total_abundance_scaled", "total_abundance_tps"),
+  prob = c(.80, .90, .95)
+  ) {
+
+  x %>%
+    filter(!response %in% response_to_skip) %>%
+    mutate(
+      hpd_fixed = map(
+        mod,
+        ~get_hpdmarginal_inla(
+          inla_mod = .x,
+          type = "fixed",
+          p = prob
+          )
+        ),
+      hpd_random = map(
+        mod,
+        ~get_hpdmarginal_inla(
+          inla_mod = .x,
+          type = "rand",
+          p = prob
+        )
+      )
+      ) %>%
+    select(-mod) %>%
+    select(-hpd_random) %>%
+    unnest(hpd_fixed) %>%
+    mutate(
+      facet = case_when(
+        str_count(term, ":") == 1 ~ "interaction",
+        str_count(term, ":") == 2 ~ "dbl_interaction",
+        TRUE ~ "main"
+        ),
+      var_type = case_when(
+        response %in% c(
+          "log_total_abundance",
+          "log_chao_richness",
+          "perc_exo_sp",
+          "perc_exo_abun"
+          ) ~
+        "quantity",
+      TRUE ~ "dissimilarity"
+      ),
+    width_bar = case_when(
+      ci_level == "level:0.95"  ~ (1),
+      ci_level == "level:0.90"  ~ (2),
+      ci_level == "level:0.80"  ~ (3)
+    )) %>%
+    filter(!term %in% "(Intercept)", !str_detect(term, "unitabundance"))
+}
