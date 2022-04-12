@@ -949,6 +949,16 @@ tar_target(neutral_turnover,
       ),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_int_env_std,
+    tibble(
+      response = facet_var,
+      mod = list(try(glmmTMB(
+            formula = fun_int_env_formula(x = facet_var),
+            data = modelling_data_scaled,
+            family = gaussian(link = "identity"))))
+      ),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_inla,
     tibble(
       response = facet_var,
@@ -1177,8 +1187,7 @@ tar_target(neutral_turnover,
   tar_target(gaussian_int_env_comp_std,
     # Drop the main effect
     compare_parameters(
-      setNames(gaussian_int_env$mod, gaussian_int_env$response),
-      standardize = "refit")
+      setNames(gaussian_int_env_std$mod, gaussian_int_env_std$response))
     ),
   tar_target(mod_comp_std_df,
     gaussian_int_env_comp_std %>%

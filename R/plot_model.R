@@ -82,6 +82,23 @@ plot_posterior_gaussian_sd <- function(inla_mod = NULL) {
     labs(x = expression(sigma), y = expression(paste("P(", sigma, " | Data)")))
 }
 
+plot_posterior_random <- function(inla_mod = NULL, scales = "free", ncol = 4) {
+
+  hyper_tb <- inla_mod$marginals.hyperpar
+
+  dist_term <- purrr::map_dfr(hyper_tb,
+    ~inla.tmarginal(tau_to_sigma, .x) %>%
+    as_tibble(),
+  .id = "term")
+
+  dist_term %>%
+    mutate(term = str_replace_all(term, get_model_term_replacement())) %>%
+    ggplot(aes(x = x, y = y)) +
+    geom_line() +
+    facet_wrap(vars(term), ncol = ncol, scales = scales) +
+    labs(x = expression(sigma), y = expression(paste("P(", sigma, " | Data)")))
+}
+
 plot_posterior_fixed <- function(inla_mod = NULL, scales = "free", ncol = 4) {
 
   sum_fix <- inla_mod$marginals.fixed

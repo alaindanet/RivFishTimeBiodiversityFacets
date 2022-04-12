@@ -53,7 +53,7 @@ get_hpdmarginal_inla <- function(
 }
 
 plot_uniform_quantile_inla <- function(mod_inla = NULL) {
-  pit <- sort(ne$cpo$pit)
+  pit <- sort(mod_inla$cpo$pit)
 
   tb <- tibble(
     pit = pit,
