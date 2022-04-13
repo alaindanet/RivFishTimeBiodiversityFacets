@@ -215,7 +215,7 @@ fun_int_env_formula_inla <- function(x = NULL, drivers = TRUE, tau_prior = NULL)
 
   if (x %in% tps_var) {
     return(get_formula_inla_tps(resp = x, drivers = drivers, tau_prior = tau_prior))
-  } else if (x %in% log_rich_var) {
+  } else if (x %in% c(log_rich_var, "perc_exo_sp", "perc_exo_abun")) {
     return(get_formula_inla_no_tps(resp = x, drivers = drivers, tau_prior = tau_prior))
   } else if (x == "log_total_abundance") {
     return(get_formula_inla_abun(resp = x, drivers = drivers, tau_prior = tau_prior))

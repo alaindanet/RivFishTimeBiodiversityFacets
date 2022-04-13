@@ -12,8 +12,8 @@ tar_meta()
 tar_visnetwork()
 
 tar_make(names = meeting_report)
-tar_make(names = biodiversity_facets_support)
-tar_make(names = c(mod_exo_comp_std, mod_exo_comp))
+tar_make(names = gaussian_inla_exo_prior_std)
+tar_make(names = starts_with("gaussian_inla_exo_prior"))
 
 source(file = "start_rmd.R")
 tar_load(rigal_slp_df)

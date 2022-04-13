@@ -1021,7 +1021,7 @@ tar_target(neutral_turnover,
       tau_prior = list(
         prec = list(prior = "pc.prec", param =
           # normally, should be three of the scaled values right? 
-          c(3 * sd(modelling_data[[facet_var]]), 0.01)
+          c(3 * sd(modelling_data_scaled[[facet_var]]), 0.01)
         )),
       mod = list(try(inla(
             formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = TRUE),
@@ -1070,10 +1070,10 @@ tar_target(neutral_turnover,
       tau_prior = list(
         prec = list( prior="pc.prec", param =
           # normally, should be three of the scaled values right?
-          c(3*sd(modelling_data[[facet_var]]), 0.01)
+          c(3*sd(modelling_data_exo_scaled[[exo_resp_var]]), 0.01)
         )),
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var,
+            formula = fun_int_env_formula_inla(x = exo_resp_var,
               drivers = TRUE, tau_prior = TRUE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
