@@ -954,17 +954,36 @@ men_audens <- measurement_exo %>%
   distinct(siteid, fishbase_name, native_exotic_status)
 loc_site
 
-ti <- 
-it <- problems(ti)
+data(us_states, package = "spData")
+# Get abbreviations
+states_abb <- c(setNames(state.abb, state.name), "District of Columbia" = "DC")
 
-ti[34, 16]
+us_rft_site <- site_desc_loc %>%
+  filter(country == "USA") %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs = st_crs(us_states)) %>%
+  st_buffer(dist = .1)
+ 
+states_sites_mat <- st_intersects(us_rft_site, us_states)
+
+states_sites <- tibble(
+  site = us_rft_site$siteid,
+  region = purrr::map_chr(states_sites_mat, ~ifelse(length(.x) == 0, NA,
+      us_states$NAME[.x])),
+  region_abb = states_abb[region]
+)
+
+tar_load(occ_exotic_us)
+occ_exotic_us %>%
+  clean_names() %>%
+  select(scientific_name, state_province, basis_of_record, establishment_means) %>%
+  distinct(scientific_name, state_province)
 
 
-library(maps)
-library(mapdata)
-state <- map_data("state") %>%
-  st_as_sf(coords = c("long", "lat"), crs = 4326)
-st_within()
+
+
+
+plot(st_geometry(state))
 df_men_audens <- tibble(
   "Menidia audens" = c("AL", "CA", "KY", "OK", "TN")
 )
