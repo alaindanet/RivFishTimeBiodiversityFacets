@@ -194,20 +194,6 @@ get_formula_inla_tps <- function(resp = NULL, drivers = TRUE, tau_prior = NULL) 
   form <- paste0(resp, " ~\n", fixed_part, " +\n", rand_part)
   as.formula(form)
 
-  form <- paste0(resp,
-    "~
-    0 +
-    log1_year_nb +
-    log1_year_nb : riv_str_rc1 +
-    log1_year_nb : hft_ix_c93 +
-    log1_year_nb : hft_ix_c9309_log2_ratio +
-    log1_year_nb : riv_str_rc1 : hft_ix_c93 +
-    log1_year_nb : riv_str_rc1 : hft_ix_c9309_log2_ratio +
-    log1_year_nb : hft_ix_c93 : hft_ix_c9309_log2_ratio +
-    f(main_bas, log1_year_nb, model = 'iid') +
-    f(siteid:main_bas, log1_year_nb, model = 'iid')"
-  )
-  as.formula(form)
 }
 
 fun_int_env_formula_inla <- function(x = NULL, drivers = TRUE, tau_prior = NULL) {
