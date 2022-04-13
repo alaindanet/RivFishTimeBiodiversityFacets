@@ -47,7 +47,9 @@ list(
     R.utils::filePath(
       here("inst", "extdata", "USGSNonindigenousAquaticSpeciesdatabase",
         "occurrence.txt"),
-    expandLinks = "any")),
+    expandLinks = "any") %>%
+    normalizePath(),
+    format = "file"),
   tar_target(timeseries,
     load_time_series_data(raw_data_file)
     ),

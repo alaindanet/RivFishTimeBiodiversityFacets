@@ -5,14 +5,15 @@ tar_make()
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 24),
-  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps", "pred_gaussian", "filtered_data_watch", "trends_report")
+  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps",
+             "pred_gaussian", "filtered_data_watch", "trends_report")
   )
 
 tar_meta()
 tar_visnetwork()
 
 tar_make(names = meeting_report)
-tar_make(names = gaussian_inla_exo_prior_std)
+tar_make(names = occ_exotic_us_file)
 tar_make(names = starts_with("gaussian_inla_exo_prior"))
 
 source(file = "start_rmd.R")

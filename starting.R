@@ -33,7 +33,7 @@ machine_login <- Sys.info()["login"]
 if (machine_login == "alain") {
   server_mounted_location <- "/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/" 
 } else if (machine_login == "ahdanet") {
-  server_mounted_location <- "L://"
+  server_mounted_location <- "L:/"
 }
 
 # Local storage dir:
@@ -249,4 +249,3 @@ R.utils::createLink(
   method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
   overwrite = TRUE
 )
-
