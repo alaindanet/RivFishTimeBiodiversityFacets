@@ -43,6 +43,11 @@ list(
     R.utils::filePath(here("inst", "extdata", "Tedesco_2017", "Occurrence_Table_12092019.csv"),
     expandLinks = "any")
     ),
+  tar_target(occ_exotic_us_file,
+    R.utils::filePath(
+      here("inst", "extdata", "USGSNonindigenousAquaticSpeciesdatabase",
+        "occurrence.txt"),
+    expandLinks = "any")),
   tar_target(timeseries,
     load_time_series_data(raw_data_file)
     ),
@@ -52,6 +57,7 @@ list(
     janitor::clean_names() %>%
     rename_with(~str_remove(.x, "^x\\d_")) %>%
     mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))),
+  tar_target(occ_exotic_us, readr::read_tsv(occ_exotic_us_file)),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
       clean_names()

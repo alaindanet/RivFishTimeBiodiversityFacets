@@ -209,4 +209,44 @@ use_rmd("xxb-conceptual-figures")
 # Lise
 use_rmd("lise")
 usethis::use_git_ignore("doc/lise*")
+###################
+
 use_rmd("inla_play")
+
+dir_lise <- paste0(server_mounted_location, "alain/RivFishTimeBiodiversityFacets/for_lise/")
+files <- list.files(dir_lise)[stringr::str_detect(list.files(dir_lise), "Comments")]
+# Lise comments on invasive data
+links <- here("inst", "extdata", files)
+targets <- paste0(dir_lise, files)
+for (i in seq_along(files)) {
+  R.utils::createLink(
+    link = links[i],
+    target = targets[i],
+    method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
+    overwrite = TRUE
+  )
+}
+
+######################
+#  USGS exotic data  #
+######################
+# Download water temperature data
+exo_url <- "https://nas.er.usgs.gov/ipt/archive.do?r=nas&v=1.236"
+destfile_exo <- "L:/ENV_LAYERS/USGSNonindigenousAquaticSpeciesdatabase.zip"
+download.file(
+  url = exo_url,
+  destfile = destfile_exo,
+  method = "auto",
+  quiet = FALSE,
+  mode = "wb",
+  cacheOK = TRUE
+)
+unzip(destfile_exo, exdir = sub(".zip", "", destfile_exo))
+
+R.utils::createLink(
+  link = here("inst", "extdata", "USGSNonindigenousAquaticSpeciesdatabase"),
+  target = paste0(server_mounted_location, "ENV_LAYERS/USGSNonindigenousAquaticSpeciesdatabase"),
+  method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
+  overwrite = TRUE
+)
+

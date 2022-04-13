@@ -932,6 +932,49 @@ meas_exo %>%
 ```
 
 
+## check native exotic data
+
+```{r}
+files <- list.files(here("inst", "extdata"))
+lise_comments_file <- files[stringr::str_detect(files, "Comments")]
+
+lise <- readxl::read_excel(here("inst", "extdata", lise_comments_file))
+lise %>%
+  select(fishbase_name, country, ...5) %>%
+  filter(!is.na(...5))
+```
+
+```{r}
+tar_load(measurement_exo)
+tar_load(site_desc_loc)
+
+men_audens <- measurement_exo %>%
+  select(siteid, fishbase_name, native_exotic_status) %>%
+  filter(fishbase_name == "Menidia audens") %>%
+  distinct(siteid, fishbase_name, native_exotic_status)
+loc_site
+
+ti <- 
+it <- problems(ti)
+
+ti[34, 16]
+
+
+library(maps)
+library(mapdata)
+state <- map_data("state") %>%
+  st_as_sf(coords = c("long", "lat"), crs = 4326)
+st_within()
+df_men_audens <- tibble(
+  "Menidia audens" = c("AL", "CA", "KY", "OK", "TN")
+)
+```
+
+
+- Menidia audens: 
+- Leucaspius delineatus: know to be native in France but introduced in Belgium and Switzerland: [https://www.fishbase.de/Country/CountryList.php?ID=4782&GenusName=Leucaspius&SpeciesName=delineatus](fishbase)
+
+
 
 
 
