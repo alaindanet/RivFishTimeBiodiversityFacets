@@ -146,7 +146,7 @@ filter_op <- function(
   op_protocol$quarter <- as.integer(op_protocol$quarter)
 
   # Remove sampling without month or quarter
-  mask_month_quarter <- !is.na(op_protocol$month) &
+  mask_month_quarter <- !is.na(op_protocol$month) |
     !is.na(op_protocol$quarter)
   op_protocol <- op_protocol[mask_month_quarter, ]
   # Remove NA unit of abundance or protocol
@@ -168,7 +168,7 @@ filter_op <- function(
     map_chr(data, ~get_unique_values_c(.x$protocol))
   stopifnot(all(unique_protocol_site != "no_unique"))
 
-  # Filter samplings based on the month 
+  # Filter samplings based on the month
 
   ## get time of fishing
   timing_fishing <- op_protocol %>%
