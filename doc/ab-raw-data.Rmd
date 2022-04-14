@@ -952,38 +952,7 @@ men_audens <- measurement_exo %>%
   select(siteid, fishbase_name, native_exotic_status) %>%
   filter(fishbase_name == "Menidia audens") %>%
   distinct(siteid, fishbase_name, native_exotic_status)
-loc_site
 
-data(us_states, package = "spData")
-# Get abbreviations
-states_abb <- c(setNames(state.abb, state.name), "District of Columbia" = "DC")
-
-us_rft_site <- site_desc_loc %>%
-  filter(country == "USA") %>%
-  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
-  st_transform(crs = st_crs(us_states)) %>%
-  st_buffer(dist = .1)
- 
-states_sites_mat <- st_intersects(us_rft_site, us_states)
-
-states_sites <- tibble(
-  site = us_rft_site$siteid,
-  region = purrr::map_chr(states_sites_mat, ~ifelse(length(.x) == 0, NA,
-      us_states$NAME[.x])),
-  region_abb = states_abb[region]
-)
-
-tar_load(occ_exotic_us)
-occ_exotic_us %>%
-  clean_names() %>%
-  select(scientific_name, state_province, basis_of_record, establishment_means) %>%
-  distinct(scientific_name, state_province)
-
-
-
-
-
-plot(st_geometry(state))
 df_men_audens <- tibble(
   "Menidia audens" = c("AL", "CA", "KY", "OK", "TN")
 )
@@ -993,9 +962,31 @@ df_men_audens <- tibble(
 - Menidia audens: 
 - Leucaspius delineatus: know to be native in France but introduced in Belgium and Switzerland: [https://www.fishbase.de/Country/CountryList.php?ID=4782&GenusName=Leucaspius&SpeciesName=delineatus](fishbase)
 
+- Get state and species:
 
+```{r}
+tar_load(occ_exotic_us)
 
+# Occurrence status are pretty equivalent for our classification: if those
+# fishes are present in a given state in our data, they should be considered as
+# exotic.
+unique(ti$occurrence_status)
+```
 
+```{r}
+# Looks that we miss sub species and hybrid but that is fine
+tar_load(occ_exotic_us_fishbase)
+occ_exotic_us_fishbase  %>%
+  filter(is.na(fishbase_name))
+
+# keep species states
+us_non_tedesco_occ_exotic %>%
+  filter(!is.na(native_exotic_status_nas)) %>%
+  select(fishbase_name, provided_name, region_abb, native_exotic_status,
+    native_exotic_status_nas)
+measurement_exo %>%
+  filter(native_exotic_origin == "usgs")
+```
 
 # Misc
 

@@ -249,3 +249,10 @@ R.utils::createLink(
   method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
   overwrite = TRUE
 )
+
+# For katie
+tar_load(at_mv_avg_roll)
+
+ti <- at_mv_avg_roll
+write_csv(ti, "~/Documents/post-these/isu/sYNGEO_Func_Sync_V2/input_data/Env/mv_avg_roll_air_tmp.csv")
+
