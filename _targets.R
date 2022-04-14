@@ -59,7 +59,21 @@ list(
     janitor::clean_names() %>%
     rename_with(~str_remove(.x, "^x\\d_")) %>%
     mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))),
-  tar_target(occ_exotic_us, readr::read_tsv(occ_exotic_us_file) %>% janitor::clean_names()),
+  tar_target(occ_exotic_us,
+    readr::read_tsv(occ_exotic_us_file) %>%
+      clean_names() %>%
+      # Keep fishes only (there are also plants, amphibian...)
+      filter(order %in% na.omit(unique(rfishbase::load_taxa()$Order))) %>%
+      distinct(scientific_name, state_province) %>%
+      mutate(native_exotic_status_usgs = "exotic")
+    ),
+  tar_target(occ_exotic_us_fishbase,
+    get_usgs_species_status(
+      meas_exo = measurement_exo %>%
+        filter(native_exotic_origin != "tedesco", country == "USA"),
+      usgs_data = occ_exotic_us,
+      us_states_site = us_states_site
+      )),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
       clean_names()
@@ -73,7 +87,13 @@ list(
     complete_native_exotic_data(
       meas = .,
       loc = site_desc_loc
-    )),
+    ) %>%
+    add_usgs_data_to_measurement_exo(
+      meas_exo = .,
+      us_states_site = us_states_site,
+      occ_exotic_us_meas_exo = occ_exotic_us_meas_exo
+    )
+    ),
   tar_target(abun_rich_exo,
     get_abun_rich_exo(measurement_exo = measurement_exo)
     ),
@@ -475,8 +495,9 @@ tar_target(neutral_turnover,
     match_tedesco_basin_site(
       site = world_site_sf$site,
       basin = basin_tedesco
-      )
-  ),
+      )),
+  tar_target(us_states_site,
+    get_site_us_states(site_desc_loc = site_desc_loc)),
   tar_target(riveratlas_total,
     get_full_riveratlas(
       river_shp_files = map_chr(riveratlas_shp_files,

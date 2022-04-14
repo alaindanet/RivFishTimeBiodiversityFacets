@@ -385,3 +385,105 @@ match_tedesco_basin_site <- function(
 
   return(site_basin)
 }
+
+get_site_us_states <- function(site_desc_loc = NULL) {
+
+  data(us_states, package = "spData")
+  # Get abbreviations
+  states_abb <- c(setNames(state.abb, state.name), "District of Columbia" = "DC")
+
+  us_rft_site <- site_desc_loc %>%
+    filter(country == "USA") %>%
+    st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+    st_transform(crs = st_crs(us_states)) %>%
+    st_buffer(dist = .1)
+
+  states_sites_mat <- st_intersects(us_rft_site, us_states)
+
+  states_sites <- tibble(
+    siteid = us_rft_site$siteid,
+    region = purrr::map_chr(states_sites_mat, ~ifelse(length(.x) == 0, NA,
+        us_states$NAME[.x])),
+    region_abb = states_abb[region]
+  )
+
+  return(states_sites)
+
+}
+
+get_usgs_species_status <- function(
+  meas_exo = measurement_exo %>%
+    filter(native_exotic_origin != "tedesco", country == "USA"),
+  usgs_data = occ_exotic_us,
+  us_states_site = us_states_site
+  ) {
+  us_non_tedesco_states <- meas_exo %>%
+  ## Add us states
+  left_join(us_states_site %>% select(siteid, region_abb),
+    by = "siteid") %>%
+  distinct(fishbase_name, region_abb, native_exotic_status)
+stopifnot(any(!is.na(us_non_tedesco_states$region_abb)))
+
+species_list_exo_us <- rfishbase::synonyms(
+  species_list = unique(usgs_data$scientific_name)) %>%
+  select(provided_name = synonym, fishbase_name = Species, comment = Status) %>%
+  as_tibble() %>%
+  filter(comment == "accepted name")
+
+# Add fishbase name to USGS data
+occ_exotic_us_fishbase <- usgs_data %>%
+  rename(provided_name = scientific_name) %>%
+  # Add species list
+  left_join(
+    species_list_exo_us %>%
+      select(-comment),
+    by = "provided_name"
+    ) %>%
+  select(provided_name, fishbase_name,
+    region_abb = state_province,
+    native_exotic_status_usgs)
+
+  # Add fishbase name to USGS data
+  occ_exotic_us_fishbase <- occ_exotic_us %>%
+    rename(provided_name = scientific_name) %>%
+    # Add species list
+    left_join(
+      species_list_exo_us %>%
+        select(-comment),
+      by = "provided_name"
+      ) %>%
+    select(provided_name, fishbase_name,
+      region_abb = state_province,
+      native_exotic_status_usgs)
+
+    return(occ_exotic_us_fishbase)
+
+}
+
+add_usgs_data_to_measurement_exo <- function(
+  meas_exo = NULL,
+  us_states_site = NULL,
+  occ_exotic_us_meas_exo = NULL
+  ) {
+
+  meas_exo %>%
+    left_join(
+      us_states_site %>% select(siteid, region_abb),
+      by = "siteid") %>%
+  left_join(us_non_tedesco_occ_exotic %>%
+    select(fishbase_name, region_abb, native_exotic_status_usgs),
+  by = c("fishbase_name", "region_abb")) %>%
+  mutate(
+    native_exotic_origin = ifelse(
+      country == "USA" & native_exotic_origin != "tedesco" &
+        !is.na(native_exotic_status_usgs), "usgs",
+      native_exotic_origin
+      ),
+    native_exotic_status = ifelse(
+      country == "USA" & native_exotic_origin != "tedesco" &
+        !is.na(native_exotic_status_usgs), native_exotic_status_usgs,
+      native_exotic_status
+      )) %>%
+  select(-native_exotic_status_usgs, - region_abb)
+
+}
