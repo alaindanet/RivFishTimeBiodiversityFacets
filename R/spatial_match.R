@@ -321,7 +321,7 @@ match_tedesco_basin_site <- function(
   FIN = "Finland", SWE = "Sweden", USA = "United States",
   FRA = "France", GBR = "United Kingdom", ESP = "Spain",
   AUS = "Australia", BEL = "Belgium", BWA = "Botswana",
-  NOR = "Norway", CAN = "Canada"
+  NOR = "Norway", CAN = "Canada", JPN = "Japan"
   )
 
   ) {

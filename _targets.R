@@ -59,7 +59,7 @@ list(
     janitor::clean_names() %>%
     rename_with(~str_remove(.x, "^x\\d_")) %>%
     mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))),
-  tar_target(occ_exotic_us, readr::read_tsv(occ_exotic_us_file)),
+  tar_target(occ_exotic_us, readr::read_tsv(occ_exotic_us_file) %>% janitor::clean_names()),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
       clean_names()

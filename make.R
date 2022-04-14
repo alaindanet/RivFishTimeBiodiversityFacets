@@ -15,6 +15,7 @@ tar_visnetwork()
 tar_make(names = meeting_report)
 tar_make(names = occ_exotic_us_file)
 tar_make(names = starts_with("gaussian_inla_exo_prior"))
+tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
 
 source(file = "start_rmd.R")
 tar_load(rigal_slp_df)
