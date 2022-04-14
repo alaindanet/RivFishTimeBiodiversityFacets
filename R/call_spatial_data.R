@@ -74,3 +74,17 @@ get_world_site_sf <- function(
     world = ne_countries(scale = "medium", returnclass = "sf")
   )
 }
+
+plot_site <- function(sites = NULL) {
+  tar_load(world_site_sf)
+
+  world_site_sf$world %>%
+    ggplot() +
+    geom_sf(color = NA) +
+    theme_void() +
+    geom_sf(data = world_site_sf$site %>%
+      filter(siteid %in% sites),
+    aes(color = siteid), size = 3
+    )
+
+}
