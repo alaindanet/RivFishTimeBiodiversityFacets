@@ -255,3 +255,16 @@ tar_load(at_mv_avg_roll)
 
 ti <- at_mv_avg_roll
 write_csv(ti, "~/Documents/post-these/isu/sYNGEO_Func_Sync_V2/input_data/Env/mv_avg_roll_air_tmp.csv")
+
+######################
+#  Updated database  #
+######################
+
+updated_database_file <- paste0(server_mounted_location, "RivFishTIME/updatedVersion/GlobalTimeSeries_time_series_updated_02120222.csv")
+
+R.utils::createLink(
+  link = here("inst", "extdata", "GlobalTimeSeries_time_series_updated_02120222.csv"),
+  target = updated_database_file,
+  method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
+  overwrite = TRUE
+)

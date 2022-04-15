@@ -50,6 +50,14 @@ list(
     expandLinks = "any") %>%
     normalizePath(),
     format = "file"),
+  tar_target(updated_rivfishtime_file,
+    here("inst", "extdata", "GlobalTimeSeries_time_series_updated_02120222.csv") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(updated_timeseries,
+    load_time_series_data(updated_rivfishtime_file)
+    ),
   tar_target(timeseries,
     load_time_series_data(raw_data_file)
     ),
