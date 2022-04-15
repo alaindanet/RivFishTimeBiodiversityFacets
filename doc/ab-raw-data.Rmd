@@ -396,6 +396,28 @@ pop_trends <- toy_dataset %>%
 pop_trends$p_pop
 ```
 
+### Look at Japan
+
+```{r}
+tar_load(filtered_dataset)
+filtered_dataset$location %>%
+  filter(country == "JPN")
+
+site_jpn <- filtered_dataset$location %>%
+  filter(country == "JPN") %>%
+  pull(siteid)
+
+filtered_dataset$abun_rich_op %>%
+  filter(siteid %in% sample(site_jpn, 6)) %>%
+  ggplot(aes(x = year, y = species_nb, color = siteid)) +
+  geom_line()
+
+filtered_dataset$abun_rich_op %>%
+  filter(siteid %in% sample(site_jpn, 6)) %>%
+  ggplot(aes(x = year, y = total_abundance, color = siteid)) +
+  geom_line()
+```
+
 # Environmental variables 
 
 The operation are too time consuming, so I set `eval = FALSE` from here. 

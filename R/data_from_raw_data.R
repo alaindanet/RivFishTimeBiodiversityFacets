@@ -328,7 +328,8 @@ complete_native_exotic_data <- function(
     "HUN" = "Hungary",
     "BRA" = "Brazil",
     "NOR" = "Norway",
-    "CAN" = "Canada"
+    "CAN" = "Canada",
+    "JPN" = "Japan"
   )
   # Check if missing country correspondence
   stopifnot(all(
@@ -412,6 +413,9 @@ complete_native_exotic_data <- function(
           country == "CIV" & species == "Hydrocynus vittatus" ~ "native",
           #https://fishesofaustralia.net.au/home/species/2693
           country == "AUS" & species == "Carassius carassius" ~ "introduced",
+          # Originated from South America but introduced in Asia:
+          #https://www.fishbase.se/Country/CountryList.php?ID=4751&GenusName=Geophagus&SpeciesName=brasiliensis
+          country == "AUS" & species == "Geophagus brasiliensis" ~ "introduced",
           country == "FRA" & species == "Alosa agone" ~ "native",
           # Native from eastern Europe but introduced in several countries of
           # northen Europe and western europe: 
@@ -456,7 +460,14 @@ complete_native_exotic_data <- function(
         ) %>%
       select(-native_exotic_status2, -native_exotic_origin2)
 
-    stopifnot(all(!is.na(completed_meas$native_exotic_status)))
+    
+    if(any(is.na(completed_meas$native_exotic_status))) {
+      print(completed_meas %>%
+              filter(is.na(native_exotic_status)) %>%
+              distinct(country, fishbase_name, native_exotic_origin)
+            )
+      stop("Missing species in the completed exotic species database")
+    }
 
     # Stick to two native exotic status 
 

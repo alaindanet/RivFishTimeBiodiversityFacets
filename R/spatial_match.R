@@ -326,6 +326,7 @@ match_tedesco_basin_site <- function(
 
   ) {
 
+  sf_use_s2(use_s2 = FALSE)
   within <- st_within(site, basin)
 
   exo_basin_site <- tibble(
