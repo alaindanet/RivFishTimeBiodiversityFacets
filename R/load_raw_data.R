@@ -2,8 +2,12 @@
 #'
 load_time_series_data <- function(path) {
 
-  output <- read_csv(path) %>%
+  output <- read_csv(path) 
+  
+  if ("...1" %in% colnames(output)) {
+    output <- output %>%
     select(-...1) #Remove dummy variables
+  }
 
   # Stop if parsing problems
   readr::stop_for_problems(output)

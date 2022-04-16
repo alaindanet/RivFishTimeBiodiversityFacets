@@ -4,7 +4,7 @@
 #' @return character vector
 get_var_localisation <- function () {
   c("latitude", "longitude", "province", "waterbody", "country", "region",
-    "ecoregion", "main_bas")
+    "ecoregion", "main_bas", "origin")
 }
 get_var_protocol <- function () {
   c("date", "year", "month", "quarter", "protocol",

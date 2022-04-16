@@ -268,3 +268,5 @@ R.utils::createLink(
   method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
   overwrite = TRUE
 )
+
+use_rmd(target_name = "ac-check-rivfishtime-update")

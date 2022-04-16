@@ -359,13 +359,27 @@ total_abundance_distribution %>%
   kable(., label = "tot-abun-dist", caption = "Distribution of total abundance
     by sampling event by unit of abundance")
 ```
+```{r}
+measurement %>%
+  left_join(op_protocol %>% select(op_id, unitabundance), by = "op_id") %>%
+  ggplot(aes(x = abundance)) +
+  geom_histogram() +
+  facet_wrap(facets = ~unitabundance, scales = "free_x")
+```
+
+```{r}
+measurement %>%
+  left_join(op_protocol %>% select(op_id, unitabundance), by = "op_id") %>%
+  filter(unitabundance == "Count", abundance > 10000)
+```
+
 
 # Trends
 
 ## Filter site
 
 - TODO:
-  - [] filter on month, quater 
+  - [] filter on month, quarter 
 
 - Keep the sites have been followed more than ten years
 

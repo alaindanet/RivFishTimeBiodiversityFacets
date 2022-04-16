@@ -1,0 +1,112 @@
+---
+title: "Untitled Draft"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+source(here::here("start_rmd.R"))
+## target knits Rmds in their own session, so load libraries here.
+## source(here::here("packages.R"))
+## if you want access to the functions you've written
+## lapply(list.files(here::here("./R"), full.names = TRUE), source)
+```
+
+```{r load-targets, include=FALSE}
+# tar_load(c(target_1, target_2, target_3))
+tar_load(c(updated_timeseries, timeseries))
+# # If your chunk output is shown in-line, then you'll need to wrap tar_load()
+# # like so:
+# 
+# withr::with_dir(here::here(), {
+#   tar_load(c(target_1, target_2, target_3))
+# })
+# 
+# # This is not needed when using tar_make() to render the document.
+```
+
+- Test origin of new data is Maris:
+
+```{r}
+up <- updated_timeseries %>%
+  filter(!op_id %in% unique(timeseries$op_id))
+
+identical(timeseries %>%
+            arrange(op_id, species),
+          updated_timeseries %>%
+            filter(origin != "MARIS") %>%
+            arrange(op_id, species)
+            )
+unique(up$origin)
+```
+
+```{r}
+maris <- updated_timeseries %>%
+  filter(origin == "MARIS")
+```
+
+```{r}
+maris_sf <- maris %>%
+  distinct(siteid, latitude, longitude) %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+
+data(us_states, package = "spData")
+us_states <- st_transform(us_states, crs = st_crs(maris_sf))
+
+us_states %>%
+  ggplot() +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = maris_sf, size = 1)
+  
+```
+
+- Filter the data:
+
+```{r}
+get_filtered_dataset(op_protocol = maris, type = "op")
+op_maris <- get_op_protocol(ts_data = maris, save_data = FALSE) 
+filtered_op_maris <- filter_op(
+    op_protocol = op_maris,
+    selected_protocol = NULL,
+    selected_abun_unit = NULL,
+    nb_sampling = 5,
+    span_min = 10,
+    extent_month = 1.5,
+    convert_month_to_date = TRUE,
+    return_no_filtered = FALSE
+    )
+```
+
+```{r}
+
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

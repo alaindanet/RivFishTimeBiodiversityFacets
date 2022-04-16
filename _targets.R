@@ -59,7 +59,8 @@ list(
     load_time_series_data(updated_rivfishtime_file)
     ),
   tar_target(timeseries,
-    load_time_series_data(raw_data_file)
+    #load_time_series_data(raw_data_file)
+    load_time_series_data(updated_rivfishtime_file)
     ),
   tar_target(occ_exotic,
     read_csv(occ_exotic_file,
@@ -505,7 +506,7 @@ tar_target(neutral_turnover,
       basin = basin_tedesco
       )),
   tar_target(us_states_site,
-    get_site_us_states(site_desc_loc = site_desc_loc)),
+             get_site_us_states(site_desc_loc = site_desc_loc)),
   tar_target(riveratlas_total,
     get_full_riveratlas(
       river_shp_files = map_chr(riveratlas_shp_files,
@@ -1615,7 +1616,7 @@ tar_target(mod_sampling_eff,
  tar_render(biodiversity_facets_support,
    here("doc/ag-biodiversity-facets-support.Rmd")),
  tar_render(ah_clust_tps,
-   here("doc/ah-clust-tps.Rmd"))
-
-
-                )
+   here("doc/ah-clust-tps.Rmd")),
+  tar_render(ac_check_rivfishtime_update,
+             here("doc/ac-check-rivfishtime-update.Rmd"))
+  )
