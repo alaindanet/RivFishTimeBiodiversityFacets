@@ -164,31 +164,38 @@ richness_file_plot_site_tbl <- get_file_plot_in_tbl(
 
 ```{r}
 loc2 <- loc %>%
-  select(siteid, protocol) %>%
+  select(siteid, origin) %>%
   left_join(abun_file_plot_site_tbl, by = "siteid") %>%
   left_join(richness_file_plot_site_tbl, by = "siteid")
 ```
 
 
-```{r, eval=FALSE}
-m <- mapView(loc2, zcol = "protocol",
-  popup = popupImage(loc2$file)
+```{r, eval=TRUE}
+m <- mapView(loc2, zcol = "origin",
+  popup = popupImage(
+          img = loc2$file,
+          src = "remote", embed = TRUE, width = 1000,height = 1000/2.5
+        )
 )
 mapshot(m, url = "map_abundance.html",
-  selfcontained = FALSE,
+  selfcontained = TRUE,
 )
 ```
 
 - Abundance: [open the map](./map_abundance.html)
 
 
-```{r, eval=FALSE}
-m2 <- mapView(loc2, zcol = "protocol",
-  popup = popupImage(loc2$richness)
+```{r, eval=TRUE}
+m2 <- mapView(loc2, zcol = "origin",
+  popup = popupImage(
+          img = loc2$richness,
+          src = "remote", embed = TRUE, width = 1000,height = 1000/2.5
+        )
 )
 mapshot(m2, url = "map_richness.html",
   selfcontained = FALSE
 )
+
 ```
 
 - Species richness: [open the map](./map_richness.html)
