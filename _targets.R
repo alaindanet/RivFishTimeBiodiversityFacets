@@ -667,7 +667,9 @@ tar_target(neutral_turnover,
     mutate(
       across(all_of(c(main_effect_var, facet_var)),
         ~scale(., center = FALSE)[, 1])
-              )),
+              ) %>%
+      mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])
+      ),
   tar_target(modelling_data_exo,
     get_modelling_data_exo(
       abun_rich = filtered_abun_rich_exo,
@@ -685,7 +687,8 @@ tar_target(neutral_turnover,
     mutate(
       across(all_of(c(main_effect_var, exo_resp_var)),
         ~scale(., center = FALSE)[, 1])
-              )),
+              ) %>%
+      mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])),
   tar_target(site_env,
     modelling_data %>%
       filter(siteid %in% row.names(site_no_drivers)) %>% 
