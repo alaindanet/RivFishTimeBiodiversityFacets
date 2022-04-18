@@ -475,3 +475,46 @@ add_usgs_data_to_measurement_exo <- function(
   select(-native_exotic_status_usgs, - region_abb)
 
 }
+
+test_spatial_autocorrelation_moran <- function(
+  models = gaussian_int_env,
+  model_data = modelling_data,
+  loc = filtered_dataset$location
+
+) {
+
+  sp_modelling_data  <- model_data %>%
+    left_join(
+      loc %>%
+        select(siteid, longitude, latitude),
+      by = "siteid"
+    )
+
+  sim_resid_mod <- expand.grid(
+    list(response = models$response, year_nb = unique(model_data$year_nb))
+    ) %>%
+  as_tibble() %>%
+  group_by(response) %>%
+  nest() %>%
+  mutate(
+    resid_sim = list(
+      DHARMa::simulateResiduals(
+        models[models$response == response, ]$mod[[1]]
+      )
+    )
+    sim_resid_mod %>%
+      unnest() %>%
+      mutate(
+        resid_year = map2(year_nb, resid_sim, function(d, r) {
+          recalculateResiduals(r, sel = sp_modelling_data$year_nb == d)
+      }),
+    test_sp_cor = map(year_nb, resid_year, 
+      ~testSpatialAutocorrelation(
+        .y,
+        x = sp_modelling_data[sp_modelling_data$year_nb == .x, ]$longitude,
+        y = sp_modelling_data[sp_modelling_data$year_nb == .x, ]$latitude,
+        plot = FALSE)
+    )
+      )
+
+}
