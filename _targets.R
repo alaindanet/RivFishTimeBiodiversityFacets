@@ -998,6 +998,12 @@ tar_target(neutral_turnover,
       ),
     pattern = map(facet_var)
     ),
+  tar_target(test_autocor_tmb,
+    test_spatial_autocorrelation_moran(
+      models = gaussian_int_env,
+      model_data = modelling_data,
+      loc = filtered_dataset$location
+  )),
   tar_target(gaussian_inla,
     tibble(
       response = facet_var,
