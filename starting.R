@@ -270,3 +270,5 @@ R.utils::createLink(
 )
 
 use_rmd(target_name = "ac-check-rivfishtime-update")
+
+usethis::use_git_ignore("doc/map_*")

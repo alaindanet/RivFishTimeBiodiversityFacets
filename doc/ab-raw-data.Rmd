@@ -16,7 +16,7 @@ library(rfishbase)
 ```{r load-targets, include=FALSE}
 tar_load(
   c(site_protocol_quanti, site_protocol_quali,
-    op_protocol, abun_rich_op)
+    op_protocol, abun_rich_op, filtered_dataset)
 )
 
 # # If your chunk output is shown in-line, then you'll need to wrap tar_load()
@@ -55,7 +55,7 @@ abun_rich_nested <- filtered_dataset$abun_rich_op %>%
   nest_by(siteid)
 
 library(furrr)
-plan(multisession, workers = 3)
+plan(multisession, workers = 24)
 future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
   function (x, y, ...) {
 
@@ -72,7 +72,7 @@ future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
 future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
   function (x, y, ...) {
 
-    png(paste0(dir_plot, "/species_nb_site_", y, ".png"), width = 500, height = 500*1/1.6)
+    png(paste0(dir_plot, "/tot_abun_", y, ".png"), width = 500, height = 500*1/1.6)
 
     p <- plot_community_data(
       dataset = x, y = "total_abundance", x = "year", title = y)
@@ -88,7 +88,6 @@ future_walk2(abun_rich_nested$data, abun_rich_nested$siteid,
 ```{r}
 library(mapview)
 library(leafpop)
-tar_load(filtered_dataset)
 ```
 
 ```{r}
@@ -148,16 +147,16 @@ get_file_plot_in_tbl <- function(
 }
 
 abun_file_plot_site_tbl <- get_file_plot_in_tbl(
-  directory = "fig/raw_data",
+  directory = dir_plot,
   str_file_to_match = "tot_abun",
-  regex_pattern = "S\\d+"
-
-)
+  regex_pattern = "S[\\d|A-Z]+"
+) %>%
+  rename(abun = file)
 
 richness_file_plot_site_tbl <- get_file_plot_in_tbl(
   directory = dir_plot,
   str_file_to_match = "species_nb",
-  regex_pattern = "S\\d+") %>%
+  regex_pattern = "S[\\d|A-Z]+") %>%
   rename(richness = file)
 
 ```
@@ -169,31 +168,74 @@ loc2 <- loc %>%
   left_join(richness_file_plot_site_tbl, by = "siteid")
 ```
 
+```{r, eval=FALSE}
+abun_rich_nested_rich <- abun_rich_nested %>%
+  filter(!siteid %in% richness_file_plot_site_tbl$siteid)
 
-```{r, eval=TRUE}
+library(furrr)
+plan(multisession, workers = 24)
+future_walk2(abun_rich_nested_rich$data, abun_rich_nested_rich$siteid,
+  function (x, y, ...) {
+
+    png(paste0(dir_plot, "/species_nb_site_", y, ".png"), width = 500, height = 500*1/1.6)
+
+    p <- plot_community_data(
+        dataset = x, y = "species_nb", x = "year", title = y)
+
+    print(p)
+
+    dev.off()
+  })
+
+abun_rich_nested_abun <- abun_rich_nested %>%
+  filter(!siteid %in% abun_file_plot_site_tbl$siteid)
+future_walk2(abun_rich_nested_abun$data, abun_rich_nested_abun$siteid,
+  function (x, y, ...) {
+
+    png(paste0(dir_plot, "/tot_abun_site_", y, ".png"), width = 500, height = 500*1/1.6)
+
+    p <- plot_community_data(
+      dataset = x, y = "total_abundance", x = "year", title = y)
+
+    print(p)
+
+    dev.off()
+  })
+```
+```{r}
+site_missing <- loc2 %>%
+  filter(is.na(abun))
+matcho <- str_detect(list.files(dir_plot), )
+list.files(dir_plot)[!matcho]
+all(macho)
+```
+
+
+
+```{r, eval=FALSE}
 m <- mapView(loc2, zcol = "origin",
   popup = popupImage(
-          img = loc2$file,
-          src = "remote", embed = TRUE, width = 1000,height = 1000/2.5
+          img = loc2$abun,
+          src = "remote", embed = TRUE
         )
 )
 mapshot(m, url = "map_abundance.html",
-  selfcontained = TRUE,
+  selfcontained = TRUE
 )
 ```
 
 - Abundance: [open the map](./map_abundance.html)
 
 
-```{r, eval=TRUE}
+```{r, eval=FALSE}
 m2 <- mapView(loc2, zcol = "origin",
   popup = popupImage(
           img = loc2$richness,
-          src = "remote", embed = TRUE, width = 1000,height = 1000/2.5
+          src = "remote", embed = TRUE
         )
 )
 mapshot(m2, url = "map_richness.html",
-  selfcontained = FALSE
+  selfcontained = TRUE 
 )
 
 ```
