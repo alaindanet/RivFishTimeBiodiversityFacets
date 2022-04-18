@@ -27,10 +27,21 @@ get_hpdmarginal_inla <- function(
     m <- inla_mod$marginals.hyperpar
     mi <- inla_mod$summary.hyperpar
   }
-  output <- map_dfr(m,
-    ~inla.hpdmarginal(marginal = .x, p = c(.80, .90, 0.95)) %>%
+  output <- map_dfr(m, function(x) {
+    if(!any(x == "Inf")) {
+      
+     inla.hpdmarginal(marginal = x, p = c(.80, .90, 0.95)) %>%
     as.data.frame() %>%
-    rownames_to_column("ci_level"),
+    rownames_to_column("ci_level")   
+    } else {
+      tibble(
+        ci_level = c("level:0.80", "level:0.90", "level:0.95"), 
+             low = NA,
+             high = NA)
+    }
+    
+  }
+,
   .id = "term"
   )
 

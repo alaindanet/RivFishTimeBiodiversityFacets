@@ -479,9 +479,7 @@ add_usgs_data_to_measurement_exo <- function(
 test_spatial_autocorrelation_moran <- function(
   models = gaussian_int_env,
   model_data = modelling_data,
-  loc = filtered_dataset$location
-
-) {
+  loc = filtered_dataset$location) {
 
   sp_modelling_data  <- model_data %>%
     left_join(
@@ -501,6 +499,7 @@ test_spatial_autocorrelation_moran <- function(
       DHARMa::simulateResiduals(
         models[models$response == response, ]$mod[[1]]
       )
+    )
     )
     sim_resid_mod %>%
       unnest() %>%
