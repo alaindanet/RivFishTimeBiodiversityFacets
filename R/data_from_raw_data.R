@@ -398,8 +398,6 @@ complete_native_exotic_data <- function(
           "autofishbase")) %>%
       mutate(
         status = case_when(
-          #https://www.fishbase.de/summary/Rutilus-rutilus.html
-          country == "USA" & species == "Rutilus rutilus" ~ "introduced",
           #https://www.gbif.org/species/5206976/metrics
           country == "CIV" & species == "Barbus chlorotaenia" ~ "introduced",
           # No mention found in the country, but in the neighbors country
@@ -433,7 +431,17 @@ complete_native_exotic_data <- function(
           # first reported in 2014
           country == "FRA" & species == "Neogobius fluviatilis" ~ "introduced",
           # European sport fish:
+          #https://www.fishbase.de/summary/Rutilus-rutilus.html
           country == "USA" & species == "Rutilus rutilus" ~ "introduced",
+          # Fisheries: commercial; aquaculture: commercial; gamefish: yes
+          ## https://www.fishbase.se/summary/Salmo-letnica.html
+          country == "USA" & species == "Salmo letnica" ~ "introduced",
+          # From South America, also introduced in Asia and Canada but was not reported in the USA:
+          #https://www.fishbase.se/summary/Piaractus-brachypomus.html
+          country == "USA" & species == "Piaractus brachypomus" ~ "introduced",
+          # Native from CANADA and Alaska, Scandinavia, Northen Europe and Asia:
+          # https://www.fishbase.de/Country/CountryList.php?ID=4122&GenusName=Myoxocephalus&SpeciesName=quadricornis
+          country == "USA" & species == "Myoxocephalus quadricornis" ~ "introduced",
           TRUE                           ~ status
           )) %>%
       # Fix fishbase name:

@@ -423,7 +423,7 @@ get_usgs_species_status <- function(
   left_join(us_states_site %>% select(siteid, region_abb),
     by = "siteid") %>%
   distinct(fishbase_name, region_abb, native_exotic_status)
-stopifnot(any(!is.na(us_non_tedesco_states$region_abb)))
+  stopifnot(any(!is.na(us_non_tedesco_states$region_abb)))
 
 species_list_exo_us <- rfishbase::synonyms(
   species_list = unique(usgs_data$scientific_name)) %>%
@@ -444,19 +444,6 @@ occ_exotic_us_fishbase <- usgs_data %>%
     region_abb = state_province,
     native_exotic_status_usgs)
 
-  # Add fishbase name to USGS data
-  occ_exotic_us_fishbase <- occ_exotic_us %>%
-    rename(provided_name = scientific_name) %>%
-    # Add species list
-    left_join(
-      species_list_exo_us %>%
-        select(-comment),
-      by = "provided_name"
-      ) %>%
-    select(provided_name, fishbase_name,
-      region_abb = state_province,
-      native_exotic_status_usgs)
-
     return(occ_exotic_us_fishbase)
 
 }
@@ -471,7 +458,7 @@ add_usgs_data_to_measurement_exo <- function(
     left_join(
       us_states_site %>% select(siteid, region_abb),
       by = "siteid") %>%
-  left_join(us_non_tedesco_occ_exotic %>%
+  left_join(occ_exotic_us_meas_exo %>%
     select(fishbase_name, region_abb, native_exotic_status_usgs),
   by = c("fishbase_name", "region_abb")) %>%
   mutate(

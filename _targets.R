@@ -76,9 +76,9 @@ list(
       distinct(scientific_name, state_province) %>%
       mutate(native_exotic_status_usgs = "exotic")
     ),
-  tar_target(occ_exotic_us_fishbase,
+  tar_target(occ_exotic_us_meas_exo,
     get_usgs_species_status(
-      meas_exo = measurement_exo %>%
+      meas_exo = measurement_exo_tmp %>%
         filter(native_exotic_origin != "tedesco", country == "USA"),
       usgs_data = occ_exotic_us,
       us_states_site = us_states_site
@@ -87,7 +87,7 @@ list(
     read_sf(basin_tedesco_shp) %>%
       clean_names()
     ),
-  tar_target(measurement_exo,
+  tar_target(measurement_exo_tmp,
     get_measurement_exo(
       occ_exotic = occ_exotic,
       exo_basin_site = exo_basin_site,
@@ -96,9 +96,10 @@ list(
     complete_native_exotic_data(
       meas = .,
       loc = site_desc_loc
-    ) %>%
+    )), 
+  tar_target(measurement_exo,
     add_usgs_data_to_measurement_exo(
-      meas_exo = .,
+      meas_exo = measurement_exo_tmp,
       us_states_site = us_states_site,
       occ_exotic_us_meas_exo = occ_exotic_us_meas_exo
     )
