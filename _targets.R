@@ -1277,6 +1277,26 @@ tar_target(neutral_turnover,
         ) %>%
       select(-mod)
     ),
+  tar_target(comp_site_tps_trends_drivers_tmb,
+    map2_dfr(
+      list(gaussian_re_self_c, gaussian_no_drivers_re_self_c),
+      c("driver", "no_driver"),
+      ~.x %>%
+        select(response, random_site) %>%
+        filter(response %in% clust_var) %>%
+        unnest(random_site) %>%
+        select(response, siteid, log1_year_nb) %>%
+        mutate(type = .y)
+    )
+    ),
+  tar_target(p_comp_site_tps_trends_drivers_tmb,
+    comp_site_tps_trends_drivers_tmb %>%
+      pivot_wider(names_from = "type", values_from = "log1_year_nb") %>%
+      ggplot(aes(x = no_driver, y = driver)) +
+      geom_point(alpha = .3) +
+      geom_abline(intercept = 0, slope = 1) +
+      facet_wrap(vars(response), scales = "free", nrow = 2)
+    ),
   tar_target(tps_model_for_comp,
     tibble(
       response = tps_var,
