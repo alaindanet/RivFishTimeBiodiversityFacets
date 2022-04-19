@@ -49,6 +49,20 @@ plot(slopes)
 
 ```
 
+# Comparison drivers / no drivers model on random effects 
+
+- We compared the estimated temporal trends of sites in a model without drivers
+  and with drivers in order to see the effect of the drivers.
+
+We see that the estimations are very well correlated, while the model without
+drivers underestimate sometimes the estimated temporal trends.
+
+```{r}
+tar_load(p_comp_site_tps_trends_drivers_tmb)
+p_comp_site_tps_trends_drivers_tmb
+```
+
+
 
 # Notes on transformed variables 
 
