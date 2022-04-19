@@ -1101,10 +1101,9 @@ tar_target(neutral_turnover,
     tibble(
       response = exo_resp_var,
       mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = exo_resp_var, drivers = TRUE, tau_prior = TRUE),
+            formula = fun_int_env_formula_inla(x = exo_resp_var, drivers = TRUE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
-            control.family = list(hyper = tau_prior),
             verbose = F,
             data = modelling_data_exo_scaled)))
       ),
