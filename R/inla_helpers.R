@@ -28,18 +28,18 @@ get_hpdmarginal_inla <- function(
     mi <- inla_mod$summary.hyperpar
   }
   output <- map_dfr(m, function(x) {
-    if(!any(x == "Inf")) {
-      
+    if (!any(x == "Inf")) {
+
      inla.hpdmarginal(marginal = x, p = c(.80, .90, 0.95)) %>%
     as.data.frame() %>%
-    rownames_to_column("ci_level")   
+    rownames_to_column("ci_level")
     } else {
       tibble(
-        ci_level = c("level:0.80", "level:0.90", "level:0.95"), 
-             low = NA,
-             high = NA)
+        ci_level = c("level:0.80", "level:0.90", "level:0.95"),
+        low = NA,
+        high = NA)
     }
-    
+
   }
 ,
   .id = "term"
@@ -48,7 +48,7 @@ get_hpdmarginal_inla <- function(
   ## Add mean
   output <- output %>%
     left_join(
-      mi%>%
+      mi %>%
         rownames_to_column("term") %>%
         as_tibble %>%
         select(term, mean),
@@ -57,7 +57,7 @@ get_hpdmarginal_inla <- function(
  
 
   if (type == "rand") {
-    output[c("low", "high")] <- map(output[c("low", "high")], tau_to_sigma)
+    output[c("low", "mean", "high")] <- map(output[c("low", "mean", "high")], tau_to_sigma)
   }
 
   return(output)
@@ -246,6 +246,46 @@ get_random_effect_inla <- function(
     colnames(output)[colnames(output) == "ID"] <- "main_bas"
   }
   return(output)
+}
+
+get_re_prediction_inla <- function(
+  inla_mod = NULL,
+  effect = "siteid1",
+  trend_class = TRUE,
+  exponentiate = FALSE) {
+
+  re <- inla_mod$summary.random[[effect]] %>%
+    as_tibble() %>%
+    rename(
+      quant0.025 = `0.025quant`,
+      quant0.975 = `0.975quant`,
+      quant0.5 = `0.5quant`
+    ) %>% 
+    select(-kld)
+
+
+  if(trend_class) {
+    re <- re %>%
+      mutate(
+        trend_class = case_when(
+          quant0.025 > 0 & quant0.975 > 0 ~ "increase",
+          quant0.025 < 0 & quant0.975 < 0 ~ "decrease",
+          sign(quant0.025) * sign(quant0.975) == -1 ~ "stable",
+          TRUE ~ "NA"
+        )
+      )
+
+  }
+
+
+  if (exponentiate) {
+    re <- re %>%
+      mutate(across(where(is.double), ~exp(. - 1)))
+  }
+
+  colnames(re)[colnames(re) == "ID"] <-
+    str_extract(effect, "siteid|main_bas")
+  return(re)
 }
 
 HC.prior  = "expression:
