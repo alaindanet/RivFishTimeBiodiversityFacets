@@ -502,13 +502,13 @@ test_spatial_autocorrelation_moran <- function(
     )
     )
     sim_resid_mod %>%
-      unnest() %>%
+      unnest(cols = c(data)) %>%
       mutate(
         resid_year = map2(year_nb, resid_sim, function(d, r) {
-          recalculateResiduals(r, sel = sp_modelling_data$year_nb == d)
+          DHARMa::recalculateResiduals(r, sel = sp_modelling_data$year_nb == d)
       }),
     test_sp_cor = map(year_nb, resid_year, 
-      ~testSpatialAutocorrelation(
+      ~DHARMa::testSpatialAutocorrelation(
         .y,
         x = sp_modelling_data[sp_modelling_data$year_nb == .x, ]$longitude,
         y = sp_modelling_data[sp_modelling_data$year_nb == .x, ]$latitude,

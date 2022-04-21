@@ -252,7 +252,8 @@ get_re_prediction_inla <- function(
   inla_mod = NULL,
   effect = "siteid1",
   trend_class = TRUE,
-  exponentiate = FALSE) {
+  exponentiate = FALSE,
+  modelling_data = NULL) {
 
   re <- inla_mod$summary.random[[effect]] %>%
     as_tibble() %>%
@@ -263,6 +264,29 @@ get_re_prediction_inla <- function(
     ) %>% 
     select(-kld)
 
+  re_name <- str_extract(effect, "siteid|main_bas")
+  colnames(re)[colnames(re) == "ID"] <- re_name
+    
+  
+  # cannot correct basin abundance estimation totally because different unit
+  if (any(str_detect(inla_mod$names.fixed, "unitabundance")) & re_name == "siteid") {
+    
+    unit_abun_coef <- get_hpdmarginal_inla(inla_mod) %>%
+      filter(str_detect(term, "log1_year_nb:unitabundance")) %>%
+      mutate(term = str_replace(term, "log1_year_nb:unitabundance", "")) %>%
+      distinct(term, mean) %>%
+      rename(unitabundance = term, int_log1_year_nb = mean)
+    
+    re_unit <- modelling_data[, c(siteid, "unitabundance")] %>%
+      distinct(siteid, unitabundance)
+    
+    re <- re %>%
+      left_join(re_unit, by = "siteid") %>%
+      left_join(unit_abun_coef, by = "unitabundance") %>%
+      mutate_at(c("mean", "quant0.025", "quant0.5", "quant0.975", "mode"), ~.x + int_log1_year_nb) %>%
+      select(-unitabundance, int_log1_year_nb)
+  }
+  
 
   if(trend_class) {
     re <- re %>%
@@ -283,9 +307,28 @@ get_re_prediction_inla <- function(
       mutate(across(where(is.double), ~exp(. - 1)))
   }
 
-  colnames(re)[colnames(re) == "ID"] <-
-    str_extract(effect, "siteid|main_bas")
   return(re)
+}
+
+target_inla_re_pred <- function(
+    mod_list = NULL,
+    modelling_data = NULL,
+    effect = "siteid1",
+    trend_class = TRUE,
+    exponentiate_log_resp = TRUE) {
+  
+  mod_list %>%
+    mutate(random_site = map2(mod, response,
+      get_re_prediction_inla(inla_mod = .x,
+        modelling_data = modelling_data,
+        effect = effect,
+        trend_class = trend_class,
+        exponentiate = ifelse(
+          str_detect(.y, "log_") & exponentiate_log_resp,
+          TRUE,
+          FALSE) 
+          ))) %>%
+    select(-mod)
 }
 
 HC.prior  = "expression:
