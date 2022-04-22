@@ -209,6 +209,5 @@ format_inla_model_list <- function(
       ci_level == "level:0.95"  ~ (1),
       ci_level == "level:0.90"  ~ (2),
       ci_level == "level:0.80"  ~ (3)
-    )) %>%
-    filter(!term %in% "(Intercept)", !str_detect(term, "unitabundance"))
+    ))
 }

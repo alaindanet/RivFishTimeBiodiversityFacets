@@ -1019,15 +1019,37 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_no_drivers,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = FALSE, tau_prior = FALSE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data
+            )))),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_inla_effects,
     format_inla_model_list(x = gaussian_inla)),
+  tar_target(gaussian_inla_no_drivers_effects,
+    format_inla_model_list(x = gaussian_inla_no_drivers)),
+  tar_target(gaussian_inla_prior_no_drivers_effects,
+    format_inla_model_list(x = gaussian_inla_prior_no_drivers)),
   tar_target(gaussian_inla_re_pred,
     target_inla_re_pred(
     mod_list = gaussian_inla,
     modelling_data = modelling_data,
     effect = "siteid1",
-    trend_class = TRUE,
-    exponentiate_log_resp = TRUE)
+    trend_class = TRUE)
+  ),
+  tar_target(gaussian_inla_no_drivers_re_pred,
+    target_inla_re_pred(
+    mod_list = gaussian_inla_no_drivers,
+    modelling_data = modelling_data,
+    effect = "siteid1",
+    trend_class = TRUE)
   ),
   tar_target(gaussian_inla_prior,
     tibble(
@@ -1047,6 +1069,31 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_prior_no_drivers,
+    tibble(
+      response = facet_var,
+      tau_prior = list(
+        prec = list( prior="pc.prec", param =
+          c(3*sd(modelling_data[[facet_var]]), 0.01)
+        )
+        ),
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = FALSE, tau_prior = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            control.family = list(hyper = tau_prior),
+            verbose = F,
+            data = modelling_data
+            )))),
+    pattern = map(facet_var)
+    ),
+  tar_target(gaussian_inla_prior_no_drivers_re_pred,
+    target_inla_re_pred(
+    mod_list = gaussian_inla_prior_no_drivers,
+    modelling_data = modelling_data,
+    effect = "siteid1",
+    trend_class = TRUE)
+  ),
   tar_target(main_effect_var,
     names(get_model_term_replacement())[
       !str_detect(
@@ -1062,8 +1109,7 @@ tar_target(neutral_turnover,
     mod_list = gaussian_inla_prior,
     modelling_data = modelling_data,
     effect = "siteid1",
-    trend_class = TRUE,
-    exponentiate_log_resp = TRUE)
+    trend_class = TRUE)
   ),
   tar_target(gaussian_inla_std,
     tibble(
@@ -1077,15 +1123,35 @@ tar_target(neutral_turnover,
       ),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_std_no_drivers,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = FALSE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data_scaled)))
+      ),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_inla_std_effects,
     format_inla_model_list(x = gaussian_inla_std)),
+  tar_target(gaussian_inla_std_no_drivers_effects,
+    format_inla_model_list(x = gaussian_inla_std_no_drivers)),
   tar_target(gaussian_inla_std_re_pred,
     target_inla_re_pred(
     mod_list = gaussian_inla_std,
     modelling_data = modelling_data_scaled,
     effect = "siteid1",
-    trend_class = TRUE,
-    exponentiate_log_resp = TRUE)
+    trend_class = TRUE)
+  ),
+  tar_target(gaussian_inla_std_no_drivers_re_pred,
+    target_inla_re_pred(
+    mod_list = gaussian_inla_std_no_drivers,
+    modelling_data = modelling_data_scaled,
+    effect = "siteid1",
+    trend_class = TRUE)
   ),
   tar_target(gaussian_inla_prior_std,
     tibble(
@@ -1112,8 +1178,7 @@ tar_target(neutral_turnover,
     mod_list = gaussian_inla_prior_std,
     modelling_data = modelling_data_scaled,
     effect = "siteid1",
-    trend_class = TRUE,
-    exponentiate_log_resp = TRUE)
+    trend_class = TRUE)
   ),
   tar_target(gaussian_inla_exo,
     tibble(

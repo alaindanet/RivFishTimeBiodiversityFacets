@@ -253,6 +253,7 @@ get_re_prediction_inla <- function(
   effect = "siteid1",
   trend_class = TRUE,
   exponentiate = FALSE,
+  correct_abun_re = FALSE,
   modelling_data = NULL) {
 
   re <- inla_mod$summary.random[[effect]] %>%
@@ -269,7 +270,7 @@ get_re_prediction_inla <- function(
     
   
   # cannot correct basin abundance estimation totally because different unit
-  if (any(str_detect(inla_mod$names.fixed, "unitabundance")) & re_name == "siteid") {
+  if (correct_abun_re & any(str_detect(inla_mod$names.fixed, "unitabundance")) & re_name == "siteid") {
     
     unit_abun_coef <- get_hpdmarginal_inla(inla_mod) %>%
       filter(str_detect(term, "log1_year_nb:unitabundance")) %>%
@@ -277,7 +278,7 @@ get_re_prediction_inla <- function(
       distinct(term, mean) %>%
       rename(unitabundance = term, int_log1_year_nb = mean)
     
-    re_unit <- modelling_data[, c(siteid, "unitabundance")] %>%
+    re_unit <- modelling_data %>%
       distinct(siteid, unitabundance)
     
     re <- re %>%
@@ -314,20 +315,14 @@ target_inla_re_pred <- function(
     mod_list = NULL,
     modelling_data = NULL,
     effect = "siteid1",
-    trend_class = TRUE,
-    exponentiate_log_resp = TRUE) {
+    trend_class = TRUE) {
   
   mod_list %>%
     mutate(random_site = map2(mod, response,
-      get_re_prediction_inla(inla_mod = .x,
+      ~get_re_prediction_inla(inla_mod = .x,
         modelling_data = modelling_data,
         effect = effect,
-        trend_class = trend_class,
-        exponentiate = ifelse(
-          str_detect(.y, "log_") & exponentiate_log_resp,
-          TRUE,
-          FALSE) 
-          ))) %>%
+        trend_class = trend_class))) %>%
     select(-mod)
 }
 
