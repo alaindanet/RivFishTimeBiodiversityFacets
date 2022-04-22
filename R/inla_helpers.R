@@ -158,7 +158,8 @@ get_formula_inla_abun <- function(resp = NULL, drivers = TRUE, tau_prior = NULL)
         "f(intercept_main_bas, model = 'iid') +
         f(main_bas1, log1_year_nb, model = 'iid') +
         f(intercept_main_bassiteid, model = 'iid') +
-        f(siteid1, log1_year_nb, model = 'iid')")
+        f(siteid1, log1_year_nb, model = 'iid')"
+      )
   }
 
   form <- paste0(resp, " ~\n", fixed_part, " +\n", rand_part)
@@ -324,6 +325,50 @@ target_inla_re_pred <- function(
         effect = effect,
         trend_class = trend_class))) %>%
     select(-mod)
+
+}
+
+get_ajusted_re_inla <- function(
+  re_pred = gaussian_inla_no_drivers_re_pred,
+  effect = gaussian_inla_no_drivers_effects,
+  modelling_data = modelling_data,
+  resp_to_keep = clust_var
+) {
+
+  fixed_trend <- effect %>%
+    distinct(response, term, mean)
+
+  fixed_trend_int_unitabundance <- fixed_trend %>%
+    filter(
+      response == "log_total_abundance",
+      str_detect(term, "log1_year_nb:")) %>%
+  mutate(unitabundance = str_replace(term,
+      "log1_year_nb:unitabundance", "")) 
+
+  inla_site <- re_pred %>%
+    filter(response %in% resp_to_keep) %>%
+    unnest(cols = c(random_site)) %>%
+    left_join(modelling_data %>%
+      distinct(siteid, unitabundance),
+    by = "siteid"
+    ) %>%
+    left_join(fixed_trend %>%
+      filter(term == "log1_year_nb") %>%
+      select(response, fixed_log1_year_nb = mean),
+    by = "response"
+    ) %>%
+    left_join(fixed_trend_int_unitabundance %>%
+      select(response, int_unit =  mean, unitabundance),
+    by = c("response", "unitabundance")
+    ) %>%
+    mutate(int_unit = ifelse(is.na(int_unit), 0, int_unit)) %>%
+    mutate_at(
+      c("mean", "quant0.025", "quant0.5", "quant0.975", "mode"),
+      ~.x + fixed_log1_year_nb + int_unit
+    )
+
+  return(inla_site)
+
 }
 
 HC.prior  = "expression:

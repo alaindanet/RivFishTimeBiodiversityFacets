@@ -1055,8 +1055,8 @@ tar_target(neutral_turnover,
     tibble(
       response = facet_var,
       tau_prior = list(
-        prec = list( prior="pc.prec", param =
-          c(3*sd(modelling_data[[facet_var]]), 0.01)
+        prec = list( prior = "pc.prec", param =
+          c(3 * sd(modelling_data[[facet_var]]), 0.01)
         )
         ),
       mod = list(try(inla(
