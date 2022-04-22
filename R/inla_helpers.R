@@ -371,6 +371,31 @@ get_ajusted_re_inla <- function(
 
 }
 
+get_cor_biais_inla_tmb_re <- function(
+  inla_re =  site_no_drivers_inla,
+  tmb_re = site_no_drivers
+) {
+
+  inla_re <- inla_re[rownames(inla_re) %in% rownames(tmb_re), ]
+  tmb_re <- tmb_re[rownames(tmb_re) %in% rownames(inla_re), ]
+
+  inla_re <- inla_re[match(row.names(inla_re), row.names(tmb_re)), ] %>%
+    na.omit()
+  tmb_re <- tmb_re[match(row.names(tmb_re), row.names(inla_re)), ] %>%
+    na.omit()
+
+  stopifnot(all(row.names(inla_re) == row.names(tmb_re)))
+
+  map_dfr(
+    setNames(colnames(site_no_drivers_inla), colnames(site_no_drivers_inla)),
+    ~tibble(
+      corr_pearson = cor(inla_re[[.x]], tmb_re[[.x]]),
+      avg_biais_inla_tmb = mean(inla_re[[.x]] - tmb_re[[.x]])
+      ),
+    .id = "response"
+  )
+}
+
 HC.prior  = "expression:
   sigma = exp(-theta/2);
   gamma = 25;

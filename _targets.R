@@ -691,10 +691,10 @@ tar_target(neutral_turnover,
       mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])),
   tar_target(site_env,
     modelling_data %>%
-      filter(siteid %in% row.names(site_no_drivers)) %>% 
+      filter(siteid %in% row.names(site_no_drivers_inla)) %>% 
       group_by(siteid) %>%
       summarise(across(where(is.numeric), mean), .groups = "drop") %>%
-      arrange(match(siteid, row.names(site_no_drivers))) %>%
+      arrange(match(siteid, row.names(site_no_drivers_inla))) %>%
       left_join(filtered_dataset$location, by = "siteid")
     ),
 
@@ -1618,9 +1618,23 @@ tar_target(mod_sampling_eff,
      )
    )
    ),
+ tar_target(site_no_drivers_inla,
+   gaussian_inla_no_drivers_adj_re %>%
+     filter(response %in% clust_var) %>%
+     select(response, siteid, mean) %>%
+     pivot_wider(names_from = "response", values_from = "mean") %>%
+     arrange(siteid) %>%
+     column_to_rownames("siteid")
+   ),
+ tar_target(comp_re_site_inla_tmb,
+   get_cor_biais_inla_tmb_re(
+     inla_re = site_no_drivers_inla,
+     tmb_re = site_no_drivers
+   )
+   ),
  tar_target(clust_curv_site,
    tclust::ctlcurves(
-     x = scale(site_no_drivers, center = FALSE),
+     x = scale(site_no_drivers_inla, center = FALSE),
      k = 1:12,
      alpha = seq(0, .3, by = .05),
      restr.fact = 1
@@ -1628,7 +1642,7 @@ tar_target(mod_sampling_eff,
    ),
  tar_target(clust_curv_site_fac_50,
    tclust::ctlcurves(
-     x = scale(site_no_drivers, center = FALSE),
+     x = scale(site_no_drivers_inla, center = FALSE),
      k = 1:12,
      alpha = seq(0, .3, by = .05),
      restr.fact = 50 
@@ -1636,7 +1650,7 @@ tar_target(mod_sampling_eff,
    ),
  tar_target(k6_fac_1, 
    tclust(
-     x = scale(site_no_drivers, center = FALSE),
+     x = scale(site_no_drivers_inla, center = FALSE),
      iter.max = 100, 
      k = 6,
      alpha = 0.05,
@@ -1646,7 +1660,7 @@ tar_target(mod_sampling_eff,
    ),
  tar_target(k6_fac_50,
    tclust(
-     x = scale(site_no_drivers, center = FALSE),
+     x = scale(site_no_drivers_inla, center = FALSE),
      iter.max = 100, 
      k = 6,
      alpha = 0.05,
@@ -1655,10 +1669,10 @@ tar_target(mod_sampling_eff,
    )
    ),
  tar_target(k7_fac_1,
-   tclust(scale(site_no_drivers, center = FALSE), iter.max = 100, 
+   tclust(scale(site_no_drivers_inla, center = FALSE), iter.max = 100, 
      k = 7, alpha = 0.05, restr.fact = 1)),
  tar_target(k12_fac_1,
-   tclust(x = scale(site_no_drivers, center = FALSE),
+   tclust(x = scale(site_no_drivers_inla, center = FALSE),
      iter.max = 100, 
      k = 12, alpha = 0.05,
      restr.fact = 1, warnings = 2)
@@ -1672,7 +1686,7 @@ tar_target(mod_sampling_eff,
      type = c("internal", "stability"),
      clvalid = list(purrr::map(type,
          ~clValid::clValid(
-           obj = scale(site_no_drivers, center = FALSE),
+           obj = scale(site_no_drivers_inla, center = FALSE),
            nClust = 2:12,
            method = "ward",
            clMethods = c("hierarchical", "kmeans", "pam"),
@@ -1731,7 +1745,7 @@ tar_target(mod_sampling_eff,
          ))),
    pattern = map(country_to_plot)
    ),
- tar_target(pca_clust, compute_rotated_pca(site_no_drivers)),
+ tar_target(pca_clust, compute_rotated_pca(site_no_drivers_inla)),
  tar_target(p_pca_clust,
    plot_pca_clust(
      .data = pca_clust$rotated,
