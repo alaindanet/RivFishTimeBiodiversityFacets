@@ -60,21 +60,20 @@ loc <- world_site_sf$site
 - Downstream gradient is related more dissimilarity through time  
 - Human pressure recent increase is related more dissimilarity through time and 
   less species richness increase 
-- Cluster analysis reveals that there are only 6 scenarios of biodiversity
+- Cluster analysis reveals 6 contrasted scenarios of biodiversity
   trends, indicating a low dimensionality of biodiversity trends
 - Cluster analysis seems reveal that the spatial heterogeneity of biodiversity
   changes takes place at lower scale that previously shown
-  [@blowes_geography_2019; @klink_meta-analysis_2020]
+  [@blowes_geography_2019; @klink_meta-analysis_2020] (might be a caracteristic
+  of a stream)
 
 # Introduction 
 
-## Why do we want to assess community changes ?
+## Documenting community changes
 
 - Global changes have affect a tremendous effect communities
 - Understanding assembly and disassembly rules
 - Give a more complex and complete picture of what is going on ?
-
-## Documenting community changes
 
 - Many papers report  temporal trends of local species richness and turnover
   - Abundance [@klink_meta-analysis_2020]
@@ -115,11 +114,47 @@ loc <- world_site_sf$site
 
 ## Data selection
 
+```{r}
+filtered_dataset  <- map(filtered_dataset,
+  ~.x %>%
+    filter(siteid %in% unique(modelling_data$siteid))
+)
+
+uabun <- tabyl_df(filtered_dataset$site_quali, "unitabundance") %$%
+  setNames(.$percent, .$unitabundance)
+protocol <- tabyl_df(filtered_dataset$site_quali, "protocol")
+electro <- str_detect(filtered_dataset$site_quali$protocol, "Electro") %>%
+  sum / nrow(filtered_dataset$site_quali) * 100
+
+year_samp <- modelling_data %>%
+  summarise(enframe(summary_distribution(year))) %>%
+  mutate(value = round(value)) %>%
+  deframe()
+
+year_samp_hft <- modelling_data %>%
+  summarise(
+    be95 = sum(year <= 1995) / n(),
+    a95 = sum(year > 1995) / n(),
+    bw9509 = sum(year > 1995 & year <= 2009) / n(),
+    a09 = sum(year > 2009) / n()
+    ) %>%
+  mutate(across(everything(), scales::percent)) %>%
+  pivot_longer(everything(), names_to = "name", values_to = "value") %>%
+  deframe()
+```
+
+
 - Unique protocol and unique unit of abundance by site
 - One sampling by year and site
 - In each site, samplings should be in the median (more or less one month and
   half, i.e. 1.5 month)
-- 5 samplings by site, span 10 years 
+- 5 samplings minimum by site, span 10 years
+
+- `r nrow(filtered_dataset$site_quali)` sites
+- `r round(electro, 1)`% of the sites were monitored with electrofishing
+- The year of samplings goes from `r year_samp["min"]` to `r year_samp["max"]`
+  with first, second and third quartile being respectively 
+  `r paste0(year_samp[c("1st_quart", "median", "2nd_quart")], collapse = ", ")`.
 
 ```{r}
 loc <- filtered_dataset$location %>%
@@ -130,7 +165,7 @@ loc <- filtered_dataset$location %>%
 
 ```{r}
 fig_sites <- paste0(
-  "Australia absence because span is superior to 10 years of 100s of sites but number of samplings < 10.")
+  "Distribution of the sites.")
 ```
 
 ```{r, fig.cap=fig_sites}
