@@ -1051,6 +1051,15 @@ tar_target(neutral_turnover,
     effect = "siteid1",
     trend_class = TRUE)
   ),
+  tar_target(gaussian_inla_no_drivers_adj_re,
+    get_ajusted_re_inla(
+      re_pred = gaussian_inla_no_drivers_re_pred,
+      effect = gaussian_inla_no_drivers_effects,
+      modelling_data = modelling_data,
+      resp_to_keep = clust_var
+      ) %>%
+    arrange(siteid)
+  ),
   tar_target(gaussian_inla_prior,
     tibble(
       response = facet_var,
@@ -1152,6 +1161,15 @@ tar_target(neutral_turnover,
     modelling_data = modelling_data_scaled,
     effect = "siteid1",
     trend_class = TRUE)
+  ),
+  tar_target(gaussian_inla_std_no_drivers_adj_re,
+    get_ajusted_re_inla(
+      re_pred = gaussian_inla_std_no_drivers_re_pred,
+      effect = gaussian_inla_std_no_drivers_effects,
+      modelling_data = modelling_data_scaled,
+      resp_to_keep = clust_var
+      ) %>%
+    arrange(siteid)
   ),
   tar_target(gaussian_inla_prior_std,
     tibble(
