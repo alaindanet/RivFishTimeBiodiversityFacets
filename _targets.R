@@ -1075,12 +1075,14 @@ tar_target(neutral_turnover,
     ),
   tar_target(pred_gaussian_inla,
     gaussian_inla %>%
-      mutate(pred = map(mod,
-          ~get_pred_inla(
+      mutate(
+        pred = map(mod, ~get_pred_inla(
             inla_mod = .x,
             dataset = modelling_data,
-            pred_data = pred_data 
-            ))
+            pred_data = pred_data)),
+          pred_plot = map2(pred, response, ~get_pred_list_plot(
+              pred_data =.x,
+              response = get_var_replacement()[.y]))
         ) %>%
     select(-mod)),
   tar_target(gaussian_inla_no_drivers,
@@ -1147,13 +1149,19 @@ tar_target(neutral_turnover,
     ),
   tar_target(pred_gaussian_inla_prior,
     gaussian_inla_prior %>%
+<<<<<<< HEAD
       filter(map_lgl(gaussian_inla_prior$mod, ~class(.x) == "inla")) %>%
       mutate(pred = map(mod,
           ~get_pred_inla(
+=======
+      mutate(pred = map(mod, ~get_pred_inla(
+>>>>>>> 6603eca18a834185089f345a5ac64afb20bc436e
             inla_mod = .x,
             dataset = modelling_data,
-            pred_data = pred_data 
-            ))
+            pred_data = pred_data)),
+        pred_plot = map2(pred, response, ~get_pred_list_plot(
+              pred_data =.x,
+              response = get_var_replacement()[.y]))
         ) %>%
     select(-mod)),
   tar_target(gaussian_inla_prior_no_drivers,
@@ -1298,12 +1306,14 @@ tar_target(neutral_turnover,
     ),
   tar_target(pred_gaussian_inla_exo,
     gaussian_inla_exo %>%
-      mutate(pred = map(mod,
-          ~get_pred_inla(
+      mutate(
+        pred = map(mod, ~get_pred_inla(
             inla_mod = .x,
             dataset = modelling_data_exo,
-            pred_data = pred_data_exo
-            ))
+            pred_data = pred_data_exo)),
+        pred_plot = map2(pred, response, ~get_pred_list_plot(
+              pred_data =.x,
+              response = get_var_replacement()[.y]))
         ) %>%
     select(-mod)),
   tar_target(gaussian_inla_exo_effects,
