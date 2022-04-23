@@ -9,6 +9,12 @@ tar_make_future(
              "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
   )
 
+tar_make_future(
+  workers = min(future::availableCores() - 1, 6),
+  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps",
+             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
+  )
+
 tar_meta()
 tar_visnetwork()
 

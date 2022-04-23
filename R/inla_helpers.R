@@ -387,7 +387,7 @@ get_cor_biais_inla_tmb_re <- function(
   stopifnot(all(row.names(inla_re) == row.names(tmb_re)))
 
   map_dfr(
-    setNames(colnames(site_no_drivers_inla), colnames(site_no_drivers_inla)),
+    setNames(colnames(inla_re), colnames(inla_re)),
     ~tibble(
       corr_pearson = cor(inla_re[[.x]], tmb_re[[.x]]),
       avg_biais_inla_tmb = mean(inla_re[[.x]] - tmb_re[[.x]])

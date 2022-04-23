@@ -1709,21 +1709,21 @@ tar_target(mod_sampling_eff,
    get_cluster_df(
      tclust_obj = k6_fac_1,
      site_env = site_env,
-     assign_threshold = .1,
+     assign_threshold = .5,
      clean_method = "0"
      )),
  tar_target(site_cl_rm,
    get_cluster_df(
      tclust_obj = k6_fac_1,
      site_env = site_env,
-     assign_threshold = .1,
+     assign_threshold = .5,
      clean_method = "rm"
      )),
  tar_target(site_cl_na,
    get_cluster_df(
      tclust_obj = k6_fac_1,
      site_env = site_env,
-     assign_threshold = .1,
+     assign_threshold = .5,
      clean_method = "na"
      )),
  tar_target(bp_cl_dist,
