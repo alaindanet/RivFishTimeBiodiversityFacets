@@ -1149,13 +1149,7 @@ tar_target(neutral_turnover,
     ),
   tar_target(pred_gaussian_inla_prior,
     gaussian_inla_prior %>%
-<<<<<<< HEAD
-      filter(map_lgl(gaussian_inla_prior$mod, ~class(.x) == "inla")) %>%
-      mutate(pred = map(mod,
-          ~get_pred_inla(
-=======
       mutate(pred = map(mod, ~get_pred_inla(
->>>>>>> 6603eca18a834185089f345a5ac64afb20bc436e
             inla_mod = .x,
             dataset = modelling_data,
             pred_data = pred_data)),
