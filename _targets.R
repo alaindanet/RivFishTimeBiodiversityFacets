@@ -1126,7 +1126,10 @@ tar_target(neutral_turnover,
             control.predictor = list(link = 1, compute = T),
             control.family = list(hyper = tau_prior),
             verbose = F,
-            data = modelling_data
+            data = rbind(
+              modelling_data[,colnames(modelling_data) %in% colnames(pred_data)],
+              pred_data
+            )
             )))),
     pattern = map(facet_var)
     ),
