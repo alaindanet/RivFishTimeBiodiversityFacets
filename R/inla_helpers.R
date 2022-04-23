@@ -426,6 +426,23 @@ get_pred_data <- function(
 
 }
 
+get_pred_inla <- function(
+  inla_mod = NULL,
+  dataset = NULL,
+  pred_data = NULL
+  ) {
+  fitted_values <- inla_mod$summary.fitted[
+    c(nrow(dataset) + 1):nrow(inla_mod$summary.fitted),
+    c("mean", "0.025quant", "0.975quant")
+    ] %>%
+      rename(
+      quant0.025 = `0.025quant`,
+      quant0.975 = `0.975quant`
+      )
+  cbind(fitted_values, pred_data) %>%
+    as_tibble()
+}
+
 HC.prior  = "expression:
   sigma = exp(-theta/2);
   gamma = 25;

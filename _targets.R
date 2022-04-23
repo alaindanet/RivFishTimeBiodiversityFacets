@@ -1071,6 +1071,16 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(pred_gaussian_inla,
+    gaussian_inla %>%
+      mutate(pred = map(mod,
+          ~get_pred_inla(
+            inla_mod = .x,
+            dataset = modelling_data,
+            pred_data = pred_data 
+            ))
+        ) %>%
+    select(-mod)),
   tar_target(gaussian_inla_no_drivers,
     tibble(
       response = facet_var,
@@ -1133,6 +1143,16 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(pred_gaussian_inla_prior,
+    gaussian_inla_prior %>%
+      mutate(pred = map(mod,
+          ~get_pred_inla(
+            inla_mod = .x,
+            dataset = modelling_data,
+            pred_data = pred_data 
+            ))
+        ) %>%
+    select(-mod)),
   tar_target(gaussian_inla_prior_no_drivers,
     tibble(
       response = facet_var,
@@ -1268,6 +1288,16 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(exo_resp_var)
     ),
+  tar_target(pred_gaussian_inla_exo,
+    gaussian_inla_exo %>%
+      mutate(pred = map(mod,
+          ~get_pred_inla(
+            inla_mod = .x,
+            dataset = modelling_data_exo,
+            pred_data = pred_data_exo
+            ))
+        ) %>%
+    select(-mod)),
   tar_target(gaussian_inla_exo_effects,
     format_inla_model_list(x = gaussian_inla_exo)),
   tar_target(gaussian_inla_exo_std,
