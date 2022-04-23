@@ -396,6 +396,36 @@ get_cor_biais_inla_tmb_re <- function(
   )
 }
 
+get_pred_data <- function(
+  list_parameter = list(
+    log1_year_nb = log(c(0, 10, 20) + 1),
+    hft_ix_c93 = with(modelling_data, c(
+        min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
+        median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
+        max(hft_ix_c93)
+)
+      ),
+    riv_str_rc1 = with(modelling_data, c(
+        min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
+        median(riv_str_rc1), quantile(riv_str_rc1, probs = .75),
+        max(riv_str_rc1)
+      )
+      ),
+    hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4)
+    ),
+  na_var = c(
+    "siteid1", "intercept_main_bassiteid",
+    "intercept_main_bas", "main_bas1",
+    facet_var
+  )
+  ) {
+
+  na_var_list <- setNames(purrr::map(na_var, ~NA), na_var)
+  expand.grid(c(list_parameter, na_var_list)) %>%
+    as_tibble()
+
+}
+
 HC.prior  = "expression:
   sigma = exp(-theta/2);
   gamma = 25;
