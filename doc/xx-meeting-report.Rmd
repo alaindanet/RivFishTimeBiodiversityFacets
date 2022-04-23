@@ -133,9 +133,9 @@ year_samp <- modelling_data %>%
 
 year_samp_hft <- modelling_data %>%
   summarise(
-    be95 = sum(year <= 1995) / n(),
-    a95 = sum(year > 1995) / n(),
-    bw9509 = sum(year > 1995 & year <= 2009) / n(),
+    be93 = sum(year <= 1993) / n(),
+    a93 = sum(year > 1993) / n(),
+    bw9309 = sum(year > 1993 & year <= 2009) / n(),
     a09 = sum(year > 2009) / n()
     ) %>%
   mutate(across(everything(), scales::percent)) %>%
@@ -517,69 +517,85 @@ pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a
 pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
 
 
-p <- mod_comp_std_df %>%
-  filter(facet == "main") %>%
-  mutate(Parameter = fct_reorder(Parameter, CI_high, .fun="max")) %>%
-  ggplot(
-    aes(y = Parameter, x = Coefficient, color = response, xmin = CI_low,
-      xmax = CI_high)) +
-  geom_vline(xintercept = 0) +
-  geom_pointrange(position = position_dodge(width = .7)) +
-  labs(x = "Standardized coefficients", colour = "Response variables") +
-  theme(legend.position = "bottom") +
-  guides(color = guide_legend(nrow = 2, byrow = TRUE))
-
-
-#withr::with_options(
-#  list(ggplot2.discrete.colour = pal),
-#  print(p + scale_color_discrete())
-#)
-
-p1 <- mod_comp_std_df %>%
-  filter(facet == "interaction") %>%
-  ggplot(
-    aes(y = Parameter, x = Coefficient, color = response,
-      xmin = CI_low, xmax = CI_high)
-    ) +
-  geom_vline(xintercept = 0) +
-  geom_pointrange(position = position_dodge(width = .7)) +
-  theme(
-    axis.title = element_blank(),
-    legend.position = "none"
+tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+tu <- rbind( gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
     )
 
-p3 <- mod_comp_std_df %>%
-  filter(facet == "dbl_interaction") %>%
-  ggplot(
-    aes(y = Parameter, x = Coefficient, color = response,
-      xmin = CI_low, xmax = CI_high)
-    ) +
-  geom_vline(xintercept = 0) +
-  geom_pointrange(position = position_dodge(width = .7)) +
-  theme(
-    legend.position = "none",
-    axis.title.y = element_blank()
-    )
+p1 <- tu %>%
+  filter(facet == "main", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
 
-leg <- get_legend({p +
-  theme(legend.direction = "horizontal") +
-  guides(colour = guide_legend(nrow = 3))})
-p2 <- p +
-  theme(
-    plot.margin = margin(0, 5.5, 6, 64),
-    axis.title = element_blank(),
-    legend.position = "none"
-  )
-p_mod_coef <- plot_grid(p2, p1, p3, leg,
-  nrow = 4,
-  rel_heights = c(1, 1, 1, .2))
+p2 <- tu %>%
+  filter(facet == "interaction", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p3 <- tu %>%
+  filter(facet == "dbl_interaction", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis <- get_legend(p3 +
+  theme(legend.position = "bottom")
+)
+
+p_left <- plot_grid(
+  p1,
+  p2,
+  p3 + theme(legend.position = "none"),
+  leg_dis,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
+```
+
+```{r}
+p4 <- tu %>%
+  filter(facet == "main", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p5 <- tu %>%
+  filter(facet == "interaction", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p6 <- tu %>%
+  filter(facet == "dbl_interaction", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_qut <- get_legend(p6 +
+  theme(legend.position = "bottom")
+)
+
+p_right <- plot_grid(
+  p4,
+  p5,
+  p6 + theme(legend.position = "none"),
+  leg_qut,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
 ```
 
 
 
 ```{r}
-tar_load(site_no_drivers)
-cor_site_tps <- cor(site_no_drivers,
+tar_load(site_no_drivers_inla)
+cor_site_tps <- cor(site_no_drivers_inla,
   method = "spearman"
 )
 dimnames(cor_site_tps) <- map(
@@ -595,8 +611,8 @@ guides(colour = guide_legend(title.position = "top"))
 ```
 
 ```{r}
-tar_load(c(pca_clust))
-pca_clust <- compute_rotated_pca(site_no_drivers)
+tar_load(c(pca_clust, site_cl_rm))
+pca_clust <- compute_rotated_pca(site_no_drivers_inla)
 p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
@@ -623,23 +639,6 @@ mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
   explicative variables. Bars represent CI at 95% computed with Wald
   approximation. (B) Interactions effects of pressures on temporal trends
   (Antagonistic or synergetic).")
-```
-
-```{r mod-tps, fig.height = 16, fig.cap=mod_slp_std_cap}
-p_int_mod <- make_interaction_heatmap_tps_env(data = mod_comp_std_df) +
-  theme(
-    legend.position = "bottom",
-    axis.text.x = element_text(angle = 20),
-    axis.title = element_blank(),
-    
-  )
-plot_grid(
-  p_mod_coef,
-  p_int_mod,
-  nrow = 2,
-  labels = "AUTO",
-  rel_heights = c(.7, .3)
-)
 ```
 
 1. Main effects

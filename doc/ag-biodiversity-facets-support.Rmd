@@ -24,14 +24,100 @@ library(factoextra)
 
 ```{r load-targets, include=FALSE}
 tar_load(c(modelling_data, analysis_dataset))
-tar_load(c(abun_var, var_jaccard, rich_var, clust_var))
-tar_load(c(binded_gaussian_tmb_no_evt_re, rigal_trends,
-    gaussian_no_drivers_re_self_c))
-tar_load(tps_model_for_comp)
-tar_load(gaussian_int_env)
+tar_load(c(abun_var, var_jaccard, rich_var, clust_var, main_effect_var))
 tar_load(site_cl_rm)
-tar_load(mod_comp_std_df)
 ```
+
+# Data exploration
+
+```{r}
+library(gt)
+library(gtsummary)
+```
+
+- Response variable
+
+```{r}
+get_tbl_summary <- function(df = NULL) {
+
+t1 <- df %>%
+  tbl_summary(statistic = all_continuous() ~ "{N_nonmiss}", missing = "no") %>%
+  modify_header(stat_0 ~ "**N (no missing)**")
+
+t2 <- df %>%
+  tbl_summary(statistic = all_continuous() ~
+    "{median} ({p25}, {p75})",
+  missing = "no") %>%
+  modify_header(stat_0 ~ "Median (1st Q, 3rd Q)")
+
+t3 <- df %>%
+  tbl_summary(statistic = all_continuous() ~
+    "({min}, {max})",
+  missing = "no") %>%
+  modify_header(stat_0 ~ "(Min, Max)")
+
+tbl_merge(list(t1, t2, t3)) %>%
+  modify_footnote(everything() ~ NA_character_) %>%
+  modify_spanning_header(everything() ~ NA_character_)
+
+}
+
+resp_summary <- get_tbl_summary(df = modelling_data %>%
+  select(all_of(c("chao_richness", "species_richness",
+        clust_var, "year", "year_nb"))))
+
+resp_summary
+```
+
+- Environmental variables:
+
+```{r}
+col_pca_riv <- c("siteid", "dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav")
+tar_load(riveratlas_site)
+riveratlas_site <- riveratlas_site %>%
+  select(all_of(col_pca_riv)) %>%
+  st_drop_geometry() %>%
+  left_join(
+    modelling_data %>%
+      distinct(siteid, hft_ix_c93, hft_ix_c9309_log2_ratio),
+    by = "siteid") %>%
+  select(-siteid) %>%
+  rename_with(~str_replace_all(.,
+      c(
+        get_model_term_replacement(),
+        get_rev_vec_name_val(get_river_atlas_significant_var())
+      )
+    )
+  )
+
+evt_summary <- get_tbl_summary(df = riveratlas_site)
+evt_summary
+```
+
+- Protocol:
+
+```{r}
+tar_load(filtered_dataset)
+protocol <- filtered_dataset$site_quali %>%
+  filter(siteid %in% unique(modelling_data$siteid)) %>%
+  select(protocol_detail, unitabundance)
+
+protocol_summary <- get_tbl_summary(df = protocol)
+protocol_summary
+```
+
+- Location: 
+
+```{r}
+location_site <- filtered_dataset$location %>%
+  filter(siteid %in% unique(modelling_data$siteid)) %>%
+  select(country, ecoregion)
+
+location_summary <- location_site %>%
+  tbl_summary()
+location_summary
+```
+
 
 # Visualise interactions 
 
@@ -46,7 +132,6 @@ plot(slopes)
 # Heat map
 
 ```{r}
-
 ```
 
 # Comparison drivers / no drivers model on random effects 
@@ -522,7 +607,7 @@ dis2 <-  comp_dis[["main0"]]
 
 model_parameters(dis2)
 
-dis3 <- comp_dis[["no_main0"]] 
+dis3 <- comp_dis[["no_main0"]]
 ```
 
 It seems that I have unusually large statistics (Large Z) when the estimate  

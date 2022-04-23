@@ -661,8 +661,57 @@ tar_target(neutral_turnover,
         siteid1 = as.character(siteid),
         intercept_main_bas = as.integer(as.factor(main_bas)),
         intercept_main_bassiteid = as.integer(as.factor(paste0("main_bas", main_bas, ":", "siteid", siteid))),
-      )
+        )
       ),
+  tar_target(pred_data,
+    get_pred_data(
+      list_parameter = list(
+        log1_year_nb = log(c(0, 10, 20) + 1),
+        hft_ix_c93 = with(modelling_data, c(
+            min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
+            median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
+            max(hft_ix_c93)
+)
+          ),
+        riv_str_rc1 = with(modelling_data, c(
+            min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
+            median(riv_str_rc1), quantile(riv_str_rc1, probs = .75),
+            max(riv_str_rc1)
+          )
+          ),
+        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4)
+        ),
+      na_var = c(
+        "siteid1", "intercept_main_bassiteid",
+        "intercept_main_bas", "main_bas1",
+        facet_var
+      )
+  )),
+  tar_target(pred_data_exo,
+    get_pred_data(
+      list_parameter = list(
+        log1_year_nb = log(c(0, 10, 20) + 1),
+        hft_ix_c93 = with(modelling_data, c(
+            min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
+            median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
+            max(hft_ix_c93)
+)
+          ),
+        riv_str_rc1 = with(modelling_data, c(
+            min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
+            median(riv_str_rc1), quantile(riv_str_rc1, probs = .75),
+            max(riv_str_rc1)
+          )
+          ),
+        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4)
+        ),
+      na_var = c(
+        "siteid1", "intercept_main_bassiteid",
+        "intercept_main_bas", "main_bas1",
+        exo_resp_var
+        
+      )
+  )),
   tar_target(modelling_data_scaled, modelling_data %>%
     mutate(
       across(all_of(c(main_effect_var, facet_var)),
@@ -1015,7 +1064,10 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data
+            data = rbind(
+              modelling_data[,colnames(modelling_data) %in% colnames(pred_data)],
+              pred_data
+            )
             )))),
     pattern = map(facet_var)
     ),
@@ -1206,7 +1258,10 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data_exo
+            data = rbind(
+              modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
+              pred_data_exo
+            )
             )))),
     pattern = map(exo_resp_var)
     ),
