@@ -443,6 +443,111 @@ get_pred_inla <- function(
     as_tibble()
 }
 
+get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
+
+  p_year_hft9309 <- pred_perc_exo_sp %>%
+    filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c93 == 140) %>%
+    ggplot(aes(x = log1_year_nb, y = mean)) +
+    geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(hft_ix_c9309_log2_ratio)
+        ),
+      alpha = .2
+      ) +
+    labs(
+      fill = "Human footprint change (1993-2009)",
+      color = "Human footprint change (1993-2009)",
+      x = "Log (Year nb + 1)",
+      y = paste0("Predicted values of ", response)
+    )
+
+  p_year_hft93 <- pred_perc_exo_sp %>%
+    filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c9309_log2_ratio == 0) %>%
+    ggplot(aes(x = log1_year_nb, y = mean)) +
+    geom_line(aes(color = as.factor(hft_ix_c93))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(hft_ix_c93)), alpha = .2) +
+    labs(
+      fill = "Human footprint (1993)",
+      color = "Human footprint (1993)",
+      x = "Log (Year nb + 1)",
+      y = paste0("Predicted values of ", response)
+    )
+
+  p_year_riv <- pred_perc_exo_sp %>%
+    filter(hft_ix_c93 == 140, hft_ix_c9309_log2_ratio == 0) %>%
+    ggplot(aes(x = log1_year_nb, y = mean)) +
+    geom_line(aes(color = as.factor(riv_str_rc1))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(riv_str_rc1)), alpha = .2) +
+    labs(
+      fill = "PCA axis related to stream gradient",
+      color = "PCA axis related to stream gradient",
+      x = "Log (Year nb + 1)",
+      y = paste0("Predicted values of ", response)
+    )
+
+  p_riv_hft93 <- pred_perc_exo_sp %>%
+    filter(round(log1_year_nb, 2) == 2.40, hft_ix_c9309_log2_ratio == 0) %>%
+    ggplot(aes(x = riv_str_rc1, y = mean)) +
+    geom_line(aes(color = as.factor(hft_ix_c93))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(hft_ix_c93)), alpha = .2) +
+    labs(
+      fill = "Human footprint (1993)",
+      color = "Human footprint (1993)",
+      x = "PCA axis related to stream gradient",
+      y = paste0("Predicted values of ", response, " (at T = 10 years)")
+    )
+
+  p_riv_hft9309 <- pred_perc_exo_sp %>%
+    filter(round(log1_year_nb, 2) == 2.40, hft_ix_c93 == 140) %>%
+    ggplot(aes(x = riv_str_rc1, y = mean)) +
+    geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(hft_ix_c9309_log2_ratio)), alpha = .2) +
+    labs(
+      fill = "Human footprint change (1993-2009)",
+      color = "Human footprint change (1993-2009)",
+      x = "PCA axis related to stream gradient",
+      y = paste0("Predicted values of ", response, " (at T = 10 years)")
+    )
+
+  p_hft93_hft9309 <- pred_perc_exo_sp %>%
+    filter(round(log1_year_nb, 2) == 2.40, round(riv_str_rc1, 2) == -0.23) %>%
+    ggplot(aes(x = hft_ix_c93, y = mean)) +
+    geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
+    geom_ribbon(
+      aes(
+        ymin = quant0.025, ymax = quant0.975,
+        fill = as.factor(hft_ix_c9309_log2_ratio)), alpha = .2) +
+    labs(
+      fill = "Human footprint change (1993-2009)",
+      color = "Human footprint change (1993-2009)",
+      x = "Human footprint (1993)",
+      y = paste0("Predicted values of ", response, " (at T = 10 years)")
+    )
+
+  list(
+    year_hft9309 = p_year_hft9309,
+    year_hft93 = p_year_hft93,
+    year_riv = p_year_riv,
+    riv_hft93 = p_riv_hft93,
+    riv_hft9309 = p_riv_hft9309,
+    hft93_hft9309 = p_hft93_hft9309
+  )
+}
+
 HC.prior  = "expression:
   sigma = exp(-theta/2);
   gamma = 25;

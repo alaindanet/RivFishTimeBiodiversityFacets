@@ -122,6 +122,45 @@ location_summary
 # Visualise interactions 
 
 ```{r}
+tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo))
+```
+```{r}
+pred_perc_exo_sp <- pred_gaussian_inla_exo %>%
+  filter(response == "perc_exo_sp") %>%
+  pull(pred) %>%
+  .[[1]]
+ti <- pred_gaussian_inla_exo %>%
+  mutate(pred_plot = map2(pred,response, ~ get_pred_list_plot(.x, get_var_replacement()[.y])))
+```
+
+```{r}
+```
+
+
+```{r}
+response <- "perc_exo_sp"
+```
+
+
+
+```{r}
+p2 %>%
+  filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c93 == 140) %>%
+  ggplot(aes(x = log1_year_nb, y = mean)) +
+  geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
+  geom_ribbon(
+    aes(
+      ymin = `0.025quant`, ymax = `0.975quant`,
+      fill = as.factor(hft_ix_c9309_log2_ratio)), alpha = .2)
+
+p2 %>%
+  filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c9309_log2_ratio == 0) %>%
+  ggplot(aes(x = log1_year_nb, y = mean)) +
+  geom_line(aes(color = as.factor(hft_ix_c93))) +
+  geom_ribbon(
+    aes(
+      ymin = `0.025quant`, ymax = `0.975quant`,
+      fill = as.factor(hft_ix_c93)), alpha = .2)
 jaccard <- gaussian_int_env$mod[[1]]
 nestedness <- gaussian_int_env$mod[[3]]
 slopes <- estimate_slopes(nestedness, trend = "log1_year_nb", at = c("riv_str_rc1",
