@@ -679,7 +679,8 @@ tar_target(neutral_turnover,
             max(riv_str_rc1)
           )
           ),
-        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4)
+        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4),
+        unitabundance = "Count"
         ),
       na_var = c(
         "siteid1", "intercept_main_bassiteid",
@@ -703,7 +704,8 @@ tar_target(neutral_turnover,
             max(riv_str_rc1)
           )
           ),
-        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4)
+        hft_ix_c9309_log2_ratio = c(-2, -1, 0, 1, 2, 4),
+        unitabundance = "Count"
         ),
       na_var = c(
         "siteid1", "intercept_main_bassiteid",
@@ -1145,6 +1147,7 @@ tar_target(neutral_turnover,
     ),
   tar_target(pred_gaussian_inla_prior,
     gaussian_inla_prior %>%
+      filter(map_lgl(gaussian_inla_prior$mod, ~class(.x) == "inla")) %>%
       mutate(pred = map(mod,
           ~get_pred_inla(
             inla_mod = .x,
@@ -1187,10 +1190,15 @@ tar_target(neutral_turnover,
       ]
   ),
   tar_target(gaussian_inla_prior_effects,
-    format_inla_model_list(x = gaussian_inla_prior)),
+    format_inla_model_list(
+      x = gaussian_inla_prior %>%
+            filter(map_lgl(gaussian_inla_prior$mod, ~class(.x) == "inla"))
+    )
+  ),
   tar_target(gaussian_inla_prior_re_pred,
     target_inla_re_pred(
-    mod_list = gaussian_inla_prior,
+    mod_list = gaussian_inla_prior %>%
+            filter(map_lgl(gaussian_inla_prior$mod, ~class(.x) == "inla")),
     modelling_data = modelling_data,
     effect = "siteid1",
     trend_class = TRUE)

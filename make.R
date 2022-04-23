@@ -19,8 +19,8 @@ tar_meta()
 tar_visnetwork()
 
 tar_make(names = meeting_report)
-tar_make(names = gaussian_inla_prior_no_drivers_re_pred)
-tar_make(names = starts_with("gaussian_inla_exo_prior"))
+tar_make(names = pred_gaussian_inla)
+tar_make(names = starts_with("pred_data"))
 tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
 
 source(file = "start_rmd.R")
