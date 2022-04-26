@@ -1829,6 +1829,23 @@ tar_target(mod_sampling_eff,
      restr.fact = 50 
      )
    ),
+ tar_target(clust_curv_site_exo_fac_50,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers_inla_tot, center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .05, by = .05),
+     restr.fact = 50 
+     )
+   ),
+ tar_target(clust_curv_site_red_fac_50,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers_inla_tot[, clust_var_alter],
+       center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .05, by = .05),
+     restr.fact = 50 
+     )
+   ),
  tar_target(k6_fac_1, 
    tclust(
      x = scale(site_no_drivers_inla, center = FALSE),
