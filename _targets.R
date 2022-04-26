@@ -1319,7 +1319,7 @@ tar_target(neutral_turnover,
     pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_no_drivers_effects,
-    format_inla_model_list(x = gaussian_inla_exo_no_drivers))
+    format_inla_model_list(x = gaussian_inla_exo_no_drivers)),
   tar_target(gaussian_inla_exo_no_drivers_re_pred,
     target_inla_re_pred(
     mod_list = gaussian_inla_exo_no_drivers,

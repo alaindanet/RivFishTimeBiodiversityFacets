@@ -11,7 +11,8 @@ tar_make_future(
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 6),
-  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps",
+  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
+             "biodiversity_facets_support",
              "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
   )
 

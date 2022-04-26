@@ -574,6 +574,7 @@ biodiv_facets_main <- c(abun_var, var_jaccard, rich_var)[
   convergence problems :
 
 ```{r}
+tar_load(binded_gaussian_tmb_no_evt_re)
 comp_log_year_no_evt_re <- binded_gaussian_tmb_no_evt_re %>%
   filter(response %in% biodiv_facets_main) %>%
   mutate(
