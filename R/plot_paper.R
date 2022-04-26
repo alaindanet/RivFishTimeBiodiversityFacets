@@ -166,6 +166,7 @@ plot_pca_clust <- function(
   size_abscisse_segment = .25,
   size_arrows_segment = .25,
   force = 10, force_pull = 1,
+  var_scaling_factor = NULL,
   seed = NA,
   replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
   add_variable = TRUE,
@@ -230,6 +231,12 @@ plot_pca_clust <- function(
         abs(.data[[xaxis]]) > ctb_thld |
           abs(.data[[yaxis]]) > ctb_thld
       )
+
+    if (!is.null(var_scaling_factor)) {
+      pca_data[[xaxis]] <- pca_data[[xaxis]] * var_scaling_factor
+      pca_data[[yaxis]] <- pca_data[[yaxis]] * var_scaling_factor
+    }
+
     p <- p +
       geom_segment(data = pca_data,
         aes_string(x = 0, y = 0, xend = xaxis, yend = yaxis),
