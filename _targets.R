@@ -33,7 +33,7 @@ list(
       normalizePath(),
     format = "file"),
   tar_target(basinatlas_shp_file,
-    here("inst", "extdata", "BasinATLAS_v10_shp", "BasinATLAS_v10_lev01.shp") %>%
+    paste0(basinatlas_shp_folder, "/BasinATLAS_v10_lev04.shp") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
@@ -98,7 +98,7 @@ list(
       clean_names()
     ),
   tar_target(basinatlas,
-    read_sf(basinatlas_shp_file) %>%
+    sf::read_sf(basinatlas_shp_file) %>%
       clean_names()
     ),
   tar_target(measurement_exo_tmp,

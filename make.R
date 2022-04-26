@@ -3,23 +3,24 @@ library(tarchetypes)
 
 tar_make()
 
+exclusion_vector <- c("chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
+             "biodiversity_facets_support",
+             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
+
 tar_make_future(
   workers = min(future::availableCores() - 1, 24),
-  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps",
-             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
+  names = !c(starts_with("beta_"), exclusion_vector)
   )
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 6),
-  names = !c(starts_with("beta_"), "chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
-             "biodiversity_facets_support",
-             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
+  names = !c(starts_with("beta_"), exclusion_vector)
   )
 
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = meeting_report)
+tar_make(names = basinatlas)
 tar_make(names = pred_gaussian_inla)
 tar_make(names = starts_with("pred_data"))
 tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
