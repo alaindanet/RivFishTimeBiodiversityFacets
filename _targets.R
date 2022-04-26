@@ -1846,10 +1846,10 @@ tar_target(mod_sampling_eff,
      restr.fact = 50 
      )
    ),
- tar_target(k6_fac_1, 
+ tar_target(k6_fac_1,
    tclust(
      x = scale(site_no_drivers_inla, center = FALSE),
-     iter.max = 100, 
+     iter.max = 100,
      k = 6,
      alpha = 0.05,
      restr.fact = 1,
@@ -1859,8 +1859,19 @@ tar_target(mod_sampling_eff,
  tar_target(k6_fac_50,
    tclust(
      x = scale(site_no_drivers_inla, center = FALSE),
-     iter.max = 100, 
+     iter.max = 100,
      k = 6,
+     alpha = 0.05,
+     restr.fact = 50,
+     warnings = 2
+   )
+   ),
+ tar_target(k4_fac_50_red,
+   tclust(
+     x = scale(site_no_drivers_inla[, clust_var_alter],
+       center = FALSE),
+     iter.max = 100,
+     k = 4,
      alpha = 0.05,
      restr.fact = 50,
      warnings = 2
@@ -1877,6 +1888,7 @@ tar_target(mod_sampling_eff,
  ),
  tar_target(discr_k6_fac_1, DiscrFact(k6_fac_1, threshold = 0.5)),
  tar_target(discr_k6_fac_50, DiscrFact(k6_fac_50, threshold = 0.5)),
+ tar_target(discr_k4_fac_50_red, DiscrFact(k4_fac_50_red, threshold = 0.5)),
  tar_target(discr_k12_fac_1, DiscrFact(k12_fac_1, threshold = 0.5)),
  tar_target(discr_k7_fac_1, DiscrFact(k7_fac_1, threshold = 0.5)),
  tar_target(clustering_site_check,
@@ -1892,7 +1904,7 @@ tar_target(mod_sampling_eff,
            maxitems = 10000
          )
         )
-     )  
+     )
    )
    ),
  tar_target(p_clust_prop,
@@ -1910,9 +1922,23 @@ tar_target(mod_sampling_eff,
      assign_threshold = .5,
      clean_method = "0"
      )),
+ tar_target(site_cl_0_red,
+   get_cluster_df(
+     tclust_obj = k4_fac_50_red,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "0"
+     )),
  tar_target(site_cl_rm,
    get_cluster_df(
      tclust_obj = k6_fac_1,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "rm"
+     )),
+ tar_target(site_cl_rm_red,
+   get_cluster_df(
+     tclust_obj = k4_fac_50_red,
      site_env = site_env,
      assign_threshold = .5,
      clean_method = "rm"
@@ -1932,7 +1958,7 @@ tar_target(mod_sampling_eff,
      ggplot(aes(y = estimate, x = group, fill = group)) %>%
      make_custom_boxplot(., aes_col = group)
    ),
- tar_target(country_to_plot, c("USA", "FRA","GRB", "SWE")),
+ tar_target(country_to_plot, c("USA", "FRA", "GRB", "SWE")),
  tar_target(p_cluster_country,
    tibble(
      country = country_to_plot,
