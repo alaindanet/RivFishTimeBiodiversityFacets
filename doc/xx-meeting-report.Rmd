@@ -675,10 +675,6 @@ mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
 
 ## Exotic species richness and abundance 
 
-```{r mod-exo, fig.height = 12, fig.cap = "Results of gaussian model for exotic/native species"}
-tar_load(p_mod_exo_comp_std)
-p_mod_exo_comp_std
-```
 
 - Summary:
   - Long-term and short term pressure decrease percentage of native richness and abundance
@@ -727,6 +723,7 @@ dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
 
 
 ```{r}
+tar_load(rivers10)
 world_site_sf$cl <- world_site_sf$site %>%
     left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
     mutate(cl = relevel(as.factor(cl), ref = 1))
@@ -734,13 +731,15 @@ world_site_sf$cl <- world_site_sf$site %>%
 main_map <- ggplot(world_site_sf$world) +
   geom_sf(color = NA) +
   theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
   geom_sf(data = world_site_sf$cl %>%
     filter(!is.na(cl)),
-  aes(color = cl))
+  aes(fill = cl), pch = 21, color = "white", alpha = .3)
 
 zoom_map <- list(
   north_am = "USA",
-  south_eu = c("FRA", "GBR", "HUN", "ESP", "BEL"),
+  eng = "GBR",
+  south_eu = c("FRA", "ESP", "BEL"),
   north_eu = c("FIN", "NOR", "SWE"),
   aus = "AUS"
 )
@@ -756,23 +755,28 @@ zoom_map_coord_df <- map_dfr(zoom_map_coord,
     enframe(.),
   .id = "zoom") %>%
 pivot_wider(names_from = "name", values_from = "value") %>%
-mutate(label = LETTERS[seq_len(4)])
+mutate(
+  label = LETTERS[seq_len(length(zoom_map_coord))],
+)
+```
 
+```{r}
 main_map_rect <- main_map +
-  geom_rect(
-    data = zoom_map_coord_df,
-  aes(xmin = xmin, ymin = ymin, xmax = xmax, ymax = ymax),
-    fill = NA,
-    colour = "black",
-    size = 0.6) +
   geom_text(
     data = zoom_map_coord_df,
-    aes(x = xmin, y = ymax, label = label),
-    vjust = 1, hjust = 1, size = 15
-  )
+    aes(x = xmax, y = ymax, label = label),
+    vjust = 0.5, hjust = 0, size = 7) +
+  coord_sf(expand = FALSE) +
+  theme(legend.position = "none")
+save_plot(
+  here("doc", "fig", "global_map.png"),
+  main_map_rect,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
 
 p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
-  ~main_map_rect +
+  ~main_map +
     coord_sf(
       xlim = .x[c("xmin", "xmax")],
       ylim = .x[c("ymin", "ymax")],
@@ -780,6 +784,18 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
     annotate("text", x = .x["xmin"], y = .x["ymax"],
       label = .y, size = 15, vjust = 1, hjust = 0) +
     theme(legend.position = "none")
+)
+fig2_right <- plot_grid(
+  main_map_rect, p_zoom_map$south_eu, p_zoom_map$north_eu,
+  p_zoom_map$north_am, p_zoom_map$eng, p_zoom_map$aus,
+  ncol = 3, axis ="l"
+)
+
+save_plot(
+  here("doc", "fig", "fig2_right.png"),
+  fig2_right,
+  base_height = 3.71,
+  base_asp = 2.618,
 )
 ```
 

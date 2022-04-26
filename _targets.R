@@ -27,6 +27,16 @@ list(
     get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
     error = "continue"
     ),
+  tar_target(basinatlas_shp_folder,
+    here("inst", "extdata", "BasinATLAS_v10_shp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(basinatlas_shp_file,
+    here("inst", "extdata", "BasinATLAS_v10_shp", "BasinATLAS_v10_lev01.shp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
   tar_target(water_temperature_file,
     here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
       R.utils::filePath(., expandLinks = "any"),
@@ -85,6 +95,10 @@ list(
       )),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
+      clean_names()
+    ),
+  tar_target(basinatlas,
+    read_sf(basinatlas_shp_file) %>%
       clean_names()
     ),
   tar_target(measurement_exo_tmp,
@@ -167,6 +181,12 @@ tar_target(filtered_dataset_avg3y, get_filtered_dataset(
     )),
 tar_target(world_site_sf, 
   get_world_site_sf(loc = filtered_dataset$location)
+  ),
+tar_target(rivers10, ne_download(
+  scale = 10,
+  type = "rivers_lake_centerlines",
+  category = "physical",
+  returnclass = "sf")
   ),
 # Community structure
 tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
