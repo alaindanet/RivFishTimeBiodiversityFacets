@@ -1868,7 +1868,7 @@ tar_target(mod_sampling_eff,
    ),
  tar_target(k4_fac_50_red,
    tclust(
-     x = scale(site_no_drivers_inla[, clust_var_alter],
+     x = scale(site_no_drivers_inla_tot[, clust_var_alter],
        center = FALSE),
      iter.max = 100,
      k = 4,

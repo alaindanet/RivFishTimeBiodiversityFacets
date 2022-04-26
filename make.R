@@ -9,19 +9,19 @@ exclusion_vector <- c("chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 24),
-  names = !c(starts_with("beta_"), exclusion_vector)
+  names = !c(starts_with("beta_"), !!exclusion_vector)
   )
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 6),
-  names = !c(starts_with("beta_"), exclusion_vector)
+  names = !c(starts_with("beta_"), !!exclusion_vector)
   )
 
 tar_meta()
 tar_visnetwork()
 
 tar_make(names = basinatlas)
-tar_make(names = pred_gaussian_inla)
+tar_make(names = site_cl_rm_red)
 tar_make(names = starts_with("pred_data"))
 tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
 
