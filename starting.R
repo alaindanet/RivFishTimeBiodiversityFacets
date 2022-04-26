@@ -272,3 +272,19 @@ R.utils::createLink(
 use_rmd(target_name = "ac-check-rivfishtime-update")
 
 usethis::use_git_ignore("doc/map_*")
+
+###########################
+#  Get link to basin shp  #
+###########################
+
+basin_atlas_folder <- paste0(server_mounted_location, "ENV_LAYERS/basin_atlas_v10_shp/BasinATLAS_v10_shp")
+
+R.utils::createLink(
+  link = here("inst", "extdata", "BasinATLAS_v10_shp"),
+  target = basin_atlas_folder,
+  method = ifelse(
+    machine_login == "ahdanet",
+    "windows-shortcut", "unix-symlink"
+    ),
+  overwrite = TRUE
+)
