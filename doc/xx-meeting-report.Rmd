@@ -516,28 +516,36 @@ source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette
 pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
 pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
 
-
 tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+```
+
+```{r}
+restricted_dimension <- c(
+  "hillebrand_dis_scaled", "log_total_abundance",
+  "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
 tu <- rbind( gaussian_inla_std_effects,
   gaussian_inla_exo_std_effects) %>%
   filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% restricted_dimension) %>%
   mutate(
     term = str_replace_all(term, get_model_term_replacement()),
     response = get_var_replacement()[response]
     )
+```
 
+```{r}
 p1 <- tu %>%
-  filter(facet == "main", var_type == "dissimilarity") %>%
+  filter(facet == "main") %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect()
 
 p2 <- tu %>%
-  filter(facet == "interaction", var_type == "dissimilarity") %>%
+  filter(facet == "interaction") %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect()
 
 p3 <- tu %>%
-  filter(facet == "dbl_interaction", var_type == "dissimilarity") %>%
+  filter(facet == "dbl_interaction") %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
     legend_present = TRUE,
@@ -549,44 +557,11 @@ leg_dis <- get_legend(p3 +
   theme(legend.position = "bottom")
 )
 
-p_left <- plot_grid(
+plot_grid(
   p1,
   p2,
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1, 1, 1, .2),
-  ncol = 1)
-```
-
-```{r}
-p4 <- tu %>%
-  filter(facet == "main", var_type == "quantity") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect()
-
-p5 <- tu %>%
-  filter(facet == "interaction", var_type == "quantity") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect()
-
-p6 <- tu %>%
-  filter(facet == "dbl_interaction", var_type == "quantity") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(.,
-    legend_present = TRUE,
-    xaxis_title = TRUE
-    ) +
-  labs(x = "Standardized coefficients")
-
-leg_qut <- get_legend(p6 +
-  theme(legend.position = "bottom")
-)
-
-p_right <- plot_grid(
-  p4,
-  p5,
-  p6 + theme(legend.position = "none"),
-  leg_qut,
   rel_heights = c(1, 1, 1, .2),
   ncol = 1)
 ```

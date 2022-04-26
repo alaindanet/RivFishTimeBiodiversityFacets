@@ -1298,6 +1298,44 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(exo_resp_var)
     ),
+
+  tar_target(gaussian_inla_exo_no_drivers,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(
+              x = exo_resp_var,
+              drivers = FALSE,
+              tau_prior = FALSE
+              ),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = rbind(
+              modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
+              pred_data_exo
+            )
+            )))),
+    pattern = map(exo_resp_var)
+    ),
+  tar_target(gaussian_inla_exo_no_drivers_effects,
+    format_inla_model_list(x = gaussian_inla_exo_no_drivers))
+  tar_target(gaussian_inla_exo_no_drivers_re_pred,
+    target_inla_re_pred(
+    mod_list = gaussian_inla_exo_no_drivers,
+    modelling_data = modelling_data_exo,
+    effect = "siteid1",
+    trend_class = TRUE)
+  ),
+  tar_target(gaussian_inla_exo_no_drivers_adj_re,
+    get_ajusted_re_inla(
+      re_pred = gaussian_inla_exo_no_drivers_re_pred,
+      effect = gaussian_inla_exo_no_drivers_effects,
+      modelling_data = modelling_data_exo,
+      resp_to_keep = exo_resp_var
+      ) %>%
+    arrange(siteid)
+  ),
   tar_target(pred_gaussian_inla_exo,
     gaussian_inla_exo %>%
       mutate(
@@ -1678,6 +1716,12 @@ tar_target(mod_sampling_eff,
       "appearance_scaled", "disappearance_scaled",
       "turnover_scaled", "nestedness_scaled")
     ),
+  tar_target(clust_var_alter,
+    c("log_total_abundance", "log_chao_richness",
+      "hillebrand_dis_scaled", "perc_exo_sp",
+      "perc_exo_abun"
+      )
+    ),
   tar_target(basin_no_drivers,
     na.omit(
       get_random_effect_df(
@@ -1721,6 +1765,23 @@ tar_target(mod_sampling_eff,
  tar_target(site_no_drivers_inla,
    gaussian_inla_no_drivers_adj_re %>%
      filter(response %in% clust_var) %>%
+     select(response, siteid, mean) %>%
+     pivot_wider(names_from = "response", values_from = "mean") %>%
+     arrange(siteid) %>%
+     column_to_rownames("siteid")
+   ),
+ tar_target(site_no_drivers_inla_exo,
+   gaussian_inla_exo_no_drivers_adj_re %>%
+     select(response, siteid, mean) %>%
+     pivot_wider(names_from = "response", values_from = "mean") %>%
+     arrange(siteid) %>%
+     column_to_rownames("siteid")
+   ),
+ tar_target(site_no_drivers_inla_tot,
+   rbind(
+     gaussian_inla_no_drivers_adj_re,
+     gaussian_inla_exo_no_drivers_adj_re
+     ) %>%
      select(response, siteid, mean) %>%
      pivot_wider(names_from = "response", values_from = "mean") %>%
      arrange(siteid) %>%

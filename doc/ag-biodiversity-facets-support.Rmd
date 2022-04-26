@@ -24,9 +24,87 @@ library(factoextra)
 
 ```{r load-targets, include=FALSE}
 tar_load(c(modelling_data, analysis_dataset))
+tar_load(c(gaussian_inla_std_effects, gaussian_inla_exo_std_effects))
 tar_load(c(abun_var, var_jaccard, rich_var, clust_var, main_effect_var))
 tar_load(site_cl_rm)
 ```
+
+# Supplementary figures
+
+
+```{r}
+tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+
+p1 <- tu %>%
+  filter(facet == "main", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p2 <- tu %>%
+  filter(facet == "interaction", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p3 <- tu %>%
+  filter(facet == "dbl_interaction", var_type == "dissimilarity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis <- get_legend(p3 +
+  theme(legend.position = "bottom")
+)
+
+p_left <- plot_grid(
+  p1,
+  p2,
+  p3 + theme(legend.position = "none"),
+  leg_dis,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
+p_left
+```
+
+```{r}
+p4 <- tu %>%
+  filter(facet == "main", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p5 <- tu %>%
+  filter(facet == "interaction", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p6 <- tu %>%
+  filter(facet == "dbl_interaction", var_type == "quantity") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_qut <- get_legend(p6 +
+  theme(legend.position = "bottom")
+)
+
+p_right <- plot_grid(
+  p4,
+  p5,
+  p6 + theme(legend.position = "none"),
+  leg_qut,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
+p_right
 
 # Data exploration
 
