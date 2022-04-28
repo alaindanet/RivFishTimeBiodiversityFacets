@@ -28,7 +28,7 @@ library(hrbrthemes)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, modelling_data))
+tar_load(c(filtered_dataset, modelling_data, measurement_exo))
 
 loc <- filtered_dataset$location %>%
   mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic"))
@@ -45,6 +45,7 @@ tar_load(p_clust_prop)
 tar_load(c(
     clust_curv_site, k6_fac_1,
     clust_curv_site_fac_50,
+    site_k6_fac_1_cl,
     discr_k6_fac_1,
     site_cl_rm
     ))
@@ -684,10 +685,22 @@ p_pca_clust <- plot_pca_clust(
 ```
 
 ```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
+axis_l <- list(
+  c("RC1", "RC2"),
+  c("RC1", "RC3"),
+  c("RC1", "RC4"),
+  c("RC1", "RC5"),
+  c("RC2", "RC3"),
+  c("RC2", "RC4"),
+  c("RC2", "RC5"),
+  c("RC3", "RC4"),
+  c("RC3", "RC5"),
+  c("RC4", "RC5")
+)
 p_pca_cl_ell <- map(axis_l,
   ~plot_pca_clust(
      .data = pca_clust$rotated,
-     site_cl = site_k6_fac_1_cl,
+     site_cl = site_cl_rm,
      add_point = TRUE,
      add_ellipse = TRUE,
      xaxis = .x[1], yaxis = .x[2],
