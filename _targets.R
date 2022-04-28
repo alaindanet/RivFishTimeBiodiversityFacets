@@ -1907,7 +1907,7 @@ tar_target(mod_sampling_eff,
    )
    ),
  tar_target(k7_fac_1,
-   tclust(scale(site_no_drivers_inla, center = FALSE), iter.max = 100, 
+   tclust(scale(site_no_drivers_inla, center = FALSE), iter.max = 100,
      k = 7, alpha = 0.05, restr.fact = 1)),
  tar_target(k12_fac_1,
    tclust(x = scale(site_no_drivers_inla, center = FALSE),

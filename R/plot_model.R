@@ -132,7 +132,8 @@ plot_inla_fixed_effect <- function(
       color = response,
       size = width_bar, width = 0),
     alpha = 0.5,
-    position = position_dodge(width = 0.7)
+    position = position_dodge(width = 0.7),
+    show.legend = FALSE
     ) +
   geom_point(aes(x = mean, y = term, color = response),
     alpha = 1, size = 5,

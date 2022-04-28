@@ -176,7 +176,7 @@ plot_pca_clust <- function(
   lim_x_y = c(-1, 1)
 ) {
 
-  pca_data <- .data$loadings[1:nrow(.data$loadings), ] %>%
+  pca_data <- .data$loadings[seq_len(nrow(.data$loadings)), ] %>%
     as.data.frame() %>%
     rownames_to_column("variable") %>%
     as_tibble()
@@ -210,7 +210,7 @@ plot_pca_clust <- function(
   if (add_point) {
     p <- p +
       geom_point(data = tt,
-        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        aes_string(x = xaxis, y = yaxis, colour = "as.factor(cl)"),
         alpha = alpha_point
       )
   }
@@ -218,7 +218,7 @@ plot_pca_clust <- function(
     p <- p +
       stat_ellipse(
         data = tt,
-        aes(x = RC1, y = RC2, colour = as.factor(cl)),
+        aes_string(x = xaxis, y = yaxis, colour = "as.factor(cl)"),
         segments = 100,
         level = .9
       )
@@ -235,6 +235,9 @@ plot_pca_clust <- function(
     if (!is.null(var_scaling_factor)) {
       pca_data[[xaxis]] <- pca_data[[xaxis]] * var_scaling_factor
       pca_data[[yaxis]] <- pca_data[[yaxis]] * var_scaling_factor
+
+      pca_label[[xaxis]] <- pca_label[[xaxis]] * var_scaling_factor
+      pca_label[[yaxis]] <- pca_label[[yaxis]] * var_scaling_factor
     }
 
     p <- p +
