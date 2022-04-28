@@ -28,7 +28,10 @@ library(hrbrthemes)
 ```
 
 ```{r load-targets, include=FALSE}
-tar_load(c(filtered_dataset, modelling_data, analysis_dataset))
+tar_load(c(filtered_dataset, modelling_data))
+
+loc <- filtered_dataset$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic"))
 
 tar_load(pca_riv_str)
 tar_load(c(var_analysis, tps_var, clust_var))
@@ -41,8 +44,8 @@ tar_load(p_clust_prop)
 
 tar_load(c(
     clust_curv_site, k6_fac_1,
-    clust_curv_site_fac_50, k6_fac_50,
-    discr_k6_fac_50,
+    clust_curv_site_fac_50,
+    discr_k6_fac_1,
     site_cl_rm
     ))
 
@@ -441,7 +444,7 @@ coefficients were standardised as $r_\delta = \beta \dfrac{\s_x}{\s_y}$, $\beta$
 being the unstandardised slope, $s_x$ and $s_y$ respectively the standard
 deviation of the explicative and response variable. 
 
-### Estimation of fixed effects for each level of random effects
+### Estimation of fixed effects for each level of random effects (TO UPDATE)
 
 The fixed effect coefficients for each level of random effects were computed as
 sum of the random effects and its corresponding fixed effects, known as BLUPs
@@ -451,20 +454,7 @@ example, it means that while we are able to compute the temporal trends as each
 site and basin, those temporal trends have no associated errors.
 
 ```{r}
-tar_load(site_temporal_trends)
-site_temporal_trends <- gaussian_no_drivers_re_self_c %>%
-  select(response, random_site) %>%
-  unnest(random_site) %>%
-  select(response, siteid, log1_year_nb)
-```
-
-```{r}
-site_temporal_trends %>%
-  filter(response %in% clust_var) %>%
-  mutate(response = get_var_replacement()[response]) %>%
-  ggplot(aes(x = log1_year_nb)) +
-  geom_histogram() +
-  facet_wrap(vars(response), scales = "free")
+tar_load(site_no_drivers_inla_tot)
 ```
 
 The estimated temporal trends of total abundance were corrected according to
@@ -479,7 +469,7 @@ to 6 cluster, the proportion of trimmed data does not change the ranking of the 
 ```
 
 ```{r cl-curv, fig.cap=kmeans_opt_nb_gr_sil_cap, fig.height=7, include=FALSE}
-plot(clust_curv_site_fac_50)
+plot(clust_curv_site)
 ```
 
 ```{r}
@@ -489,7 +479,7 @@ at the 5% threshold."
 ```
 
 ```{r cl-p, fig.cap=kmeans_sites, include=FALSE}
-plot(discr_k6_fac_50)
+plot(discr_k6_fac_1)
 ```
 
 Site were clustered based on the temporal trends of biodiversity facets using
@@ -498,16 +488,13 @@ centered before clustering.  According to the optimal function, the optimal
 number of clusters was between 6 and 8 (Fig. \@ref(fig:cl-curve)). We used 25 starting
 positions and a maximum of 100 iterations. We trimmed 5% of outliers in the
 multidimentional space. We set cluster assignement as NA for sites that had an
-assignement improvement of 10% in another cluster. Clustering was computed with
+assignement improvement of 50% in another cluster. Clustering was computed with
 `tclust` R package. 
 
 # Results
 
 ## Temporal trends of biodiversity facets and its drivers
 
-```{r}
-tar_load(c(gaussian_int_env_comp_std, mod_comp_std_df))
-```
 
 
 ```{r mod-slp-std, include=FALSE}
@@ -533,16 +520,19 @@ tu <- rbind( gaussian_inla_std_effects,
     )
 ```
 
-```{r}
+```{r, fig.show="hide"}
+library(ggbreak)
 p1 <- tu %>%
   filter(facet == "main") %>%
   arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect()
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.25, .65))
 
 p2 <- tu %>%
   filter(facet == "interaction") %>%
   arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect()
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.10, .17))
 
 p3 <- tu %>%
   filter(facet == "dbl_interaction") %>%
@@ -554,16 +544,21 @@ p3 <- tu %>%
   labs(x = "Standardized coefficients")
 
 leg_dis <- get_legend(p3 +
+ guides(colour = guide_legend(nrow = 2) ) +
   theme(legend.position = "bottom")
 )
 
-plot_grid(
-  p1,
-  p2,
+fig1 <- plot_grid(
+  print(p1),
+  print(p2),
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1, 1, 1, .2),
+  rel_heights = c(1, 1, 1, .3),
   ncol = 1)
+```
+
+```{r, fig.height = 10}
+fig1
 ```
 
 
@@ -585,9 +580,90 @@ theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
 guides(colour = guide_legend(title.position = "top"))
 ```
 
+
+
+```{r}
+mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
+  Coefficients were standardized by refiting the models with scaled response and
+  explicative variables. Bars represent CI at 95% computed with Wald
+  approximation. (B) Interactions effects of pressures on temporal trends
+  (Antagonistic or synergetic).")
+```
+
+1. Take home results
+   1. Temporal dissimilarity within sites increases faster in degraded sites (long & short term)  
+   1. Evidences of recovery in long-term degraded sites in term of total
+      abundances and species richness, but not in term of exotic species
+   1. Even in a dataset containing locations more degraded (hft 1993) than the global
+     freshwater, we found that recent increases in pressure (93-09) increase
+     temporal trends of exotic species percentage (not in abundance, i.e.
+     meaning recent colonisation?), and a decrease of the temporal trends of
+     species richness and of total abundance.
+   1. Long & short term pressure interact:
+     - Synergistic on dissimilarity and % of exotic species
+     - Recent increase in pressure decreases the recovery of total abundance
+ 
+
+1. Biodiversity facets:
+   1. General: 
+      1. Positive temporal trends of species richness, total abundance & very weak
+         evidence for exotic species. In accordance with [@klink_meta-analysis_2020].
+         We found high species recomposition over time
+         [@dornelas_assemblage_2014; @blowes_geography_2019]
+      1. Jaccard & Simpson based dissimilarity have the same trends everywhere, changes are driven by abundant species
+      1. Community temporal changes in composition are mainly driven by turnover
+         [@blowes_geography_2019]
+
+1. Dissimilarity Temporal trends 
+   - stronger along the stream gradient, long term degraded sites and in sites
+     that have recently increased in degradation 
+   - Evidences that long term degradation decrease the signature of stream
+     gradient but not for recent degradation
+   - Long-term & recent degradation have a synergistic on dissimilarity
+1. Richness, abundance & exotic species
+   1. More richness downstream, weak evidence for higher abundances
+   1. Long-term degradation: strong evidence for higher richness, higher
+      percentage of exotic species and exotic abundance but lower total
+      abundance
+   1. Sites that had an recent increase in degradation have overall lower total
+      abundance, weak evidence for lower species richness, strong evidence for
+      higher percentage of exotic species and exotic abundance
+   1. Strong evidences that sites that have been degraded (long term)  
+      have an higher temporal trends in richness and total abundance (recovery
+      hypothesis @klink_meta-analysis_2020) but no change in exotic species 
+   1. Sites that recently increase in pressure had higher temporal trends of
+      percentage of exotic species, moderate evidence for temporal decrease of total
+      abundance, very weak evidence for temporal decrease of species richness
+   1. Long-term degraded sites had a synergistic effect with stream gradient on
+      exotic species but antagonistic on total abundance
+   1. Sites that recently increase in pressure had a synergistic effect with stream gradient on
+      the temporal trends of species richness, total abundance, percentage of
+      exotic species and exotic abundance (can't find justification for total
+      abundance and species richness)
+   1. Long-term degraded sites that had a short term increase in degradation leads to
+      increase of temporal trends of percentage of exotic species and decrease
+      of temporal trends of total abundance (no effect of richness and
+      percentage of exotic abundances)
+
+
+
+## Typology of biodiversity trends 
+
+
+
+```{r}
+color_cl_scale <- setNames(pal2, unique(site_cl_rm$cl))
+```
+
+
+```{r}
+pca_clust_cap <- "PCA biplot on site temporal trends (model without
+drivers). The sites are colored by their cluster belongings."
+```
+
 ```{r}
 tar_load(c(pca_clust, site_cl_rm))
-pca_clust <- compute_rotated_pca(site_no_drivers_inla)
+pca_clust <- compute_rotated_pca(site_no_drivers_inla_tot, naxis = 5)
 p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
@@ -607,119 +683,190 @@ p_pca_clust <- plot_pca_clust(
    )
 ```
 
-
-```{r}
-mod_slp_std_cap <- paste0("(A) Estimated fixed effects of the gaussian models.
-  Coefficients were standardized by refiting the models with scaled response and
-  explicative variables. Bars represent CI at 95% computed with Wald
-  approximation. (B) Interactions effects of pressures on temporal trends
-  (Antagonistic or synergetic).")
-```
-
-1. Main effects
-    1. Stream gradient (upstream -> downstream, called hereafter stream gradient):
-        - Total abundance was higher toward downstream
-        - No effect on species richness
-    1. Human footprint (1993):
-        - Species richness was higher when human pressure was high
-        - Total abundance was not related to long term pressure  
-    1. Human footprint change (1993-2009):
-        - Species richness was overall lower where pressure increased
-        - Total abundance was overall higher where pressure increased
-    1. Temporal trend:
-        - All temporal trends were positive in average: including species richness,
-          total abundance and dissimilarity index
-        - Jaccard, abundance based dissimilarity and appearance have the higher temporal trends
-              ($r_\delta$ around 0.37), followed by disappearance, nestedness and
-              turnover ($r_\delta$ around 0.25)
-        - Species richness and total abundance has a tiny increase around 0.025 (ten time less)
-1. Effect of environmental pressure on temporal trends 
-    1. Effect of stream gradient:
-         - **Higher increase in dissimilarity downstream**: Jaccard, turnover and
-           abundance based dissimilarity
-         - **Higher increase in total abundance downstream**
-         - **Nestedness and appearance temporal trends decrease downstream** 
-    1. Effect of long term pressure, human footprint (1993)
-         - **Higher increase in dissimilarity and appearance** in historically
-           degraded sites
-         - **Higher increase in total abundance and species richness** in
-           historically degraded sites
-         - **Lower species loss** in historically degraded sites
-    1. Effect of short term pressure, human footprint (1993-2009): 
-        - **Higher increase in dissimilarity** where pressure increased recently
-          (Jaccard, abundance based dissimilarity) and driven by changes in species
-          identity (turnover)
-        - **Higher increase in species disparition** when pressure increased
-          recently
-        - **Lower species richness increase** where pressure increased
-          recently
-        - **But no effect on total abundance**
-1. Effect of interaction between pressure on temporal trends 
-    1. Short-term pressure on the stream gradient:
-        - Mainly very little effect
-        - Antagonistic effects on turnover and appearance, i.e. short-term changes
-          decrease the effect on stream gradient 
-    1. Long-term pressure on the stream gradient: 
-        - Mainly very little effect
-        - Antagonistic effects on abundance based dissimilarity, on turnover: i.e.
-          long-term changes decrease the effect on stream gradient on turnover and
-          abundance-based dissimilarity
-        - Synergistic effects on Nestedness: symmetric regarding turnover  
-    1. Short-term pressures on long term pressures:
-         - Synergistic effect on abundance based dissimilarity, jaccard and turnover 
-         - Antagonistic effects on disappearance and species richness:
-           - Disappearance trends are negative in more long-term degraded sites but
-             not in the ones that have been degraded recently    
-           - Species richness trends are more positive in long-term degraded sites
-             but not in the ones that have been degraded recently
-
-## Exotic species richness and abundance 
-
-
-- Summary:
-  - Long-term and short term pressure decrease percentage of native richness and abundance
-
-
-## Typology of biodiversity trends 
-
-
-```{r}
-pca_clust_cap <- "(A) PCA biplot on site temporal trends (model without
-drivers). The sites are colored by their cluster belongings. (B) Correlation
-among temporal trends."
-```
-
-
 ```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
+p_pca_cl_ell <- map(axis_l,
+  ~plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_k6_fac_1_cl,
+     add_point = TRUE,
+     add_ellipse = TRUE,
+     xaxis = .x[1], yaxis = .x[2],
+     ctb_thld = .2,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80,
+     var_scaling_factor = 3.5
+   ) +
+ theme(legend.position = "bottom") +
+ scale_color_manual(values = color_cl_scale)
+)
+leg_cl <- get_legend(p_pca_cl_ell[[1]])
+p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
+
+p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 5, 6, 7)], nrow = 2)
+p_pca_cl_bt <- target_bp_cl_dist(cl_obj = site_cl_rm) +
+  scale_fill_manual(values = color_cl_scale) +
+  scale_color_manual(values = color_cl_scale) +
+  theme(axis.text.x = element_text(angle = 20, vjust = 0))
+
 plot_grid(
-  p_pca_clust + theme_cowplot(),
-  cor_p,
+  p_pca_cl_top,
+  p_pca_cl_bt,
   nrow = 2,
-  labels = "AUTO"
+  rel_heights = c(1, .5)
 )
 ```
 
+1. PCA analysis shows 4 independant dimensions: (Figure 2)
+  - Dissimilarity, Species richness, Exotic species, Total abundance
+  - Confirms the choice of variable in figure 1
+1. Cluster results: (Figure 2)
+  1. Average (positive temporal trends of richness and abundance,  average
+     species composition)
+  1. High turnover
+  1. Temporal increase in species richness
+  1. Temporal decrease in total abundance
+  1. Temporal decrease in species richness
+  1. No change
+1. Spatial scale of change (Figure 3):
+   - Realms vary little in term of cluster composition
+   - Site variance on temporal trends is twice higher the one of basin,
+     indicating that spatial heterogeneity happens at low spatial scale
+
 
 ```{r}
-dist_clust_space <- as.data.frame(discr_k6_fac_50[c("disc", "disc2")])
+site_cl_rm_loc <- site_cl_rm %>%
+  select(siteid, cl) %>%
+  left_join(loc, by = "siteid") %>%
+  filter(ecoregion %in% c("Palearctic", "Nearctic", "Australasia")) %>%
+  left_join(
+    measurement_exo %>%
+      distinct(siteid, basin_name),
+    by = "siteid")
+
+n_clust_basin <- site_cl_rm_loc %>%
+  group_by(ecoregion, country, basin_name) %>%
+  summarise(
+    n = n(),
+    div = length(unique(cl)),
+    evenness = ifelse(div == 1, 1, diversity(table(cl)) / log(div))
+  )
+
+basin_name_palearctic <- n_clust_basin %>%
+  filter(ecoregion == "Palearctic", div == 6) %>%
+  arrange(desc(n), desc(evenness))
+#Derwent.UK, Loire, Seine
+
+fq_pal_bas <- site_cl_rm_loc %>%
+  filter(basin_name %in% c("Derwent.UK", "Umealven", "Seine")) %>%
+  group_by(basin_name, cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq)) %>%
+  ungroup()
+
+fq_pal <- site_cl_rm_loc %>%
+  filter(ecoregion == "Palearctic") %>%
+  group_by(cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq), basin_name = toupper("Palearctic")) %>%
+  ungroup()
+
+fq_tab <- rbind(
+  fq_pal, fq_pal_bas
+)
+
+get_fq_tab_from_basin <- function(
+  x = site_cl_rm_loc,
+  ecoregion = NULL,
+  basins = NULL) {
+
+  fq_pal_bas <- x %>%
+    filter(basin_name %in% basins) %>%
+    group_by(basin_name, cl) %>%
+    summarise(freq = n()) %>%
+    mutate(pc = prop.table(freq)) %>%
+    ungroup()
+
+  ecoregion2 <- ecoregion# to not mess up filter
+  fq_pal <- site_cl_rm_loc %>%
+    filter(ecoregion == ecoregion2) %>%
+    group_by(cl) %>%
+    summarise(freq = n()) %>%
+    mutate(
+      pc = prop.table(freq),
+      basin_name = toupper(ecoregion)
+      ) %>%
+    ungroup()
+
+  fq_tab <- rbind(fq_pal, fq_pal_bas) %>%
+    mutate(
+      basin_name = factor(
+        basin_name, levels = c(toupper(ecoregion), basins)),
+      ecoregion = ecoregion
+    )
+  return(fq_tab)
+
+}
+
+basin_name_palearctic <- n_clust_basin %>%
+  filter(ecoregion == "Nearctic", div >= 5) %>%
+  arrange(desc(n), desc(evenness))
+
+tab_palearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Palearctic",
+  basins = c("Seine", "Derwent.UK", "Umealven")
+)
+
+tab_nearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Nearctic",
+  basins = c("Mississippi", "Saint.Laurent", "Columbia")
+)
+
+
+
+basin_name_australasia <- n_clust_basin %>%
+  filter(ecoregion == "Australasia", div >= 5) %>%
+  arrange(desc(n), desc(evenness))
+
+tab_australasia <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Australasia",
+  basins = c("Murray.Darling", "Brisbane", "Logan")
+)
+
+tot_tab <- rbind(
+  tab_palearctic,
+  tab_nearctic,
+  tab_australasia) %>%
+  group_by(basin_name) %>%
+  mutate(
+    total_n = sum(freq)) %>%
+  ungroup() %>%
+  arrange(ecoregion, total_n) %>%
+  mutate(
+    basin_name_n = paste0(basin_name, " (", total_n, ")"),
+    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n))
+  )
 ```
 
-1. Links among temporal trends:
-    - Dissimilarity orthogonal to species richness 
-    - Disappearance orthogonal to Nestedness and Appearance 
-    - Total abundance weakly linked with species richness and dissimilarity
-1. Cluster signification (Figure \@ref(fig:pca-cor-tps)A):
-    - Cluster 1: Low change 
-    - Cluster 2: High turnover + medium increase abundance + high dissimilarity +
-      medium increase richness
-    - Cluster 3: High increase richness + high nestedness + increase abundance +
-      medium dissimilarity
-    - Cluster 4: Decrease richness + No abundance change + medium dissimilarity
-    - Cluster 5: Decrease abundance + medium dissimilarity 
-    - Cluster 6: Increase abundance + medium dissimilarity + low richness change 
+```{r}
+p_tot_tab <- tot_tab %>%
+  ggplot(aes(x = pc, y = basin_name_f, fill = as.factor(cl))) +
+  geom_col() +
+  labs(x = "Proportion") +
+  scale_x_continuous(expand = c(0, 0)) +
+  theme_cowplot() +
+  theme(axis.title.y = element_blank(), legend.position = "none") +
+  facet_grid(rows = vars(ecoregion), scale = "free_y") +
+  scale_fill_manual(values = color_cl_scale)
+```
 
-- Summary: **Cluster are determined by abundance, species richness and turnover,
-  meaning that there is a low dimensionality of biodiversity trends**
 
 
 ```{r}
@@ -734,7 +881,19 @@ main_map <- ggplot(world_site_sf$world) +
   geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
   geom_sf(data = world_site_sf$cl %>%
     filter(!is.na(cl)),
-  aes(fill = cl), pch = 21, color = "white", alpha = .3)
+  aes(fill = cl), pch = 21, color = "white", alpha = .3) +
+  scale_fill_manual(values = color_cl_scale) +
+  theme(legend.position = "none")
+
+main_map4zoom <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 5) +
+  scale_fill_manual(values = color_cl_scale) +
+  theme(legend.position = "none")
 
 zoom_map <- list(
   north_am = "USA",
@@ -776,7 +935,7 @@ save_plot(
 )
 
 p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
-  ~main_map +
+  ~main_map4zoom +
     coord_sf(
       xlim = .x[c("xmin", "xmax")],
       ylim = .x[c("ymin", "ymax")],
@@ -785,19 +944,8 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
       label = .y, size = 15, vjust = 1, hjust = 0) +
     theme(legend.position = "none")
 )
-fig2_right <- plot_grid(
-  main_map_rect, p_zoom_map$south_eu, p_zoom_map$north_eu,
-  p_zoom_map$north_am, p_zoom_map$eng, p_zoom_map$aus,
-  ncol = 3, axis ="l"
-)
-
-save_plot(
-  here("doc", "fig", "fig2_right.png"),
-  fig2_right,
-  base_height = 3.71,
-  base_asp = 2.618,
-)
 ```
+
 
 ```{r}
 map_cl_cap <- "Distribution of the clusters of biodiversity trends (without
@@ -808,17 +956,33 @@ of cluster by realm for the three main ones.
 ```
 
 
-```{r}
-p_map_cl <- plot_grid(
-  main_map_rect,
-  plot_grid(plotlist = p_zoom_map, nrow = 1),
-  nrow = 2
+```{r map-cl, fig.height=14, fig.width = 14*1.618, fig.cap=map_cl_cap}
+fig3_left <- p_tot_tab
+fig3_right <- plot_grid(
+  main_map_rect, p_zoom_map$eng,  p_zoom_map$north_eu,
+  p_zoom_map$north_am, p_zoom_map$south_eu, p_zoom_map$aus,
+  ncol = 3, axis = "l"
 )
-save_plot(here("doc/fig/p_map_cl.png"),
-  p_map_cl, base_height = 4, nrow = 2, ncol = 3)
+fig3 <- plot_grid(fig3_left, fig3_right, ncol = 2, rel_widths = c(.5, 1))
+fig3
+
+save_plot(
+  here("doc", "fig", "fig3_left.png"),
+  fig3_left,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+save_plot(
+  here("doc", "fig", "fig3_right.png"),
+  fig3_right,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+save_plot(here("doc/fig/fig3.png"),
+  fig3, base_height = 4, nrow = 1, ncol = 2)
 ```
 
-```{r map-cl, fig.height=16, fig.width = 16*1.618, fig.cap=map_cl_cap}
+```{r map-cl-old, eval=FALSE, fig.height=16, fig.width = 16*1.618, fig.cap=map_cl_cap}
 knitr::include_graphics(here("doc/fig/map_cluster.png"))
 ```
 
@@ -826,12 +990,6 @@ knitr::include_graphics(here("doc/fig/map_cluster.png"))
     - Cluster distribution is similar across ecoregion
     - Variability on temporal trends is twice higher on site than basin: low scale
       heterogeneity
-
-```{r, fig.height=10, fig.width=14, include=FALSE}
-main_map_rect
-p_zoom_map
-bp_random_effect
-```
 
 # Discussion 
 
@@ -866,6 +1024,53 @@ bp_random_effect
 <div id="refs"></div>
 
 # (APPENDIX) Appendix {-} 
+
+```{r, fig.show = "hide"}
+tu_full <- rbind(gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+
+p1_f <- tu_full %>%
+  filter(facet == "main") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.21, .5))
+
+p2_f <- tu_full %>%
+  filter(facet == "interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p3_f <- tu_full %>%
+  filter(facet == "dbl_interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis_f <- get_legend(p3_f +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 4))
+)
+
+figS1 <- plot_grid(
+  print(p1_f),
+  print(p2_f),
+  p3_f + theme(legend.position = "none"),
+  leg_dis_f,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
+```
+
+```{r std-tot, fig.height = 12}
+ figS1
+```
 
 
 ## Analysis
