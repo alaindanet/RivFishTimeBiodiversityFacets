@@ -1829,11 +1829,20 @@ tar_target(mod_sampling_eff,
      restr.fact = 50 
      )
    ),
- tar_target(clust_curv_site_exo_fac_50,
+
+ tar_target(clust_curv_site_tot_fac_50,
    tclust::ctlcurves(
      x = scale(site_no_drivers_inla_tot, center = FALSE),
      k = 1:12,
-     alpha = seq(0, .05, by = .05),
+     alpha = seq(0, .2, by = .05),
+     restr.fact = 50 
+     )
+   ),
+ tar_target(clust_curv_site_tot_fac_1,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers_inla_tot, center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .2, by = .05),
      restr.fact = 50 
      )
    ),
@@ -1842,8 +1851,17 @@ tar_target(mod_sampling_eff,
      x = scale(site_no_drivers_inla_tot[, clust_var_alter],
        center = FALSE),
      k = 1:12,
-     alpha = seq(0, .05, by = .05),
+     alpha = seq(0, .2, by = .05),
      restr.fact = 50 
+     )
+   ),
+ tar_target(clust_curv_site_red_fac_1,
+   tclust::ctlcurves(
+     x = scale(site_no_drivers_inla_tot[, clust_var_alter],
+       center = FALSE),
+     k = 1:12,
+     alpha = seq(0, .2, by = .05),
+     restr.fact = 1 
      )
    ),
  tar_target(k6_fac_1,
@@ -1872,6 +1890,17 @@ tar_target(mod_sampling_eff,
        center = FALSE),
      iter.max = 100,
      k = 4,
+     alpha = 0.05,
+     restr.fact = 50,
+     warnings = 2
+   )
+   ),
+ tar_target(k8_fac_50_tot,
+   tclust(
+     x = scale(site_no_drivers_inla_tot[, clust_var_alter],
+       center = FALSE),
+     iter.max = 100,
+     k = 8,
      alpha = 0.05,
      restr.fact = 50,
      warnings = 2
@@ -1932,6 +1961,14 @@ tar_target(mod_sampling_eff,
  tar_target(site_cl_rm,
    get_cluster_df(
      tclust_obj = k6_fac_1,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "rm"
+     )),
+
+ tar_target(site_cl_rm_tot,
+   get_cluster_df(
+     tclust_obj = k8_fac_50_tot,
      site_env = site_env,
      assign_threshold = .5,
      clean_method = "rm"
