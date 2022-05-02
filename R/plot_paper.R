@@ -307,7 +307,7 @@ get_pca_clust_list <- function(
     theme(axis.text.x = element_text(angle = 20, vjust = 0))
 
   output <- list(
-    pca_list = p_pca_cl_ell[c(1, 5, 6, 7)],
+    pca_list = p_pca_cl_ell,
     leg = leg_cl, 
     bp = bp
   )

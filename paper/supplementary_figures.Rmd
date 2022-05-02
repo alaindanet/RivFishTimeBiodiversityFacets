@@ -1,0 +1,26 @@
+---
+title: "Material & Methods"
+author: "Danet, A, Giam, X, Olden, J, Comte, L"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::pdf_document:
+    df_print: paged
+    toc: true
+bibliography: "bibliography.bib"
+---
+
+```{r}
+knitr::opts_chunk$set(echo = FALSE,
+                      collapse = TRUE,
+                      comment = "#>",
+                      fig.path = "graphics/knitr-",
+                      fig.retina = 1.618, # Control using dpi
+                      fig.width = 6,  # generated images
+                      fig.pos = "t",  # pdf mode
+                      fig.align = "center",
+                      dpi = if (knitr::is_latex_output()) 72 else 300,
+                      out.width = "100%",
+                      dev = "svg",
+                      dev.args = list(png = list(type = "cairo-png")),
+                      optipng = "-o1 -quiet")
+```

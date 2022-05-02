@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="" xml:lang="">
+  <head>
+    <title>Drivers and typologies of biodiversity trends in global stream fish communities</title>
+    <meta charset="utf-8" />
+    <meta name="author" content="Alain Danet^1, Xingli Giam^2, Julian Olden^3, Lise Comte^1" />
+    <meta name="author" content="1:Illinois State University, 2:University of Tennessee, 3:Washington State University" />
+    <meta name="date" content="2022-05-02" />
+    <script src="jasm2022_files/header-attrs/header-attrs.js"></script>
+    <link href="jasm2022_files/remark-css/default.css" rel="stylesheet" />
+    <link href="jasm2022_files/remark-css/metropolis.css" rel="stylesheet" />
+    <link href="jasm2022_files/remark-css/metropolis-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Drivers and typologies of biodiversity trends in global stream fish communities
+## Joint Aquatic Science Meeting 2022
+### Alain Danet<span class="math inline"><sup>1</sup></span>, Xingli Giam<span class="math inline"><sup>2</sup></span>, Julian Olden<span class="math inline"><sup>3</sup></span>, Lise Comte<span class="math inline"><sup>1</sup></span>
+### 1:Illinois State University, 2:University of Tennessee, 3:Washington State University
+### 2022-05-02
+
+---
+
+
+
+
+
+
+
+
+
+
+
+# Introduction 
+
+
+
+## Biodiversity in crisis
+
+.pull-left[
+
+### Key numbers 
+
+1. 25 % of evaluated species plant and animals are threatened 
+1. Average abundance of native species decrease by 20% in most of biomes
+1. Most degraded ecosystems contains 76% less species, 39% less 
+  individuals than reference ones
+1. Homogenization of community composition 
+]
+
+--
+
+.pull-right[
+
+### Key causes
+
+1. Land-use changes 
+1. Over-exploitation of resources 
+1. Climate change 
+1. Invasive exotic species
+
+Source: [IPBES](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)
+
+]
+
+.footnote[[Dornelas, Gotelli, McGill, et al. (2014)](https://science.sciencemag.org/content/344/6181/296); [Newbold, Hudson, Hill, et al. (2015)](https://www.nature.com/articles/nature14324)]
+
+???
+- Spatial comparison
+- Terrestrial Vertebrates, invertebrate and plants 
+
+---
+# Research questions
+
+How anthropogenic pressure drive the spatio-temporal trends of freshwater fish
+biodiversity? 
+
+---
+# Methods
+
+---
+# Fish data 
+
+- RivFishTime ([Comte, Carvajal-Quintero, Tedesco, et al., 2021](https://onlinelibrary.wiley.com/doi/abs/10.1111/geb.13210)):
+
+
+???
+- Selection for homogeneity of sampling
+- Spaning from 10 years to XX years 
+
+---
+# Biodiversity facets
+
+---
+# Environmental variables
+
+## Stream gradient
+
+- PCA
+
+## Human pressure
+
+- Distribution of human footprint riveratlas / rivfishtime 
+- Show match sampling and human footprint year
+
+???
+- Stream gradient: upstream to downstream
+- Human pressure: Rivfishtime have sites less degraded than global scale
+  - Recent changes in human pressure: log2
+
+---
+# Statistical analysis
+
+- Hierarchical linear models:
+  - `\(Y_i = \alpha + \Beta_1*\Log(time) + \sum_{j=1}\Beta_j X_j + \espilon_i\)`
+  - `\(\alpha = \alpha_0 + a_k + a_l\)`; `\(a_k, a_l \sim \mathcal{N}(0,\,\sigma^{2})\)`
+  - `\(\Beta_1 = \mu + b_k + b_l\)`; `\(b_k, b_l \sim \mathcal{N}(0,\,\sigma^{2})\)`
+  - `\(k\)`: basin, `\(l\)`: site within basin
+
+--
+
+- Main effects:
+  - Time: Log(Year number)
+  - Stream gradient (Upstream -&gt; Downstream): PCA axis
+  - Legacy of long term pressure: Human footprint 1993
+  - Recent change in pressure: Log 2 ratio of Human footprint (1993-2009)
+- Interactions:
+  - Time X all other main effect
+  - Time X main effect x main effect
+
+--
+
+- Evaluated in bayesian INLA (Integrated Nested Laplaician Approximation)
+
+
+---
+#  Preliminary  results
+
+1. Positive temporal trends of species richness, total abundance &amp; very weak
+   evidence for percentage of exotic species ([Klink, Bowler, Gongalsky, et al., 2020](https://science.sciencemag.org/content/368/6489/417)).
+1. We found high species recomposition over time
+   ([Dornelas, Gotelli, McGill, et al., 2014](https://science.sciencemag.org/content/344/6181/296); [Blowes, Supp, Antão, et al., 2019a](https://www.sciencemag.org/lookup/doi/10.1126/science.aaw1620))
+1. Jaccard &amp; Simpson based dissimilarity index have the same trends everywhere,
+   indicating that composition changes are driven by abundant species 
+1. Community temporal changes in composition are mainly driven by turnover, i.e. 
+   change in species identity ([Blowes, Supp, Antão, et al., 2019a](https://www.sciencemag.org/lookup/doi/10.1126/science.aaw1620))
+
+---
+# Temporal dissimilarity
+
+
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-3-1.png" width="100%" /&gt;
+
+---
+# Temporal dissimilarity
+
+More temporal turnover downstream and where human pressure is higher
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-4-1.png" width="100%" /&gt;
+
+---
+# Temporal dissimilarity
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-5-1.png" width="100%" /&gt;
+
+
+---
+# Temporal dissimilarity
+
+Legacy of past human pressure have a synergistic effect on temporal turnover 
+
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-6-1.png" width="100%" /&gt;
+
+
+---
+# Drivers of total abundance and species richness 
+
+
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-8-1.png" width="100%" /&gt;
+
+
+---
+# Drivers of total abundance and species richness 
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-9-1.png" width="100%" /&gt;
+
+---
+# Drivers of total abundance and species richness
+
+
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-11-1.png" width="100%" /&gt;
+
+---
+# Drivers of total abundance and species richness
+
+&lt;img src="jasm2022_files/figure-html/unnamed-chunk-12-1.png" width="100%" /&gt;
+
+
+---
+# Typology of biodiversity temporal trends 
+
+
+
+---
+# Spatial scale of change
+
+---
+# Take home message
+
+---
+# Thanks
+
+---
+# References
+
+
+    </textarea>
+<style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script>var slideshow = remark.create();
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function(d) {
+  var s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})(document);
+
+(function(d) {
+  var el = d.getElementsByClassName("remark-slides-area");
+  if (!el) return;
+  var slide, slides = slideshow.getSlides(), els = el[0].children;
+  for (var i = 1; i < slides.length; i++) {
+    slide = slides[i];
+    if (slide.properties.continued === "true" || slide.properties.count === "false") {
+      els[i - 1].className += ' has-continuation';
+    }
+  }
+  var s = d.createElement("style");
+  s.type = "text/css"; s.innerHTML = "@media print { .has-continuation { display: none; } }";
+  d.head.appendChild(s);
+})(document);
+// delete the temporary CSS (for displaying all slides initially) when the user
+// starts to view slides
+(function() {
+  var deleted = false;
+  slideshow.on('beforeShowSlide', function(slide) {
+    if (deleted) return;
+    var sheets = document.styleSheets, node;
+    for (var i = 0; i < sheets.length; i++) {
+      node = sheets[i].ownerNode;
+      if (node.dataset["target"] !== "print-only") continue;
+      node.parentNode.removeChild(node);
+    }
+    deleted = true;
+  });
+})();
+(function() {
+  "use strict"
+  // Replace <script> tags in slides area to make them executable
+  var scripts = document.querySelectorAll(
+    '.remark-slides-area .remark-slide-container script'
+  );
+  if (!scripts.length) return;
+  for (var i = 0; i < scripts.length; i++) {
+    var s = document.createElement('script');
+    var code = document.createTextNode(scripts[i].textContent);
+    s.appendChild(code);
+    var scriptAttrs = scripts[i].attributes;
+    for (var j = 0; j < scriptAttrs.length; j++) {
+      s.setAttribute(scriptAttrs[j].name, scriptAttrs[j].value);
+    }
+    scripts[i].parentElement.replaceChild(s, scripts[i]);
+  }
+})();
+(function() {
+  var links = document.getElementsByTagName('a');
+  for (var i = 0; i < links.length; i++) {
+    if (/^(https?:)?\/\//.test(links[i].getAttribute('href'))) {
+      links[i].target = '_blank';
+    }
+  }
+})();</script>
+
+<script>
+slideshow._releaseMath = function(el) {
+  var i, text, code, codes = el.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+};
+slideshow._releaseMath(document);
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
