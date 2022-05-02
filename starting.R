@@ -288,3 +288,14 @@ R.utils::createLink(
     ),
   overwrite = TRUE
 )
+
+########################
+#  Create a directory  #
+########################
+
+dir.create("paper")
+system(paste0("touch ", here("paper", "outline_wordstack.txt")))
+system(paste0("touch ", here("paper", "TODO")))
+system(paste0("touch ", here("paper", "story_summary.txt")))
+
+system(paste0("touch ", here("talk", "jasm2022.Rmd")))

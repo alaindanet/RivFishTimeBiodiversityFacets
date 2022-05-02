@@ -256,3 +256,62 @@ plot_pca_clust <- function(
   }
   return(p)
 }
+
+get_pca_clust_list <- function(
+  pca = NULL,
+  axis_list = list(
+  c("RC1", "RC2"),
+  c("RC1", "RC3"),
+  c("RC1", "RC4"),
+  c("RC1", "RC5"),
+  c("RC2", "RC3"),
+  c("RC2", "RC4"),
+  c("RC2", "RC5"),
+  c("RC3", "RC4"),
+  c("RC3", "RC5"),
+  c("RC4", "RC5")),
+  site_cl = NULL,
+  color_scale = NULL
+) {
+
+  if (is.null(color_scale)) {
+    pal <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
+    color_scale <- setNames(pal, unique(site_cl$cl))
+  }
+
+  p_pca_cl_ell <- map(axis_list,
+  ~plot_pca_clust(
+     .data = pca$rotated,
+     site_cl = site_cl,
+     add_point = TRUE,
+     add_ellipse = TRUE,
+     xaxis = .x[1], yaxis = .x[2],
+     ctb_thld = .2,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80,
+     var_scaling_factor = 3.5) +
+   theme(legend.position = "bottom") +
+   scale_color_manual(values = color_cl_scale)
+  )
+  leg_cl <- get_legend(p_pca_cl_ell[[1]])
+  p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
+
+  bp <- target_bp_cl_dist(cl_obj = site_cl_rm) +
+    scale_fill_manual(values = color_cl_scale) +
+    scale_color_manual(values = color_cl_scale) +
+    theme(axis.text.x = element_text(angle = 20, vjust = 0))
+
+  output <- list(
+    pca_list = p_pca_cl_ell[c(1, 5, 6, 7)],
+    leg = leg_cl, 
+    bp = bp
+  )
+
+  return(output)
+
+}

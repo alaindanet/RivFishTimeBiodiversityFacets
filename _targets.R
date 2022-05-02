@@ -2033,6 +2033,23 @@ tar_target(mod_sampling_eff,
      force_pull = 1,
      force = 80
    )),
+  tar_target(pca_clust_list,
+    get_pca_clust_list(
+      pca = pca_clust$rotated,
+      site_cl = site_cl_rm,
+      color_scale = NULL,
+      axis_list = list(
+        c("RC1", "RC2"),
+        c("RC1", "RC3"),
+        c("RC1", "RC4"),
+        c("RC1", "RC5"),
+        c("RC2", "RC3"),
+        c("RC2", "RC4"),
+        c("RC2", "RC5"),
+        c("RC3", "RC4"),
+        c("RC3", "RC5"),
+        c("RC4", "RC5"))
+      )),
 
 
  # Report
@@ -2051,5 +2068,15 @@ tar_target(mod_sampling_eff,
  tar_render(ah_clust_tps,
    here("doc/ah-clust-tps.Rmd")),
   tar_render(ac_check_rivfishtime_update,
-             here("doc/ac-check-rivfishtime-update.Rmd"))
+             here("doc/ac-check-rivfishtime-update.Rmd")),
+  tar_target(bib,
+    {
+      RefManageR::BibOptions(
+        check.entries = FALSE,
+        bib.style = "authoryear",
+        style = "markdown",
+        dashed = TRUE)
+      bibtex::read.bib(here("paper", "bibliography.bib"))
+    }
+  )
   )

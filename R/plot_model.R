@@ -124,13 +124,13 @@ plot_inla_fixed_effect <- function(
   ) {
 
   p <- dataset %>%
-  ggplot() +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_errorbar(
-    aes(y = term, x = mean,
+  ggplot(aes(y = term, x = mean,
       xmin = low, xmax = high,
       color = response,
-      size = width_bar, width = 0),
+      size = width_bar, width = 0)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_blank() +
+  geom_errorbar(
     alpha = 0.5,
     position = position_dodge(width = 0.7),
     show.legend = FALSE

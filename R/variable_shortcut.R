@@ -31,7 +31,7 @@ get_var_replacement <- function() {
     horn = "Horn (binary, similarity)",
     "chao" = "Chao (binary, similarity)",
     hillebrand = "SER_a (rel abundance)",
-    hillebrand_dis_scaled = "Dissimiliraty (Simpson index)",
+    hillebrand_dis_scaled = "Dissimilarity (Simpson index)",
     total = "Total turnover (codyn)",
     appearance = "Appearance",
     appearance_scaled = "Appearance",
