@@ -123,12 +123,30 @@ plot_inla_fixed_effect <- function(
   legend_present = FALSE
   ) {
 
+  dataset <- dataset %>%
+    mutate(
+      term = factor(term,
+        levels = c(
+          "Log (Year nb + 1)",
+          "PCA1\nstream gradient",
+          "Human footprint\n(1993)",
+          "Human footprint\nchange (1993-2009)",
+          "Log (Year nb + 1):PCA1\nstream gradient",
+          "Log (Year nb + 1):Human footprint\n(1993)",
+          "Log (Year nb + 1):Human footprint\nchange (1993-2009)",
+          "Log (Year nb + 1):PCA1\nstream gradient:Human footprint\n(1993)",
+          "Log (Year nb + 1):PCA1\nstream gradient:Human footprint\nchange (1993-2009)",
+          "Log (Year nb + 1):Human footprint\n(1993):Human footprint\nchange (1993-2009)"
+          ))
+    )
+
   p <- dataset %>%
   ggplot(aes(y = term, x = mean,
       xmin = low, xmax = high,
       color = response,
       size = width_bar, width = 0)) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(xintercept = 0, linetype = "dashed")+
+  scale_y_discrete(limits = rev) +
   geom_blank() +
   geom_errorbar(
     alpha = 0.5,

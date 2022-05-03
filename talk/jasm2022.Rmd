@@ -16,14 +16,18 @@ library(tidyverse)
 library(targets)
 library(magrittr)
 library(ggbreak)
-source(here::here("start_rmd.R"))
+library(cowplot)
+source(here::here("R", "misc.R"))
+source(here::here("R", "variable_shortcut.R"))
+source_dir(here::here("R"))
 ```
 
 ```{r setup, include=FALSE}
 options(htmltools.dir.version = FALSE)
 knitr::opts_chunk$set(
-  fig.width = 9, fig.height = 3.5, fig.retina = 3,
+  fig.width = 9, fig.asp = .6, fig.retina = 2,
   out.width = "100%",
+  dev.args = list(bg = "transparent"),
   cache = FALSE,
   echo = FALSE,
   include = TRUE,
@@ -31,6 +35,14 @@ knitr::opts_chunk$set(
   warning = FALSE,
   hiline = TRUE
 )
+
+
+mytheme <- theme_half_open() +
+  theme(
+    axis.title.y = element_blank(),
+    rect = element_rect(fill = "transparent"),
+    legend.position = "bottom",
+    legend.title = element_blank())
 ```
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
@@ -46,12 +58,12 @@ style_duo_accent(
 ```{r bib-options, include=FALSE, warning=FALSE}
 library(RefManageR)
 library(bibtex)
+tar_load(bib)
 BibOptions(
   check.entries = FALSE,
   bib.style = "authoryear",
   style = "markdown",
   dashed = TRUE)
-tar_load(bib)
 ```
 
 # Introduction 
@@ -184,6 +196,7 @@ tu <- rbind(gaussian_inla_std_effects,
   filter(response %in% restricted_dimension) %>%
   mutate(
     term = str_replace_all(term, get_model_term_replacement()),
+    ,
     response = get_var_replacement()[response]
     )
 
@@ -194,12 +207,10 @@ p1 <- tu %>%
     ) %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect() +
-  theme_half_open() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    legend.position = "none"
-  ) +
+  mytheme +
+  
+  labs(x = "Standardized coefficients") +
+  theme(legend.position = "none") +
   scale_x_break(c(.25, .65))
 p_int_0 <- p1
 p_int_0$layers <- p_int_0$layers[-c(3, 4)]
@@ -211,12 +222,10 @@ p2 <- tu %>%
     ) %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect() +
-  theme_half_open() +
-  theme(
-    axis.title.x = element_blank(),
-    axis.title.y = element_blank(),
-    legend.position = "none"
-  )
+  mytheme +
+  labs(x = "Standardized coefficients") +
+  theme(legend.position = "none")
+
 p_dblint_0 <- p2
 p_dblint_0$layers <- p_dblint_0$layers[-c(3, 4)]
 ```
@@ -237,6 +246,8 @@ p1
 ---
 # Temporal dissimilarity
 
+
+
 ```{r}
 p_dblint_0
 ```
@@ -245,7 +256,8 @@ p_dblint_0
 ---
 # Temporal dissimilarity
 
-Legacy of past human pressure have a synergistic effect on temporal turnover 
+Legacy of past and recent human pressure have a synergistic effect on temporal
+turnover 
 
 
 ```{r}
@@ -268,11 +280,7 @@ p_main_abun <- tu %>%
     xaxis_title = TRUE
     ) +
   labs(x = "Standardized coefficients") +
-  theme_half_open() +
-  theme(
-    axis.title.y = element_blank(),
-    legend.position = "bottom"
-  )
+  mytheme
 
 p_main_abun_0 <- p_main_abun
 p_main_abun_0$layers <- p_main_abun_0$layers[-c(3, 4)]
@@ -286,9 +294,20 @@ p_main_abun_0
 ---
 # Drivers of total abundance and species richness 
 
+
 ```{r}
-p_main_abun
+p_main_abun +
+guides(col = guide_legend(nrow = 2))
 ```
+
+???
+- Global positive temporal trends of species richness and total abundance 
+  `r Citep(bib, "klink_meta-analysis_2020")`
+- Higher abundances, richness and exotic species downstream
+- Higher richness but lower abundances in more degraded sites, but also
+  higher percentage of exotic richness and abundances
+- Lower richness and abundance but also higher percentage of exotic richness and
+  abundances in sites where human pressure increased recently
 
 ---
 # Drivers of total abundance and species richness
@@ -305,12 +324,8 @@ p_int_abun <- tu %>%
     xaxis_title = TRUE
     ) +
   labs(x = "Standardized coefficients") +
-  theme_half_open() +
-  theme(
-    axis.title.y = element_blank(),
-    plot.background = element_blank(),
-    legend.position = "bottom"
-  )
+  mytheme
+
 
 p_int_abun_0 <- p_int_abun
 p_int_abun_0$layers <- p_int_abun_0$layers[-c(3, 4)]
@@ -324,8 +339,19 @@ p_int_abun_0
 # Drivers of total abundance and species richness
 
 ```{r}
-p_int_abun
+p_int_abun +
+guides(col = guide_legend(nrow = 2))
 ```
+
+???
+- Higher temporal trends of abundance, richness, and exotic species Downstream
+- Higher temporal trends of  abundance, richness in more past degraded sites. Is
+  it a sign of recovery? But no evidence of recovery in exotic species
+  composition. So, recovery but not restauration ? (because exotic are often
+  tolerant to degradation)
+- Evidence that recent increase in anthropogenic pressure decrease temporal
+  trends of richness, abundance and increase in percentage of exotic species
+
 
 ```{r}
 p_dblint_abun <- tu %>%
@@ -339,16 +365,15 @@ p_dblint_abun <- tu %>%
     xaxis_title = TRUE
     ) +
   labs(x = "Standardized coefficients") +
-  theme_half_open() +
-  theme(
-    axis.title.y = element_blank(),
-    plot.background = element_blank(),
-    legend.position = "bottom"
-  )
+  mytheme
+
 
 p_dblint_abun_0 <- p_dblint_abun
 p_dblint_abun_0$layers <- p_dblint_abun_0$layers[-c(3, 4)]
 ```
+
+---
+# Drivers of total abundance and species richness
 
 ```{r}
 p_dblint_abun_0
@@ -358,26 +383,74 @@ p_dblint_abun_0
 # Drivers of total abundance and species richness
 
 ```{r}
-p_dblint_abun
+p_dblint_abun +
+guides(col = guide_legend(nrow = 2))
 ```
+
+???
+- Synergistic effect of long term degradation and stream gradient on exotic
+  species (richness and abundances). Antagonistic effect on abundances and richness
+  (very weak) 
+- Full synergistic effect of recent increase of anthropogenic pressure and
+  stream gradient
+- Recent increase of anthropogenic pressure increase temporal trends of percent of exotic species
+  in long term degraded sites. Antagonistic effect on abundances temporal trends
+  (decrease of recovery)
+
+---
+# Drivers of biodiversity 
+
+- More turnover, exotic species, abundance and richness temporal trends downstream than upstream
+  (connectivity?)
+- Global positive temporal trends of species richness and total abundance 
+  `r Citep(bib, "klink_meta-analysis_2020")`, and more in long term degraded
+  sites, recovery ? But exotic species
+- Recent increase in anthropogenic pressure related: 
+  - less richness and abundance, more exotic species and turnover
+  - Counter sign of recovery from past disturbance
+
 
 ---
 # Typology of biodiversity temporal trends 
 
+Are those different facets of biodiversity temporal trends closely related or different ?
+
+---
+# Typology of biodiversity temporal trends 
+
+Five orthogonal biodiversity facets and six clusters of temporal change
+
 ```{r}
 tar_load(pca_clust_list)
-pca_clust_list$pca_list[c(1, 5, 6, 7)]
-
+plot_grid(
+  plotlist = pca_clust_list$pca_list[c(1, 5, 6, 7)],
+  nrow = 2, ncol = 2
+)
 ```
 
 ---
 # Spatial scale of change
 
+
+
 ---
 # Take home message
 
+```{r}
+bio_debate <- c("vellend_meta-analysis_2013", "dornelas_assemblage_2014",
+  "cardinale_is_2018", "klink_meta-analysis_2020")
+```
+
+
+- Past and recent anthropogenic pressures interacts to drive biodiversity trends
+- Assessment of anthropogenic pressures partly resolves 10 years of debate:
+  spatial vs temporal trends of biodiversity `r Citep(bib, bio_debate)`
+- Importance to assess multiple facets of biodiversity
+
 ---
 # Thanks
+
+Thank you for your attention!
 
 ---
 # References
