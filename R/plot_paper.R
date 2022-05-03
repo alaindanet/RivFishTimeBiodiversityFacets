@@ -1,3 +1,6 @@
+
+source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
+
 make_custom_boxplot <- function(x = NULL, aes_col = cl) {
   bp_theme <- theme_minimal() +
     theme(
@@ -281,7 +284,7 @@ get_pca_clust_list <- function(
 
   p_pca_cl_ell <- map(axis_list,
   ~plot_pca_clust(
-     .data = pca$rotated,
+     .data = pca,
      site_cl = site_cl,
      add_point = TRUE,
      add_ellipse = TRUE,
@@ -296,18 +299,18 @@ get_pca_clust_list <- function(
      force = 80,
      var_scaling_factor = 3.5) +
    theme(legend.position = "bottom") +
-   scale_color_manual(values = color_cl_scale)
+   scale_color_manual(values = color_scale)
   )
   leg_cl <- get_legend(p_pca_cl_ell[[1]])
   p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 
-  bp <- target_bp_cl_dist(cl_obj = site_cl_rm) +
-    scale_fill_manual(values = color_cl_scale) +
-    scale_color_manual(values = color_cl_scale) +
+  bp <- target_bp_cl_dist(cl_obj = site_cl) +
+    scale_fill_manual(values = color_scale) +
+    scale_color_manual(values = color_scale) +
     theme(axis.text.x = element_text(angle = 20, vjust = 0))
 
   output <- list(
-    pca_list = p_pca_cl_ell[c(1, 5, 6, 7)],
+    pca_list = p_pca_cl_ell,
     leg = leg_cl, 
     bp = bp
   )
