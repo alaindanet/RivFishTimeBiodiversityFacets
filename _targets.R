@@ -2006,7 +2006,11 @@ tar_target(mod_sampling_eff,
          ))),
    pattern = map(country_to_plot)
    ),
- tar_target(pca_clust, compute_rotated_pca(site_no_drivers_inla_tot, naxis = 5)),
+ tar_target(pca_clust,
+   compute_rotated_pca(
+     site_no_drivers_inla_tot[, clust_var],
+     naxis = 5)
+   ),
  tar_target(pca_clust_red,
    compute_rotated_pca(site_no_drivers_inla_tot[, clust_var_alter])),
  tar_target(p_pca_clust,

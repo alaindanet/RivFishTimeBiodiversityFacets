@@ -192,7 +192,7 @@ restricted_dimension <- c(
   "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
 tu <- rbind(gaussian_inla_std_effects,
   gaussian_inla_exo_std_effects) %>%
-  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(!str_detect(term, "unitabundance|Intercept|riv_str")) %>%
   filter(response %in% restricted_dimension) %>%
   mutate(
     term = str_replace_all(term, get_model_term_replacement()),
@@ -202,13 +202,11 @@ tu <- rbind(gaussian_inla_std_effects,
 
 p1 <- tu %>%
   filter(
-    response == "Dissimilarity (Simpson index)",
-    facet != "dbl_interaction"
+    response == "Dissimilarity (Simpson index)"
     ) %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect() +
   mytheme +
-  
   labs(x = "Standardized coefficients") +
   theme(legend.position = "none") +
   scale_x_break(c(.25, .65))
@@ -237,33 +235,12 @@ p_int_0
 ---
 # Temporal dissimilarity
 
-More temporal turnover downstream and where human pressure is higher
+Legacy of past and recent human pressure have a synergistic effect on temporal
+turnover 
 
 ```{r}
 p1
 ```
-
----
-# Temporal dissimilarity
-
-
-
-```{r}
-p_dblint_0
-```
-
-
----
-# Temporal dissimilarity
-
-Legacy of past and recent human pressure have a synergistic effect on temporal
-turnover 
-
-
-```{r}
-p2
-```
-
 
 ---
 # Drivers of total abundance and species richness 
@@ -316,7 +293,7 @@ guides(col = guide_legend(nrow = 2))
 p_int_abun <- tu %>%
   filter(
     response != "Dissimilarity (Simpson index)",
-    facet == "interaction"
+    facet != "main"
     ) %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
@@ -344,55 +321,15 @@ guides(col = guide_legend(nrow = 2))
 ```
 
 ???
-- Higher temporal trends of abundance, richness, and exotic species Downstream
 - Higher temporal trends of  abundance, richness in more past degraded sites. Is
   it a sign of recovery? But no evidence of recovery in exotic species
   composition. So, recovery but not restauration ? (because exotic are often
   tolerant to degradation)
 - Evidence that recent increase in anthropogenic pressure decrease temporal
   trends of richness, abundance and increase in percentage of exotic species
-
-
-```{r}
-p_dblint_abun <- tu %>%
-  filter(
-    response != "Dissimilarity (Simpson index)",
-    facet == "dbl_interaction"
-    ) %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(.,
-    legend_present = TRUE,
-    xaxis_title = TRUE
-    ) +
-  labs(x = "Standardized coefficients") +
-  mytheme
-
-
-p_dblint_abun_0 <- p_dblint_abun
-p_dblint_abun_0$layers <- p_dblint_abun_0$layers[-c(3, 4)]
-```
-
----
-# Drivers of total abundance and species richness
-
-```{r}
-p_dblint_abun_0
-```
-
----
-# Drivers of total abundance and species richness
-
-```{r}
-p_dblint_abun +
-guides(col = guide_legend(nrow = 2))
-```
-
-???
 - Synergistic effect of long term degradation and stream gradient on exotic
   species (richness and abundances). Antagonistic effect on abundances and richness
   (very weak) 
-- Full synergistic effect of recent increase of anthropogenic pressure and
-  stream gradient
 - Recent increase of anthropogenic pressure increase temporal trends of percent of exotic species
   in long term degraded sites. Antagonistic effect on abundances temporal trends
   (decrease of recovery)
@@ -400,20 +337,20 @@ guides(col = guide_legend(nrow = 2))
 ---
 # Drivers of biodiversity 
 
-- More turnover, exotic species, abundance and richness temporal trends downstream than upstream
-  (connectivity?)
 - Global positive temporal trends of species richness and total abundance 
   `r Citep(bib, "klink_meta-analysis_2020")`, and more in long term degraded
-  sites, recovery ? But exotic species
-- Recent increase in anthropogenic pressure related: 
-  - less richness and abundance, more exotic species and turnover
+  sites,
+  - Sign of recovery ? But not on exotic species
+- Recent increase in anthropogenic pressure related:
+  - less richness and abundance (`r Citep(bib, "newbold_global_2015")`),
+    more exotic species and turnover
   - Counter sign of recovery from past disturbance
-
 
 ---
 # Typology of biodiversity temporal trends 
 
-Are those different facets of biodiversity temporal trends closely related or different ?
+Are the temporal trends of different biodiversity facets closely related or
+different ?
 
 ---
 # Typology of biodiversity temporal trends 
