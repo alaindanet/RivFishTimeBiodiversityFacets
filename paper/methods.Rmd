@@ -1,0 +1,95 @@
+---
+title: "Material & Methods"
+author: "Danet, A, Giam, X, Olden, J, Comte, L"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::pdf_document:
+    toc: true
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      collapse = TRUE,
+                      comment = "#>",
+                      fig.path = "graphics/knitr-",
+                      fig.retina = 1.618, # Control using dpi
+                      fig.width = 6,  # generated images
+                      fig.pos = "t",  # pdf mode
+                      fig.align = "center",
+                      dpi = if (knitr::is_latex_output()) 72 else 300,
+                      out.width = "100%",
+                      dev = "svg",
+                      dev.args = list(png = list(type = "cairo-png")),
+                      optipng = "-o1 -quiet")
+
+library(here)
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(targets)
+
+if (Sys.info()["login"] == "alain")
+  file.copy(
+    from = "~/Documents/post-these/references.bib",
+    to = here("paper", "bibliography.bib")
+  )
+```
+
+```{r}
+tar_load(c(site_desc_loc, measurement))
+nsitetot <- length(unique(site_desc_loc$siteid))
+nmeas <- nrow(measurement)
+nsp <- length(unique(measurement$species))
+nop <- length(unique(measurement$op_id))
+
+```
+
+
+# Dataset and data selection
+
+The RivFishTime database [@comte_rivfishtime_2021] describes the time series of
+riverine fish communities at large scale. It currently  holds `r nmeas` abundance measurement of
+`nsp` freshwater fishes species over `nop` sampling events distributed over 
+`r nsitetot` sites. The minimum time span of a timeseries in the dataset is 10
+years.
+
+We selected data to guarantee the quality and the internal homogeneity of the timeseries.
+In a given site, we selected the sampling events that used the most frequently
+used protocol (i.e. the mode) and the most used unity of abundances. We
+selected the sampling that reported the year, but also at minimum the month or
+the quarter of the year (i.e., January to march, April to June, etc.).
+
+# Characterise Biodiversity
+
+##  Species richness
+
+## Total abundance
+
+## Dissimilarity metrics
+
+# Environment and anthropogenic pressures
+
+# Statistical analysis
+
+## Temporal trends assessment
+
+### Statistical Models
+
+### Standardization
+
+### Model validity
+
+### Sentivity of priors
+comparison with glmmTMB, comparison with penalty complexity priors
+
+## PCA and clustering of biodiversity temporal trends
+
+### Pre-processing of temporal trends
+
+adjustment 
+### Cluster identification
+
+# Reproducibility, ROBITT assessment and open science statement
+Robitt, Github, data repository, targets (proof of update), .Renv, Compendium
+

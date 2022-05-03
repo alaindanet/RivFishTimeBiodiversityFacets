@@ -1,0 +1,385 @@
+---
+title: "Drivers and typologies of biodiversity trends in global stream fish communities"
+subtitle: "Joint Aquatic Science Meeting 2022"  
+author: 
+  - "Alain Danet$^1$, Xingli Giam$^2$, Julian Olden$^3$, Lise Comte$^1$"
+  - "1:Illinois State University, 2:University of Tennessee, 3:Washington State
+      University"
+date: '`r Sys.Date()`'
+output:
+  xaringan::moon_reader:
+    css: [default, metropolis, metropolis-fonts]
+---
+
+```{r packages, include=FALSE, warning=FALSE}
+library(tidyverse)
+library(targets)
+library(magrittr)
+library(ggbreak)
+source(here::here("start_rmd.R"))
+```
+
+```{r setup, include=FALSE}
+options(htmltools.dir.version = FALSE)
+knitr::opts_chunk$set(
+  fig.width = 9, fig.height = 3.5, fig.retina = 3,
+  out.width = "100%",
+  cache = FALSE,
+  echo = FALSE,
+  include = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  hiline = TRUE
+)
+```
+
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_duo_accent(
+  primary_color = "#1381B0",
+  secondary_color = "#FF961C",
+  inverse_header_color = "#FFFFFF"
+)
+```
+
+
+```{r bib-options, include=FALSE, warning=FALSE}
+library(RefManageR)
+library(bibtex)
+BibOptions(
+  check.entries = FALSE,
+  bib.style = "authoryear",
+  style = "markdown",
+  dashed = TRUE)
+tar_load(bib)
+```
+
+# Introduction 
+
+```{r}
+bio_crisis <- c("dornelas_assemblage_2014", "newbold_global_2015", "diaz_global_2019")
+```
+
+## Biodiversity in crisis
+
+.pull-left[
+
+### Key numbers 
+
+1. 25 % of evaluated species plant and animals are threatened 
+1. Average abundance of native species decrease by 20% in most of biomes
+1. Most degraded ecosystems contains 76% less species, 39% less 
+  individuals than reference ones
+1. Homogenization of community composition 
+]
+
+--
+
+.pull-right[
+
+### Key causes
+
+1. Land-use changes 
+1. Over-exploitation of resources 
+1. Climate change 
+1. Invasive exotic species
+
+Source: [IPBES](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)
+
+]
+
+.footnote[`r Citet(bib, bio_crisis)`]
+
+???
+- Spatial comparison
+- Terrestrial Vertebrates, invertebrate and plants 
+
+---
+# Research questions
+
+How anthropogenic pressure drive the spatio-temporal trends of freshwater fish
+biodiversity? 
+
+---
+# Methods
+
+---
+# Fish data 
+
+- RivFishTime `r Citep(bib, "comte_rivfishtime_2021")`:
+
+
+???
+- Selection for homogeneity of sampling
+- Spaning from 10 years to XX years 
+
+---
+# Biodiversity facets
+
+---
+# Environmental variables
+
+## Stream gradient
+
+- PCA
+
+## Human pressure
+
+- Distribution of human footprint riveratlas / rivfishtime 
+- Show match sampling and human footprint year
+
+???
+- Stream gradient: upstream to downstream
+- Human pressure: Rivfishtime have sites less degraded than global scale
+  - Recent changes in human pressure: log2
+
+---
+# Statistical analysis
+
+- Hierarchical linear models:
+  - $Y_i = \alpha + \Beta_1*\Log(time) + \sum_{j=1}\Beta_j X_j + \espilon_i$
+  - $\alpha = \alpha_0 + a_k + a_l$; $a_k, a_l \sim \mathcal{N}(0,\,\sigma^{2})$
+  - $\Beta_1 = \mu + b_k + b_l$; $b_k, b_l \sim \mathcal{N}(0,\,\sigma^{2})$
+  - $k$: basin, $l$: site within basin
+
+--
+
+- Main effects:
+  - Time: Log(Year number)
+  - Stream gradient (Upstream -> Downstream): PCA axis
+  - Legacy of long term pressure: Human footprint 1993
+  - Recent change in pressure: Log 2 ratio of Human footprint (1993-2009)
+- Interactions:
+  - Time X all other main effect
+  - Time X main effect x main effect
+
+--
+
+- Evaluated in bayesian INLA (Integrated Nested Laplaician Approximation)
+
+
+---
+#  Preliminary  results
+
+1. Positive temporal trends of species richness, total abundance & very weak
+   evidence for percentage of exotic species `r Citep(bib, "klink_meta-analysis_2020")`.
+1. We found high species recomposition over time
+   `r Citep(bib, c("dornelas_assemblage_2014", "blowes_geography_2019"))`
+1. Jaccard & Simpson based dissimilarity index have the same trends everywhere,
+   indicating that composition changes are driven by abundant species 
+1. Community temporal changes in composition are mainly driven by turnover, i.e. 
+   change in species identity `r Citep(bib, c("blowes_geography_2019"))`
+
+---
+# Temporal dissimilarity
+
+```{r, include=FALSE}
+tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+restricted_dimension <- c(
+  "hillebrand_dis_scaled", "log_total_abundance",
+  "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
+tu <- rbind(gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+
+p1 <- tu %>%
+  filter(
+    response == "Dissimilarity (Simpson index)",
+    facet != "dbl_interaction"
+    ) %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  theme_half_open() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  ) +
+  scale_x_break(c(.25, .65))
+p_int_0 <- p1
+p_int_0$layers <- p_int_0$layers[-c(3, 4)]
+
+p2 <- tu %>%
+  filter(
+    response == "Dissimilarity (Simpson index)",
+    facet == "dbl_interaction"
+    ) %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  theme_half_open() +
+  theme(
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank(),
+    legend.position = "none"
+  )
+p_dblint_0 <- p2
+p_dblint_0$layers <- p_dblint_0$layers[-c(3, 4)]
+```
+
+```{r}
+p_int_0
+```
+
+---
+# Temporal dissimilarity
+
+More temporal turnover downstream and where human pressure is higher
+
+```{r}
+p1
+```
+
+---
+# Temporal dissimilarity
+
+```{r}
+p_dblint_0
+```
+
+
+---
+# Temporal dissimilarity
+
+Legacy of past human pressure have a synergistic effect on temporal turnover 
+
+
+```{r}
+p2
+```
+
+
+---
+# Drivers of total abundance and species richness 
+
+```{r}
+p_main_abun <- tu %>%
+  filter(
+    response != "Dissimilarity (Simpson index)",
+    facet == "main"
+    ) %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients") +
+  theme_half_open() +
+  theme(
+    axis.title.y = element_blank(),
+    legend.position = "bottom"
+  )
+
+p_main_abun_0 <- p_main_abun
+p_main_abun_0$layers <- p_main_abun_0$layers[-c(3, 4)]
+```
+
+```{r}
+p_main_abun_0
+```
+
+
+---
+# Drivers of total abundance and species richness 
+
+```{r}
+p_main_abun
+```
+
+---
+# Drivers of total abundance and species richness
+
+```{r}
+p_int_abun <- tu %>%
+  filter(
+    response != "Dissimilarity (Simpson index)",
+    facet == "interaction"
+    ) %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients") +
+  theme_half_open() +
+  theme(
+    axis.title.y = element_blank(),
+    plot.background = element_blank(),
+    legend.position = "bottom"
+  )
+
+p_int_abun_0 <- p_int_abun
+p_int_abun_0$layers <- p_int_abun_0$layers[-c(3, 4)]
+```
+
+```{r}
+p_int_abun_0
+```
+
+---
+# Drivers of total abundance and species richness
+
+```{r}
+p_int_abun
+```
+
+```{r}
+p_dblint_abun <- tu %>%
+  filter(
+    response != "Dissimilarity (Simpson index)",
+    facet == "dbl_interaction"
+    ) %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients") +
+  theme_half_open() +
+  theme(
+    axis.title.y = element_blank(),
+    plot.background = element_blank(),
+    legend.position = "bottom"
+  )
+
+p_dblint_abun_0 <- p_dblint_abun
+p_dblint_abun_0$layers <- p_dblint_abun_0$layers[-c(3, 4)]
+```
+
+```{r}
+p_dblint_abun_0
+```
+
+---
+# Drivers of total abundance and species richness
+
+```{r}
+p_dblint_abun
+```
+
+---
+# Typology of biodiversity temporal trends 
+
+```{r}
+tar_load(pca_clust_list)
+pca_clust_list$pca_list[c(1, 5, 6, 7)]
+
+```
+
+---
+# Spatial scale of change
+
+---
+# Take home message
+
+---
+# Thanks
+
+---
+# References
+
+

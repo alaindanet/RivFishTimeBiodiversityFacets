@@ -1,0 +1,44 @@
+# Wordstack
+
+Spatio-temporal
+Fishes
+Streams
+Pressures
+Recent and legacy of past perturbation
+
+biodiversity facets
+Recomposition
+Richness
+Abundance
+Exotic species
+
+
+# Outline
+
+1 Introduction
+
+2 Material & Methods
+2.1 Dataset and data selection
+2.2 Biodiversity description
+2.2.1 Species richness
+2.2.2 Total abundance
+2.2.3 Dissimilarity metrics
+2.3 Environment and anthropogenic pressures
+2.4 Statistical analysis
+2.4.1 Temporal trends assessment
+2.4.1.1 Statistical Models
+2.4.1.2 Standardization
+2.4.1.3 Model validity
+2.4.1.4 Sentivity of priors
+comparison with glmmTMB, comparison with penalty complexity priors
+
+2.4.2 PCA and clustering of biodiversity temporal trends
+2.4.2.1 Pre-processing of temporal trends
+adjustment 
+2.4.2.2 Cluster identification
+2.5. Reproducibility, ROBITT assessment and open science statement
+Robitt, Github, data repository, targets (proof of update), .Renv, Compendium
+
+3 Results
+4 Discussion
+5 Conclusion
