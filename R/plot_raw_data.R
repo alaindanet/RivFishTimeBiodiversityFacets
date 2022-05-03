@@ -224,6 +224,6 @@ get_cl_leaflet <- function(
     left_join(cl, by = "siteid") %>%
     st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
 
-  mapview::mapView(site, zcol = "cl")
+  mapview::mapview(site, zcol = "cl")
 
 }

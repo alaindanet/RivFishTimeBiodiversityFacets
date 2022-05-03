@@ -521,6 +521,26 @@ tar_target(neutral_turnover,
         snap_list = snapped_site_river) %>%
       janitor::clean_names()
     ),
+  tar_target(hft_site_summary,
+    analysis_dataset %>%
+      distinct(
+        siteid,
+        hft_ix_c93,
+        hft_ix_c09,
+        hft_ix_c9309_log2_ratio
+        ) %>%
+      na.omit() %>%
+      summarise(
+        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
+        perc_intact = sum(hft_ix_c93 / 10 > 1 &
+          hft_ix_c93 / 10 < 4) / n(),
+        hft_ix_c9309_log2_ratio = list(
+          summary_distribution(hft_ix_c9309_log2_ratio) %>%
+            round(., 1)
+        )
+      )
+    ),
   tar_target(exo_basin_site,
     match_tedesco_basin_site(
       site = world_site_sf$site,

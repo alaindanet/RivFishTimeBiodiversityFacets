@@ -17,13 +17,15 @@ library(targets)
 library(magrittr)
 library(ggbreak)
 library(cowplot)
+library(sf)
+library(mapview)
 source(here::here("R", "misc.R"))
 source(here::here("R", "variable_shortcut.R"))
 source_dir(here::here("R"))
 ```
 
 ```{r setup, include=FALSE}
-options(htmltools.dir.version = FALSE)
+options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
 knitr::opts_chunk$set(
   fig.width = 9, fig.asp = .6, fig.retina = 2,
   out.width = "100%",
@@ -85,6 +87,8 @@ bio_crisis <- c("dornelas_assemblage_2014", "newbold_global_2015", "diaz_global_
 1. Homogenization of community composition 
 ]
 
+.footnote[`r Citet(bib, bio_crisis)`; [IPBES](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)]
+
 --
 
 .pull-right[
@@ -96,15 +100,27 @@ bio_crisis <- c("dornelas_assemblage_2014", "newbold_global_2015", "diaz_global_
 1. Climate change 
 1. Invasive exotic species
 
-Source: [IPBES](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)
-
 ]
 
-.footnote[`r Citet(bib, bio_crisis)`]
 
 ???
 - Spatial comparison
 - Terrestrial Vertebrates, invertebrate and plants 
+
+---
+# Current debates on biodiversity
+
+.pull-left[
+
+### Spatial analysis
+
+1. 25 % of evaluated species plant and animals are threatened 
+1. Average abundance of native species decrease by 20% in most of biomes
+1. Most degraded ecosystems contains 76% less species, 39% less 
+  individuals than reference ones
+1. Homogenization of community composition 
+
+]
 
 ---
 # Research questions
@@ -369,12 +385,16 @@ plot_grid(
 # Spatial scale of change
 
 
-```{r}
-tar_load(leaflet_clust_na)
-leaflet_clust_na
+```{r, fig.asp = .8}
+library(mapview)
+tar_load(c(filtered_dataset, site_cl_na))
+m <- get_cl_leaflet(
+  loc = filtered_dataset$location %>%
+    filter(siteid %in% site_cl_na$siteid),
+  cl = site_cl_na %>%
+    select(siteid, cl))
+m
 ```
-
-
 
 ---
 # Take home message
@@ -394,9 +414,24 @@ bio_debate <- c("vellend_meta-analysis_2013", "dornelas_assemblage_2014",
 ---
 # Thanks
 
-Thank you for your attention!
+```{r}
+knitr::include_graphics("~/Documents/thesis/talks/isu_biology_dept/collab_isu.png")
+```
+
+---
+# Thanks 
+
+We are indebt to all the researchers and agencies who monitored fish abundance
+through time and provided their data for this project.
+
+I am indebt to Lise Comte who performed the Herculean task to assemble and clean 
+the database `r Citep(bib, "comte_rivfishtime_2021")`.
+
+---
+# Thanks
+
+Thank you for listening to me!
 
 ---
 # References
-
 
