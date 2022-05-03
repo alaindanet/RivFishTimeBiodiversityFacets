@@ -207,7 +207,7 @@ site_missing <- loc2 %>%
   filter(is.na(abun))
 matcho <- str_detect(list.files(dir_plot), )
 list.files(dir_plot)[!matcho]
-all(macho)
+all(matcho)
 ```
 
 

@@ -2054,7 +2054,13 @@ tar_target(mod_sampling_eff,
         c("RC3", "RC5"),
         c("RC4", "RC5"))
       )),
-
+  tar_target(leaflet_clust_na,
+    get_cl_leaflet(
+      loc = filtered_dataset$location  %>%
+        filter(siteid %in% site_cl_na$siteid),
+      cl = site_cl_na %>%
+        select(siteid, cl))
+    ),
 
  # Report
  tar_render(intro, here("vignettes/intro.Rmd")),

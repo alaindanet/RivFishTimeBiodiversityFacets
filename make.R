@@ -22,7 +22,7 @@ tar_visnetwork()
 
 tar_make(names = basinatlas)
 tar_make(names = pca_clust_list)
-tar_make(names = site_cl_rm_red)
+tar_make(names = leaflet_clust_na)
 tar_make(names = starts_with("pred_data"))
 tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
 

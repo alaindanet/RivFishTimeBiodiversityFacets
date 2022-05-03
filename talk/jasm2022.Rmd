@@ -369,6 +369,12 @@ plot_grid(
 # Spatial scale of change
 
 
+```{r}
+tar_load(leaflet_clust_na)
+leaflet_clust_na
+```
+
+
 
 ---
 # Take home message
@@ -378,10 +384,11 @@ bio_debate <- c("vellend_meta-analysis_2013", "dornelas_assemblage_2014",
   "cardinale_is_2018", "klink_meta-analysis_2020")
 ```
 
-
 - Past and recent anthropogenic pressures interacts to drive biodiversity trends
+--
 - Assessment of anthropogenic pressures partly resolves 10 years of debate:
   spatial vs temporal trends of biodiversity `r Citep(bib, bio_debate)`
+--
 - Importance to assess multiple facets of biodiversity
 
 ---
