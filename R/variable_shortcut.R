@@ -69,6 +69,23 @@ get_model_term_replacement <- function() {
   )
 }
 
+get_model_term_replacement_vulgarisation <- function() {
+  c(
+    log1_year_nb = "Time",
+    year_nb = "Time",
+    riv_str_rc1 = "PCA1\nstream gradient",
+    hft_c9309_scaled_no_center = "Recent change",
+    hft_ix_c9309_diff_scaled = "Recent change",
+    hft_ix_c9309_log2_ratio = "Recent change",
+    hft_ix_c93 = "Legacy",
+    main_bas = "Basin",
+    siteid = "Site",
+    `siteid:main_bas` = "Site",
+    `:` = " x\n"
+
+  )
+}
+
 get_river_atlas_significant_var <- function() {
   c(
     #"Length of the reach" = "length_km",

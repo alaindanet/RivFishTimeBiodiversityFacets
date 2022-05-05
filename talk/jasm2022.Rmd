@@ -1,14 +1,16 @@
 ---
 title: "Drivers and typologies of biodiversity trends in global stream fish communities"
-subtitle: "Joint Aquatic Science Meeting 2022"  
+subtitle: "Joint Aquatic Sciences Meeting 2022"  
 author: 
-  - "Alain Danet$^1$, Xingli Giam$^2$, Julian Olden$^3$, Lise Comte$^1$"
-  - "1:Illinois State University, 2:University of Tennessee, 3:Washington State
-      University"
+  - "**Alain Danet**, Xingli Giam, Julian Olden, Lise Comte"
+  - "Illinois State University (Nov 2021 - Now)"
+  - "https://alaindanet.github.io"
 date: '`r Sys.Date()`'
 output:
   xaringan::moon_reader:
-    css: [default, metropolis, metropolis-fonts]
+    css: [default, metropolis, metropolis-fonts, "custom.css"]
+    nature:
+      ratio: "16:9"
 ---
 
 ```{r packages, include=FALSE, warning=FALSE}
@@ -27,8 +29,9 @@ source_dir(here::here("R"))
 ```{r setup, include=FALSE}
 options(htmltools.dir.version = FALSE, htmltools.preserve.raw = FALSE)
 knitr::opts_chunk$set(
-  fig.width = 9, fig.asp = .6, fig.retina = 2,
-  out.width = "100%",
+  fig.asp = .6, fig.retina = 3,
+  out.width = "70%",
+  fig.align = "center",
   dev.args = list(bg = "transparent"),
   cache = FALSE,
   echo = FALSE,
@@ -38,13 +41,13 @@ knitr::opts_chunk$set(
   hiline = TRUE
 )
 
-
 mytheme <- theme_half_open() +
   theme(
     axis.title.y = element_blank(),
     rect = element_rect(fill = "transparent"),
     legend.position = "bottom",
-    legend.title = element_blank())
+    legend.title = element_blank()
+  )
 ```
 
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
@@ -56,7 +59,6 @@ style_duo_accent(
 )
 ```
 
-
 ```{r bib-options, include=FALSE, warning=FALSE}
 library(RefManageR)
 library(bibtex)
@@ -64,145 +66,250 @@ tar_load(bib)
 BibOptions(
   check.entries = FALSE,
   bib.style = "authoryear",
+  max.names = 2,
   style = "markdown",
   dashed = TRUE)
 ```
-
-# Introduction 
-
-```{r}
-bio_crisis <- c("dornelas_assemblage_2014", "newbold_global_2015", "diaz_global_2019")
+```{r target-load, include=FALSE, warning=FALSE}
+tar_load(c(map_modelling_site))
+tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+tar_load(pca_clust_list)
+tar_load(c(filtered_dataset, site_cl_na))
 ```
 
-## Biodiversity in crisis
+
+# Biodiversity in crisis
+
+
+```{r}
+knitr::include_graphics("https://production-wordpress.unep-wcmc.org/content//uploads/2021/11/Bending-the-Curve_PR.jpg")
+```
+
+```{r}
+bio_crisis <- c("newbold_global_2015", "diaz_global_2019", "leclerc_bending_2020")
+```
+
+
+
+.footnote[`r Citet(bib, bio_crisis)`; [IPBES, (2019)](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf), Image credit: UNEP]
+
+???
+Scientists reach a consensus on the fact that biodiversity is going through an
+unprecedented crisis. Predictions indicates that if we do not act strongly and
+quickly, this crisis could have dramatic consequences that have not been seen
+yet.
+
+---
+# Freshwater fishes 
+
+```{r, out.width="58%"}
+knitr::include_graphics("https://wires.onlinelibrary.wiley.com/cms/asset/b9c85273-0008-4bb3-be85-e390ec0dcaa9/wat21208-toc-0001-m.jpg")
+```
+
+```{r}
+freshwater_threats <- c("he_disappearing_2017", "reid_emerging_2019")
+```
+
+.footnote[`r Citet(bib, freshwater_threats)`; [IPBES, (2019)](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)]
+
+???
+This is particularly true for freshwater ecosystems. Although freshwater
+constitute 0.01% of water on earth, they host almost 9.5% of Earth described
+species. Freshwater biodiversity is threatened by terrestrial land degradation,
+overexploitation, pollution, flow alteration and species alteration.
+
+However we know little on temporal dynamics of freshwater fishes are affected by
+those anthropogenic pressures.
+
+---
+# Biodiversity
 
 .pull-left[
 
-### Key numbers 
+```{r, out.width="100%"}
+knitr::include_graphics("https://files.worldwildlife.org/wwfcmsprod/images/Buffalo_fish/story_full_width/80b2nhfpi6_Buffalo_fish__c__Freshwaters_Illustrated.jpg")
+```
 
-1. 25 % of evaluated species plant and animals are threatened 
-1. Average abundance of native species decrease by 20% in most of biomes
-1. Most degraded ecosystems contains 76% less species, 39% less 
-  individuals than reference ones
-1. Homogenization of community composition 
 ]
 
-.footnote[`r Citet(bib, bio_crisis)`; [IPBES](https://ipbes.net/sites/default/files/2020-02/ipbes_global_assessment_report_summary_for_policymakers_fr.pdf)]
-
+```{r}
+stat_biodiv <- c("jost_partitioning_2007", "hillebrand_biodiversity_2018",
+  "baselga_betapart_2012")
+```
 --
 
 .pull-right[
 
-### Key causes
+## Multidimensional concept
 
-1. Land-use changes 
-1. Over-exploitation of resources 
-1. Climate change 
-1. Invasive exotic species
+1. Species richness, Shannon, Simpson (Hill numbers) 
+1. Total abundance
+1. Dissimilarity in species composition (P/A or abundance based)
 
 ]
+
 
 
 ???
-- Spatial comparison
-- Terrestrial Vertebrates, invertebrate and plants 
+When an ecologist sampled a community in time, he faces a difficult task. Indeed, how to
+describe the trends in biodiversity of this community? 
+
+Is it the number of species, the total abundance, the dissimilarity of the
+community composition through time? Should I take in account the abundance of
+the species, in other word, compute Hill numbers ?
+
+Of course, this is no one good answer. But measuring several of them, when
+possible, can help us to refine our understanding biodiversity changes.  
+An alternative hypothesis is that biodiversity trends are similar among them,
+and that we might need only a few.
 
 ---
-# Current debates on biodiversity
-
-.pull-left[
-
-### Spatial analysis
-
-1. 25 % of evaluated species plant and animals are threatened 
-1. Average abundance of native species decrease by 20% in most of biomes
-1. Most degraded ecosystems contains 76% less species, 39% less 
-  individuals than reference ones
-1. Homogenization of community composition 
-
-]
-
----
+class: center middle
 # Research questions
 
-How anthropogenic pressure drive the spatio-temporal trends of freshwater fish
-biodiversity? 
+How do anthropogenic pressures influence the temporal trends of freshwater fish
+biodiversity?
+
+Do different biodiversity facets have the same temporal trends?
 
 ---
-# Methods
+class: center middle
+# 
+
+Methods
 
 ---
-# Fish data 
+# Fish data: RivFishTime
 
-- RivFishTime `r Citep(bib, "comte_rivfishtime_2021")`:
 
+`r nrow(site_cl_na)` sites, spanning at least 10 years
+
+Homogeneity within sites: protocol, abundance units, sampling period
+
+```{r, out.width="70%"}
+tar_load(map_modelling_site)
+map_modelling_site +
+  coord_sf(expand = FALSE)
+```
+
+
+.footnote[`r Citet(bib, "comte_rivfishtime_2021")`]
 
 ???
-- Selection for homogeneity of sampling
-- Spaning from 10 years to XX years 
+test
 
 ---
 # Biodiversity facets
 
----
-# Environmental variables
+- Temporal dissimilarity:
+  - Simpson based dissimilarity
+  - Jaccard (Presence / absence):
+    - Appearance and Disappearance 
+    - Turnover and Nestedness 
 
-## Stream gradient
+- Chao richness
+- Total abundance
 
-- PCA
-
-## Human pressure
-
-- Distribution of human footprint riveratlas / rivfishtime 
-- Show match sampling and human footprint year
-
-???
-- Stream gradient: upstream to downstream
-- Human pressure: Rivfishtime have sites less degraded than global scale
-  - Recent changes in human pressure: log2
+- Complementary descriptors:
+  - Percentage of exotic species richness 
+  - Percentage of exotic species abundance
 
 ---
-# Statistical analysis
+# Anthropogenic pressures
 
-- Hierarchical linear models:
-  - $Y_i = \alpha + \Beta_1*\Log(time) + \sum_{j=1}\Beta_j X_j + \espilon_i$
-  - $\alpha = \alpha_0 + a_k + a_l$; $a_k, a_l \sim \mathcal{N}(0,\,\sigma^{2})$
-  - $\Beta_1 = \mu + b_k + b_l$; $b_k, b_l \sim \mathcal{N}(0,\,\sigma^{2})$
-  - $k$: basin, $l$: site within basin
+## Human footprint
 
---
+Human infrastructures, land-use, population density, ... 
 
-- Main effects:
-  - Time: Log(Year number)
-  - Stream gradient (Upstream -> Downstream): PCA axis
-  - Legacy of long term pressure: Human footprint 1993
-  - Recent change in pressure: Log 2 ratio of Human footprint (1993-2009)
-- Interactions:
-  - Time X all other main effect
-  - Time X main effect x main effect
+```{r}
+tar_load(c(hft_site_summary, hft_total_summary))
+hft_site_summary %<>%
+  mutate(across(where(is.double), scales::percent_format()))
+hft_total_summary %<>%
+  mutate(across(where(is.double), scales::percent_format()))
+```
 
---
+```{r, out.width="90%"}
+knitr::include_graphics("images/venterfig1.png")
+```
 
-- Evaluated in bayesian INLA (Integrated Nested Laplaician Approximation)
-
+.footnote[`r Citet(bib, "venter_sixteen_2016")`]
 
 ---
-#  Preliminary  results
 
-1. Positive temporal trends of species richness, total abundance & very weak
-   evidence for percentage of exotic species `r Citep(bib, "klink_meta-analysis_2020")`.
-1. We found high species recomposition over time
-   `r Citep(bib, c("dornelas_assemblage_2014", "blowes_geography_2019"))`
-1. Jaccard & Simpson based dissimilarity index have the same trends everywhere,
-   indicating that composition changes are driven by abundant species 
-1. Community temporal changes in composition are mainly driven by turnover, i.e. 
-   change in species identity `r Citep(bib, c("blowes_geography_2019"))`
+# Hierarchical linear models (INLA)
+
+.font90[
+
+$$
+\begin{align}
+    Y_{it} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=0, n\neq k}\beta_{kn}X_kX_n +\epsilon_{it}
+\end{align}
+$$
+
+- $i$: site $i$, $t$: time $t$
+
+]
+
+---
+
+# Hierarchical linear models (INLA)
+
+.font90[
+
+$$
+\begin{align}
+    Y_{it} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=0, n\neq k}\beta_{kn}X_kX_n +\epsilon_{it}
+\end{align}
+$$
+
+- $i$: site $i$, $t$: time $t$
+
+- $\alpha = \alpha_0 + a_l + a_m$
+- $\beta_0 = \mu + b_l + b_m$
+- $a_l, a_m, b_l, b_m \sim \mathcal{N}(0,\,\sigma^{2})$
+- $l$: basin, $m$: site within basin
+
+]
+
+---
+
+# Hierarchical linear models (INLA)
+
+.font90[
+
+$$
+\begin{align}
+    Y_{it} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=0, n\neq k}\beta_{kn}X_kX_n +\epsilon_{it}
+\end{align}
+$$
+
+- $i$: site $i$, $t$: time $t$
+
+- $\alpha = \alpha_0 + a_l + a_m$
+- $\beta_0 = \mu + b_l + b_m$
+- $a_l, a_m, b_l, b_m \sim \mathcal{N}(0,\,\sigma^{2})$
+- $l$: basin, $m$: site within basin
+
+- Time and interactions:
+  - Time
+  - Time x Legacy of long term pressure (Human footprint 1993)
+  - Time x Recent change in pressure (Ratio of Human footprint 2009/1993)
+
+]
+
+---
+class: center, middle, large
+
+# Results 
+
+How do anthropogenic pressures influence the temporal trends of freshwater fish
+biodiversity?
 
 ---
 # Temporal dissimilarity
 
-```{r, include=FALSE}
-tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+```{r}
 restricted_dimension <- c(
   "hillebrand_dis_scaled", "log_total_abundance",
   "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
@@ -211,11 +318,29 @@ tu <- rbind(gaussian_inla_std_effects,
   filter(!str_detect(term, "unitabundance|Intercept|riv_str")) %>%
   filter(response %in% restricted_dimension) %>%
   mutate(
-    term = str_replace_all(term, get_model_term_replacement()),
+    term = str_replace_all(term, get_model_term_replacement_vulgarisation()),
     ,
     response = get_var_replacement()[response]
+    ) %>%
+  mutate(
+      term = factor(term,
+        levels = c(
+          "Time",
+          "PCA1\nstream gradient",
+          "Legacy",
+          "Recent change",
+          "Time x\nPCA1\nstream gradient",
+          "Time x\nLegacy",
+          "Time x\nRecent change",
+          "Time x\nPCA1\nstream gradient x\nLegacy",
+          "Time x\nPCA1\nstream gradient x\nRecent change",
+          "Time x\nLegacy x\nRecent change"
+          ))
     )
+```
 
+
+```{r, include=FALSE}
 p1 <- tu %>%
   filter(
     response == "Dissimilarity (Simpson index)"
@@ -224,8 +349,12 @@ p1 <- tu %>%
   plot_inla_fixed_effect() +
   mytheme +
   labs(x = "Standardized coefficients") +
-  theme(legend.position = "none") +
-  scale_x_break(c(.25, .65))
+  scale_x_break(c(.25, .65)) +
+  theme(
+    legend.position = "none",
+    panel.background = element_rect(fill='transparent')
+    )
+
 p_int_0 <- p1
 p_int_0$layers <- p_int_0$layers[-c(3, 4)]
 
@@ -244,28 +373,33 @@ p_dblint_0 <- p2
 p_dblint_0$layers <- p_dblint_0$layers[-c(3, 4)]
 ```
 
-```{r}
+```{r, fig.asp=.65}
 p_int_0
 ```
 
 ---
+class: center
+
 # Temporal dissimilarity
 
-Legacy of past and recent human pressure have a synergistic effect on temporal
-turnover 
+Legacy of past and recent human pressure increase temporal
+turnover
 
-```{r}
+```{r, fig.asp=.65}
 p1
 ```
 
 ---
-# Drivers of total abundance and species richness 
+# Abundance and richness 
 
 ```{r}
 p_main_abun <- tu %>%
   filter(
-    response != "Dissimilarity (Simpson index)",
-    facet == "main"
+    !response %in% c(
+      "Dissimilarity (Simpson index)",
+      "Percentage exotic abundance"
+      ),
+    str_detect(term, "Time")
     ) %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
@@ -279,62 +413,22 @@ p_main_abun_0 <- p_main_abun
 p_main_abun_0$layers <- p_main_abun_0$layers[-c(3, 4)]
 ```
 
-```{r}
+```{r, fig.asp=.65, out.width="70%"}
 p_main_abun_0
 ```
 
 
 ---
-# Drivers of total abundance and species richness 
+class:center
+# Abundance and richness 
 
+Positive temporal trends `r Citep(bib, "klink_meta-analysis_2020")`, modulated by anthropogenic pressures
 
-```{r}
+```{r, fig.asp=.65, out.width="70%"}
 p_main_abun +
 guides(col = guide_legend(nrow = 2))
 ```
 
-???
-- Global positive temporal trends of species richness and total abundance 
-  `r Citep(bib, "klink_meta-analysis_2020")`
-- Higher abundances, richness and exotic species downstream
-- Higher richness but lower abundances in more degraded sites, but also
-  higher percentage of exotic richness and abundances
-- Lower richness and abundance but also higher percentage of exotic richness and
-  abundances in sites where human pressure increased recently
-
----
-# Drivers of total abundance and species richness
-
-```{r}
-p_int_abun <- tu %>%
-  filter(
-    response != "Dissimilarity (Simpson index)",
-    facet != "main"
-    ) %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(.,
-    legend_present = TRUE,
-    xaxis_title = TRUE
-    ) +
-  labs(x = "Standardized coefficients") +
-  mytheme
-
-
-p_int_abun_0 <- p_int_abun
-p_int_abun_0$layers <- p_int_abun_0$layers[-c(3, 4)]
-```
-
-```{r}
-p_int_abun_0
-```
-
----
-# Drivers of total abundance and species richness
-
-```{r}
-p_int_abun +
-guides(col = guide_legend(nrow = 2))
-```
 
 ???
 - Higher temporal trends of  abundance, richness in more past degraded sites. Is
@@ -345,93 +439,134 @@ guides(col = guide_legend(nrow = 2))
   trends of richness, abundance and increase in percentage of exotic species
 - Synergistic effect of long term degradation and stream gradient on exotic
   species (richness and abundances). Antagonistic effect on abundances and richness
-  (very weak) 
+  (very weak)
 - Recent increase of anthropogenic pressure increase temporal trends of percent of exotic species
   in long term degraded sites. Antagonistic effect on abundances temporal trends
   (decrease of recovery)
 
 ---
-# Drivers of biodiversity 
-
-- Global positive temporal trends of species richness and total abundance 
-  `r Citep(bib, "klink_meta-analysis_2020")`, and more in long term degraded
-  sites,
-  - Sign of recovery ? But not on exotic species
-- Recent increase in anthropogenic pressure related:
-  - less richness and abundance (`r Citep(bib, "newbold_global_2015")`),
-    more exotic species and turnover
-  - Counter sign of recovery from past disturbance
-
----
+class: center, middle, large
 # Typology of biodiversity temporal trends 
 
-Are the temporal trends of different biodiversity facets closely related or
-different ?
+Do different biodiversity facets have the same temporal trends?
 
 ---
+class: center
 # Typology of biodiversity temporal trends 
 
-Five orthogonal biodiversity facets and six clusters of temporal change
+Three dimensions: Dissimilarity, Species richness, Total abundance
 
 ```{r}
-tar_load(pca_clust_list)
+tar_load(c(
+    pca_clust, site_cl_rm,
+    site_no_drivers_inla_tot,
+    clust_var))
+pca_clust <- compute_rotated_pca(
+     site_no_drivers_inla_tot[, clust_var],
+     naxis = 5)
+
+pca_clust_list <- get_pca_clust_list(
+      pca = pca_clust$rotated,
+      site_cl = site_cl_rm,
+      label_size = 3,
+      add_point = FALSE,
+      add_ellipse = FALSE,
+      color_scale = NULL,
+      axis_list = list(
+        c("RC1", "RC2"),
+        c("RC1", "RC3"),
+        c("RC1", "RC4"),
+        c("RC1", "RC5"),
+        c("RC2", "RC3"),
+        c("RC2", "RC4"),
+        c("RC2", "RC5"),
+        c("RC3", "RC4"),
+        c("RC3", "RC5"),
+        c("RC4", "RC5"))
+      )
+```
+
+```{r, fig.asp = .5, out.width="80%"}
 plot_grid(
-  plotlist = pca_clust_list$pca_list[c(1, 5, 6, 7)],
-  nrow = 2, ncol = 2
+  plotlist = pca_clust_list$pca_list[c(1, 3)],
+  nrow = 1, ncol = 2
 )
 ```
 
----
-# Spatial scale of change
-
-
-```{r, fig.asp = .8}
-library(mapview)
-tar_load(c(filtered_dataset, site_cl_na))
-m <- get_cl_leaflet(
-  loc = filtered_dataset$location %>%
-    filter(siteid %in% site_cl_na$siteid),
-  cl = site_cl_na %>%
-    select(siteid, cl))
-m
-```
 
 ---
-# Take home message
+class: center, middle
+# Take home messages
 
-```{r}
-bio_debate <- c("vellend_meta-analysis_2013", "dornelas_assemblage_2014",
-  "cardinale_is_2018", "klink_meta-analysis_2020")
-```
+**Past and recent anthropogenic pressures** interacts to drive biodiversity trends
+in fish freshwater communities
 
-- Past and recent anthropogenic pressures interacts to drive biodiversity trends
---
-- Assessment of anthropogenic pressures partly resolves 10 years of debate:
-  spatial vs temporal trends of biodiversity `r Citep(bib, bio_debate)`
---
-- Importance to assess multiple facets of biodiversity
+**Several dimensions** of temporal trends of biodiversity
+
+
 
 ---
 # Thanks
 
 ```{r}
-knitr::include_graphics("~/Documents/thesis/talks/isu_biology_dept/collab_isu.png")
+knitr::include_graphics("~/Documents/thesis/talks/isu_fig/collab_isu.png")
 ```
 
 ---
-# Thanks 
+class: center, middle
+
+# Thanks
 
 We are indebt to all the researchers and agencies who monitored fish abundance
 through time and provided their data for this project.
 
-I am indebt to Lise Comte who performed the Herculean task to assemble and clean 
-the database `r Citep(bib, "comte_rivfishtime_2021")`.
-
----
-# Thanks
+Lise Comte achieved the Herculean task to assemble RivFishTime `r Citep(bib, "comte_rivfishtime_2021")`.
 
 Thank you for listening to me!
+
+Any questions?
+
+https://alaindanet.github.io
+
+**Past and recent anthropogenic pressures** interacts to drive biodiversity trends
+in fish freshwater communities
+
+**Several dimensions** of temporal trends of biodiversity
 
 ---
 # References
 
+---
+# Annexes
+
+---
+# Human footprint
+
+- Distribution of human footprint 1993 in Rivfishtime (global):
+  - Wilderness (< 1): **`r hft_site_summary$perc_wilderness`** (`r hft_total_summary$perc_wilderness`) 
+  - Intact (1 <= x <= 4): **`r hft_site_summary$perc_intact`** (`r hft_total_summary$perc_intact`)
+  - Degraded (> 4): **`r hft_site_summary$perc_degraded`** (`r hft_total_summary$perc_degraded`)
+
+```{r}
+hft_r_site <-  hft_site_summary[["hft_ix_c9309_log2_ratio"]][[1]][1:6]
+hft_perc_site <-  scales::percent(2^hft_r_site - 1)
+hft_r_total <- hft_total_summary[["hft_ix_c9309_log2_ratio"]][[1]][1:6]
+hft_perc_total <- scales::percent(2^hft_r_total - 1)
+```
+
+--
+
+- Legacy of past human pressure: Human footprint 1993
+
+--
+
+- Recent variation of human pressure: Human footprint 2009 - Human footprint 1993
+  - RivFishTime: mean: `r hft_perc_site["mean"]`,
+    1st quartile: `r hft_perc_site["1st_quart"]`, 3rd quartile: `r hft_perc_site["2nd_quart"]`
+  - Global: mean: `r hft_perc_total["mean"]`,
+    1st quartile: `r hft_perc_total["1st_quart"]`, 3rd quartile: `r hft_perc_total["2nd_quart"]`
+
+???
+- Stream gradient: upstream to downstream
+- Human pressure: Rivfishtime have sites less degraded than global scale
+  - Recent changes in human pressure: log2
