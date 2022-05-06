@@ -20,6 +20,8 @@ tar_make_future(
 tar_meta()
 tar_visnetwork()
 
+tar_make(names = bib)
+
 tar_make(names = basinatlas)
 tar_make(names = pca_clust_list)
 tar_make(names = hft_total_summary)

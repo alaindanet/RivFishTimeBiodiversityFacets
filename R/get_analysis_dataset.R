@@ -95,6 +95,9 @@ get_analysis_dataset <- function(
         scaled_tmp_dc_cyr = scale(tmp_dc_cyr),
         tmp_c_cyr = tmp_dc_cyr / 10,
         scaled_tmp_c_cyr = scale(tmp_c_cyr),
+        # In riveratlas, HFT is multiplied by 10
+        hft_ix_c09 = hft_ix_c09 / 10,
+        hft_ix_c93 = hft_ix_c93 / 10,
         hft_ix_c9309_percent =
           (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100,
         log_hft_ix_c9309_percent = hft_ix_c9309_percent,

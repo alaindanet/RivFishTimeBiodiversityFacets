@@ -13,9 +13,9 @@ bibliography: "../doc/bibliography.bib"
 ```{r dsetup, results = "hide", echo = FALSE, message = FALSE}
 source(here::here("start_rmd.R"))
 knitr::opts_chunk$set(
-  fig.align='center',
-  tidy=FALSE,
-  comment="R>> ",
+  fig.align = 'center',
+  tidy = FALSE,
+  comment = "R>> ",
   size = 'small',
   echo = FALSE
 )

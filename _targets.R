@@ -2131,9 +2131,14 @@ tar_target(mod_sampling_eff,
       RefManageR::BibOptions(
         check.entries = FALSE,
         bib.style = "authoryear",
+        max.names = 2,
         style = "markdown",
         dashed = TRUE)
-      bibtex::read.bib(here("paper", "bibliography.bib"))
+      bibtex::read.bib(bib_file)
     }
-  )
+  ),
+  tar_target(bib_file,
+    here("paper", "bibliography.bib"),
+    format = "file",
+    error = "continue")
   )

@@ -208,7 +208,8 @@ plot_pca_clust <- function(
       expand = FALSE
     ) +
     labs(x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
-      y = paste0(yaxis, " (", var_exp[yaxis], "%)"))
+      y = paste0(yaxis, " (", var_exp[yaxis], "%)")) +
+    theme_bw()
 
   if (add_point) {
     p <- p +
@@ -274,8 +275,10 @@ get_pca_clust_list <- function(
   c("RC3", "RC5"),
   c("RC4", "RC5")),
   site_cl = NULL,
-  color_scale = NULL
-) {
+  add_point = TRUE,
+  add_ellipse = TRUE,
+  color_scale = NULL,
+  label_size = 2.5) {
 
   if (is.null(color_scale)) {
     pal <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
@@ -286,13 +289,13 @@ get_pca_clust_list <- function(
   ~plot_pca_clust(
      .data = pca,
      site_cl = site_cl,
-     add_point = TRUE,
-     add_ellipse = TRUE,
+     add_point = add_point,
+     add_ellipse = add_ellipse,
      xaxis = .x[1], yaxis = .x[2],
      ctb_thld = .2,
      replace_var = get_var_replacement(),
      size_arrows_segment = 1,
-     label_size = 2.5,
+     label_size = label_size,
      alpha_point = .2,
      lim_x_y = c(-3.5, 3.5),
      force_pull = 1,
