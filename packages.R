@@ -65,3 +65,7 @@ conflict_prefer("lag", "dplyr")
 #conflict_prefer("src", "dplyr")
 #conflict_prefer("stamp", "lubridate")
 
+# For xaringan builder
+#https://github.com/jhelvy/xaringanBuilder
+Sys.setenv(PAGEDOWN_CHROME = "/usr/bin/chromium")
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium")

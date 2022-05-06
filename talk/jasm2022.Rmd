@@ -8,6 +8,7 @@ author:
 date: '`r Sys.Date()`'
 output:
   xaringan::moon_reader:
+    self_contained: true
     css: [default, metropolis, metropolis-fonts, "custom.css"]
     nature:
       ratio: "16:9"
@@ -63,6 +64,7 @@ style_duo_accent(
 library(RefManageR)
 library(bibtex)
 tar_load(bib)
+
 BibOptions(
   check.entries = FALSE,
   bib.style = "authoryear",
@@ -172,6 +174,13 @@ biodiversity?
 
 Do different biodiversity facets have the same temporal trends?
 
+???
+Regarding the previous research gap, we asked
+"How do anthropogenic pressures influence the temporal trends of freshwater fish
+biodiversity?" and
+
+"Do different biodiversity facets have the same temporal trends?"
+
 ---
 class: center middle
 # 
@@ -188,15 +197,24 @@ Homogeneity within sites: protocol, abundance units, sampling period
 
 ```{r, out.width="70%"}
 tar_load(map_modelling_site)
-map_modelling_site +
+mymap <- map_modelling_site +
   coord_sf(expand = FALSE)
+save_plot(here::here("talk", "images", "map_sites.png"), mymap,
+  base_width = 7, base_asp = .4
+)
+knitr::include_graphics(here::here("talk", "images", "map_sites.png"))
 ```
 
 
 .footnote[`r Citet(bib, "comte_rivfishtime_2021")`]
 
 ???
-test
+To answer those questions, we used the RivFishTime database which contains time
+series of fish communities spanning at least 10 years. The dataset covers mostly
+the so called "Western countries": the US and Canada, Western and North Europe,
+Australia and Japan. For each site, we selected samplings that were identical in
+terms of protocol, measurement unit and sampling season. 
+After selection, we had more than 5000 sites.   
 
 ---
 # Biodiversity facets
@@ -213,6 +231,17 @@ test
 - Complementary descriptors:
   - Percentage of exotic species richness 
   - Percentage of exotic species abundance
+
+???
+We characterised biodiversity by temporal dissimilarity of community
+composition: based on abundance (with Simpson), presence/absence with the
+Jaccard index. We also decomposed Jaccard in Appearance/Disappearance and
+Nestedness/Turnover
+
+We also described the Coverage based species richness (the Chao) and Total
+abundance.
+
+We also described the composition of communities in terms of exotic species 
 
 ---
 # Anthropogenic pressures
@@ -235,6 +264,11 @@ knitr::include_graphics("images/venterfig1.png")
 
 .footnote[`r Citet(bib, "venter_sixteen_2016")`]
 
+???
+We described anthropogenic pressures using the Human Footprint index. It is a
+composite index that take in account human infrastructures, land-use,
+and various characteristics of human occupation. 
+
 ---
 
 # Hierarchical linear models (INLA)
@@ -250,6 +284,14 @@ $$
 - $i$: site $i$, $t$: time $t$
 
 ]
+
+???
+We modelled the temporal trends of biodiversity using hierarchical linear models evaluated with INLA,
+a bayesian framework that approximates posterior distribution and thus do not
+rely on MCMC.
+
+The biodiversity at a site i and time t is linearly dependent on time,
+covariates and on the interaction among the covariates
 
 ---
 
@@ -271,6 +313,12 @@ $$
 - $l$: basin, $m$: site within basin
 
 ]
+
+???
+We added random effects on the intercept, alpha and on the temporal trends
+quantified by the slope beta 0.
+The variance of the intercept and the temporal trends were dependent on the
+hydrographic basin and on the site, nested within the basin effect. 
 
 ---
 
@@ -297,6 +345,11 @@ $$
   - Time x Recent change in pressure (Ratio of Human footprint 2009/1993)
 
 ]
+???
+Today, I will show you only the effect of time (the temporal trends) and its
+interaction with the legacy of long term pressure, the Human footprint of the
+year 1993 and the recent change in pressure quantified by the ratio between the
+human footprint of 2009 and the one of 1993
 
 ---
 class: center, middle, large
@@ -305,6 +358,10 @@ class: center, middle, large
 
 How do anthropogenic pressures influence the temporal trends of freshwater fish
 biodiversity?
+
+???
+Now, How do anthropogenic pressures influence the temporal trends of freshwater fish
+biodiversity? 
 
 ---
 # Temporal dissimilarity
@@ -377,6 +434,12 @@ p_dblint_0$layers <- p_dblint_0$layers[-c(3, 4)]
 p_int_0
 ```
 
+???
+First the results temporal dissimilarity. At the x axis, I displayed the
+standardized slope coefficients. At the Y axis, I displayed the effect of time,
+the temporal trends and how the temporal trends is affected by the Legacy of
+anthropogenic pressures, the recent changes in pressure and their interaction. 
+
 ---
 class: center
 
@@ -388,6 +451,10 @@ turnover
 ```{r, fig.asp=.65}
 p1
 ```
+???
+Our results showed both the legacy and recent changes in anthropogenic
+pressures accelerates changes in species composition, and that they have a
+synergistic effect. 
 
 ---
 # Abundance and richness 
@@ -417,6 +484,9 @@ p_main_abun_0$layers <- p_main_abun_0$layers[-c(3, 4)]
 p_main_abun_0
 ```
 
+???
+Now, the same question with the total abundance, species richness and the
+percentage of exotic species in the communities. 
 
 ---
 class:center
@@ -431,24 +501,20 @@ guides(col = guide_legend(nrow = 2))
 
 
 ???
-- Higher temporal trends of  abundance, richness in more past degraded sites. Is
-  it a sign of recovery? But no evidence of recovery in exotic species
-  composition. So, recovery but not restauration ? (because exotic are often
-  tolerant to degradation)
-- Evidence that recent increase in anthropogenic pressure decrease temporal
-  trends of richness, abundance and increase in percentage of exotic species
-- Synergistic effect of long term degradation and stream gradient on exotic
-  species (richness and abundances). Antagonistic effect on abundances and richness
-  (very weak)
-- Recent increase of anthropogenic pressure increase temporal trends of percent of exotic species
-  in long term degraded sites. Antagonistic effect on abundances temporal trends
-  (decrease of recovery)
+We found a global positive temporal trends, confirming previous results. 
+We also see that legacy increase the temporal trends of total abundance and
+species richness. Recent increase in anthropogenic pressure decrease
+temporal trends of abundance and richness but increase the one of percentage of
+exotic species. 
 
 ---
 class: center, middle, large
 # Typology of biodiversity temporal trends 
 
 Do different biodiversity facets have the same temporal trends?
+
+???
+Now, Do different biodiversity facets have the same temporal trends?
 
 ---
 class: center
@@ -493,6 +559,10 @@ plot_grid(
 )
 ```
 
+???
+The PCA over the temporal trends displayed a first axis related to dissimilarity
+measurement, a second related to species richness and the fourth axis to Total
+abundance temporal trends 
 
 ---
 class: center, middle
@@ -504,13 +574,27 @@ in fish freshwater communities
 **Several dimensions** of temporal trends of biodiversity
 
 
+???
+So far, I showed you that
+
+**Past and recent anthropogenic pressures** affect and interact to drive biodiversity trends
+in fish freshwater communities
+
+
+**Several dimensions** of temporal trends of biodiversity
+
+So it might be necessary to assess them simultaneously
 
 ---
 # Thanks
 
 ```{r}
-knitr::include_graphics("~/Documents/thesis/talks/isu_fig/collab_isu.png")
+knitr::include_graphics("images/collab_isu.png")
 ```
+
+???
+I want to warmly thank my post doc supervisors for the great collaboration,
+Lise, Xingli and Julian 
 
 ---
 class: center, middle
@@ -532,6 +616,16 @@ https://alaindanet.github.io
 in fish freshwater communities
 
 **Several dimensions** of temporal trends of biodiversity
+
+???
+I would like to put forward the tremendous work of all the researchers and
+agencies over the world who monitored fish abundance through time and provided
+their data for this project.
+
+I would also like to highlight the herculean work of Lise Comte in assembling
+the RivFishTime database!
+
+Thank you! 
 
 ---
 # References
