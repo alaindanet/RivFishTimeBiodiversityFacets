@@ -541,6 +541,33 @@ tar_target(neutral_turnover,
         )
       )
     ),
+  tar_target(hft_total_summary,
+    riveratlas_total %>%
+      mutate(
+        hft_ix_c93 = ifelse(hft_ix_c93 == 0, 10^-6, hft_ix_c93),
+        hft_ix_c09 = ifelse(hft_ix_c09 == 0, 10^-6, hft_ix_c09),
+        hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
+      na.omit() %>%
+      summarise(
+        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
+        perc_intact = sum(hft_ix_c93 / 10 > 1 &
+          hft_ix_c93 / 10 < 4) / n(),
+        hft_ix_c9309_log2_ratio = list(
+          summary_distribution(hft_ix_c9309_log2_ratio) %>%
+            round(., 1)
+        )
+      )
+  ),
+  tar_target(map_modelling_site,
+    ggplot(world_site_sf$world) +
+      geom_sf(color = NA) +
+      theme_void() +
+      geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+      geom_sf(data = world_site_sf$site %>%
+                filter(siteid %in% unique(modelling_data$siteid)), pch = 21,
+              color = "white", fill = "black", alpha = .3) +
+      theme(legend.position = "none")),
   tar_target(exo_basin_site,
     match_tedesco_basin_site(
       site = world_site_sf$site,

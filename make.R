@@ -5,7 +5,7 @@ tar_make()
 
 exclusion_vector <- c("chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
              "biodiversity_facets_support",
-             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature")
+             "pred_gaussian", "filtered_data_watch", "trends_report", "water_temperature", "raw_data_watch")
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 24),
@@ -22,7 +22,7 @@ tar_visnetwork()
 
 tar_make(names = basinatlas)
 tar_make(names = pca_clust_list)
-tar_make(names = leaflet_clust_na)
+tar_make(names = hft_total_summary)
 tar_make(names = starts_with("pred_data"))
 tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
 
