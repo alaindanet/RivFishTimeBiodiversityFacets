@@ -650,50 +650,6 @@ tar_target(neutral_turnover,
   tar_target(p_pca_riv_str,
     plot_rotated_pca(pca_rotated = pca_riv_str)
     ),
-  # tar_target(inla_rich, try(inla(
-  #       species_nb ~
-  #         year +
-  #         f(siteid, model = "iid") +
-  #         f(main_bas, model = "iid") +
-  #         f(span, year, model = "iid"),
-  #       family = "zeroinflatednbinomial1",
-  #       control.family = list(link = "log"),
-  #       control.predictor = list(link = 1, compute = TRUE),
-  #       control.compute = list(
-  #         cpo = TRUE,
-  #         dic = TRUE,
-  #         config = TRUE,
-  #         return.marginals.predictor = TRUE),
-  #       data = analysis_dataset,
-  #       verbose = TRUE
-  #       )), error = "continue"),
-  # tar_target(inla_abun, inla(
-  #     total_abundance ~
-  #       year +
-  #       unitabundance +
-  #       f(siteid, model = "iid") +
-  #       f(span, year, model = "iid"),
-  #     family = "gaussian",
-  #     #control.family = list(link = "log"),
-  #     control.predictor = list(link = 1, compute = TRUE),
-  #     control.compute = list(
-  #       cpo = TRUE,
-  #       dic = TRUE,
-  #       config = TRUE,
-  #       return.marginals.predictor = TRUE),
-  #     data = analysis_dataset,
-  #     verbose = TRUE
-  #     ), error = "continue"),
-  tar_target(inla_test,
-    inla(y ~ x,
-      family = "gaussian",
-      data = list(
-        x = rnorm(100, mean = 6, sd = 2),
-        y = rnorm(100, mean = 6, sd = 1)
-        ),
-      control.predictor = list(link = 1)
-    )
-    ),
   tar_target(trend_env,
     model_rigal_spamm(
       formula = paste0(var_temporal_trends,
@@ -737,8 +693,7 @@ tar_target(neutral_turnover,
         hft_ix_c93 = with(modelling_data, c(
             min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
             median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
-            max(hft_ix_c93)
-)
+            max(hft_ix_c93))
           ),
         riv_str_rc1 = with(modelling_data, c(
             min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
@@ -809,13 +764,12 @@ tar_target(neutral_turnover,
       mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])),
   tar_target(site_env,
     modelling_data %>%
-      filter(siteid %in% row.names(site_no_drivers_inla)) %>% 
+      filter(siteid %in% row.names(site_no_drivers_inla)) %>%
       group_by(siteid) %>%
       summarise(across(where(is.numeric), mean), .groups = "drop") %>%
       arrange(match(siteid, row.names(site_no_drivers_inla))) %>%
       left_join(filtered_dataset$location, by = "siteid")
     ),
-
   tar_target(var_jaccard,
     c("jaccard_dis_scaled", "turnover_scaled",
       "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
@@ -1533,6 +1487,11 @@ tar_target(neutral_turnover,
   tar_target(binded_gaussian,
     rbind(gaussian_tps, gaussian_rich, gaussian_abun)
     ),
+  tar_target(comp_log_year_no_evt_re, binded_gaussian_tmb_no_evt_re %>%
+    filter(response %in% clust_var) %>%
+    mutate(fit_summary = map(mod, broom.mixed::glance)) %>%
+    select(-mod)
+  ),
   tar_target(gaussian_comp_std,
     # Drop the main effect
     compare_parameters(setNames(binded_gaussian$mod, binded_gaussian$response), standardize = "refit")
@@ -1921,6 +1880,36 @@ tar_target(mod_sampling_eff,
      warnings = 2
    )
    ),
+ tar_target(k5_fac_1,
+   tclust(
+     x = scale(site_no_drivers_inla, center = FALSE),
+     iter.max = 100,
+     k = 5,
+     alpha = 0.05,
+     restr.fact = 1,
+     warnings = 2
+   )
+   ),
+
+ tar_target(sup_cl_size, seq(2, 8)),
+ tar_target(sup_clust_size_fac1,
+    tibble(
+      cl_size = sup_cl_size,
+      mod = list(
+        try(
+          tclust(
+            x = scale(site_no_drivers_inla, center = FALSE),
+            iter.max = 100,
+            k = sup_cl_size,
+            alpha = 0.05,
+            restr.fact = 1,
+            warnings = 2
+          )
+        )
+        )
+      ),
+    pattern = map(sup_cl_size)
+   ),
  tar_target(k6_fac_50,
    tclust(
      x = scale(site_no_drivers_inla, center = FALSE),
@@ -2107,6 +2096,29 @@ tar_target(mod_sampling_eff,
         filter(siteid %in% site_cl_na$siteid),
       cl = site_cl_na %>%
         select(siteid, cl))
+    ),
+
+  # Obs-fit inla
+  tar_target(obs_fit,
+    rbind(
+      map2_dfr(gaussian_inla_exo$mod, gaussian_inla_exo$response,
+        ~plot_obs_fitted_inla(
+          mod_inla = .x,
+          dataset = modelling_data_exo,
+          resp = .y,
+          pred_nrows = nrow(pred_data_exo),
+          return_df = TRUE
+        )
+      ),
+      map2_dfr(gaussian_inla$mod, gaussian_inla$response,
+        ~plot_obs_fitted_inla(
+          mod_inla = .x,
+          dataset = modelling_data,
+          resp = .y,
+          pred_nrows = nrow(pred_data),
+          return_df = TRUE
+        )
+    )
     ),
 
  # Report

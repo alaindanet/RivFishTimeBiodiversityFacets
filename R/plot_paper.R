@@ -184,15 +184,19 @@ plot_pca_clust <- function(
     rownames_to_column("variable") %>%
     as_tibble()
 
-  tt <- .data$scores %>%
-    as.data.frame() %>%
-    rownames_to_column("siteid") %>%
-    as_tibble() %>%
-    left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
-    na.omit()
+  if (add_point | add_ellipse) {
+    tt <- .data$scores %>%
+      as.data.frame() %>%
+      rownames_to_column("siteid") %>%
+      as_tibble() %>%
+      left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
+      na.omit()
+  }
 
-  pca_data %<>%
-    mutate(variable = replace_var[variable])
+  if (!is.null(replace_var)) {
+    pca_data %<>%
+      mutate(variable = replace_var[variable])
+  }
 
 
   var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)

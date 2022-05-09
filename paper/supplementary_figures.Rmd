@@ -9,7 +9,7 @@ output:
 bibliography: "bibliography.bib"
 ---
 
-```{r}
+```{r options, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE,
                       collapse = TRUE,
                       comment = "#>",
@@ -23,4 +23,492 @@ knitr::opts_chunk$set(echo = FALSE,
                       dev = "svg",
                       dev.args = list(png = list(type = "cairo-png")),
                       optipng = "-o1 -quiet")
+theme_set(theme_cowplot())
+```
+
+```{r library, include = FALSE}
+source(here::here("start_rmd.R"))
+library(gt)
+library(gtsummary)
+```
+
+```{r}
+get_tbl_summary <- function(df = NULL) {
+
+t1 <- df %>%
+  tbl_summary(statistic = all_continuous() ~ "{N_nonmiss}", missing = "no") %>%
+  modify_header(stat_0 ~ "**N (no missing)**")
+
+t2 <- df %>%
+  tbl_summary(statistic = all_continuous() ~
+    "{median} ({p25}, {p75})",
+  missing = "no") %>%
+  modify_header(stat_0 ~ "Median (1st Q, 3rd Q)")
+
+t3 <- df %>%
+  tbl_summary(statistic = all_continuous() ~
+    "({min}, {max})",
+  missing = "no") %>%
+  modify_header(stat_0 ~ "(Min, Max)")
+
+tbl_merge(list(t1, t2, t3)) %>%
+  modify_footnote(everything() ~ NA_character_) %>%
+  modify_spanning_header(everything() ~ NA_character_)
+
+}
+ecdf_fun <- function(x, perc) ecdf(x)(perc)
+```
+
+
+# Data selection
+
+
+```{r}
+tar_load(filtered_op_protocol)
+tar_load(filtered_dataset)
+tar_load(modelling_data)
+tar_load(clust_var)
+tar_load(riveratlas_site)
+```
+
+```{r}
+# get the final site and op used in modelling
+# i.e. remove the NA due to missing environmental variables
+filtered_dataset <- map(filtered_dataset, function(x, stat_data) {
+
+  stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
+  if (!"op_id" %in% colnames(x)) {
+    filtered <- x %>%
+      filter(siteid %in% stat_data$siteid)
+  } else {
+    filtered <- x %>%
+      filter(
+        op_id %in% stat_data$op_id
+      )
+  }
+  return(filtered)
+  }, stat_data = modelling_data %>%
+    left_join(filtered_dataset$abun_rich, by = "siteid") %>%
+    distinct(siteid, op_id)
+)
+filtered_op_protocol <- filtered_op_protocol %>%
+  filter(op_id %in% filtered_dataset$abun_rich$op_id)
+```
+
+```{r tab-pro, fig.cap="Protocol occurrence in sites"}
+tabyl_df(filtered_dataset$site_quali, "protocol") %>%
+  kable()
+```
+
+
+```{r tab-u, fig.cap="Abundance unit occurrence in sites"}
+tabyl_df(filtered_dataset$site_quali, "unitabundance") %>%
+  kable()
+```
+
+
+```{r tab-loc, fig.cap="Country and Realm occurrence in sites"}
+location_site <- filtered_dataset$location %>%
+  select(country, ecoregion)
+
+location_summary <- location_site %>%
+  tbl_summary()
+location_summary
+```
+
+```{r}
+year_op_cap <- "Distribution of year of samplings. Years 1993 and 2009 are highlighted because they correspond to the two human footprint measurements."
+```
+
+```{r y-op, fig.cap=year_op_cap}
+nb_op9309 <- sum(
+  filtered_op_protocol$year >= 1993 &
+  filtered_op_protocol$year <= 2009
+)
+perc_op9309 <- scales::percent(nb_op9309 / nrow(filtered_op_protocol))
+
+filtered_op_protocol %>%
+  ggplot(aes(x = year)) +
+  geom_histogram() +
+  geom_vline(
+    xintercept = c(1993, 2009),
+    lwd = 2, color = "red"
+    ) +
+  labs(x = "Year", y = "Count") +
+  annotate("text", x = 2001, y = 8300,
+    label = paste0(
+      nb_op9309, " samplings between 1993 and 2009 (", perc_op9309,")"
+      )
+  )
+```
+
+```{r}
+site_year <- filtered_dataset$site_quanti %>%
+  filter(variable == "year") %>%
+  left_join(filtered_dataset$location, by = "siteid") %>%
+  mutate(
+    span = max - min + 1,
+    completeness = n / (span),
+    cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
+      include.lowest = TRUE
+    ),
+    cat_completeness = cut(
+      completeness, c(0, .1, .25, .5, .75, 1), right = TRUE,
+      include.lowest = TRUE
+    )
+    )
+```
+
+```{r}
+p_baseline_year <- site_year %>%
+  ggplot(aes(x = min)) +
+  geom_histogram() +
+  labs(x = "Baseline year", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+p_span <- site_year %>%
+  ggplot(aes(x = cat_span, fill = ecoregion)) +
+  geom_bar() +
+  labs(x = "Year span (year)", y = "Number of sites") +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+
+p_completness <- site_year %>%
+  ggplot(aes(x = cat_completeness, fill = ecoregion)) +
+  geom_bar() +
+  labs(
+    x = "Completeness of sampling (nb sampling / year span )",
+    y = "Number of sites"
+  )
+```
+
+```{r}
+cap <- "Distribution of (A) Baseline year, (B) year span and (3) completeness of
+sampling by site."
+```
+
+```{r base-span-cpl, fig.cap=cap}
+plot_grid(
+  p_baseline_year,
+  p_span,
+  p_completness,
+  nrow = 3,
+  label = "AUTO"
+)
+```
+
+
+# Biodiversity summary metrics 
+
+## Biodiversity facets
+
+```{r tab-resp, fig.cap="Summary descriptors of response variables distribution"}
+tmp <- modelling_data %>%
+  select(all_of(c("chao_richness", "species_nb",
+        clust_var, "year")))
+colnames(tmp) <- c(get_var_replacement(), get_model_term_replacement())[colnames(tmp)]
+resp_summary <- get_tbl_summary(df = tmp)
+resp_summary
+```
+
+## Exotic species
+
+```{r}
+tar_load(c(modelling_data_exo, measurement_exo))
+# filter
+measurement_exo <- measurement_exo %>%
+  filter(op_id %in% unique(modelling_data_exo$op_id))
+```
+
+
+```{r, tab_exo}
+exo_sp_var <- c(
+  "species_nb_nat", "species_nb_exo",
+  "perc_exo_sp", "perc_nat_sp",
+  "perc_exo_abun", "perc_nat_abun"
+)
+
+tmp <- modelling_data_exo %>%
+  select(all_of(exo_sp_var))
+exotic_source_summary <-  measurement_exo[, "native_exotic_origin"] %>%
+  tbl_summary()
+
+exotic_compo_summary <- get_tbl_summary(df = tmp)
+exotic_compo_summary
+```
+
+```{r tab-exo-source, fig.cap="Data source for exotic species in term of species occurrence"}
+exotic_source_summary
+```
+
+```{r tab-exo, fig.cap="Summary of native and exotic species composition"}
+exotic_compo_summary
+```
+
+# Environmental variables
+
+```{r}
+tar_load(pca_riv_str)
+```
+
+
+```{r, tab-evt, fig.cap="Descriptive statistics for the environmental variables"}
+col_pca_riv <- c(
+  "siteid", "dist_up_km", "ord_stra",
+  "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav"
+)
+
+riveratlas_tmp <- riveratlas_site %>%
+  select(all_of(col_pca_riv)) %>%
+  st_drop_geometry() %>%
+  left_join(
+    modelling_data %>%
+      distinct(siteid, hft_ix_c93, hft_ix_c9309_log2_ratio),
+    by = "siteid") %>%
+  select(-siteid) %>%
+  rename_with(~str_replace_all(.,
+      c(
+        get_model_term_replacement(),
+        get_rev_vec_name_val(get_river_atlas_significant_var())
+      )
+    )
+  )
+
+evt_summary <- get_tbl_summary(df = riveratlas_tmp)
+evt_summary
+```
+
+```{r}
+cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
+streams. The first axis is related the average discharge, Strahler order and the
+distance from source. This first axis was used in the statistical modelling as a
+composite variable to summarise stream gradient from upstream to upstream."
+```
+
+
+```{r pca-riv-str, fig.cap=cap_pca_riv}
+p_pca_riv_str <- plot_pca_clust(
+  .data = pca_riv_str$rotated,
+  site_cl = NULL,
+  xaxis = "RC1", yaxis = "RC2",
+  ctb_thld = .4, label_size = 2,
+  size_abscisse_segment = .25,
+  size_arrows_segment = .25,
+  force = 10, force_pull = 1,
+  var_scaling_factor = NULL,
+  seed = NA,
+  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
+  add_variable = TRUE,
+  add_point = FALSE,
+  add_ellipse = FALSE
+)
+p_pca_riv_str
+```
+
+```{r}
+lc_hft <- riveratlas_site %>%
+  st_drop_geometry() %>%
+  select(all_of(c(
+        get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")],
+        get_river_atlas_significant_var()[
+          str_detect(get_river_atlas_significant_var(), "hft_")
+          ]
+        )))
+```
+
+```{r}
+cor_lc_hft <- cor(lc_hft,
+  method = "spearman"
+)
+#corrplot::corrplot(cor_clust, type = "upper", diag = FALSE, tl.srt = 15)
+p_cor_lc_hft <- ggcorrplot::ggcorrplot(
+  cor_lc_hft, hc.order = TRUE, type = "lower",
+  lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
+theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
+guides(colour = guide_legend(title.position = "top"))
+```
+
+```{r cor-lc-hft, fig.cap="Spearman correlation between land uses and human footprint indexes"}
+p_cor_lc_hft
+```
+
+# Statistical analysis
+
+## Collinearity
+
+```{r}
+vif_caption <- "Variance inflation factors on the variables included in the
+model. SE_factor: inflation of the standard error of slope coefficients
+predicted by multicollinearity of the variables"
+```
+
+
+```{r vif, fig.cap=vif_caption}
+dummy_vif <- lm(log_species_nb ~
+   log1_year_nb + riv_str_rc1 +
+     hft_ix_c9309_log2_ratio +
+    hft_ix_c93, modelling_data)
+ck_col_data <- check_collinearity(dummy_vif) %>%
+  as_tibble() %>%
+  mutate(Term = str_replace(get_model_term_replacement()[Term], "\n", " "))
+ck_col_data %>%
+  kable()
+```
+
+The presence of multicollinearity among explicative variables was checked by
+measuring the Variance Inflation Factor (VIF) on a model formulation containing only
+the main effect, i.e. not the interactions. It is because main variables ($X_1$,
+$X_2$) and the interactions are colinear by construction, interactions being the
+products of main variables (i.e. $X_1X_2$). The VIF values were all close to 1
+(Table \@ref(tab:vif)), indicating absence of multicollinearity.
+
+## Selection of time modelling
+
+```{r}
+tar_load(comp_log_year_no_evt_re)
+cap_aic_table <- "AIC of the models fitting either temporal trends with the
+number of year since the start of sampling or the log of the former variable
+added to one."
+```
+
+```{r aic, fig.cap=cap_aic_table}
+aic_table_no_evt_re <- comp_log_year_no_evt_re %>%
+  select(year_var, response, fit_summary) %>%
+  unnest(fit_summary) %>%
+  select(year_var, response, AIC) %>%
+  mutate(AIC = round(AIC)) %>%
+  pivot_wider(names_from = "year_var", values_from = "AIC") %>%
+  mutate(
+    which_min = ifelse(
+      log1_year_nb == min(c(year_nb, log1_year_nb)),
+      "log1_year_nb", "year_nb")
+  )
+aic_table_no_evt_re
+```
+
+## Model validity
+
+```{r}
+```
+
+## Clustering of temporal trends
+
+```{r}
+tar_load(c(clust_curv_site, clust_curv_site_fac_50))
+tar_load(c(k6_fac_1, sup_clust_size_fac1))
+```
+
+```{r}
+cap_clust_curv <- "Objective function quantifying the goodness of k-means
+clustering according the percentage of removed data (most outliers data in the
+  multidimentional space) removed. In the results presented in the main text, we
+removed 5% of the data. Top and bottom panels displayed results for restricting
+factors of 1 and 50 respectively."
+```
+
+
+```{r , fig.cap=cap_clust_curv}
+plot_grid(
+  clust_curv_site,
+  clust_curv_site_fac_50,
+  nrow = 2
+)
+```
+
+```{r}
+k4_fac_1_cl <- tclust(
+  x = site_no_drivers_inla_tot[, clust_var] %>%
+  mutate(across(everything(), ~scale(., center = FALSE)[,1])),
+  iter.max = 150,
+  k = 4,
+  alpha = 0.05,
+  restr.fact = 1,
+  warnings = 2
+)
+plot(k4_fac_1_cl)
+```
+
+```{r}
+site_k4_fac_1_cl <- get_cluster_df(
+     tclust_obj = k4_fac_1_cl,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "rm"
+     )
+target_bp_cl_dist(cl_obj = site_k4_fac_1_cl) +
+  theme(axis.text.x = element_text(angle = 20, vjust = 0))
+```
+
+- Add box plot of cluster values distribution by variables
+
+# Supplementary results
+ 
+## Figure with all the biodiversity facets
+
+```{r, fig.show = "hide"}
+tu_full <- rbind(gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+
+p1_f <- tu_full %>%
+  filter(facet == "main") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.21, .5))
+
+p2_f <- tu_full %>%
+  filter(facet == "interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect()
+
+p3_f <- tu_full %>%
+  filter(facet == "dbl_interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis_f <- get_legend(p3_f +
+  theme(legend.position = "bottom") +
+  guides(color = guide_legend(nrow = 4))
+)
+
+figS1 <- plot_grid(
+  print(p1_f),
+  print(p2_f),
+  p3_f + theme(legend.position = "none"),
+  leg_dis_f,
+  rel_heights = c(1, 1, 1, .2),
+  ncol = 1)
+```
+
+```{r std-tot, fig.height = 12}
+figS1
+```
+
+## Unstandardized coefficients
+
+## Predictions of the model
+
+```{r}
+tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo))
+
+pred_gaussian_inla_tot <- rbind(
+  pred_gaussian_inla %>%
+    filter(response %in% clust_var),
+  pred_gaussian_inla_exo
+  )
+```
+
+```{r}
+for (i in seq_along(pred_gaussian_inla_tot$response)) {
+  plot_grid(
+    plotlist = pred_gaussian_inla_tot$pred_plot[[i]],
+    ncol = 3)
+}
 ```

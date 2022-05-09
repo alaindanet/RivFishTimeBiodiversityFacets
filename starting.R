@@ -299,3 +299,26 @@ system(paste0("touch ", here("paper", "TODO")))
 system(paste0("touch ", here("paper", "story_summary.txt")))
 
 system(paste0("touch ", here("talk", "jasm2022.Rmd")))
+
+######################
+#  Convert to PDF  #
+######################
+
+remotes::install_github(
+  "jhelvy/xaringanBuilder",
+  dependencies = TRUE,
+  force = TRUE
+)
+library(xaringanBuilder)
+# For xaringan builder
+#https://github.com/jhelvy/xaringanBuilder
+Sys.setenv(PAGEDOWN_CHROME = "/usr/bin/chromium")
+Sys.setenv(CHROMOTE_CHROME = "/usr/bin/chromium")
+build_pdf(
+  input = here::here("talk/jasm2022.html"),
+  output_file = here::here("talk/jasm2022_test2.pdf"),
+  complex_slides = TRUE,
+  partial_slides = TRUE,
+  delay = 1,
+  keep_intermediates = TRUE
+)

@@ -390,7 +390,7 @@ get_cor_biais_inla_tmb_re <- function(
     setNames(colnames(inla_re), colnames(inla_re)),
     ~tibble(
       corr_pearson = cor(inla_re[[.x]], tmb_re[[.x]]),
-      avg_biais_inla_tmb = mean(inla_re[[.x]] - tmb_re[[.x]])
+      med_biais_inla_tmb = median(inla_re[[.x]] - tmb_re[[.x]])
       ),
     .id = "response"
   )

@@ -57,15 +57,15 @@ get_model_term_replacement <- function() {
   c(
     log1_year_nb = "Log (Year nb + 1)",
     year_nb = "Year nb",
+    `year` = "Year",
     riv_str_rc1 = "PCA1\nstream gradient",
     hft_c9309_scaled_no_center = "Human footprint\nchange (1993-2009)",
     hft_ix_c9309_diff_scaled = "Human footprint\nchange (1993-2009)",
-    hft_ix_c9309_log2_ratio = "Human footprint\nchange (1993-2009)",
+    hft_ix_c9309_log2_ratio = "Log2 Human footprint\nratio (2009/1993)",
     hft_ix_c93 = "Human footprint\n(1993)",
     main_bas = "Basin",
     siteid = "Site",
     `siteid:main_bas` = "Site"
-
   )
 }
 
