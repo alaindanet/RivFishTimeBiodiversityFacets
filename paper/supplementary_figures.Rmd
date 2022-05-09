@@ -1,5 +1,5 @@
 ---
-title: "Material & Methods"
+title: "Supplementary Figures and Tables"
 author: "Danet, A, Giam, X, Olden, J, Comte, L"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
@@ -23,11 +23,11 @@ knitr::opts_chunk$set(echo = FALSE,
                       dev = "svg",
                       dev.args = list(png = list(type = "cairo-png")),
                       optipng = "-o1 -quiet")
-theme_set(theme_cowplot())
 ```
 
 ```{r library, include = FALSE}
 source(here::here("start_rmd.R"))
+theme_set(theme_cowplot())
 library(gt)
 library(gtsummary)
 ```
@@ -64,51 +64,28 @@ ecdf_fun <- function(x, perc) ecdf(x)(perc)
 
 
 ```{r}
-tar_load(filtered_op_protocol)
-tar_load(filtered_dataset)
+tar_load(filtered_op_protocol_modelling)
+tar_load(filtered_dataset_modelling)
 tar_load(modelling_data)
 tar_load(clust_var)
 tar_load(riveratlas_site)
 ```
 
-```{r}
-# get the final site and op used in modelling
-# i.e. remove the NA due to missing environmental variables
-filtered_dataset <- map(filtered_dataset, function(x, stat_data) {
-
-  stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
-  if (!"op_id" %in% colnames(x)) {
-    filtered <- x %>%
-      filter(siteid %in% stat_data$siteid)
-  } else {
-    filtered <- x %>%
-      filter(
-        op_id %in% stat_data$op_id
-      )
-  }
-  return(filtered)
-  }, stat_data = modelling_data %>%
-    left_join(filtered_dataset$abun_rich, by = "siteid") %>%
-    distinct(siteid, op_id)
-)
-filtered_op_protocol <- filtered_op_protocol %>%
-  filter(op_id %in% filtered_dataset$abun_rich$op_id)
-```
 
 ```{r tab-pro, fig.cap="Protocol occurrence in sites"}
-tabyl_df(filtered_dataset$site_quali, "protocol") %>%
+tabyl_df(filtered_dataset_modelling$site_quali, "protocol") %>%
   kable()
 ```
 
 
 ```{r tab-u, fig.cap="Abundance unit occurrence in sites"}
-tabyl_df(filtered_dataset$site_quali, "unitabundance") %>%
+tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
   kable()
 ```
 
 
 ```{r tab-loc, fig.cap="Country and Realm occurrence in sites"}
-location_site <- filtered_dataset$location %>%
+location_site <- filtered_dataset_modelling$location %>%
   select(country, ecoregion)
 
 location_summary <- location_site %>%
@@ -122,12 +99,12 @@ year_op_cap <- "Distribution of year of samplings. Years 1993 and 2009 are highl
 
 ```{r y-op, fig.cap=year_op_cap}
 nb_op9309 <- sum(
-  filtered_op_protocol$year >= 1993 &
-  filtered_op_protocol$year <= 2009
+  filtered_op_protocol_modelling$year >= 1993 &
+  filtered_op_protocol_modelling$year <= 2009
 )
-perc_op9309 <- scales::percent(nb_op9309 / nrow(filtered_op_protocol))
+perc_op9309 <- scales::percent(nb_op9309 / nrow(filtered_op_protocol_modelling))
 
-filtered_op_protocol %>%
+filtered_op_protocol_modelling %>%
   ggplot(aes(x = year)) +
   geom_histogram() +
   geom_vline(
@@ -143,9 +120,9 @@ filtered_op_protocol %>%
 ```
 
 ```{r}
-site_year <- filtered_dataset$site_quanti %>%
+site_year <- filtered_dataset_modelling$site_quanti %>%
   filter(variable == "year") %>%
-  left_join(filtered_dataset$location, by = "siteid") %>%
+  left_join(filtered_dataset_modelling$location, by = "siteid") %>%
   mutate(
     span = max - min + 1,
     completeness = n / (span),

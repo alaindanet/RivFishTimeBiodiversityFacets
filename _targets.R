@@ -2120,6 +2120,28 @@ tar_target(mod_sampling_eff,
         )
     )
     )),
+  tar_target(filtered_dataset_modelling,
+    map(filtered_dataset, function(x, stat_data) {
+      stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
+      if (!"op_id" %in% colnames(x)) {
+        filtered <- x %>%
+          filter(siteid %in% stat_data$siteid)
+      } else {
+        filtered <- x %>%
+          filter(
+            op_id %in% stat_data$op_id
+          )
+      }
+      return(filtered)
+    }, stat_data = modelling_data %>%
+      left_join(filtered_dataset$abun_rich, by = "siteid") %>%
+      distinct(siteid, op_id)
+    )
+  ),
+  tar_target(filtered_op_protocol_modelling,
+    filtered_op_protocol %>%
+      filter(op_id %in% filtered_dataset_modelling$abun_rich$op_id)
+    ),
 
  # Report
  tar_render(intro, here("vignettes/intro.Rmd")),
@@ -2154,3 +2176,4 @@ tar_target(mod_sampling_eff,
     format = "file",
     error = "continue")
   )
+

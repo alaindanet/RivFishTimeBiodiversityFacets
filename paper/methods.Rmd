@@ -60,9 +60,8 @@ selected the samplings that reported the year, but also at minimum the month or
 the quarter of the year (i.e., January to march, April to June, etc.). For each site,  
 we selected only the samplings that were performed within 1 month around the
 most frequently sampled month, i.e. one month before or after. Finally, we kept sites where
-the number of samplings was equal or superior to five and that still had time
+the number of samplings was equal or superior to five and that had time
 span of at least 10 years.
-
 
 
 # Characterise Biodiversity
