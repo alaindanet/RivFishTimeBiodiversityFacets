@@ -71,7 +71,8 @@ plot_obs_fitted_inla <- function(
 
   obs_fit <- tibble(
     response = resp,
-    op_id = dataset[["op_id"]],
+    siteid = dataset[["siteid"]],
+    year = dataset[["year"]],
     fit = fitted_values,
     obs = dataset[[resp]]
   )

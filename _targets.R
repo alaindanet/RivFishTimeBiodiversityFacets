@@ -2119,7 +2119,7 @@ tar_target(mod_sampling_eff,
           return_df = TRUE
         )
     )
-    ),
+    )),
 
  # Report
  tar_render(intro, here("vignettes/intro.Rmd")),
