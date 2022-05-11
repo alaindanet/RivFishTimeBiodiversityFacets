@@ -94,7 +94,8 @@ location_summary
 ```
 
 ```{r}
-year_op_cap <- "Distribution of year of samplings. Years 1993 and 2009 are highlighted because they correspond to the two human footprint measurements."
+year_op_cap <- "Distribution of year of samplings. Years 1993 and 2009 are
+highlighted because they correspond to the two human footprint measurements."
 ```
 
 ```{r y-op, fig.cap=year_op_cap}
@@ -164,11 +165,13 @@ sampling by site."
 ```
 
 ```{r base-span-cpl, fig.cap=cap}
+leg_ecoregion <- get_legend(p_span + theme(legend.position = "bottom"))
 plot_grid(
   p_baseline_year,
-  p_span,
-  p_completness,
-  nrow = 3,
+  p_span + theme(legend.position = "none"),
+  p_completness + theme(legend.position = "none"),
+  leg_ecoregion,
+  ncol = 1,
   label = "AUTO"
 )
 ```
@@ -260,7 +263,6 @@ streams. The first axis is related the average discharge, Strahler order and the
 distance from source. This first axis was used in the statistical modelling as a
 composite variable to summarise stream gradient from upstream to upstream."
 ```
-
 
 ```{r pca-riv-str, fig.cap=cap_pca_riv}
 p_pca_riv_str <- plot_pca_clust(
@@ -355,11 +357,15 @@ aic_table_no_evt_re <- comp_log_year_no_evt_re %>%
   mutate(AIC = round(AIC)) %>%
   pivot_wider(names_from = "year_var", values_from = "AIC") %>%
   mutate(
-    which_min = ifelse(
-      log1_year_nb == min(c(year_nb, log1_year_nb)),
-      "log1_year_nb", "year_nb")
+    which_min = map2_chr(year_nb, log1_year_nb, ~c("year_nb", "log1_year_nb")[which.min(c(.x, .y))]),
+    diff_ratio_log_raw = (log1_year_nb - year_nb) / year_nb
   )
-aic_table_no_evt_re
+mean(aic_table_no_evt_re$diff_ratio_log_raw)
+aic_table_no_evt_re %>%
+  mutate(
+    response = get_var_replacement()[response]
+  ) %>%
+kable()
 ```
 
 ## Model validity
