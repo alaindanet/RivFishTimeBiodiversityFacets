@@ -3,7 +3,7 @@ title: "Supplementary Figures and Tables"
 author: "Danet, A, Giam, X, Olden, J, Comte, L"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  bookdown::pdf_document:
+  bookdown::pdf_document2:
     df_print: paged
     toc: true
 bibliography: "bibliography.bib"
@@ -30,6 +30,7 @@ source(here::here("start_rmd.R"))
 theme_set(theme_cowplot())
 library(gt)
 library(gtsummary)
+library(ggbreak)
 ```
 
 ```{r}
@@ -69,18 +70,23 @@ tar_load(filtered_dataset_modelling)
 tar_load(modelling_data)
 tar_load(clust_var)
 tar_load(riveratlas_site)
+tar_load(c(site_no_drivers_inla_tot, site_env, gaussian_inla_std_effects, gaussian_inla_exo_std_effects))
+
+mykable <- function(data) {
+  knitr::kable(data, booktabs = TRUE, digits = 2)
+}
 ```
 
 
 ```{r tab-pro, fig.cap="Protocol occurrence in sites"}
 tabyl_df(filtered_dataset_modelling$site_quali, "protocol") %>%
-  kable()
+  mykable()
 ```
 
 
 ```{r tab-u, fig.cap="Abundance unit occurrence in sites"}
 tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
-  kable()
+  mykable()
 ```
 
 
@@ -90,7 +96,8 @@ location_site <- filtered_dataset_modelling$location %>%
 
 location_summary <- location_site %>%
   tbl_summary()
-location_summary
+location_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 ```{r}
@@ -164,7 +171,7 @@ cap <- "Distribution of (A) Baseline year, (B) year span and (3) completeness of
 sampling by site."
 ```
 
-```{r base-span-cpl, fig.cap=cap}
+```{r base-span-cpl, fig.cap=cap, fig.height = 12}
 leg_ecoregion <- get_legend(p_span + theme(legend.position = "bottom"))
 plot_grid(
   p_baseline_year,
@@ -187,7 +194,8 @@ tmp <- modelling_data %>%
         clust_var, "year")))
 colnames(tmp) <- c(get_var_replacement(), get_model_term_replacement())[colnames(tmp)]
 resp_summary <- get_tbl_summary(df = tmp)
-resp_summary
+resp_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 ## Exotic species
@@ -213,15 +221,18 @@ exotic_source_summary <-  measurement_exo[, "native_exotic_origin"] %>%
   tbl_summary()
 
 exotic_compo_summary <- get_tbl_summary(df = tmp)
-exotic_compo_summary
+exotic_compo_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 ```{r tab-exo-source, fig.cap="Data source for exotic species in term of species occurrence"}
-exotic_source_summary
+exotic_source_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 ```{r tab-exo, fig.cap="Summary of native and exotic species composition"}
-exotic_compo_summary
+exotic_compo_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 # Environmental variables
@@ -254,7 +265,8 @@ riveratlas_tmp <- riveratlas_site %>%
   )
 
 evt_summary <- get_tbl_summary(df = riveratlas_tmp)
-evt_summary
+evt_summary %>%
+  as_kable_extra(format = "latex")
 ```
 
 ```{r}

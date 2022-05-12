@@ -1,0 +1,169 @@
+---
+title: "Story summary" 
+author: "Stephen Heard method"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  word_document:
+    toc: true
+bibliography: "bibliography.bib"
+---
+
+# 1. What is the central question?
+
+What are the drivers and the typology of biodiversity changes in freshwater fish
+communities?
+
+# 2. Why is this question important? 
+
+Global change put biodiversity is under underprecedented pressure. 
+This is particularly true for freshwater system that accumulate specific
+pressure such as flow alteration, overexploitation, accumulate pollution from
+terrestrial land and is threatened by introduction of exotic species.
+However, we have little knowledge on how biodiversity change in fish freshwater
+system and those changes are affected by anthropogenic pressures. 
+ 
+Biodiversity changes can be described in several ways, such as temporal trends
+in total abundance, species richness and dissimilarity metrics. The question of
+whether those different ways of describing biodiversity changes covary or not
+has been overlooked. An answer to this question might give us insight on how
+many and which biodiversity metrics should be measured to improve our
+documentation of biodiversity changes.  
+
+# 3. What data are needed to answer this question? 
+
+1. Time series of freshwater fish community monitoring at large spatial scale
+  - They should be internally homogeneous to assess temporal trends
+2. Characteristics of stream at each site: physiography, hydrology
+3. Metric of anthropogenic pressure
+4. Metrics of biodiversity
+5. Characterisation of species origin: native or exotic
+
+# 4. What methods are used to get those data? 
+
+1. RivFishTime database
+  - Filtering for consistency in protocol, unit of measurement, sampling
+    season and time span 
+
+2. Riveratlas extraction of average annual discharge, distance of the sites from
+the source, site altitude and slope at a spatial resolution of 4km
+
+3. Riveratlas extraction of the Human footprint index (1993;2009):
+  - Legacy of long-term anthropogenic pressure: Human footprint (1993)
+  - Recent changes in anthropogenic pressure: Human footprint ratio (2009/1993)
+
+4. Compute metrics of biodiversity, i.e. community composition: 
+  - Dissimilarity based on presence/absence or abundance and their partitioning
+    in Nestedness/Turnover, Appearance/Disappearance 
+  - Total abundance
+  - Species richness
+
+5. Tedesco et al. database (basin scale) mostly
+  - Completed by fishbase database (country scale)
+  - Completed by NAS database for the US (state scale)
+  - Completed by litterature search
+  - Metrics: percentage of exotic species, percentage of exotic species
+    abundance
+
+# 5. What analysis must be applied for the data to answer the central question? 
+
+- Stream gradient: PCA over stream characteristics and extract site coordinates
+  on the first PCA axis
+- Modelling the relationship among biodiversity, time, stream gradient and
+  anthropogenic pressures at global scale
+  - Hierarchical model to assess simultaneously the temporal trends at global, basin and site
+    scale
+    - One model to characterize the relationship among biodiversity facets,
+      ecological drivers, temporal trends and the effects of ecological drivers
+      on temporal drivers
+  - One model without ecological drivers: extraction of biodiversity temporal
+    trends at site scale with the BLUP method
+- PCA over the temporal trends of the different biodiversity facets
+- Robust clustering method with k-means algorithm over the temporal trends of biodiversity
+  facets
+
+# 6. What data were obtained? 
+
+Not applicable
+
+# 7. What were the results of the analyses ?
+
+## Dissimilarity
+
+We found strong evidence that community composition change through time, both
+due to change in species occurrence (Jaccard) and in species dominance (Simpson
+based dissimilarity). We further found that this dissimilarity was mainly due to
+changes in species identity (Turnover) rather than nestedness.
+
+We found strong evidence of positive relationship between dissimilarity rates of
+change and anthropogenic pressures, both past and recent. We further found
+strong evidence of a positive relationship between dissimilarity rates of
+changes and stream gradient.
+
+## Total abundance, species richness and exotic species composition
+
+We found strong evidence of a global positive temporal trends for total
+abundance, species richness, a weak evidence of a global positive temporal
+trends of the percentage of exotic species.
+
+We further found strong evidence of a positive effect of legacy of past
+anthropogenic pressure on the temporal trends of species richness and total
+abundance but no effect on the temporal trends of exotic species percentage.
+Conversely, we found moderate and weak evidence that recent increase in 
+anthropogenic pressures had a negative effect on total abundance and species
+richness temporal trends but we found strong evidence for a positive effect on  
+the temporal trends of the percentage of exotic species.
+
+We also found strong evidence that the interaction between past and recent
+anthropogenic pressure had a positive effect on the temporal trends of the
+percentage of exotic species but a negative effect on the temporal trends of 
+total abundance and no effect on the temporal trends of species richness and
+percentage of exotic abundance. 
+   
+## Typology of biodiversity trends
+
+We found that the PCA isolates four dimensions of biodiversity trends: there
+were related to dissimilarity in community composition, species richness,
+nestedness and total abundance. This partition was further confirmed by the
+cluster analysis.
+
+# 8. How did the analyses answer the central question? 
+
+Our analysis suggests that past anthropogenic pressures and recent ones
+increases the rates of community composition change through time, even
+synergistic. Past anthropogenic pressures and recent ones have contrasted
+effects on the temporal trends of biodiversity. While our results suggest that
+community located in sites of high past anthropogenic pressure are recovering
+in terms of total abundance and species richness, it is the reverse for
+community located in site that recently increased in human pressure.
+
+Our result suggests that the temporal trends of different biodiversity facets
+lies in several dimensions and thus it might be needed to better understand
+temporal community changes.
+
+# 9. What does this answer tell us about the broader field?
+ 
+The global positive temporal trends of total abundance and species richness that
+we found are in accordance with the result of a recent meta-analysis on aquatic
+insects [@klink_meta-analysis_2020]. Our results suggest that in fish stream
+communities, those positive trends are partly attributed to the increase of
+exotic species percentage.
+Furthermore, the high rates of community changes that we found were related to
+changes in species composition, in accordance with previous meta-analysis on
+marine and terrestrial vertebrates [@dornelas_assemblage_2014;
+@blowes_geography_2019]. Our results further suggest that site degradation might 
+drive high rates of community changes for three reasons. First, 92% of our site
+can be considered as in a degraded state [hft > 4, @williams_change_2020]. Two,
+our results suggest that past and recent anthropogenic pressures lead to faster rates of
+change in species composition.
+
+Our results on the typology of biodiversity trends are in accordance with 
+previous results showing that species richness temporal changes and
+temporal changes are unrelated [@dornelas_assemblage_2014;
+@blowes_geography_2019]. Our results further suggest that total abundance
+temporal is a third dimension of biodiversity trends.
+
+# Ref 
+
+- Multi facet and loss of specialist (villegier)
+https://esajournals.onlinelibrary.wiley.com/doi/abs/10.1890/09-1310.1 
+
