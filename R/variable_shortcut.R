@@ -53,6 +53,47 @@ get_var_replacement <- function() {
       )
 }
 
+get_var_replacement_vulgarisation <- function() {
+  c(
+    log_species_nb = "Species richness",
+    species_nb = "Species richness",
+    log_total_abundance = "Total abundance",
+    total_abundance = "Total abundance",
+    chao_richness = "Chao species richness",
+    log_chao_richness = "Species richness",
+    chao_shannon = "Chao shannon",
+    chao_simpson = "Chao simpson",
+    chao_evenness = "Chao evenness",
+    evenness = "Evenness",
+    evenness_scaled = "Evenness",
+    jaccard_dis = "Jaccard (binary, dissimilarity)",
+    jaccard_dis_scaled = "Jaccard (binary, dissimilarity)",
+    jaccard = "Jaccard (binary, similarity)",
+    horn = "Horn (binary, similarity)",
+    "chao" = "Chao (binary, similarity)",
+    hillebrand = "SER_a (rel abundance)",
+    hillebrand_dis_scaled = "Dissimilarity (Simpson index)",
+    total = "Total turnover (codyn)",
+    appearance = "Appearance",
+    appearance_scaled = "Appearance",
+    disappearance_scaled = "Disappearance",
+    shannon = "Shannon",
+    simpson = "Simpson",
+    nestedness = "Nestedness (jaccard)",
+    nestedness_scaled = "Nestedness (jaccard)",
+    turnover = "Turnover (jaccard)",
+    turnover_scaled = "Turnover (jaccard)",
+    species_nb_nat = "Species richness (native)",
+    species_nb_exo = "Species richness (exotic)",
+    perc_exo_sp = "Percentage exotic species",
+    perc_nat_sp = "Percentage native species",
+    perc_nat_abun = "Percentage native abundance",
+    perc_exo_abun = "Percentage exotic abundance",
+    nat_abun = "Native abundance",
+    exo_abun = "Exotic abundance"
+      )
+}
+
 get_model_term_replacement <- function() {
   c(
     log1_year_nb = "Log (Year nb + 1)",

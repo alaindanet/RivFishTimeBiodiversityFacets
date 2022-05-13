@@ -531,10 +531,10 @@ tar_target(neutral_turnover,
         ) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
-        perc_intact = sum(hft_ix_c93 / 10 > 1 &
-          hft_ix_c93 / 10 < 4) / n(),
+        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93  < 1) / n(),
+        perc_intact = sum(hft_ix_c93 > 1 &
+          hft_ix_c93 < 4) / n(),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
@@ -549,10 +549,10 @@ tar_target(neutral_turnover,
         hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
-        perc_intact = sum(hft_ix_c93 / 10 > 1 &
-          hft_ix_c93 / 10 < 4) / n(),
+        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93 < 1) / n(),
+        perc_intact = sum(hft_ix_c93 > 1 &
+          hft_ix_c93 < 4) / n(),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
