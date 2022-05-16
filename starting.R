@@ -347,3 +347,22 @@ filtered_us_rivfishtime_origin <- filtered_us_rivfishtime
 filtered_us_rivfishtime_origin$location <- filtered_us_rivfishtime_origin$location %>%
   dplyr::left_join(origin_old_timeseries, by = "siteid")
 save(filtered_us_rivfishtime_origin, file = here::here("data", "filtered_us_rivfishtime_origin.rda"))
+
+##################################
+#  Importing Sweden liming data  #
+##################################
+
+
+liming_site_folder <- paste0(
+  server_mounted_location,
+  "ENV_LAYERS/wetransfer_gis-data-liming-sweden_2022-05-12_2134/lst.LST_nkdb_kalkningsobjekt")
+
+R.utils::createLink(
+  link = here("inst", "extdata", "liming_data_site_sweden"),
+  target = liming_site_folder,
+  method = ifelse(
+    machine_login == "ahdanet",
+    "windows-shortcut", "unix-symlink"
+    ),
+  overwrite = TRUE
+)

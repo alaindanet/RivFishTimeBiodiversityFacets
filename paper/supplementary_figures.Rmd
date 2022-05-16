@@ -436,6 +436,55 @@ target_bp_cl_dist(cl_obj = site_k4_fac_1_cl) +
 - Add box plot of cluster values distribution by variables
 
 # Supplementary results
+
+## Without Sweden
+
+```{r}
+tar_load(gaussian_inla_wo_swe)
+restricted_dimension <- c(
+  "hillebrand_dis_scaled", "log_total_abundance",
+  "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
+tu <- rbind(gaussian_inla_wo_swe) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+p1 <- tu %>%
+  filter(facet == "main") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.25, .65))
+
+p2 <- tu %>%
+  filter(facet == "interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect() +
+  scale_x_break(c(.10, .17))
+
+p3 <- tu %>%
+  filter(facet == "dbl_interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis <- get_legend(p3 +
+ guides(colour = guide_legend(nrow = 2) ) +
+  theme(legend.position = "bottom")
+)
+
+fig1 <- plot_grid(
+  print(p1),
+  print(p2),
+  p3 + theme(legend.position = "none"),
+  leg_dis,
+  rel_heights = c(1, 1, 1, .3),
+  ncol = 1)
+```
  
 ## Figure with all the biodiversity facets
 

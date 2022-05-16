@@ -13,7 +13,7 @@ tar_make_future(
   )
 
 tar_make_future(
-  workers = min(future::availableCores() - 1, 6),
+  workers = min(future::availableCores() - 1, 8),
   names = !c(starts_with("beta_"), !!exclusion_vector)
   )
 
