@@ -37,6 +37,17 @@ list(
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
+  tar_target(lime_data_site_shp_folder,
+    here("inst", "extdata", "liming_data_site_sweden") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(lime_data_site_shp_file,
+    paste0(lime_data_shp_folder, "/lst.LST_nkdb_kalkningsobjekt.shp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(lime_data_site, sf::read_sf(lime_data_site_shp_file)),
   tar_target(water_temperature_file,
     here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
       R.utils::filePath(., expandLinks = "any"),
@@ -2202,4 +2213,3 @@ tar_target(mod_sampling_eff,
     format = "file",
     error = "continue")
   )
-
