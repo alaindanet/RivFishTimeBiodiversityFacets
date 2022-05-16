@@ -323,10 +323,27 @@ build_pdf(
   keep_intermediates = TRUE
 )
 
+########################################
+#  Compute coef of changes by decades  #
+########################################
 use_rmd("global-rate-changes")
 
-# Keep track of extraction for Julian
+##############################################
+#  Extraction of old rivfishtime for Julian  #
+##############################################
 tar_load(old_timeseries)
 origin_old_timeseries <- old_timeseries %>%
   distinct(siteid, origin)
 save(origin_old_timeseries, file = here::here("data", "origin_old_timeseries.rda"))
+
+load(here::here("data", "origin_old_timeseries.rda"))
+load(here::here("data", "filtered_us_rivfishtime.rda"))
+
+ti <- filtered_us_rivfishtime$location %>%
+  dplyr::left_join(origin_old_timeseries, by = "siteid")
+stopifnot(all(!is.na(ti$origin)))
+# all good
+filtered_us_rivfishtime_origin <- filtered_us_rivfishtime
+filtered_us_rivfishtime_origin$location <- filtered_us_rivfishtime_origin$location %>%
+  dplyr::left_join(origin_old_timeseries, by = "siteid")
+save(filtered_us_rivfishtime_origin, file = here::here("data", "filtered_us_rivfishtime_origin.rda"))

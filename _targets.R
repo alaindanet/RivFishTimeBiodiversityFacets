@@ -1247,6 +1247,21 @@ tar_target(neutral_turnover,
       ),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_std_wo_swe,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = facet_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data %>%
+              left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
+              filter(country != "SWE")
+              )))
+      ),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_inla_std_no_drivers,
     tibble(
       response = facet_var,
@@ -1261,6 +1276,8 @@ tar_target(neutral_turnover,
     ),
   tar_target(gaussian_inla_std_effects,
     format_inla_model_list(x = gaussian_inla_std)),
+  tar_target(gaussian_inla_std_wo_swe_effects,
+    format_inla_model_list(x = gaussian_inla_std_wo_swe)),
   tar_target(gaussian_inla_std_no_drivers_effects,
     format_inla_model_list(x = gaussian_inla_std_no_drivers)),
   tar_target(gaussian_inla_std_re_pred,
