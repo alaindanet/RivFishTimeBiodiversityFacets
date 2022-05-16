@@ -72,6 +72,9 @@ list(
     #load_time_series_data(raw_data_file)
     load_time_series_data(updated_rivfishtime_file)
     ),
+  tar_target(old_timeseries,
+    load_time_series_data(raw_data_file)
+    ),
   tar_target(occ_exotic,
     read_csv(occ_exotic_file,
       col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%
