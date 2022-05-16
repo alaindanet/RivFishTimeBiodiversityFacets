@@ -324,3 +324,9 @@ build_pdf(
 )
 
 use_rmd("global-rate-changes")
+
+# Keep track of extraction for Julian
+tar_load(old_timeseries)
+origin_old_timeseries <- old_timeseries %>%
+  distinct(siteid, origin)
+save(origin_old_timeseries, file = here::here("origin_old_timeseries.rda"))
