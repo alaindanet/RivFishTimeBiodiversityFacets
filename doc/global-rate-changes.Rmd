@@ -1,0 +1,176 @@
+---
+title: "Global temporal trends for Lise"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::html_document2:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+## target knits Rmds in their own session, so load libraries here.
+source(here::here("start_rmd.R"))
+
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(gaussian_inla_no_drivers_effects))
+gaussian_inla_no_drivers_effects %<>%
+  filter(
+    response %in% c("log_chao_richness", "log_total_abundance", "hillebrand_dis_scaled"),
+    ci_level == "level:0.95", term == "log1_year_nb"
+  )
+```
+
+# Avant-propos  
+
+Results of the modelling without ecological drivers expect time.
+
+# Hillebrand dissimiliraty:
+
+```{r}
+hill_coef_vector <- gaussian_inla_no_drivers_effects[
+  gaussian_inla_no_drivers_effects$response == "hillebrand_dis_scaled",
+  c("low", "high", "mean")
+  ] %>%
+  pivot_longer(everything()) %>%
+  deframe()
+```
+
+The time was quantified as the number of years since the begining
+of the sampling at each site with $t_0 = 0$. We log-transford the number of
+years as $\log(year + 1)$ to signicantly improved the quality of the fit of the
+model on the data (AIC + 124% for simpson dissimilarity index). Then the rate of change of a given biodiversity facet for a decade
+is found for a time log-transformed value of `r round(log(10 + 1), 2)`
+approximatively (i.e. $\log(10 + 1)$)  
+
+```{r}
+r_dis10 <- round(hill_coef_vector * log(10 + 1), 2)
+```
+The rate of change of the Hillebrand dissimilarity index by decade estimated is `r r_dis10["mean"]`
+(Credible interval at 95%: `r r_dis10["low"]`- `r r_dis10["high"]`) 
+
+# Total abundance and species richness 
+
+Time was computed the same way than dissimilarity of Hillebrand but
+abundance and species were logged. So the rate of changes in percentage of total abundance and
+species richness are obtained by: $Rate= (e^{\beta} - 1) * 100$ 
+
+```{r}
+beta_to_perc_rate <- function (x) {
+  (exp(x) - 1) * 100
+}
+```
+
+```{r}
+abun_coef_vector <- gaussian_inla_no_drivers_effects[
+  gaussian_inla_no_drivers_effects$response == "log_total_abundance",
+  c("low", "high", "mean")
+  ] %>%
+  pivot_longer(everything()) %>%
+  deframe()
+```
+
+
+```{r}
+r_abun10 <- round(beta_to_perc_rate(abun_coef_vector) * log(10 + 1), 2)
+```
+
+The rate of change of the Total abundance by decade estimated is `r r_abun10["mean"]`%
+(Credible interval at 95%: `r r_abun10["low"]`% - `r r_abun10["high"]`%).
+The average rate of change of abundance is very close from the one found by Van
+Klink et al. (2020) with freshwater insects. Indeed, they found around +11% by
+decade.
+
+NOTABENE: The rate of change is adjusted for the unit of abundance. This estimation
+corresponds to rate of change when the unit of abundance is "Raw Count".
+
+
+```{r}
+rich_coef_vector <- gaussian_inla_no_drivers_effects[
+  gaussian_inla_no_drivers_effects$response == "log_chao_richness",
+  c("low", "high", "mean")
+  ] %>%
+  pivot_longer(everything()) %>%
+  deframe()
+```
+
+```{r}
+r_rich10 <- round(beta_to_perc_rate(rich_coef_vector) * log(10 + 1), 2)
+```
+
+The rate of change of the Chao species richness by decade estimated is `r r_rich10["mean"]`%
+(Credible interval at 95%: `r r_rich10["low"]`% - `r r_rich10["high"]`%).
+
+
+## Percentage of exotic species 
+
+```{r exo, include=FALSE}
+tar_load(c(gaussian_inla_exo_no_drivers_effects))
+gaussian_inla_exo_no_drivers_effects %<>%
+  filter(
+    response %in% c("perc_exo_sp"),
+    term == "log1_year_nb"
+  )
+```
+
+```{r}
+perc_exo_sp_coef_vector <- gaussian_inla_exo_no_drivers_effects[
+  gaussian_inla_exo_no_drivers_effects$response == "perc_exo_sp" &
+gaussian_inla_exo_no_drivers_effects$ci_level == "level:0.95",
+  c("low", "high", "mean")
+  ] %>%
+  pivot_longer(everything()) %>%
+  deframe()
+```
+
+This variable is the percentage of exotic species in the community. 
+
+```{r}
+r_rich_exo_sp10 <- round(perc_exo_sp_coef_vector * log(10 + 1), 4)
+  
+```
+```{r}
+# 80% CI
+perc_exo_sp_coef_vector.80 <- gaussian_inla_exo_no_drivers_effects[
+  gaussian_inla_exo_no_drivers_effects$response == "perc_exo_sp" &
+    gaussian_inla_exo_no_drivers_effects$ci_level == "level:0.80",
+  c("low", "high", "mean")
+  ] %>%
+  pivot_longer(everything()) %>%
+  deframe()
+
+r_rich_exo_sp10_ci80 <- round(perc_exo_sp_coef_vector.80* log(10 + 1), 4)
+```
+
+
+The change of the percentage of exotic species by decade estimated is +`r r_rich_exo_sp10["mean"]`
+(Credible interval at 95%: `r r_rich_exo_sp10["low"]` - `r r_rich_exo_sp10["high"]`).
+So we found no evidence of an average change in percentage of exotic species
+richness (Credible interval at 80%: `r r_rich_exo_sp10_ci80["low"]` - `r r_rich_exo_sp10_ci80["high"]`). 
+
+
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

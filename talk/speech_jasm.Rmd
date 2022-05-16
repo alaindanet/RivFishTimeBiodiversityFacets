@@ -86,8 +86,7 @@ output:
   interaction. 
 
 - Our results showed both the legacy and recent changes in anthropogenic
-  pressures accelerates changes in species composition, and that they have a
-  synergistic effect. 
+  pressures accelerates changes in species composition. 
 
 - Now, the same question with the total abundance, species richness and the
   percentage of exotic species in the communities. 
@@ -96,9 +95,7 @@ output:
   aquatic insects. We also see that legacy of past pressure increase the
   temporal trends of total abundance and species richness. Recent increase in
   anthropogenic pressure decrease temporal trends of abundance and richness but
-  increase the one of percentage of exotic species. Past and recent pressures
-  have a synergistic effect on exotic species, but recent pressures have an
-  antagonistic effect with legacy on the temporal trends of total abundance.
+  increase the one of percentage of exotic species.
 
 - Now, Do different biodiversity facets have the same temporal trends?
 

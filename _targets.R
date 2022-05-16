@@ -534,10 +534,10 @@ tar_target(neutral_turnover,
         ) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
-        perc_intact = sum(hft_ix_c93 / 10 > 1 &
-          hft_ix_c93 / 10 < 4) / n(),
+        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93  < 1) / n(),
+        perc_intact = sum(hft_ix_c93 > 1 &
+          hft_ix_c93 < 4) / n(),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
@@ -552,10 +552,10 @@ tar_target(neutral_turnover,
         hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 / 10 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93 / 10 < 1) / n(),
-        perc_intact = sum(hft_ix_c93 / 10 > 1 &
-          hft_ix_c93 / 10 < 4) / n(),
+        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
+        perc_wilderness = sum(hft_ix_c93 < 1) / n(),
+        perc_intact = sum(hft_ix_c93 > 1 &
+          hft_ix_c93 < 4) / n(),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
@@ -744,7 +744,10 @@ tar_target(neutral_turnover,
       across(all_of(c(main_effect_var, facet_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
-      mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])
+      mutate(
+        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+      )
       ),
   tar_target(modelling_data_exo,
     get_modelling_data_exo(
@@ -764,7 +767,10 @@ tar_target(neutral_turnover,
       across(all_of(c(main_effect_var, exo_resp_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
-      mutate(hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1])),
+      mutate(
+        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+        )),
   tar_target(site_env,
     modelling_data %>%
       filter(siteid %in% row.names(site_no_drivers_inla)) %>%

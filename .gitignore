@@ -15,5 +15,6 @@ draft.R
 *.pdf
 *_cache/
 for_lise
+for_caelan
 doc/lise*
 doc/map_*
