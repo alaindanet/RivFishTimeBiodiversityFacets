@@ -322,3 +322,5 @@ build_pdf(
   delay = 1,
   keep_intermediates = TRUE
 )
+
+use_rmd("global-rate-changes")
