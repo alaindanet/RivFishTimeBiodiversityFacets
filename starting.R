@@ -329,4 +329,4 @@ use_rmd("global-rate-changes")
 tar_load(old_timeseries)
 origin_old_timeseries <- old_timeseries %>%
   distinct(siteid, origin)
-save(origin_old_timeseries, file = here::here("origin_old_timeseries.rda"))
+save(origin_old_timeseries, file = here::here("data", "origin_old_timeseries.rda"))
