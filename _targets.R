@@ -839,6 +839,18 @@ tar_target(neutral_turnover,
         intercept_main_bas = as.integer(as.factor(main_bas)),
         intercept_main_bassiteid = as.integer(as.factor(paste0("main_bas", main_bas, ":", "siteid", siteid))),
       )),
+  tar_target(modelling_data_exo_wo_liming_scaled,
+    modelling_data_exo %>%
+      filter(!siteid %in% unique(lime_site_swe$siteid)) %>%
+      mutate(
+      across(
+        all_of(c(main_effect_var, exo_resp_var)),
+        ~scale(., center = FALSE)[, 1])
+              ) %>%
+      mutate(
+        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+      )),
   tar_target(modelling_data_exo_scaled, modelling_data_exo %>%
     mutate(
       across(all_of(c(main_effect_var, exo_resp_var)),
@@ -1499,8 +1511,22 @@ tar_target(neutral_turnover,
       ),
     pattern = map(exo_resp_var)
     ),
+  tar_target(gaussian_inla_exo_wo_liming_std,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla(x = exo_resp_var, drivers = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data_exo_wo_liming_scaled)))
+      ),
+    pattern = map(exo_resp_var)
+    ),
   tar_target(gaussian_inla_exo_std_effects,
     format_inla_model_list(x = gaussian_inla_exo_std)),
+  tar_target(gaussian_inla_exo_wo_liming_std_effects,
+    format_inla_model_list(x = gaussian_inla_exo_wo_liming_std)),
   tar_target(gaussian_inla_exo_prior_std,
     tibble(
       response = exo_resp_var,
