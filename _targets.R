@@ -42,12 +42,43 @@ list(
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
-  tar_target(lime_data_site_shp_file,
-    paste0(lime_data_shp_folder, "/lst.LST_nkdb_kalkningsobjekt.shp") %>%
+  tar_target(lime_data_stream_shp_folder,
+    here("inst", "extdata", "liming_data_stream_sweden") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
-  tar_target(lime_data_site, sf::read_sf(lime_data_site_shp_file)),
+  tar_target(lime_data_site_shp_file,
+    paste0(lime_data_site_shp_folder, "/lst.LST_nkdb_kalkningsobjekt.shp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(lime_data_stream_shp_file,
+    paste0(lime_data_stream_shp_folder, "/lst.LST_nkdb_malomraden_vattendrag.shp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath(),
+    format = "file"),
+  tar_target(lime_data_site,
+    sf::read_sf(lime_data_site_shp_file) %>%
+      janitor::clean_names() %>%
+      mutate(
+        status = iconv(status, from="UTF-8",to="ASCII//TRANSLIT"),
+        status_english = case_when(
+          status == "Pagaende" ~ "ongoing",
+          status == "Vilande" ~ "resting",
+          status == "Avslutad" ~ "terminated",
+          TRUE ~ "other"))
+    ),
+  tar_target(lime_data_stream,
+    sf::read_sf(lime_data_stream_shp_file) %>%
+      janitor::clean_names() %>%
+      mutate(
+        status = iconv(status, from="UTF-8",to="ASCII//TRANSLIT"),
+        status_english = case_when(
+          status == "Pagaende" ~ "ongoing",
+          status == "Vilande" ~ "resting",
+          status == "Avslutad" ~ "terminated",
+          TRUE ~ "other"))
+    ),
   tar_target(water_temperature_file,
     here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
       R.utils::filePath(., expandLinks = "any"),

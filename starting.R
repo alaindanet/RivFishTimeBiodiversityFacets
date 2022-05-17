@@ -352,7 +352,6 @@ save(filtered_us_rivfishtime_origin, file = here::here("data", "filtered_us_rivf
 #  Importing Sweden liming data  #
 ##################################
 
-
 liming_site_folder <- paste0(
   server_mounted_location,
   "ENV_LAYERS/wetransfer_gis-data-liming-sweden_2022-05-12_2134/lst.LST_nkdb_kalkningsobjekt")
@@ -360,6 +359,20 @@ liming_site_folder <- paste0(
 R.utils::createLink(
   link = here("inst", "extdata", "liming_data_site_sweden"),
   target = liming_site_folder,
+  method = ifelse(
+    machine_login == "ahdanet",
+    "windows-shortcut", "unix-symlink"
+    ),
+  overwrite = TRUE
+)
+
+liming_stream_folder <- paste0(
+  server_mounted_location,
+  "ENV_LAYERS/wetransfer_gis-data-liming-sweden_2022-05-12_2134/lst.LST_nkdb_malomraden_vattendrag")
+
+R.utils::createLink(
+  link = here("inst", "extdata", "liming_data_stream_sweden"),
+  target = liming_stream_folder,
   method = ifelse(
     machine_login == "ahdanet",
     "windows-shortcut", "unix-symlink"
