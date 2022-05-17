@@ -1307,7 +1307,7 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data %>%
+            data = modelling_data_scaled %>%
               left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
               filter(country != "SWE")
               )))
@@ -1322,8 +1322,8 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data %>%
-              filter(!siteid %in% unique(lime_data_site$siteid))
+            data = modelling_data_scaled %>%
+              filter(!siteid %in% unique(lime_site_swe$siteid))
               )))
       ),
     pattern = map(facet_var)
