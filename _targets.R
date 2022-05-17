@@ -77,7 +77,8 @@ list(
           status == "Pagaende" ~ "ongoing",
           status == "Vilande" ~ "resting",
           status == "Avslutad" ~ "terminated",
-          TRUE ~ "other"))
+          TRUE ~ "other")) %>%
+      st_zm(drop = TRUE, what = "ZM") 
     ),
   tar_target(water_temperature_file,
     here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
