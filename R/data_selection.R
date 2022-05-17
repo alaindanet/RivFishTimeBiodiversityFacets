@@ -8,7 +8,8 @@ get_filtered_dataset <- function(
   type = NULL,
   measurement = NULL,
   site_desc_loc = NULL,
-  add_var_from_protocol = NULL
+  add_var_from_protocol = NULL,
+  lime_data = lime_site_swe 
   ) {
 
   output <- list()
@@ -32,6 +33,9 @@ get_filtered_dataset <- function(
     output$location <- site_desc_loc[mask, ]
     # Remove NZ: opportunistic fishing operation
     mask <- output$location$country != "New Zealand"
+    output$location <- output$location[mask, ]
+    # Remove limmed sites of SWEDEN
+    mask <- !output$location$siteid %in% unique(lime_data$siteid)
     output$location <- output$location[mask, ]
   }
 

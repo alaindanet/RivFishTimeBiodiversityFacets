@@ -209,7 +209,8 @@ list(
       type = "all",
       measurement = measurement,
       site_desc_loc = site_desc_loc,
-      add_var_from_protocol = c("siteid", "year")
+      add_var_from_protocol = c("siteid", "year"),
+      lime_data = lime_site_swe
       )
     ),
   tar_target(measurement_avg3y, tar_avg_first_year_measurement(
