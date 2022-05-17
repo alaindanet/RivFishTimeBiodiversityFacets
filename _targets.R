@@ -801,6 +801,31 @@ tar_target(neutral_turnover,
         riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
       )
       ),
+  tar_target(modelling_data_wo_swe_scaled,
+    modelling_data %>%
+    left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
+    filter(country != "SWE") %>%
+    mutate(
+      across(all_of(c(main_effect_var, facet_var)),
+        ~scale(., center = FALSE)[, 1])
+              ) %>%
+      mutate(
+        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+      )
+      ),
+  tar_target(modelling_data_wo_liming_scaled,
+    modelling_data %>%
+      filter(!siteid %in% unique(lime_site_swe$siteid)) %>%
+      mutate(
+      across(all_of(c(main_effect_var, facet_var)),
+        ~scale(., center = FALSE)[, 1])
+              ) %>%
+      mutate(
+        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+      )
+      ),
   tar_target(modelling_data_exo,
     get_modelling_data_exo(
       abun_rich = filtered_abun_rich_exo,
@@ -1307,9 +1332,7 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data_scaled %>%
-              left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
-              filter(country != "SWE")
+            data = modelling_data_wo_swe_scaled
               )))
       ),
     pattern = map(facet_var)
@@ -1322,8 +1345,7 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = modelling_data_scaled %>%
-              filter(!siteid %in% unique(lime_site_swe$siteid))
+            data = modelling_data_wo_liming_scaled
               )))
       ),
     pattern = map(facet_var)
