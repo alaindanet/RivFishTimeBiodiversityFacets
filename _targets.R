@@ -619,6 +619,15 @@ tar_target(neutral_turnover,
       site = world_site_sf$site,
       basin = basin_tedesco
       )),
+  tar_target(lime_site_swe,
+    get_liming_site_swe(
+      loc = site_desc_loc %>%
+        filter(country == "SWE") %>%
+        st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+        st_transform(crs = 3006),
+      stream_limmed = lime_data_stream
+    )
+    ),
   tar_target(us_states_site,
              get_site_us_states(site_desc_loc = site_desc_loc)),
   tar_target(riveratlas_total,

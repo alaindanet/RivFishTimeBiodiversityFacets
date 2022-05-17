@@ -379,3 +379,18 @@ R.utils::createLink(
     ),
   overwrite = TRUE
 )
+
+###################################
+#  Get all lime data as shp file  #
+###################################
+tar_load(c(lime_data_site, lime_data_stream, filtered_dataset_modelling))
+swe <- filtered_dataset_modelling$location %>%
+  filter(country == "SWE")
+loc <- swe %>%
+  st_as_sf(coords = c("longitude", "latitude"), crs = 4326) %>%
+  st_transform(crs = 3006)
+dir.create(here::here("data", "sweden"))
+st_write(loc, here::here("data", "sweden", "sweden_site_rivfishtime.shp"))
+st_write(lime_data_site, here::here("data", "sweden", "liming_data_site.shp"))
+st_write(lime_data_stream,
+  here::here("data", "sweden", "liming_data_stream.shp"))

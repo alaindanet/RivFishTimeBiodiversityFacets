@@ -517,3 +517,18 @@ test_spatial_autocorrelation_moran <- function(
       )
 
 }
+
+get_liming_site_swe <- function(loc = NULL, stream_limmed = NULL) {
+
+  loc100 <- stream_limmed %>%
+    st_buffer(dist = 100)
+
+  within <- st_intersects(x = loc10, y = stream_limmed)
+
+  lime_loc <- tibble(siteid = loc10$siteid,
+    streamid = map(within, ~stream_limmed[.x, ]$objectid)) %>%
+  unnest(streamid) %>%
+  mutate(status_english = stream_limmed$status_english[streamid])
+
+  return(lime_loc)
+}
