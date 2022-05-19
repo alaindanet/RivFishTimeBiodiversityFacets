@@ -22,7 +22,7 @@ tar_visnetwork()
 
 tar_make(names = bib)
 
-tar_make(names = lime_site_swe)
+tar_make(names = gaussian_inla_prior_no_drivers)
 tar_make(names = pca_clust_list)
 tar_make(names = hft_total_summary)
 tar_make(names = starts_with("pred_data"))

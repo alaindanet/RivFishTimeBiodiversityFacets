@@ -224,7 +224,8 @@ tar_target(filtered_dataset_avg3y, get_filtered_dataset(
     type = "all",
     measurement = measurement_avg3y,
     site_desc_loc = site_desc_loc,
-    add_var_from_protocol = c("siteid", "year")
+    add_var_from_protocol = c("siteid", "year"),
+      lime_data = lime_site_swe
     )),
 tar_target(world_site_sf, 
   get_world_site_sf(loc = filtered_dataset$location)
