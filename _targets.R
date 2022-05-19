@@ -2302,21 +2302,27 @@ tar_target(mod_sampling_eff,
    here("doc/ag-biodiversity-facets-support.Rmd")),
  tar_render(ah_clust_tps,
    here("doc/ah-clust-tps.Rmd")),
-  tar_render(ac_check_rivfishtime_update,
-             here("doc/ac-check-rivfishtime-update.Rmd")),
-  tar_target(bib,
-    {
+ tar_render(ac_check_rivfishtime_update,
+   here("doc/ac-check-rivfishtime-update.Rmd")
+   ),
+ tar_target(bib,
+   {
       RefManageR::BibOptions(
         check.entries = FALSE,
         bib.style = "authoryear",
         max.names = 2,
         style = "markdown",
         dashed = TRUE)
-      bibtex::read.bib(bib_file)
-    }
-  ),
+      bibtex::read.bib(bib_file) }),
   tar_target(bib_file,
     here("paper", "bibliography.bib"),
     format = "file",
-    error = "continue")
+    error = "continue"),
+  # Paper
+  tar_target(method, here("paper/methods.Rmd")),
+  tar_target(story_summary, here("paper/story_summary.Rmd")),
+  tar_target(supp_fig, here("paper/supplementary_figures.Rmd"))
+
   )
+
+
