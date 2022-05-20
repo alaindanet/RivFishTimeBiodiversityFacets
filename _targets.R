@@ -793,16 +793,17 @@ tar_target(neutral_turnover,
         
       )
   )),
-  tar_target(modelling_data_scaled, modelling_data %>%
-    mutate(
-      across(all_of(c(main_effect_var, facet_var)),
-        ~scale(., center = FALSE)[, 1])
-              ) %>%
+  tar_target(modelling_data_scaled,
+    modelling_data %>%
       mutate(
-        hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
-        riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
-      )
-      ),
+        across(all_of(c(main_effect_var, facet_var)),
+          ~scale(., center = FALSE)[, 1])
+        ) %>%
+    mutate(
+      hft_ix_c93 = scale(hft_ix_c93, scale = FALSE, center = TRUE)[, 1],
+      riv_str_rc1 = scale(riv_str_rc1, scale = FALSE, center = TRUE)[, 1]
+    )
+    ),
   tar_target(modelling_data_wo_swe_scaled,
     modelling_data %>%
     left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
@@ -2241,6 +2242,25 @@ tar_target(mod_sampling_eff,
       cl = site_cl_na %>%
         select(siteid, cl))
     ),
+
+  # Global temporal trends by decades (without drivers)
+  tar_target(glob_tps_trends_decade_no_drivers,
+    rbind(gaussian_inla_exo_no_drivers_effects,
+      gaussian_inla_no_drivers_effects) %>%
+    filter(term == "log1_year_nb") %>%
+    mutate(
+      mean = map2_dbl(response, mean,
+        ~compute_trends_meaningful_units(x = .y, resp = .x,
+          time = log(10 + 1))),
+      low = map2_dbl(response, low,
+        ~compute_trends_meaningful_units(x = .y, resp = .x),
+        time = log(10 + 1)),
+      high = map2_dbl(response, high,
+        ~compute_trends_meaningful_units(x = .y, resp = .x),
+        time = log(10 + 1))
+    )
+    ),
+
 
   # Obs-fit inla
   tar_target(obs_fit,

@@ -10,23 +10,35 @@ output:
 ```{r setup, include=FALSE}
 ## target knits Rmds in their own session, so load libraries here.
 source(here::here("start_rmd.R"))
-
 ```
 
 ```{r load-targets, include=FALSE}
 tar_load(c(gaussian_inla_no_drivers_effects))
+tar_load(c(gaussian_inla_exo_no_drivers_effects))
+tar_load(c(gaussian_inla_effects))
+gaussian_inla_effects %>%
+  filter(
+    response == "log_total_abundance",
+    ci_level == "level:0.95", term == "log1_year_nb"
+  )
+gaussian_inla_effects %>%
+  filter(
+    response == "log_total_abundance",
+    ci_level == "level:0.80", term == "log1_year_nb"
+  )
 gaussian_inla_no_drivers_effects %<>%
   filter(
-    response %in% c("log_chao_richness", "log_total_abundance", "hillebrand_dis_scaled"),
+    response %in% c("log_chao_richness", "log_total_abundance",
+      "hillebrand_dis_scaled"),
     ci_level == "level:0.95", term == "log1_year_nb"
   )
 ```
 
-# Avant-propos  
+# Temporal trends without drivers
 
 Results of the modelling without ecological drivers expect time.
 
-# Hillebrand dissimiliraty:
+## Hillebrand dissimiliraty:
 
 ```{r}
 hill_coef_vector <- gaussian_inla_no_drivers_effects[
@@ -42,7 +54,7 @@ of the sampling at each site with $t_0 = 0$. We log-transford the number of
 years as $\log(year + 1)$ to signicantly improved the quality of the fit of the
 model on the data (AIC + 124% for simpson dissimilarity index). Then the rate of change of a given biodiversity facet for a decade
 is found for a time log-transformed value of `r round(log(10 + 1), 2)`
-approximatively (i.e. $\log(10 + 1)$)  
+approximatively (i.e. $\log(10 + 1)$).
 
 ```{r}
 r_dis10 <- round(hill_coef_vector * log(10 + 1), 2)
@@ -50,17 +62,11 @@ r_dis10 <- round(hill_coef_vector * log(10 + 1), 2)
 The rate of change of the Hillebrand dissimilarity index by decade estimated is `r r_dis10["mean"]`
 (Credible interval at 95%: `r r_dis10["low"]`- `r r_dis10["high"]`) 
 
-# Total abundance and species richness 
+## Total abundance and species richness 
 
 Time was computed the same way than dissimilarity of Hillebrand but
 abundance and species were logged. So the rate of changes in percentage of total abundance and
 species richness are obtained by: $Rate= (e^{\beta} - 1) * 100$ 
-
-```{r}
-beta_to_perc_rate <- function (x) {
-  (exp(x) - 1) * 100
-}
-```
 
 ```{r}
 abun_coef_vector <- gaussian_inla_no_drivers_effects[
@@ -73,7 +79,7 @@ abun_coef_vector <- gaussian_inla_no_drivers_effects[
 
 
 ```{r}
-r_abun10 <- round(beta_to_perc_rate(abun_coef_vector) * log(10 + 1), 2)
+r_abun10 <- round(log_beta_to_perc_rate(abun_coef_vector) * log(10 + 1), 2)
 ```
 
 The rate of change of the Total abundance by decade estimated is `r r_abun10["mean"]`%
@@ -96,7 +102,7 @@ rich_coef_vector <- gaussian_inla_no_drivers_effects[
 ```
 
 ```{r}
-r_rich10 <- round(beta_to_perc_rate(rich_coef_vector) * log(10 + 1), 2)
+r_rich10 <- round(log_beta_to_perc_rate(rich_coef_vector) * log(10 + 1), 2)
 ```
 
 The rate of change of the Chao species richness by decade estimated is `r r_rich10["mean"]`%
@@ -128,8 +134,8 @@ This variable is the percentage of exotic species in the community.
 
 ```{r}
 r_rich_exo_sp10 <- round(perc_exo_sp_coef_vector * log(10 + 1), 4)
-  
 ```
+
 ```{r}
 # 80% CI
 perc_exo_sp_coef_vector.80 <- gaussian_inla_exo_no_drivers_effects[
@@ -140,7 +146,7 @@ perc_exo_sp_coef_vector.80 <- gaussian_inla_exo_no_drivers_effects[
   pivot_longer(everything()) %>%
   deframe()
 
-r_rich_exo_sp10_ci80 <- round(perc_exo_sp_coef_vector.80* log(10 + 1), 4)
+r_rich_exo_sp10_ci80 <- round(perc_exo_sp_coef_vector.80 * log(10 + 1), 4)
 ```
 
 
@@ -149,7 +155,51 @@ The change of the percentage of exotic species by decade estimated is +`r r_rich
 So we found no evidence of an average change in percentage of exotic species
 richness (Credible interval at 80%: `r r_rich_exo_sp10_ci80["low"]` - `r r_rich_exo_sp10_ci80["high"]`). 
 
+# Temporal trends with drivers
 
+With the ecological drivers, the global effect of time corresponds to a
+situation where all the effects are equal 0, meaning that the Human Footprint
+variables are  
+equals to 0 (meaning wilderness sites with no recent changes in anthropogenic
+pressure). But also that the value of the PCA axis related to the stream
+gradient is 0.
+
+## 
+
+```{r}
+get_effect_from_resp <- function(effect_obj = NULL, resp = NULL, term = "log1_year_nb", ci_lvl = "95") {
+    effect_obj[
+      effect_obj$response == "perc_exo_sp" &
+        effect_obj$ci_level == paste0("level:0.", ci_lvl) &
+        effect_obj$term == term,
+      c("low", "high", "mean")
+      ] %>%
+        pivot_longer(everything()) %>%
+        deframe()
+}
+
+get_effect_from_resp(
+  effect_obj = gaussian_inla_exo_no_drivers_effects, resp =
+  "perc_exo_sp",
+  ci_lvl = "95"
+) * log(10 + 1)
+
+gaussian_inla_exo_no_drivers_effects %>%
+  filter(term == "log1_year_nb") %>%
+  mutate(
+    mean = map2_dbl(response, mean,
+      ~compute_trends_meaningful_units(x = .y, resp = .x, time = log(10 + 1))),
+    low = map2_dbl(response, low,
+      ~compute_trends_meaningful_units(x = .y, resp = .x), time = log(10 + 1)),
+    high = map2_dbl(response, high,
+      ~compute_trends_meaningful_units(x = .y, resp = .x), time = log(10 + 1))
+  )
+
+```
+
+
+
+# Supplement
 
 ## Reproducibility
 

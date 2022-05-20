@@ -394,3 +394,9 @@ st_write(loc, here::here("data", "sweden", "sweden_site_rivfishtime.shp"))
 st_write(lime_data_site, here::here("data", "sweden", "liming_data_site.shp"))
 st_write(lime_data_stream,
   here::here("data", "sweden", "liming_data_stream.shp"))
+
+#########################
+#  Basic stats helpers  #
+#########################
+use_r("basic_stat")
+
