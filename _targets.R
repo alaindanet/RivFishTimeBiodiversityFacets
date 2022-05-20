@@ -748,7 +748,9 @@ tar_target(neutral_turnover,
       list_parameter = list(
         log1_year_nb = log(c(0, 10, 20) + 1),
         hft_ix_c93 = with(modelling_data, c(
-            min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
+            min(hft_ix_c93),
+            2.5, #Intact sites 1 < x < 4
+            quantile(hft_ix_c93, probs = .25),
             median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
             max(hft_ix_c93))
           ),
@@ -772,10 +774,12 @@ tar_target(neutral_turnover,
       list_parameter = list(
         log1_year_nb = log(c(0, 10, 20) + 1),
         hft_ix_c93 = with(modelling_data, c(
-            min(hft_ix_c93), quantile(hft_ix_c93, probs = .25),
+            min(hft_ix_c93), 
+            2.5, #Intact sites 1 < x < 4
+            quantile(hft_ix_c93, probs = .25),
             median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
             max(hft_ix_c93)
-)
+          )
           ),
         riv_str_rc1 = with(modelling_data, c(
             min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
@@ -2260,7 +2264,6 @@ tar_target(mod_sampling_eff,
         time = log(10 + 1))
     )
     ),
-
 
   # Obs-fit inla
   tar_target(obs_fit,
