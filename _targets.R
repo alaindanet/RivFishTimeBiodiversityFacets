@@ -769,6 +769,31 @@ tar_target(neutral_turnover,
         facet_var
       )
   )),
+  tar_target(pred_data_explanation,
+    list(
+      log1_year_nb = setNames(
+        log(c(0, 10, 20) + 1),
+        c("0", "10", "20")
+        ),
+      hft_ix_c93 = setNames(with(modelling_data,
+          c(min(hft_ix_c93),
+            2.5, #Intact sites 1 < x < 4
+            quantile(hft_ix_c93, probs = .25),
+            median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
+            max(hft_ix_c93))
+          ),
+        c("min", "intact", "quant0.25", "median", "quant0.75", "max")
+        ),
+      riv_str_rc1 = setNames(with(modelling_data, c(
+            min(riv_str_rc1), quantile(riv_str_rc1, probs = .25),
+            median(riv_str_rc1), quantile(riv_str_rc1, probs = .75),
+            max(riv_str_rc1))),
+        c("min", "quant0.25", "median", "quant0.75", "max")),
+      hft_ix_c9309_log2_ratio = setNames(c(-2, -1, 0, 1, 2, 4),
+        c("div/4", "div/2", "0", "inc/2", "inc/4", "inc/16"))
+    )
+    ),
+
   tar_target(pred_data_exo,
     get_pred_data(
       list_parameter = list(
