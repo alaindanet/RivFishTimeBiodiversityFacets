@@ -1232,10 +1232,15 @@ tar_target(neutral_turnover,
             dataset = modelling_data,
             pred_data = pred_data)),
           pred_plot = map2(pred, response, ~get_pred_list_plot(
-              pred_data =.x,
+              pred_data = .x,
               response = get_var_replacement()[.y]))
         ) %>%
     select(-mod)),
+  tar_target(pred_inla,
+    rbind(pred_gaussian_inla %>%
+      filter(response %in% clust_var),
+    pred_gaussian_inla_exo) %>%
+    select(-pred_plot)),
   tar_target(gaussian_inla_no_drivers,
     tibble(
       response = facet_var,
@@ -2334,34 +2339,76 @@ tar_target(mod_sampling_eff,
     filtered_op_protocol %>%
       filter(op_id %in% filtered_dataset_modelling$abun_rich$op_id)
     ),
+  tar_target(pred_number,
+    list(
+      pred_hft93_t0 = map(setNames(pred_inla$pred, pred_inla$response),
+        ~comp_pred_main(
+          pred = .x,
+          var_comp = list(hft_ix_c93 = pred_data_explanation$hft_ix_c93),
+          control = list(
+            log1_year_nb = pred_data_explanation$log1_year_nb["0"],
+            riv_str_rc1 = pred_data_explanation$riv_str_rc1["median"],
+            hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio["0"]
+            ))
+        ),
+      pred_hft9309_t0 = map(setNames(pred_inla$pred, pred_inla$response),
+        ~comp_pred_main(
+          pred = .x,
+          var_comp = list(hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio),
+          control = list(
+            log1_year_nb = pred_data_explanation$log1_year_nb["0"],
+            riv_str_rc1 = pred_data_explanation$riv_str_rc1["median"],
+            hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
+            ))
+        ),
+      pred_hft9309_t10 = map(setNames(pred_inla$pred, pred_inla$response),
+        ~comp_pred_main(
+          pred = .x,
+          var_comp = list(hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio),
+          control = list(
+            log1_year_nb = pred_data_explanation$log1_year_nb["10"],
+            riv_str_rc1 = pred_data_explanation$riv_str_rc1["median"],
+            hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
+            ))
+        ),
+      pred_hft93_t10 = map(setNames(pred_inla$pred, pred_inla$response),
+        ~comp_pred_main(
+          pred = .x,
+          var_comp = list(hft_ix_c93 = pred_data_explanation$hft_ix_c93),
+          control = list(
+            log1_year_nb = pred_data_explanation$log1_year_nb["10"],
+            riv_str_rc1 = pred_data_explanation$riv_str_rc1["median"],
+            hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio["0"]
+            ))
+      )
+    )
+    ),
 
- # Report
- tar_render(intro, here("vignettes/intro.Rmd")),
- tar_render(report, here("doc/aa-research-questions.Rmd")),
- tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
- tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
- tar_render(community_structure, "doc/aca-community-structure.Rmd"),
- tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
- tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
- tar_render(meeting_slides, here("talk/meeting.Rmd")),
- tar_render(explain_high_turnover,
-   here("doc/af-explain-high-turnover.Rmd")),
- tar_render(biodiversity_facets_support,
-   here("doc/ag-biodiversity-facets-support.Rmd")),
- tar_render(ah_clust_tps,
-   here("doc/ah-clust-tps.Rmd")),
- tar_render(ac_check_rivfishtime_update,
-   here("doc/ac-check-rivfishtime-update.Rmd")
-   ),
- tar_target(bib,
-   {
-      RefManageR::BibOptions(
-        check.entries = FALSE,
-        bib.style = "authoryear",
-        max.names = 2,
-        style = "markdown",
-        dashed = TRUE)
-      bibtex::read.bib(bib_file) }),
+  # Report
+  tar_render(intro, here("vignettes/intro.Rmd")),
+  tar_render(report, here("doc/aa-research-questions.Rmd")),
+  tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+  tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+  tar_render(community_structure, "doc/aca-community-structure.Rmd"),
+  tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+  tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
+  tar_render(meeting_slides, here("talk/meeting.Rmd")),
+  tar_render(explain_high_turnover,
+    here("doc/af-explain-high-turnover.Rmd")),
+  tar_render(biodiversity_facets_support,
+    here("doc/ag-biodiversity-facets-support.Rmd")),
+  tar_render(ah_clust_tps,
+    here("doc/ah-clust-tps.Rmd")),
+  tar_render(ac_check_rivfishtime_update,
+    here("doc/ac-check-rivfishtime-update.Rmd")
+    ),
+  tar_target(bib, {RefManageR::BibOptions(
+      check.entries = FALSE,
+      bib.style = "authoryear",
+      max.names = 2,
+      style = "markdown",
+      dashed = TRUE)
+    bibtex::read.bib(bib_file)}),
   tar_target(bib_file,
     here("paper", "bibliography.bib"),
     format = "file",
@@ -2370,7 +2417,4 @@ tar_target(mod_sampling_eff,
   tar_target(method, here("paper/methods.Rmd")),
   tar_target(story_summary, here("paper/story_summary.Rmd")),
   tar_target(supp_fig, here("paper/supplementary_figures.Rmd"))
-
-  )
-
-
+                )

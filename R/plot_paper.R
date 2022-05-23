@@ -325,3 +325,45 @@ get_pca_clust_list <- function(
   return(output)
 
 }
+
+
+#################
+#  Predictions  #
+#################
+
+comp_pred_main <- function(
+  pred = NULL,
+  var_comp = list(
+    hft_ix_c93 = c(
+      "min" = .2, "intact" = 2.5, "quant0.25" = 8.8,
+      "median" = 16.8, "quant0.75" = 26.4, "max" = 45.6)
+    ),
+  control = c("log1_year_nb" = 0,
+    "riv_str_rc1" = -0.2115785,
+    "hft_ix_c9309_log2_ratio" = 0)
+  ) {
+
+  mask_control <-
+    round(pred[[names(control)[1]]], 2) == round(control[[ names(control)[1] ]], 2) &
+    round(pred[[names(control)[2]]], 2) == round(control[[ names(control)[2] ]], 2) &
+    round(pred[[names(control)[3]]], 2) == round(control[[ names(control)[3] ]], 2)
+
+  out <- pred[mask_control, ]
+
+  prediction <- map_dbl(var_comp[[1]],
+    ~out[round(out[[names(var_comp)[1]]], 1) %in% round(.x, 1), ]$mean
+  )
+  prediction <- map_dbl(var_comp[[1]],
+    ~out[round(out[[names(var_comp)[1]]], 1) %in% round(.x, 1), ]$mean
+  )
+  out <- list(
+  mean = setNames(prediction, names(var_comp[[1]])),
+  quant0.025 = setNames(map_dbl(var_comp[[1]],
+    ~out[round(out[[names(var_comp)[1]]], 1) %in% round(.x, 1), ][["quant0.025"]]
+  ), names(var_comp[[1]])),
+  quant0.975 = setNames(map_dbl(var_comp[[1]],
+    ~out[round(out[[names(var_comp)[1]]], 1) %in% round(.x, 1), ][["quant0.975"]]
+  ), names(var_comp[[1]]))
+  )
+  return(out)
+}

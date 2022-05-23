@@ -443,10 +443,22 @@ get_pred_inla <- function(
     as_tibble()
 }
 
-get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
+get_pred_list_plot <- function(
+  pred_data = NULL,
+  response = NULL,
+  control = list(
+    log1_year_nb = pred_data_explanation$log1_year_nb["0"],
+    riv_str_rc1 = pred_data_explanation$riv_str_rc1["median"],
+    hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio["0"],
+    hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
+  )
+  ) {
 
   p_year_hft9309 <- pred_data %>%
-    filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c93 == 140) %>%
+    filter(
+      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2),
+      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2)
+      ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
     geom_ribbon(
@@ -464,7 +476,10 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
     )
 
   p_year_hft93 <- pred_data %>%
-    filter(round(riv_str_rc1, 2) == -0.23, hft_ix_c9309_log2_ratio == 0) %>%
+    filter(
+      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2),
+      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c93))) +
     geom_ribbon(
@@ -479,7 +494,10 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
     )
 
   p_year_riv <- pred_data %>%
-    filter(hft_ix_c93 == 140, hft_ix_c9309_log2_ratio == 0) %>%
+    filter(
+      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2),
+      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(riv_str_rc1))) +
     geom_ribbon(
@@ -494,7 +512,10 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
     )
 
   p_riv_hft93 <- pred_data %>%
-    filter(round(log1_year_nb, 2) == 2.40, hft_ix_c9309_log2_ratio == 0) %>%
+    filter(
+      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
+      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      ) %>%
     ggplot(aes(x = riv_str_rc1, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c93))) +
     geom_ribbon(
@@ -509,7 +530,10 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
     )
 
   p_riv_hft9309 <- pred_data %>%
-    filter(round(log1_year_nb, 2) == 2.40, hft_ix_c93 == 140) %>%
+    filter(
+      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
+      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2)
+      ) %>%
     ggplot(aes(x = riv_str_rc1, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
     geom_ribbon(
@@ -524,7 +548,10 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
     )
 
   p_hft93_hft9309 <- pred_data %>%
-    filter(round(log1_year_nb, 2) == 2.40, round(riv_str_rc1, 2) == -0.23) %>%
+    filter(
+      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
+      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2)
+      ) %>%
     ggplot(aes(x = hft_ix_c93, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
     geom_ribbon(
@@ -535,7 +562,7 @@ get_pred_list_plot <- function(pred_data = NULL, response = NULL) {
       fill = "Human footprint change (1993-2009)",
       color = "Human footprint change (1993-2009)",
       x = "Human footprint (1993)",
-      y = paste0("Predicted values of ", response, " (at T = 10 years)")
+      y = paste0("Predicted values of ", response, " (T = 10 years)")
     )
 
   list(
