@@ -453,11 +453,15 @@ get_pred_list_plot <- function(
     hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
   )
   ) {
+  
+  for (i in names(control)) {
+   pred_data[[i]] <- round(pred_data[[i]], 2)
+  }
 
   p_year_hft9309 <- pred_data %>%
     filter(
-      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2),
-      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2)
+      riv_str_rc1 == round(control$riv_str_rc1, 2),
+      hft_ix_c93 == round(control$hft_ix_c93, 2)
       ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
@@ -477,8 +481,8 @@ get_pred_list_plot <- function(
 
   p_year_hft93 <- pred_data %>%
     filter(
-      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2),
-      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      riv_str_rc1 == round(control$riv_str_rc1, 2),
+      hft_ix_c9309_log2_ratio == round(control$hft_ix_c9309_log2_ratio, 2)
       ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c93))) +
@@ -495,8 +499,8 @@ get_pred_list_plot <- function(
 
   p_year_riv <- pred_data %>%
     filter(
-      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2),
-      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      hft_ix_c93 == round(control$hft_ix_c93, 2),
+      hft_ix_c9309_log2_ratio == round(control$hft_ix_c9309_log2_ratio, 2)
       ) %>%
     ggplot(aes(x = log1_year_nb, y = mean)) +
     geom_line(aes(color = as.factor(riv_str_rc1))) +
@@ -513,8 +517,8 @@ get_pred_list_plot <- function(
 
   p_riv_hft93 <- pred_data %>%
     filter(
-      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
-      round(hft_ix_c9309_log2_ratio, 2) == round(control$hft_ix_c9309_log2_ratio, 2)
+      log1_year_nb == round(control$log1_year_nb, 2),
+      hft_ix_c9309_log2_ratio == round(control$hft_ix_c9309_log2_ratio, 2)
       ) %>%
     ggplot(aes(x = riv_str_rc1, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c93))) +
@@ -531,8 +535,8 @@ get_pred_list_plot <- function(
 
   p_riv_hft9309 <- pred_data %>%
     filter(
-      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
-      round(hft_ix_c93, 2) == round(control$hft_ix_c93, 2)
+      log1_year_nb == round(control$log1_year_nb, 2),
+      hft_ix_c93 == round(control$hft_ix_c93, 2)
       ) %>%
     ggplot(aes(x = riv_str_rc1, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +
@@ -549,8 +553,8 @@ get_pred_list_plot <- function(
 
   p_hft93_hft9309 <- pred_data %>%
     filter(
-      round(log1_year_nb, 2) == round(control$log1_year_nb, 2),
-      round(riv_str_rc1, 2) == round(control$riv_str_rc1, 2)
+      log1_year_nb == round(control$log1_year_nb, 2),
+      riv_str_rc1 == round(control$riv_str_rc1, 2)
       ) %>%
     ggplot(aes(x = hft_ix_c93, y = mean)) +
     geom_line(aes(color = as.factor(hft_ix_c9309_log2_ratio))) +

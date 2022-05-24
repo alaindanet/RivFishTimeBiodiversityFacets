@@ -1233,7 +1233,14 @@ tar_target(neutral_turnover,
             pred_data = pred_data)),
           pred_plot = map2(pred, response, ~get_pred_list_plot(
               pred_data = .x,
-              response = get_var_replacement()[.y]))
+              response = get_var_replacement()[.y], 
+          control = list(
+            log1_year_nb = with(pred_data_explanation, log1_year_nb["0"]),
+            riv_str_rc1 = with(pred_data_explanation, riv_str_rc1["median"]),
+            hft_ix_c9309_log2_ratio = with(pred_data_explanation, hft_ix_c9309_log2_ratio["0"]),
+            hft_ix_c93 = with(pred_data_explanation, hft_ix_c93["median"])
+  )), pred_data_explanation = pred_data_explanation
+               )
         ) %>%
     select(-mod)),
   tar_target(pred_inla,
@@ -1303,17 +1310,6 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
-  tar_target(pred_gaussian_inla_prior,
-    gaussian_inla_prior %>%
-      mutate(pred = map(mod, ~get_pred_inla(
-            inla_mod = .x,
-            dataset = modelling_data,
-            pred_data = pred_data)),
-        pred_plot = map2(pred, response, ~get_pred_list_plot(
-              pred_data =.x,
-              response = get_var_replacement()[.y]))
-        ) %>%
-    select(-mod)),
   tar_target(gaussian_inla_prior_no_drivers,
     tibble(
       response = facet_var,
@@ -1531,7 +1527,13 @@ tar_target(neutral_turnover,
             pred_data = pred_data_exo)),
         pred_plot = map2(pred, response, ~get_pred_list_plot(
               pred_data =.x,
-              response = get_var_replacement()[.y]))
+              response = get_var_replacement()[.y],
+            control = list(  
+            log1_year_nb = with(pred_data_explanation, log1_year_nb["0"]),
+            riv_str_rc1 = with(pred_data_explanation, riv_str_rc1["median"]),
+            hft_ix_c9309_log2_ratio = with(pred_data_explanation, hft_ix_c9309_log2_ratio["0"]),
+            hft_ix_c93 = with(pred_data_explanation, hft_ix_c93["median"])
+              )), pred_data_explanation = pred_data_explanation)
         ) %>%
     select(-mod)),
   tar_target(gaussian_inla_exo_effects,
