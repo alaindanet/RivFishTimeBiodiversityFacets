@@ -400,3 +400,10 @@ st_write(lime_data_stream,
 #########################
 use_r("basic_stat")
 
+#######################
+#  Outline wordstack  #
+#######################
+use_rmd("outline_wordstack")
+
+dir.create(here("paper", "review"))
+

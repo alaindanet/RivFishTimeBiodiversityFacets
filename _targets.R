@@ -2418,5 +2418,6 @@ tar_target(mod_sampling_eff,
   # Paper
   tar_target(method, here("paper/methods.Rmd")),
   tar_target(story_summary, here("paper/story_summary.Rmd")),
+  tar_render(outline_wordstack, here("paper/outline_wordstack.Rmd")),
   tar_target(supp_fig, here("paper/supplementary_figures.Rmd"))
                 )
