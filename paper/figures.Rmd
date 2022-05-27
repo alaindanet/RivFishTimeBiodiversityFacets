@@ -1,0 +1,249 @@
+---
+title: "Figures of the manuscript" 
+author: Danet, A., Giam, X., Olden, J. and Comte L.
+---
+
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+#knitr::opts_chunk$set(cache = TRUE)
+library(ade4)
+library(factoextra)
+```
+
+# Options 
+
+## Color blind palettes
+
+- For variables: [colorbrew palette](https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5)
+- For clusters: the discrete version of the [viridis palette](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html)
+
+```{r}
+restricted_dimension <- c(
+  "hillebrand_dis_scaled", "log_total_abundance",
+  "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
+```
+
+
+```{r set-color-palette}
+source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
+
+#pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
+#pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
+pal_variable <- palette_coolors("https://coolors.co/0f122a-4ba3a9-e4dd73-d6b594-ae5996")
+names(pal_variable) <- get_var_replacement()[restricted_dimension]
+#scale_color_brewer(palette = "RdYlBu") +
+#scale_color_viridis(discrete=TRUE) +
+```
+
+```{r loading-targets, include=FALSE}
+tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+```
+
+# Figures
+
+## Responses of five community metrics to time, anthropogenic pressures and stream gradient
+
+
+```{r}
+tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement()),
+    response = get_var_replacement()[response]
+    )
+```
+
+```{r, fig.show="hide"}
+library(ggbreak)
+p1 <- tu %>%
+  filter(facet == "main") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(scale_color = pal_variable) +
+  scale_x_break(c(.22, .66))
+
+p2 <- tu %>%
+  filter(facet == "interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(scale_color = pal_variable) +
+  scale_x_break(c(.10, .195))
+
+p3 <- tu %>%
+  filter(facet == "dbl_interaction") %>%
+  arrange(desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    scale_color = pal_variable,
+    legend_present = TRUE,
+    xaxis_title = TRUE
+    ) +
+  labs(x = "Standardized coefficients")
+
+leg_dis <- get_legend(p3 +
+ guides(colour = guide_legend(nrow = 2) ) +
+  theme(legend.position = "bottom")
+)
+
+fig1 <- plot_grid(
+  print(p1),
+  print(p2),
+  p3 + theme(legend.position = "none"),
+  leg_dis,
+  rel_heights = c(1, 1, 1, .3),
+  ncol = 1)
+```
+
+```{r}
+tar_load(filtered_dataset_modelling)
+site_year <- filtered_dataset_modelling$site_quanti %>%
+  filter(variable == "year") %>%
+  left_join(filtered_dataset_modelling$location, by = "siteid") %>%
+  mutate(
+    span = max - min + 1,
+    completeness = n / (span)
+    )
+fnsite <- nrow(site_year)
+
+```
+
+
+```{r}
+
+fig1_cap <- paste0(
+  "**Responses of five community metrics to time, local anthropogenic
+pressures, stream gradient and their interaction**. Responses of dissimilarity
+based on Simpson index, Total abundance, Chao species richness, the percentage
+of exotic species and of exotic species abundance. Time was quantified by the
+logged number of years since the first year of sampling at a given site added to
+one. The legagy of past anthropogenic pressures and the recent changes in
+anthropogenic pressures were quantified respectively by the Human Footprint
+index (1993) and the ratio between the Human Footprint at the year 2009 and
+1993. The stream gradient was quantified by the first axis of a PCA preformed on
+the stream reach characteristics, related to the average annual discharge,
+the distance from the source, and the strahler order. All the predictors were
+standardized prior to model evaluation. The Legacy of past anthropogenic
+pressures, quantified by the Human Footprint index (1993) was centered around
+its median value. Large, medium and thin bars depict respectively the bayesian
+credible intervals at 80, 90 and 95%. N = ", fnsite, " sites.")
+
+```
+
+```{r, fig.cap=fig1_cap, fig.height = 10}
+fig1
+```
+
+## Typology of biodiversity trends
+
+
+
+## Spatial distribution of biodiversity trends 
+
+# Instructions from Science 
+
+Creating your figures It is best to create your figures as vector-based files
+such as those produced by Adobe Illustrator. Vector-based files will give us
+maximum flexibility for sizing your figures properly without losing resolution,
+as they can be altered in size while maintaining high print-quality resolution.
+We cannot accept PowerPoint files or files that are not readable by Adobe
+Photoshop, Macromedia Freehand, or Adobe Illustrator. To keep file sizes
+reasonable, please save art at a resolution of 150 to 300 dots per inch (dpi)
+for initial submission. A higher resolution applies for figures submitted at the
+revision stage – see instructions for preparing a revised manuscript. Digital
+color art should be submitted as CMYK (Cyan, Magenta, Yellow, Black) rather than
+RGB (Red, Green, Blue).
+
+Paper The width of figures, when printed, will usually be **5.5 cm** (2.25 inches or
+1 column) or **12.0 cm** (4.75 inches or 2 columns). Bar graphs, simple line graphs,
+and gels may be reduced to a smaller width. Symbols and lettering should be
+large enough to be legible after reduction [a reduced size of about 7 points (2
+mm) high, and not smaller than 5 points]. Avoid wide variation in type size
+within a single figure. In laying out information in a figure, the objective is
+to maximize the space given to presentation of the data. Avoid wasted white
+space and clutter.
+
+- The figure’s title should be at the beginning of the figure legend, not in the figure itself.
+
+- Include the figure’s identifying number (e.g., “Fig. 1”) on the same manuscript page that includes the figure.
+
+- Keys to symbols, if needed, should be kept as simple as possible and be
+  positioned so they do not needlessly enlarge the figure. Details can be put
+  into the captions.
+
+- Use solid symbols for plotting data if possible (unless data overlap or there
+  are multiple symbols). Size symbols so that they will be distinguishable when
+  the figure is reduced (6 pt minimum). Line widths should be legible upon
+  reduction (minimum of 0.5 pt at the final reduced size).
+
+- Panels should be set close to each other, and common axis labels should not be
+  repeated.
+
+- Scales or axes should not extend beyond the range of the data plotted.
+
+- Use scale bars in place of, or in addition to, magnifications. Do not use
+  minor tick marks in scales or grid lines. Avoid using y-axis labels on the
+  right that repeat those on the left.
+
+- Color-mix and contrast considerations
+
+- Avoid using red and green together. Color blind individuals will not be able
+  read the figure.
+ 
+- Please do not use colors that are close in hue to identify different parts of
+  a figure.
+ 
+- Avoid using grayscale.
+ 
+- Use white type and scale bars over darker areas of images.
+ 
+- Units should be metric and follow SI convention.
+
+- Typefaces and labels
+  - Please observe the following guidelines for labels on graphs and figures:
+  - Use a sans-serif font whenever possible (we prefer Helvetica).
+  - Simple solid or open symbols reduce well.
+  - Label graphs on the ordinate and abscissa with the parameter or variable
+    being measured, the units of measure in parentheses, and the scale. Scales
+    with large or small numbers should be presented as powers of 10.
+  - Avoid the use of light lines and screen shading. Instead, use
+    black-and-white, hatched, and cross-hatched designs for emphasis.
+  - Capitalize the first letter in a label only, not every word (and proper
+    nouns, of course).
+  - Units should be included in parentheses. Use SI notation. If there is room,
+    write out variables – e.g., Pressure (MPa), Temperature (K).
+  - Variables are always set in italics or as plain Greek letters (e.g., P, T,
+    m). The rest of the text in the figure should be plain or bold text.
+  - Type on top of color in a color figure should be in bold face. Avoid using
+    color type.
+  - When figures are assembled from multiple gels or micrographs, a line or
+    space should indicate the border between two original images.
+  - Use leading zeros on all decimals – e.g., 0.3, 0.55 – and only report
+    significant digits.
+  - Use capital letters for part labels in multipart figures – A, B, C, etc.
+    These should be 9 pt and bold in the final figure. When possible, place part
+    labels at the upper left-hand corner of each figure part; if a part is an
+    image, set labels inside the perimeter so as not to waste space.
+  - Avoid subpart labels within a figure part; instead, maintain the established
+    sequence of part labels [e.g., use A, B, C, D, E instead of A, B, C(a),
+    C(b), C©]. If use of subpart labels is unavoidable, use lowercase letters
+    (a, b, c). Use numbers (1, 2, 3) only to represent a time sequence of
+    images.
+  - When reproducing images that include labels with illegible
+    computer-generated type (e.g., units for scale bars), omit such labels and
+    present the information in the legend instead.
+
+  - Sequences may be reduced considerably, so the typeface in the original
+    should be clear. There should be about 130 characters and spaces per line
+    for a sequence occupying the full width of the printed page and about 84
+    characters and spaces per line for a sequence occupying two columns.
+
+Modification of figures Science does not allow certain electronic enhancements
+or manipulations of micrographs, gels, or other digital images. Figures
+assembled from multiple photographs or images, or non-concurrent portions of the
+same image, must indicate the separate parts with lines between them. Linear
+adjustment of contrast, brightness, or color must be applied to an entire image
+or plate equally. Nonlinear adjustments must be specified in the figure legend.
+Selective enhancement or alteration of one part of an image is not acceptable.
+In addition, Science may ask authors of papers returned for revision to provide
+additional documentation of their primary data.
+
+
