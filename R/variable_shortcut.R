@@ -106,7 +106,8 @@ get_model_term_replacement <- function() {
     hft_ix_c93 = "Human footprint\n(1993)",
     main_bas = "Basin",
     siteid = "Site",
-    `siteid:main_bas` = "Site"
+    `siteid:main_bas` = "Site",
+    `:` = ":\n"
   )
 }
 

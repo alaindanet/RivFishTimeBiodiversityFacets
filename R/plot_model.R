@@ -137,46 +137,72 @@ plot_posterior_fixed <- function(inla_mod = NULL, scales = "free", ncol = 4) {
 
 plot_inla_fixed_effect <- function(
   dataset = NULL,
+  scale_color = NULL,
   xaxis_title = FALSE,
   yaxis_title = FALSE,
   legend_present = FALSE
   ) {
 
-
   p <- dataset %>%
-  ggplot(aes(y = term, x = mean,
-      xmin = low, xmax = high,
-      color = response,
-      size = width_bar, width = 0)) +
-  geom_vline(xintercept = 0, linetype = "dashed")+
-  scale_y_discrete(limits = rev) +
-  geom_blank() +
-  geom_errorbar(
-    alpha = 0.5,
-    position = position_dodge(width = 0.7),
-    show.legend = FALSE
-    ) +
-  geom_point(aes(x = mean, y = term, color = response),
-    alpha = 1, size = 5,
-    position = position_dodge(width = 0.7)
-  )
+    mutate(
+      term = factor(term,
+        levels = c(
+          "Log (Year nb + 1)",
+          "PCA1\nstream gradient",
+          "Human footprint\n(1993)",
+          "Log2 Human footprint\nratio (2009/1993)",
+          "Log (Year nb + 1):\nPCA1\nstream gradient",
+          "Log (Year nb + 1):\nHuman footprint\n(1993)",
+          "Log (Year nb + 1):\nLog2 Human footprint\nratio (2009/1993)",
+          "Log (Year nb + 1):\nPCA1\nstream gradient:\nHuman footprint\n(1993)",
+          "Log (Year nb + 1):\nPCA1\nstream gradient:\nLog2 Human footprint\nratio (2009/1993)",
+          "Log (Year nb + 1):\nHuman footprint\n(1993):\nLog2 Human footprint\nratio (2009/1993)"
+          ))
+    ) %>%
+    ggplot(aes(
+        y = term, x = mean,
+        xmin = low, xmax = high,
+        color = response,
+        size = width_bar, width = 0)
+      ) +
+    geom_vline(xintercept = 0, linetype = "dashed") +
+    scale_y_discrete(limits = rev) +
+    geom_blank() +
+    geom_errorbar(
+      alpha = 0.5,
+      position = position_dodge(width = 0.7),
+      show.legend = FALSE
+      ) +
+    geom_point(
+      aes(x = mean, y = term, color = response),
+      alpha = 1, size = 5,
+      position = position_dodge(width = 0.7)
+      )
 
-  if (!xaxis_title) {
-    p <- p +
-      theme(axis.title.x = element_blank())
-  }
+    if (!xaxis_title) {
+      p <- p +
+        theme(axis.title.x = element_blank())
+    }
 
-  if (!yaxis_title) {
-    p <- p +
-      theme(axis.title.y = element_blank())
-  }
+    if (!is.null(scale_color)) {
+      p <- p +
+        scale_color_manual(values = scale_color)
+    } else {
+      p <- p +
+        scale_color_brewer(palette = "RdYlBu")
+    }
 
-  if (!legend_present) {
-    p <- p +
-      theme(legend.position = "none")
-  }
+    if (!yaxis_title) {
+      p <- p +
+        theme(axis.title.y = element_blank())
+    }
 
-  return(p)
+    if (!legend_present) {
+      p <- p +
+        theme(legend.position = "none")
+    }
+
+    return(p)
 }
 
 format_inla_model_list <- function(
