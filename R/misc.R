@@ -36,3 +36,7 @@ get_tol_palettes <- function() {
 
   return(l)
 }
+
+table_to_vec <- function(x) {
+  setNames(as.numeric(x), names(x))
+}

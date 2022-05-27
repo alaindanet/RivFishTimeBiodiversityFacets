@@ -6,8 +6,7 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
     theme(
       legend.title = element_blank(),
       panel.grid.major.x = element_blank(),
-      title = element_blank(),
-      legend.position = "none"
+      title = element_blank()#, legend.position = "none"
     )
 
   x <- x +
@@ -176,8 +175,9 @@ plot_pca_clust <- function(
   add_point = TRUE,
   add_ellipse = TRUE,
   alpha_point = 1,
-  lim_x_y = c(-1, 1)
-) {
+  lim_x_y = c(-1, 1),
+  key_glyph_rect = TRUE
+  ) {
 
   pca_data <- .data$loadings[seq_len(nrow(.data$loadings)), ] %>%
     as.data.frame() %>%
@@ -197,7 +197,6 @@ plot_pca_clust <- function(
     pca_data %<>%
       mutate(variable = replace_var[variable])
   }
-
 
   var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
 
@@ -226,7 +225,12 @@ plot_pca_clust <- function(
     p <- p +
       stat_ellipse(
         data = tt,
-        aes_string(x = xaxis, y = yaxis, colour = "as.factor(cl)"),
+        aes_string(
+          x = xaxis,
+          y = yaxis,
+          #key_glyph = ifelse(key_glyph_rect, "rect", "line"),
+          colour = "as.factor(cl)"
+          ),
         segments = 100,
         level = .9
       )

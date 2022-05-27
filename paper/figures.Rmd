@@ -135,6 +135,128 @@ fig1
 ## Typology of biodiversity trends
 
 
+```{r}
+tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
+pca_clust <- compute_rotated_pca(
+  site_no_drivers_inla_tot[,
+    !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")],
+  naxis = 5)
+p_rotated_pca_clust <- my_pca_plot(
+  pca_clust$rotated,
+  replace_var = get_var_replacement())
+```
+```{r}
+p_pca_clust <- plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_cl_rm,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80
+   )
+```
+
+```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
+axis_l <- list(
+  c("RC1", "RC2"),
+  c("RC1", "RC3"),
+  c("RC1", "RC4"),
+  c("RC1", "RC5"),
+  c("RC2", "RC3"),
+  c("RC2", "RC4"),
+  c("RC2", "RC5"),
+  c("RC3", "RC4"),
+  c("RC3", "RC5"),
+  c("RC4", "RC5")
+)
+
+cluster_names <- c(
+  "Medium change", "High turnover",
+  "Increase in species richness", "Decrease in total abundance",
+  "Decrease in species richness", "Low change"
+)
+nb_clusters <- table_to_vec(table(site_cl_rm$cl))
+per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+
+cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
+  ~paste0(.x, " (N = ", .y, ")"))
+
+p_pca_cl_ell <- map(axis_l,
+  ~plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_cl_rm,
+     add_point = TRUE,
+     add_ellipse = TRUE,
+     xaxis = .x[1], yaxis = .x[2],
+     ctb_thld = .2,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80,
+     var_scaling_factor = 3.5
+   ) +
+ guides(colour = guide_legend(override.aes = list(size = 10)))+
+ theme(legend.position = "bottom") +
+ theme(legend.key = element_rect(fill = NA)) +
+ scale_color_viridis(
+   discrete = TRUE,
+   name = "Cluster", labels = cluster_labels)
+)
+leg_cl <- get_legend(p_pca_cl_ell[[1]])
+
+p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
+
+p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 5, 6, 7)], nrow = 2)
+p_pca_cl_bt <- target_bp_cl_dist(cl_obj = site_cl_rm) +
+  scale_color_viridis(discrete = TRUE) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(
+    axis.text.x = element_text(angle = 20, vjust = 0),
+    legend.position = "none"
+  )
+
+fig2 <- plot_grid(
+  p_pca_cl_top,
+  p_pca_cl_bt,
+  leg_cl,
+  nrow = 3,
+  rel_heights = c(1, .5, .15)
+)
+```
+
+```{r}
+pca_clust_cap <- paste0("PCA biplot on the temporal trends of the community
+metrics at each site, their cluster assignment (upper panel) and the
+boxplots describing the distribution of the temporal trends by cluster (lower
+  panel). The temporal trends of each community metrics were obtained from a
+model without
+anthropogenic pressures and extracted from random effect using BLUP (see
+  methods). The principal components of the PCA were rotated with the varimax
+algorithm to increase the representation of the variables on the principal
+components (RC: rotated components). The temporal trends of community metrics
+were clustered using the k-means method while excluding 5% of the most outlying
+data to avoid the identification of spurious clusters. The sites are colored by
+their cluster belongings. The ellipses represent the 95% interval around the
+clusters assuming a Student's t distribution. The clusters were named according
+to their unique characteristics.")
+```
+
+For the figure 2, I see the main question of whether we need to give to the clusters
+or not. I would suggest to put them as low change, high turnover, increase in
+species richness, decrease in total abundance and no change.  
+
+```{r, fig.cap=pca_clust_cap}
+fig2
+```
+
+
+
 
 ## Spatial distribution of biodiversity trends 
 
@@ -230,7 +352,6 @@ space and clutter.
   - When reproducing images that include labels with illegible
     computer-generated type (e.g., units for scale bars), omit such labels and
     present the information in the legend instead.
-
   - Sequences may be reduced considerably, so the typeface in the original
     should be clear. There should be about 130 characters and spaces per line
     for a sequence occupying the full width of the printed page and about 84

@@ -46,9 +46,6 @@ tar_load(c(measurement_exo, modelling_data_exo))
 measurement_exo <- measurement_exo %>%
   filter(op_id %in% unique(modelling_data_exo$op_id))
 
-table_to_vec <- function(x) {
-  setNames(as.numeric(x), names(x))
-}
 ```
 
 
