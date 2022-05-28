@@ -10,19 +10,21 @@ bibliography: "bibliography.bib"
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = FALSE,
-                      collapse = TRUE,
-                      comment = "#>",
-                      fig.path = "graphics/knitr-",
-                      fig.retina = 1.618, # Control using dpi
-                      fig.width = 6,  # generated images
-                      fig.pos = "t",  # pdf mode
-                      fig.align = "center",
-                      dpi = if (knitr::is_latex_output()) 72 else 300,
-                      out.width = "100%",
-                      dev = "svg",
-                      dev.args = list(png = list(type = "cairo-png")),
-                      optipng = "-o1 -quiet")
+knitr::opts_chunk$set(
+  echo = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "graphics/knitr-",
+  fig.retina = 1.618, # Control using dpi
+  fig.width = 6,  # generated images
+  fig.pos = "t",  # pdf mode
+  fig.align = "center",
+  dpi = if (knitr::is_latex_output()) 72 else 300,
+  out.width = "100%",
+  dev = "svg",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet"
+)
 
 library(here)
 library(tidyverse)
@@ -45,7 +47,6 @@ tar_load(c(measurement_exo, modelling_data_exo))
 
 measurement_exo <- measurement_exo %>%
   filter(op_id %in% unique(modelling_data_exo$op_id))
-
 ```
 
 

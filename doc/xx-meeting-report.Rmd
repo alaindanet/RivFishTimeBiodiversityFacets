@@ -842,8 +842,6 @@ tab_nearctic <- get_fq_tab_from_basin(
   basins = c("Mississippi", "Saint.Laurent", "Columbia")
 )
 
-
-
 basin_name_australasia <- n_clust_basin %>%
   filter(ecoregion == "Australasia", div >= 5) %>%
   arrange(desc(n), desc(evenness))

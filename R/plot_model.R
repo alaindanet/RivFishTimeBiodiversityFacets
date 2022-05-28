@@ -140,7 +140,8 @@ plot_inla_fixed_effect <- function(
   scale_color = NULL,
   xaxis_title = FALSE,
   yaxis_title = FALSE,
-  legend_present = FALSE
+  legend_present = FALSE,
+  my_position_dodge = .9
   ) {
 
   p <- dataset %>%
@@ -170,13 +171,13 @@ plot_inla_fixed_effect <- function(
     geom_blank() +
     geom_errorbar(
       alpha = 0.5,
-      position = position_dodge(width = 0.7),
+      position = position_dodge(width = my_position_dodge),
       show.legend = FALSE
       ) +
     geom_point(
       aes(x = mean, y = term, color = response),
       alpha = 1, size = 5,
-      position = position_dodge(width = 0.7)
+      position = position_dodge(width = my_position_dodge)
       )
 
     if (!xaxis_title) {
@@ -186,7 +187,8 @@ plot_inla_fixed_effect <- function(
 
     if (!is.null(scale_color)) {
       p <- p +
-        scale_color_manual(values = scale_color)
+        scale_color_manual(values = scale_color,
+          name = "Community metrics")
     } else {
       p <- p +
         scale_color_brewer(palette = "RdYlBu")

@@ -1,6 +1,9 @@
 ---
 title: "Figures of the manuscript" 
 author: Danet, A., Giam, X., Olden, J. and Comte L.
+output:
+  bookdown::pdf_document2:
+    toc: true
 ---
 
 
@@ -9,9 +12,27 @@ source(here::here("start_rmd.R"))
 #knitr::opts_chunk$set(cache = TRUE)
 library(ade4)
 library(factoextra)
+library(patchwork)
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>",
+  fig.path = "fig_paper/knitr-",
+  fig.retina = 1, # Control using dpi
+  fig.width = 2.25,  # generated images
+  fig.pos = "htp",  # pdf mode
+  fig.align = "center",
+  dpi = 300,
+  dev = "png",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet"
+)
 ```
 
-# Options 
+# Options
 
 ## Color blind palettes
 
@@ -37,7 +58,8 @@ names(pal_variable) <- get_var_replacement()[restricted_dimension]
 ```
 
 ```{r loading-targets, include=FALSE}
-tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects))
+tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects,
+    measurement_exo))
 ```
 
 # Figures
@@ -77,10 +99,10 @@ p3 <- tu %>%
     legend_present = TRUE,
     xaxis_title = TRUE
     ) +
-  labs(x = "Standardized coefficients")
+  labs(x = "Standardized slope coefficients (SD unit)")
 
 leg_dis <- get_legend(p3 +
- guides(colour = guide_legend(nrow = 2) ) +
+ guides(colour = guide_legend(nrow = 2)) +
   theme(legend.position = "bottom")
 )
 
@@ -103,33 +125,48 @@ site_year <- filtered_dataset_modelling$site_quanti %>%
     completeness = n / (span)
     )
 fnsite <- nrow(site_year)
-
+fnop <- length(unique(filtered_dataset_modelling$measurement$op_id))
 ```
 
 
 ```{r}
-
 fig1_cap <- paste0(
-  "**Responses of five community metrics to time, local anthropogenic
-pressures, stream gradient and their interaction**. Responses of dissimilarity
-based on Simpson index, Total abundance, Chao species richness, the percentage
-of exotic species and of exotic species abundance. Time was quantified by the
-logged number of years since the first year of sampling at a given site added to
-one. The legagy of past anthropogenic pressures and the recent changes in
-anthropogenic pressures were quantified respectively by the Human Footprint
-index (1993) and the ratio between the Human Footprint at the year 2009 and
+  "**Responses of five community metrics to time, local
+  anthropogenic pressures, stream gradient and their interaction**. Responses of
+  dissimilarity based on the Simpson index, Total abundance, Chao species
+  richness, the percentage of exotic species and of exotic species abundance.
+  Time was quantified by the logged number of years since the first year of
+  sampling at a given site added to one. The legagy of past anthropogenic
+  pressures and the recent changes in anthropogenic pressures were quantified
+  respectively by the Human Footprint index (1993) and the ratio between the
+  Human Footprint at the year 2009 and
 1993. The stream gradient was quantified by the first axis of a PCA preformed on
 the stream reach characteristics, related to the average annual discharge,
 the distance from the source, and the strahler order. All the predictors were
 standardized prior to model evaluation. The Legacy of past anthropogenic
 pressures, quantified by the Human Footprint index (1993) was centered around
 its median value. Large, medium and thin bars depict respectively the bayesian
-credible intervals at 80, 90 and 95%. N = ", fnsite, " sites.")
-
+credible intervals at 80, 90 and 95%. Main effects but time were not included
+for the site dissimilarity metrics (See methods).  Please
+note the broken abscisse scale in the framed panels. N = ", fnop, " monitoring
+events over ", fnsite, " sites."
+)
 ```
 
-```{r, fig.cap=fig1_cap, fig.height = 10}
+Do we need to name the legend?
+
+```{r, fig.cap=fig1_cap, fig.asp = 2.5, fig.width = 2.25}
 fig1
+ggsave(
+  filename = "fig1.png",
+  plot = fig1,
+  path = here("paper", "fig_paper"),
+  scale = 1.75,
+  width = 2.25,
+  height = 2.25 * 3.1,
+  units = "in",
+  dpi = "print"
+)
 ```
 
 ## Typology of biodiversity trends
@@ -145,6 +182,7 @@ p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
 ```
+
 ```{r}
 p_pca_clust <- plot_pca_clust(
      .data = pca_clust$rotated,
@@ -159,7 +197,7 @@ p_pca_clust <- plot_pca_clust(
    )
 ```
 
-```{r pca-cor-tps, fig.cap=pca_clust_cap, fig.height=8}
+```{r pca-cor-tps, fig.height=8}
 axis_l <- list(
   c("RC1", "RC2"),
   c("RC1", "RC3"),
@@ -180,9 +218,12 @@ cluster_names <- c(
 )
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
 per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+na_cluster <- paste0("(N = ",
+  fnsite - sum(nb_clusters), ", ", scales::percent((fnsite - sum(nb_clusters)) / fnsite),")"
+)
 
 cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
-  ~paste0(.x, " (N = ", .y, ")"))
+  ~paste0(.x, "\n(N = ", .y, ")"))
 
 p_pca_cl_ell <- map(axis_l,
   ~plot_pca_clust(
@@ -191,7 +232,7 @@ p_pca_cl_ell <- map(axis_l,
      add_point = TRUE,
      add_ellipse = TRUE,
      xaxis = .x[1], yaxis = .x[2],
-     ctb_thld = .2,
+     ctb_thld = .4,
      replace_var = get_var_replacement(),
      size_arrows_segment = 1,
      label_size = 2.5,
@@ -201,14 +242,23 @@ p_pca_cl_ell <- map(axis_l,
      force = 80,
      var_scaling_factor = 3.5
    ) +
- guides(colour = guide_legend(override.aes = list(size = 10)))+
- theme(legend.position = "bottom") +
- theme(legend.key = element_rect(fill = NA)) +
+ guides(
+   colour = guide_legend(
+     override.aes = list(size = 10),
+     title.theme = element_blank(),
+     nrow = 3)
+ ) +
+ theme(
+   legend.position = "bottom",
+   panel.background = element_blank(),
+   legend.key = element_rect(fill = NA)) +
  scale_color_viridis(
    discrete = TRUE,
    name = "Cluster", labels = cluster_labels)
 )
-leg_cl <- get_legend(p_pca_cl_ell[[1]])
+leg_cl <- get_legend(
+  p_pca_cl_ell[[1]]
+)
 
 p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 
@@ -226,39 +276,421 @@ fig2 <- plot_grid(
   p_pca_cl_bt,
   leg_cl,
   nrow = 3,
-  rel_heights = c(1, .5, .15)
+  rel_heights = c(1, .5, .25)
+)
+```
+
+```{r} 
+pca_clust_cap <- paste0("PCA biplot on the temporal trends of the
+  community metrics at each site, their cluster assignment (upper panel) and the
+  boxplots describing the distribution of the temporal trends by cluster (lower
+    panel). The temporal trends of each community metrics were obtained from a
+  model without anthropogenic pressures and extracted from random effect using
+  BLUP (see methods). The principal components of the PCA were rotated with the
+  varimax algorithm to increase the representation of the variables on the
+  principal components (RC: rotated components). The temporal trends of
+  community metrics were clustered using the k-means method while excluding 5%
+   of the most outlying data to avoid the identification of spurious clusters.
+  Sites with a doubtful assignement to a cluster were removed ", na_cluster, ".
+  The sites are colored by their cluster belongings. The ellipses represent the
+  95% interval around the clusters assuming a Student's t distribution. The
+  clusters were named according to their unique characteristics.") %>%
+  str_remove_all("\n|\r") %>%
+  str_replace_all("  ", " ")
+```
+
+For the figure 2, I see the main question of whether we need to give to the clusters
+or not. I would suggest to put them as medium change, high turnover, increase in
+species richness, decrease in total abundance and no change.  
+
+```{r, fig.cap=pca_clust_cap, fig.width = 4.75, fig.asp = .42}
+fig2
+ggsave(
+  filename = "fig2.png",
+  plot = fig2,
+  path = here("paper", "fig_paper"),
+  scale = 1.0,
+  width = 4.75,
+  height = 4.75 * 1.7,
+  units = "in",
+  dpi = "print"
+)
+```
+
+## Spatial distribution of biodiversity trends 
+
+```{r}
+tar_load(c(world_site_sf))
+```
+
+
+```{r}
+loc <- filtered_dataset_modelling$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+  left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+```
+
+
+```{r}
+site_cl_rm_loc <- site_cl_rm %>%
+  select(siteid, cl) %>%
+  left_join(loc, by = "siteid") %>%
+  filter(ecoregion %in% c("Palearctic", "Nearctic", "Australasia")) %>%
+  left_join(
+    measurement_exo %>%
+      distinct(siteid, basin_name),
+    by = "siteid")
+
+n_clust_basin <- site_cl_rm_loc %>%
+  group_by(ecoregion, country, basin_name) %>%
+  summarise(
+    n = n(),
+    div = length(unique(cl)),
+    evenness = ifelse(div == 1, 1, diversity(table(cl)) / log(div))
+  )
+
+
+# Take the most sampled basin by country
+fq_pal_bas <- site_cl_rm_loc %>%
+  filter(basin_name %in% c("Avon.Moors", "Loire", "Gota.alv")) %>%
+  group_by(basin_name, cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq)) %>%
+  ungroup()
+
+fq_pal <- site_cl_rm_loc %>%
+  filter(ecoregion == "Palearctic") %>%
+  group_by(cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq), basin_name = toupper("Palearctic")) %>%
+  ungroup()
+
+fq_tab <- rbind(
+  fq_pal, fq_pal_bas
+)
+
+get_fq_tab_from_basin <- function(
+  x = site_cl_rm_loc,
+  ecoregion = NULL,
+  basins = NULL) {
+
+  fq_pal_bas <- x %>%
+    filter(basin_name %in% basins) %>%
+    group_by(basin_name, cl) %>%
+    summarise(freq = n()) %>%
+    mutate(pc = prop.table(freq)) %>%
+    ungroup()
+
+  ecoregion2 <- ecoregion# to not mess up filter
+  fq_pal <- site_cl_rm_loc %>%
+    filter(ecoregion == ecoregion2) %>%
+    group_by(cl) %>%
+    summarise(freq = n()) %>%
+    mutate(
+      pc = prop.table(freq),
+      basin_name = toupper(ecoregion)
+      ) %>%
+    ungroup()
+
+  fq_tab <- rbind(fq_pal, fq_pal_bas) %>%
+    mutate(
+      basin_name = factor(
+        basin_name, levels = c(toupper(ecoregion), basins)),
+      ecoregion = ecoregion
+    )
+  return(fq_tab)
+
+}
+
+basin_name_palearctic <- n_clust_basin %>%
+  filter(ecoregion == "Palearctic", div == 6) %>%
+  arrange(desc(n))
+
+tab_palearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Palearctic",
+  basins = c("Seine", "Derwent.UK", "Umealven")
+)
+
+basin_name_nearctic <- n_clust_basin %>%
+  filter(ecoregion == "Nearctic", div >= 5) %>%
+  arrange(desc(n))
+
+tab_nearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Nearctic",
+  basins = c("Mississippi", "Saint.Laurent", "Columbia")
+)
+tab_nearctic %>%
+  filter(basin_name == "Saint.Laurent")
+
+basin_name_australasia <- n_clust_basin %>%
+  filter(ecoregion == "Australasia", div >= 5) %>%
+  arrange(desc(n))
+
+tab_australasia <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Australasia",
+  basins = c("Murray.Darling", "Brisbane", "Logan")
+)
+
+tot_tab <- rbind(
+  tab_palearctic,
+  tab_nearctic,
+  tab_australasia) %>%
+  left_join(
+    site_cl_rm_loc %>%
+      filter(basin_name %in% .$basin_name) %>%
+      mutate(country = ifelse(basin_name == "Saint.Laurent", "CAN/USA", country)) %>%
+      distinct(basin_name, country),
+    by = "basin_name"
+  ) %>%
+  mutate(
+    basin_name = str_replace(basin_name, "\\.", " "),
+    basin_name = str_replace(basin_name, "UK", "")
+    ) %>%
+  group_by(basin_name) %>%
+  mutate(
+    total_n = sum(freq)) %>%
+  ungroup() %>%
+arrange(ecoregion, total_n) %>%
+  mutate(
+    country = ifelse(is.na(country), "", paste0(", ", country)),
+    basin_name_n = paste0(basin_name, " (", total_n, country, ")"),
+    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n))
+  )
+```
+
+```{r}
+p_tot_tab <- tot_tab %>%
+  mutate(
+    ecoregion = toupper(ecoregion)
+    ) %>%
+  ggplot(aes(x = pc, y = basin_name_f, fill = as.factor(cl))) +
+  geom_col() +
+  labs(x = "Proportion") +
+  scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
+  theme_cowplot() +
+  theme(
+    axis.title.y = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(size = 1, color = "black"),
+    legend.position = "none",
+    strip.text = element_blank()
+    ) +
+  facet_grid(rows = vars(ecoregion), scale = "free_y") +
+  scale_fill_viridis(discrete = TRUE, name = "Cluster")
+```
+
+
+
+```{r}
+tar_load(rivers10)
+world_site_sf$cl <- world_site_sf$site %>%
+    left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
+    mutate(cl = relevel(as.factor(cl), ref = 1))
+
+zoom_map_world <- world_site_sf$cl %>%
+  st_buffer(dist = .2) %>%
+    st_bbox()
+
+
+main_map <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(fill = cl), pch = 21, color = "white", alpha = .3) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(legend.position = "none") +
+  coord_sf(
+    xlim = zoom_map_world[c("xmin", "xmax")],
+    ylim = zoom_map_world[c("ymin", "ymax")],
+    expand = FALSE)
+
+main_map4zoom <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 4) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(legend.position = "none")
+
+
+zoom_map <- list(
+  north_am = "USA",
+  eng = "GBR",
+  south_eu = c("FRA", "ESP", "BEL"),
+  north_eu = c("FIN", "NOR", "SWE"),
+  aus = "AUS"
+)
+
+zoom_map_coord <- map(zoom_map,
+  ~world_site_sf$cl %>%
+    filter(country %in% .x) %>%
+    st_bbox()
+)
+
+zoom_map_coord_df <- map_dfr(zoom_map_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(
+  label = LETTERS[seq_len(length(zoom_map_coord))],
+  xmean = (xmax + xmin) / 2,
+  ymean = (ymax + ymin) / 2
 )
 ```
 
 ```{r}
-pca_clust_cap <- paste0("PCA biplot on the temporal trends of the community
-metrics at each site, their cluster assignment (upper panel) and the
-boxplots describing the distribution of the temporal trends by cluster (lower
-  panel). The temporal trends of each community metrics were obtained from a
-model without
-anthropogenic pressures and extracted from random effect using BLUP (see
-  methods). The principal components of the PCA were rotated with the varimax
-algorithm to increase the representation of the variables on the principal
-components (RC: rotated components). The temporal trends of community metrics
-were clustered using the k-means method while excluding 5% of the most outlying
-data to avoid the identification of spurious clusters. The sites are colored by
-their cluster belongings. The ellipses represent the 95% interval around the
-clusters assuming a Student's t distribution. The clusters were named according
-to their unique characteristics.")
-```
-
-For the figure 2, I see the main question of whether we need to give to the clusters
-or not. I would suggest to put them as low change, high turnover, increase in
-species richness, decrease in total abundance and no change.  
-
-```{r, fig.cap=pca_clust_cap}
-fig2
+main_map_rect <- main_map +
+  geom_text(
+    data = zoom_map_coord_df,
+    aes(x = xmin, y = ymean, label = label),
+    vjust = -.55, hjust = 0, size = 7) +
+  theme(legend.position = "none")
 ```
 
 
+```{r}
+p_main_map_rect <- main_map_rect +
+  draw_plot(leg_cl, x = 0, y = zoom_map_world["ymin"] + 5, vjust = 0)
+
+save_plot(
+  here("doc", "fig", "global_map.png"),
+  main_map_rect,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+
+p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
+  ~main_map4zoom +
+    coord_sf(
+      xlim = .x[c("xmin", "xmax")],
+      ylim = .x[c("ymin", "ymax")],
+      expand = FALSE) +
+    annotate("text", x = .x["xmin"], y = .x["ymax"],
+      label = .y, size = 7, vjust = 1.2, hjust = -.2) +
+    theme(
+      legend.position = "none",
+      panel.border = element_rect(size = 1, color = "black")
+    )
+)
+```
+```{r, eval=FALSE}
+p_zoom_map[[2]]
+```
 
 
-## Spatial distribution of biodiversity trends 
+
+```{r}
+map_cl_cap <- "Distribution of the clusters of biodiversity temporal trends (without
+cluster being NAs, see legend Fig. 2).
+"
+```
+```{r}
+cluster_labels2 <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
+  ~paste0(.x, "\n(N = ", .y, ")"))
+leg_cl_right <- get_legend(
+  p_pca_cl_ell[[1]] +
+    theme(legend.position = "right") +
+    guides(col = guide_legend(
+        ncol = 2, override.aes = list(size = 10)
+        )) +
+    scale_color_viridis(discrete = TRUE, name = "Cluster", labels = cluster_labels2)
+)
+```
+
+```{r, eval = FALSE}
+width_map_cl <- 12.0
+dev.new(width = width_map_cl, height = width_map_cl*.42, units = "cm", res = 300, pointsize = 7)
+```
+```{r, eval = FALSE}
+width_map_cl <- 4000
+png(
+  filename = here("paper", "fig_paper", "fig3.png"),
+  width = width_map_cl, height =  width_map_cl*.42, pointsize = 5,
+  units = "px", res = 300)
+```
+
+```{r map-cl3, fig.width = 4.75, fig.asp = .42, fig.cap=map_cl_cap}
+layout <- "
+AAAAAH
+AAAAAH
+BDEFGC
+"
+map_cl_fin <- main_map_rect + p_zoom_map$north_am + leg_cl_right +
+  p_zoom_map$eng + p_zoom_map$south_eu + p_zoom_map$north_eu + p_zoom_map$aus + p_tot_tab +
+  plot_layout(design = layout)
+map_cl_fin
+```
+```{r, eval=FALSE}
+dev.copy(x11,
+  file = here("paper", "graphics", "fig3.png"),
+  )
+
+width_map_cl <- 4.75
+dev.print(
+  file =  here("paper", "graphics", "fig3.png"),
+  ) # prints it
+dev.off()
+```
+
+
+
+```{r map-cl, fig.width = 4.75, fig.asp = 2, fig.cap=map_cl_cap, eval=FALSE}
+fig3_top <- plot_grid(p_main_map_rect)
+fig3_bottom <- plot_grid(
+  p_zoom_map$north_am, p_zoom_map$eng,  p_zoom_map$north_eu,
+  p_zoom_map$south_eu, p_zoom_map$aus,p_tot_tab,
+  ncol = 3, axis = "l"
+)
+fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_widths = c(.5, 1))
+fig3
+
+save_plot(
+  here("doc", "fig", "fig3_left.png"),
+  fig3_top,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+save_plot(
+  here("doc", "fig", "fig3_right.png"),
+  fig3_bottom,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+save_plot(here("doc/fig/fig3.png"),
+  fig3, base_height = 4, nrow = 1, ncol = 2)
+```
+
+```{r, eval=FALSE}
+leg_cl_right <- get_legend(p_pca_cl_ell[[1]] + theme(legend.position = "right"))
+
+top_right <- align_plots(p_zoom_map$north_am, leg_cl_right, align = 'v', axis = 't')
+
+fig3_top <- plot_grid(main_map_rect,
+  plot_grid(top_right[[1]], top_right[[2]], nrow = 2),
+  ncol = 2, rel_widths = c(1, .5),
+  align = "h", axis = "t"
+)
+fig3_bottom <- plot_grid(
+p_zoom_map$eng, p_zoom_map$south_eu,
+  p_zoom_map$north_eu,
+   p_zoom_map$aus,p_tot_tab,
+  ncol = 5, axis = "l", rel_widths = c(1,1,1,1, 1.3) 
+)
+fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_heights = c(1, .5))
+fig3
+```
+
+
 
 # Instructions from Science 
 
