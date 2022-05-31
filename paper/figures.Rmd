@@ -1,5 +1,5 @@
 ---
-title: "Figures of the manuscript" 
+title: "Main figures of the manuscript"
 author: Danet, A., Giam, X., Olden, J. and Comte L.
 output:
   bookdown::pdf_document2:
@@ -36,7 +36,7 @@ knitr::opts_chunk$set(
 
 ## Color blind palettes
 
-- For variables: [colorbrew palette](https://colorbrewer2.org/#type=diverging&scheme=RdYlBu&n=5)
+- For variables: [palette from coolors.co](https://coolors.co/0f122a-4ba3a9-e4dd73-d6b594-ae5996)
 - For clusters: the discrete version of the [viridis palette](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html)
 
 ```{r}
@@ -61,6 +61,7 @@ names(pal_variable) <- get_var_replacement()[restricted_dimension]
 tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects,
     measurement_exo))
 ```
+
 
 # Figures
 
@@ -102,8 +103,13 @@ p3 <- tu %>%
   labs(x = "Standardized slope coefficients (SD unit)")
 
 leg_dis <- get_legend(p3 +
- guides(colour = guide_legend(nrow = 2)) +
-  theme(legend.position = "bottom")
+ guides(
+   colour = guide_legend(ncol = 2)) +
+  theme(
+    legend.position = "bottom",
+    legend.text = element_text(size = 6),
+    legend.title = element_blank()
+  )
 )
 
 fig1 <- plot_grid(
@@ -111,7 +117,7 @@ fig1 <- plot_grid(
   print(p2),
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1, 1, 1, .3),
+  rel_heights = c(1, 1, 1, .2),
   ncol = 1)
 ```
 
@@ -149,14 +155,15 @@ its median value. Large, medium and thin bars depict respectively the bayesian
 credible intervals at 80, 90 and 95%. Main effects but time were not included
 for the site dissimilarity metrics (See methods).  Please
 note the broken abscisse scale in the framed panels. N = ", fnop, " monitoring
-events over ", fnsite, " sites."
-)
+events over ", fnsite, " sites.") %>%
+  str_remove_all("\n|\r") %>%
+  str_replace_all("  ", " ")
 ```
 
 Do we need to name the legend?
 
-```{r, fig.cap=fig1_cap, fig.asp = 2.5, fig.width = 2.25}
-fig1
+```{r save-fig1}
+#fig1
 ggsave(
   filename = "fig1.png",
   plot = fig1,
@@ -168,6 +175,12 @@ ggsave(
   dpi = "print"
 )
 ```
+
+```{r, fig.asp = 3.1, fig.width = 2.25}
+#, fig.cap=fig1_cap
+knitr::include_graphics(here("paper", "fig_paper", "fig1.png"))
+```
+
 
 ## Typology of biodiversity trends
 
@@ -246,11 +259,12 @@ p_pca_cl_ell <- map(axis_l,
    colour = guide_legend(
      override.aes = list(size = 10),
      title.theme = element_blank(),
-     nrow = 3)
+     ncol = 3)
  ) +
  theme(
    legend.position = "bottom",
    panel.background = element_blank(),
+   legend.text = element_text(size = 5),
    legend.key = element_rect(fill = NA)) +
  scale_color_viridis(
    discrete = TRUE,
@@ -281,10 +295,10 @@ fig2 <- plot_grid(
 ```
 
 ```{r} 
-pca_clust_cap <- paste0("PCA biplot on the temporal trends of the
+pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
   community metrics at each site, their cluster assignment (upper panel) and the
   boxplots describing the distribution of the temporal trends by cluster (lower
-    panel). The temporal trends of each community metrics were obtained from a
+    panel)**. The temporal trends of each community metrics were obtained from a
   model without anthropogenic pressures and extracted from random effect using
   BLUP (see methods). The principal components of the PCA were rotated with the
   varimax algorithm to increase the representation of the variables on the
@@ -303,8 +317,8 @@ For the figure 2, I see the main question of whether we need to give to the clus
 or not. I would suggest to put them as medium change, high turnover, increase in
 species richness, decrease in total abundance and no change.  
 
-```{r, fig.cap=pca_clust_cap, fig.width = 4.75, fig.asp = .42}
-fig2
+```{r save-fig2}
+#fig2
 ggsave(
   filename = "fig2.png",
   plot = fig2,
@@ -316,6 +330,12 @@ ggsave(
   dpi = "print"
 )
 ```
+
+```{r, fig.width = 4.75, fig.asp = 1.7}
+# , fig.cap=pca_clust_cap
+knitr::include_graphics(here("paper", "fig_paper", "fig2.png"))
+```
+
 
 ## Spatial distribution of biodiversity trends 
 
@@ -423,8 +443,6 @@ tab_nearctic <- get_fq_tab_from_basin(
   ecoregion = "Nearctic",
   basins = c("Mississippi", "Saint.Laurent", "Columbia")
 )
-tab_nearctic %>%
-  filter(basin_name == "Saint.Laurent")
 
 basin_name_australasia <- n_clust_basin %>%
   filter(ecoregion == "Australasia", div >= 5) %>%
@@ -590,8 +608,12 @@ p_zoom_map[[2]]
 
 
 ```{r}
-map_cl_cap <- "Distribution of the clusters of biodiversity temporal trends (without
-cluster being NAs, see legend Fig. 2).
+map_cl_cap <- "**Distribution of the clusters of biodiversity temporal trends** (without
+cluster being NAs, see legend Fig. 2). Left panel: Spatial distribution of the
+the clusters with insets of the (A) United States of America (USA), (B) Great Britain (GBR), (C) France (FR),
+(D) Sweden (SWE) and (E) Australia (AUS). Right panel: cluster frequency distribution in the
+three most represented Realms (in capital letters) and their most sampled
+hydrographic basins. The number of sites are displayed between parenthesis.
 "
 ```
 ```{r}
@@ -619,7 +641,7 @@ png(
   units = "px", res = 300)
 ```
 
-```{r map-cl3, fig.width = 4.75, fig.asp = .42, fig.cap=map_cl_cap}
+```{r map-cl3, fig.width = 4.75, fig.asp = .42, fig.show = "hide"}
 layout <- "
 AAAAAH
 AAAAAH
@@ -629,6 +651,7 @@ map_cl_fin <- main_map_rect + p_zoom_map$north_am + leg_cl_right +
   p_zoom_map$eng + p_zoom_map$south_eu + p_zoom_map$north_eu + p_zoom_map$aus + p_tot_tab +
   plot_layout(design = layout)
 map_cl_fin
+dev.off()
 ```
 ```{r, eval=FALSE}
 dev.copy(x11,
@@ -642,9 +665,16 @@ dev.print(
 dev.off()
 ```
 
+```{r map-cl-fin, fig.width = 4.75, fig.asp = .42}
+#, fig.cap=map_cl_cap
+knitr::include_graphics(here("paper", "fig_paper", "fig3_screenshot.png"))
+```
 
 
-```{r map-cl, fig.width = 4.75, fig.asp = 2, fig.cap=map_cl_cap, eval=FALSE}
+
+
+```{r map-cl, fig.width = 4.75, fig.asp = 2, eval=FALSE} 
+#, fig.cap=map_cl_cap
 fig3_top <- plot_grid(p_main_map_rect)
 fig3_bottom <- plot_grid(
   p_zoom_map$north_am, p_zoom_map$eng,  p_zoom_map$north_eu,
@@ -690,6 +720,13 @@ fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_heights = c(1, .5))
 fig3
 ```
 
+# Figure legends
+
+- Figure 1: `r knitr::knit(text = fig1_cap)` 
+
+- Figure 2: `r knitr::knit(text = pca_clust_cap)`
+
+- Figure 3: `r knitr::knit(text = map_cl_cap)`
 
 
 # Instructions from Science 

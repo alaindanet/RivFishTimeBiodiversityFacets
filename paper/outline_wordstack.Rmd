@@ -1,0 +1,489 @@
+---
+title: "Outine"
+author: "Report Author"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: word_document 
+
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      collapse = TRUE,
+                      comment = "#>",
+                      fig.path = "graphics/knitr-",
+                      fig.retina = 1.618, # Control using dpi
+                      fig.width = 6,  # generated images
+                      fig.pos = "t",  # pdf mode
+                      fig.align = "center",
+                      dpi = if (knitr::is_latex_output()) 72 else 300,
+                      out.width = "100%",
+                      dev = "svg",
+                      dev.args = list(png = list(type = "cairo-png")),
+                      optipng = "-o1 -quiet")
+
+library(here)
+source(here::here("R", "misc.R"))
+source(here::here("R", "variable_shortcut.R"))
+source(here::here("R", "basic_stat.R"))
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(targets)
+
+if (Sys.info()["login"] == "alain")
+  file.copy(
+    from = "~/Documents/post-these/references.bib",
+    to = here("paper", "bibliography.bib")
+  )
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(site_desc_loc, measurement))
+tar_load(c(modelling_data, filtered_dataset_modelling, analysis_dataset))
+tar_load(filtered_op_protocol_modelling)
+tar_load(c(measurement_exo, modelling_data_exo))
+
+measurement_exo <- measurement_exo %>%
+  filter(op_id %in% unique(modelling_data_exo$op_id))
+
+tar_load(c(
+    gaussian_inla_no_drivers_effects,
+    gaussian_inla_exo_no_drivers_effects)
+)
+inla_no_drivers_effects <- rbind(
+  gaussian_inla_no_drivers_effects,
+  gaussian_inla_exo_no_drivers_effects
+)
+
+tar_load(c(pred_number, pred_inla))
+```
+```{r}
+table_to_vec <- function(x) {
+  setNames(as.numeric(x), names(x))
+}
+get_comp <- function(
+  pred = pred_number,
+  type = "pred_hft93_t0",
+  resp = NULL,
+  lvl_comp = NULL
+  ) {
+  pred[[type]][[resp]][["mean"]][lvl_comp]
+}
+pred_number$pred_hft93_t0$log_total_abundance
+get_comp(resp = "log_total_abundance",
+  lvl_comp = c("intact", "max")
+)
+
+```
+
+
+# Outline
+
+## 1 Introduction
+
+### 1.1 Community changes
+
+### 1.2 Biodiversity facets 
+
+### 1.3 Antropogenic drivers 
+
+### 1.4 Fishes
+
+## 2 Material & Methods
+
+### 2.1 Dataset and data selection
+
+### 2.2 Biodiversity description
+
+#### 2.2.1 Species richness
+
+#### 2.2.2 Total abundance
+
+#### 2.2.3 Dissimilarity metrics
+
+### 2.3 Environment and anthropogenic pressures
+
+### 2.4 Statistical analysis
+
+#### 2.4.1 Temporal trends assessment
+
+##### 2.4.1.1 Statistical Models
+
+##### 2.4.1.2 Standardization
+
+##### 2.4.1.3 Model validity
+
+##### 2.4.1.4 Sentivity of priors
+
+comparison with glmmTMB, comparison with penalty complexity priors
+
+#### 2.4.2 PCA and clustering of biodiversity temporal trends
+
+##### 2.4.2.1 Pre-processing of temporal trends adjustment 
+
+##### 2.4.2.2 Cluster identification
+
+### 2.5. Reproducibility, ROBITT assessment and open science statement
+
+Robitt, Github, data repository, targets (proof of update), .Renv, Compendium
+
+## 3 Results
+
+### Global temporal trends
+
+- Dissimilarity: driven by changes in dominance and changes in species
+  composition 
+
+
+```{r}
+get_global_effect <- function (
+  effect = inla_no_drivers_effects,
+  resp = NULL,
+  ci_lvl = "level:0.95"
+  ) {
+
+  out <- effect %>% 
+    filter(
+      ci_level == ci_lvl,
+      term == "log1_year_nb",
+      response == resp 
+    )
+
+  out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+}
+
+p_ci <- function(x, r = 2, p = TRUE) {
+  out <- round(x, r)
+
+  if (p) {
+    paste0(out["mean"], "%", " [", out["low"],"%,", out["high"],"%]")
+  } else {
+    paste0(out["mean"], " [", out["low"],",", out["high"],"]")
+  }
+
+}
+
+```
+
+```{r}
+trends <- map(unique(inla_no_drivers_effects$response),
+  ~get_global_effect(
+  effect = inla_no_drivers_effects,
+  resp = .x,
+  ci_lvl = "level:0.95"
+  )
+)
+names(trends) <- unique(inla_no_drivers_effects$response)
+```
+
+```{r}
+abun_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_total_abundance)
+  * log(10 + 1),
+  r = 1)
+rich_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_chao_richness)
+  * log(10 + 1),
+  r = 1
+)
+hill_trends <- p_ci(
+  trends$hillebrand_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
+
+```
+
+- Global trends by decade (10 years) with no drivers:
+  - Total abundance: `r abun_trends`
+  - Chao richness: `r rich_trends`
+  - Hillebrand: `r hill_trends`
+  - Percentage of exotic species: `r exo_trends[["perc_exo_sp"]]`
+  - Percentage of exotic abundance: `r exo_trends[["perc_exo_abun"]]`
+
+
+### Effect of anthropogenic drivers
+
+
+```{r}
+extract_pred <- function (x = NULL, resp = NULL, val_to_extract = NULL) {
+
+  ci_low <- x[[resp]]$quant0.025[val_to_extract]
+  ci_high <- x[[resp]]$quant0.975[val_to_extract]
+
+  # Does the ci at 95 overlap? 
+  ci_overlap <- ci_low[val_to_extract[1]] > ci_high[val_to_extract[2]] |
+    ci_high[val_to_extract[1]] < ci_low[val_to_extract[2]]
+
+  list(
+    val = x[[resp]]$mean[val_to_extract],
+    ci_overlap = !ci_overlap
+  )
+}
+#' Get percentage of difference, the first value being the reference
+get_ratio <- function(x, r = 1) {
+  #reduce(x, `/`)
+  out <- round((x[2] - x[1]) / x[1] * 100, r)
+  paste0(out, "%")
+}
+```
+
+```{r}
+tar_load(pred_number)
+```
+
+#### Baseline
+
+```{r}
+pred_hft93_t0 <- map(
+  setNames(names(pred_number$pred_hft93_t0), names(pred_number$pred_hft93_t0)),
+  ~extract_pred(
+    x = pred_number$pred_hft93_t0,
+    resp = .x,
+    val_to_extract = c("intact", "max")
+  )
+)
+
+abun_rich_hft93_int_max <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft93_t0[[.x]]$val), r = 0)
+)
+other_hft93_int_max <- map_chr(
+  setNames(names(pred_number$pred_hft93_t0), names(pred_number$pred_hft93_t0))[
+    !names(pred_number$pred_hft93_t0) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft93_t0[[.x]]$val, r = 0)
+  )
+```
+
+- Differences at t0 between intact sites and most degraded sites:
+  - Total abundance: `r abun_rich_hft93_int_max["log_chao_richness"]`
+  - Chao species richness: `r abun_rich_hft93_int_max["log_total_abundance"]`
+  - Percentage of exotic species: `r other_hft93_int_max["perc_exo_sp"]`
+  - Percentage of exotic abundance: `r other_hft93_int_max["perc_exo_abun"]`
+
+```{r}
+pred_hft9309_t0 <- map(
+  setNames(names(pred_number$pred_hft9309_t0), names(pred_number$pred_hft9309_t0)),
+  ~extract_pred(
+    x = pred_number$pred_hft9309_t0,
+    resp = .x,
+    val_to_extract = c("div/2", "inc/2")
+  )
+)
+
+abun_rich_hft93909_dec_inc_by2 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft9309_t0[[.x]]$val), r = 0)
+)
+other_hft93909_dec_inc_by2 <- map_chr(
+  setNames(names(pred_number$pred_hft9309_t0), names(pred_number$pred_hft9309_t0))[
+    !names(pred_number$pred_hft9309_t0) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft9309_t0[[.x]]$val, r = 0)
+  )
+```
+
+- Differences at t0 between recently degraded sites and recently improved sites
+  (respectively hft multipled by 2  and divided by 2 between 93 and 09):
+  - Total abundance: `r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]`
+  - Chao species richness: `r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]`
+  - Percentage of exotic species: `r other_hft93909_dec_inc_by2["perc_exo_sp"]`
+  - Percentage of exotic abundance: `r other_hft93909_dec_inc_by2["perc_exo_abun"]`
+
+
+```{r}
+pred_hft93_t10 <- map(
+  setNames(names(pred_number$pred_hft93_t10), names(pred_number$pred_hft93_t10)),
+  ~extract_pred(
+    x = pred_number$pred_hft93_t10,
+    resp = .x,
+    val_to_extract = c("intact", "max")
+  )
+)
+
+abun_rich_hft93_int_max_t10 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft93_t10[[.x]]$val), r = 0)
+)
+other_hft93_int_max_t10 <- map_chr(
+  setNames(names(pred_number$pred_hft93_t10), names(pred_number$pred_hft93_t10))[
+    !names(pred_number$pred_hft93_t10) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft93_t10[[.x]]$val, r = 0)
+  )
+```
+
+```{r}
+pred_hft9309_t10 <- map(
+  setNames(names(pred_number$pred_hft9309_t10), names(pred_number$pred_hft9309_t10)),
+  ~extract_pred(
+    x = pred_number$pred_hft9309_t10,
+    resp = .x,
+    val_to_extract = c("div/2", "inc/2")
+  )
+)
+
+abun_rich_hft93909_dec_inc_by2_t10 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft9309_t10[[.x]]$val), r = 0)
+)
+other_hft93909_dec_inc_by2_t10 <- map_chr(
+  setNames(names(pred_number$pred_hft9309_t10), names(pred_number$pred_hft9309_t10))[
+    !names(pred_number$pred_hft9309_t10) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft9309_t10[[.x]]$val, r = 0)
+  )
+```
+
+#### After a decade
+
+- Differences at t = 10 years between intact sites and most degraded sites
+  (legacy of past pressures, human footprint 1993):
+  - Total abundance: `r abun_rich_hft93_int_max_t10["log_chao_richness"]` (vs
+    `r abun_rich_hft93_int_max["log_chao_richness"]` at t = 0)
+  - Chao species richness: `r abun_rich_hft93_int_max_t10["log_total_abundance"]` (vs
+    `r abun_rich_hft93_int_max["log_total_abundance"]` at t = 0)
+  - Percentage of exotic species: `r other_hft93_int_max_t10["perc_exo_sp"]` (vs
+    `r other_hft93_int_max["perc_exo_sp"]` at t = 0)
+  - Percentage of exotic abundance: `r other_hft93_int_max_t10["perc_exo_abun"]` (vs
+    `r other_hft93_int_max["perc_exo_abun"]` at t = 0)
+  - Hillebrand: `r other_hft93_int_max_t10["hillebrand_dis_scaled"]` (vs
+    `r other_hft93_int_max["hillebrand_dis_scaled"]` at t = 0)
+  - Turnover: `r other_hft93_int_max_t10["turnover_scaled"]` (vs
+    `r other_hft93_int_max["turnover_scaled"]` at t = 0)
+  - Nestedness: `r other_hft93_int_max_t10["nestedness_scaled"]` (vs
+    `r other_hft93_int_max["nestedness_scaled"]` at t = 0)
+  - Appearance: `r other_hft93_int_max_t10["appearance_scaled"]` (vs
+    `r other_hft93_int_max["appearance_scaled"]` at t = 0)
+  - Disappearance: `r other_hft93_int_max_t10["disappearance_scaled"]` (vs
+    `r other_hft93_int_max["disappearance_scaled"]` at t = 0)
+
+- Differences at t = 10 years between recently degraded sites and recently improved sites
+  (respectively hft multipled by 2  and divided by 2 between 93 and 09):
+  - Total abundance: `r abun_rich_hft93909_dec_inc_by2_t10["log_chao_richness"]` (vs
+    `r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]` at t = 0)
+  - Chao species richness: `r abun_rich_hft93909_dec_inc_by2_t10["log_total_abundance"]` (vs
+    `r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]` at t = 0)
+  - Percentage of exotic species: `r other_hft93909_dec_inc_by2_t10["perc_exo_sp"]` (vs
+    `r other_hft93909_dec_inc_by2["perc_exo_sp"]` at t = 0)
+  - Percentage of exotic abundance: `r other_hft93909_dec_inc_by2_t10["perc_exo_abun"]` (vs
+    `r other_hft93909_dec_inc_by2["perc_exo_abun"]` at t = 0)
+  - Hillebrand: `r other_hft93909_dec_inc_by2_t10["hillebrand_dis_scaled"]` (vs
+    `r other_hft93909_dec_inc_by2["hillebrand_dis_scaled"]` at t = 0)
+  - Turnover: `r other_hft93909_dec_inc_by2_t10["turnover_scaled"]` (vs
+    `r other_hft93909_dec_inc_by2["turnover_scaled"]` at t = 0)
+  - Nestedness: `r other_hft93909_dec_inc_by2_t10["nestedness_scaled"]` (vs
+    `r other_hft93909_dec_inc_by2["nestedness_scaled"]` at t = 0)
+  - Appearance: `r other_hft93909_dec_inc_by2_t10["appearance_scaled"]` (vs
+    `r other_hft93909_dec_inc_by2["appearance_scaled"]` at t = 0)
+  - Disappearance: `r other_hft93909_dec_inc_by2_t10["disappearance_scaled"]` (vs
+    `r other_hft93909_dec_inc_by2["disappearance_scaled"]` at t = 0)
+
+### Outline
+
+1. Positive global temporal trends (species richness & total abundance)
+1. Legacy of past anthropogenic pressures:
+  1. Higher species richness, percentage of exotic abundance and exotic richness
+  1. Temporal trends:
+     1. Increase in species richness and total abundance in most degraded sites
+     1. But no change in percentage of exotic species
+     1. Increase dissimilarity, much higher turnover, higher appearance and
+        disappearance
+1. Recent increase in anthropogenic pressures:
+  1. Lower species richness and lower total abundance but higher percentage of exotic species and 
+     percentage of exotic abundance
+  1. Temporal trends: 
+     1. Decrease of (but not significant) species richness and total
+        abundance
+     1. Increase of percentage of exotic species but not of exotic abundance
+     1. Increase in dissimiliraty, much higher disappearance than appearance
+1. Synergy between legacy and recent pressures
+   1. Temporal trends:
+      1. Decrease in total abundance but not in species richness
+      1. Increase in percentage of exotic species but not in percentage of
+         exotic abundance
+      1. Increase in dissimilarity
+
+1. Facets of biodiversity temporal trends
+   1. PCA identified 4 orthogonal dimensions respectively related to the
+      temporal trends of dissimilarity (expect nestedness), species richness,
+      nestedness and total abundance.
+   1. Clustering of temporal trends confirmed and expended PCA analysis by identifying
+      clusters of low change, high turnover, increase in species richness,
+      decrease in total abundance, decrease in species richness and no change.
+
+1. Spatial scale of biodiversity trends
+   1. Variance of temporal trends attributed to sites was twice higher than the
+      one attributed to basin scale, suggesting that changes occur mainly due to
+      local conditions rather larger scale
+   1. Distribution of clusters of biodiversity trends are homogeneous across
+      Realms, confirming the analysis of the variance.
+
+
+## 4 Discussion
+
+### Global trends
+
+- We found the same temporal trends in total abundance than
+  @klink_meta-analysis_2020 (+11%) in aquatic insects.
+- Turnover is the main components of dissimilarity as found in previous studies @blowes_geography_2019
+- We further found that dissimilarity is related to change in dominance 
+- Our results on species richness contrast with @dornelas_assemblage_2014
+
+### Effect of anthropogenic pressures
+
+- single effect and Synergistic effect on dissimilarity
+- We observe stronger recovery in species richness and abundance in sites more degraded 30 years ago
+  - Might be due to DCE in Europe and Clean Water Act (US), (are there same
+    thing in Canada, Australia and JPN?) 
+  - However, 92% of our sites can be categorized as degraded
+- Recent increase in human pressures left a strong spatial signature on richness
+  and abundance but was not found in the temporal trends but as a antagonistic
+  effect on the positive effect of past legacy
+
+### Facets of biodiversity   
+
+### Spatial scales
+
+## 5 Conclusion
+
+# Wordstack
+
+# Misc
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>
