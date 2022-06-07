@@ -37,6 +37,7 @@ if (Sys.info()["login"] == "alain")
     from = "~/Documents/post-these/references.bib",
     to = here("paper", "bibliography.bib")
   )
+source(here::here("R", "misc.R"))
 ```
 
 ```{r}
@@ -50,7 +51,6 @@ measurement_exo <- measurement_exo %>%
 ```
 
 
-# Dataset and data selection
 
 ```{r}
 nsitetot <- length(unique(site_desc_loc$siteid))
@@ -82,7 +82,7 @@ eco <- table(filtered_dataset_modelling$location %>%
   pull(ecoregion)
 ) / nrow(filtered_dataset_modelling$location)
 
-per_eco <- scales::percent(table_to_vec(eco))
+per_eco <- scales::percent(table_to_vec(eco), accuracy = 1)
 
 pays <- table(filtered_dataset_modelling$location$country
 ) / nrow(filtered_dataset_modelling$location)
@@ -93,62 +93,64 @@ per_s4pays <- scales::percent(sum(sort(pays_vec, decreasing = TRUE)[1:4]))
 ```
 
 
-The RivFishTime database [@comte_rivfishtime_2021] describes the time series of
-riverine fish communities at large scale, mainly covering western and north of
-Europe, North America, Japan and Australia. It currently  holds `r nmeas`
-occurrence of `r nsp` freshwater fishes species over `r nop` sampling
-events distributed over `r nsitetot` sites. The minimum time span of a
-timeseries in the dataset is 10 years.
+# Fish community time series
 
-We selected data to guarantee the quality and the internal homogeneity of the timeseries.
-In a given site, we selected the sampling events that used the most frequently
-used protocol (i.e. the mode) and the most reported measurement unit of abundances. We
-selected the samplings that reported the year, but also the month or
-the quarter of the year (i.e., January to march, April to June, etc.). For each site,  
-we selected only the samples that were realized within 1 month around the
-most frequently sampled month, i.e. one month before or after. When there were
-several samplings the same year, we selected the sampling that took place the
-closest of the mode month/quarter of the site. Finally, we kept sites where the
-number of samplings was equal or superior to five and that had a time
-span superior of equal 10 years.
+We used the RivFishTime database [@comte_rivfishtime_2021], a compilation of
+more than 12,000 time series of riverine fish community abundances, by species,
+mainly covering western and northern Europe, northern America, and southeastern
+Australia. We completed the database with time series from Japan and United
+States, following the same criteria than RivFishTime for integration
+[@comte_rivfishtime_2021].
 
-The resulting selection of data contains `r fnmeas` occurrence of `r fnsp`
-freshwater fishes species over `r fnop` sampling
-events distributed over `r fnsite` sites. The mean time span was of `r mspan`
-years, the median completeness of the timeseries was of `r mcpl`. Finally, the
-median baseline of the timeseries was `r mbl`. The complete distribution of those 
-metrics are shown in supplementary figures (Fig. SX-X). The sites were mostly
-located in Palearctic (`r per_eco["Palearctic"]`),
+We selected data to ensure that each time series had at least 5 years of data
+over a 10 year period as well as a consistent sampling protocol through time. As
+several sites had been sampled using different sampling methods (e.g.
+electrofishing, seining) and/or over different periods of the year, we selected
+for each site only the sampling events that were performed using the most
+frequent protocol (i.e. the mode) and within 1.5 month of the most frequently
+sampled month (i.e. 45 days before or after). When there were several sampling
+events the same year, we selected the sampling that took place at the closest
+date from the mode sampled date of the site. We further checked that the
+reported unit of abundance was homogeneous for each time series.
+
+The data selection resulted in `r fnsite` fish community time series, totalling `r fnop` sampling
+events, `r fnmeas` species abundance records, and `r fnsp`
+freshwater fish species. The median time span was of `r mspan`
+years, the median baseline of the time series was `r mbl`, and the median
+completeness of the time series was of `r mcpl`. Finally, . The distribution of
+those metrics are shown in supplementary figures (Fig. SX-X). The sites were
+mostly located in Palearctic (`r per_eco["Palearctic"]`),
 Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`).
-Four countries gathered `r per_s4pays` of the sites, namely Sweden (`r per_pays["SWE"]`),
-Great Britain (`r per_pays["GBR"]`), France (`r per_pays["FRA"]`) and the United
-States (`r per_pays["USA"]`).
+Four countries gathered `r per_s4pays` of the sites, namely Great Britain
+(`r per_pays["GBR"]`), France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`),
+and the United States (`r per_pays["USA"]`).
 
+# Biodiversity facets
 
-# Characterise Biodiversity facets
-
-Biodiversity facets were characterised by dissimilarity metrics, species
-richness and total abundances.
+To evaluate temporal changes in freshwater fish communities, we assessed changes
+in several biodiversity facets related to species composition, species richness 
+and total abundances.
 
 ## Dissimilarity metrics
 
-As changes in community composition can be attributed either to abundant or rare
-species, we described dissimilarity with both the complement of Jaccard (J) and
-the Simpson-based dissimilarity index ($H_d$) [@hillebrand_biodiversity_2018].
-The former index is based on presence/absence and is simply the sum of immigrant
-and lost species over the total number of species across two samples (eq.
-\@ref(eq:jac)). The latter is based on species relative abundances and their variation
-across two samples (eq. \@ref(eq:hill)). Large trends for the Jaccard and
-Simpson-based dissimilarity index indicates that changes in species composition
-are mainly due to change in species dominance and identity
-[@hillebrand_biodiversity_2018].
+As changes in community composition can be attributed either to changes of
+dominance or of rare species, we described temporal dissimilarity with both the
+complement of the Jaccard index (J) and the Simpson-based dissimilarity index
+($H_d$) [@hillebrand_biodiversity_2018].  The former index is based on
+presence/absence and is simply the sum of species gains and losses over the
+total number of species across two samples (eq.  \@ref(eq:jac)). The latter is
+based on species relative abundances and their variation across two samples (eq.
+\@ref(eq:hill)). The Jaccard index quantifies the extent of immigration /
+extinction processes while the Simpson-based dissimilarity index quantifies the
+extent of change in species dominance [@hillebrand_biodiversity_2018].
 
 $$
-J = \dfrac{S_{imm} + S_{lost}}{S_{tot}}
+J = \dfrac{S_{gain} + S_{loss}}{S_{tot}}
   (\#eq:jac)
 $$ 
 
-with $S_{imm}$, $S_{lost}$, $S_{tot}$ being the numbers of immigrant, lost and total species respectively.
+with $S_{gain}$, $S_{loss}$, $S_{tot}$ being the numbers of immigrant,
+extirpated and total species respectively.
 
 $$
 \begin{aligned}
@@ -160,17 +162,17 @@ $$
 
 with $i$: species $i$, $p$: relative abundance and $\prime$: the focal community
 
-In order to characterise the most precisely the changes in community
-composition, we further partitioned the Jaccard dissimilarity index in two sets
-of complementary indices. The first set was appearance and disappearance,
-respectively the number of immigrant species ($\dfrac{S_{imm}}{S_{tot}}$) and
-the number of disappearing species ($\dfrac{S_{lost}}{S_{tot}}$). The second set
-was Turnover and Nestedness [@baselga_betapart_2012], respectively
-($J_t = \dfrac{2 * min(S_{lost}, S_{imm})}{S_{common} + (2 * min(S_{lost},
-S_{imm})}$) and ($J_n = 1 - J_t$).  High turnover values indicate that the
-changes in community composition are hold by species replacement, while high
-values of Nestedness indicate species gain or losses from a nested community,
-i.e. that a community is a subset of the other [@baselga_temporal_2015].
+We further partitioned the Jaccard dissimilarity index into two sets
+of complementary indices. The first set was Appearance and Disappearance,
+respectively the proportion of immigrant species ($\dfrac{S_{gain}}{S_{tot}}$) and
+the proportion of extirpated species ($\dfrac{S_{loss}}{S_{tot}}$). The second set
+was Turnover ($J_t$) and Nestedness ($J_n$), respectively
+($J_t = (2 * min(S_{loss}, S_{gain})) / (S_{common} + (2 * min(S_{loss},
+S_{gain})))$) and ($J_n = 1 - J_t$) [@baselga_betapart_2012]. High Turnover
+values indicate that the changes in community composition result from species
+replacement, whereas high values of Nestedness indicate species gains or losses
+from a nested community, i.e. that a community is a subset of the other
+[@baselga_temporal_2015].
 
 ## Total abundance
 
@@ -196,7 +198,7 @@ u_eff <- scales::percent(
     effort_unit[, colnames(effort_unit) == "FALSE"]
   )
 )
-u_eff <- scales::percent(table_to_vec(effort_unit[, 1]))
+u_eff <- scales::percent(table_to_vec(effort_unit[, 1]), accuracy = 1)
 
 unitvec <- table(filtered_op_protocol_modelling$unitabundance) /
   nrow(filtered_op_protocol_modelling)
@@ -204,12 +206,13 @@ unitvec <- table(filtered_op_protocol_modelling$unitabundance) /
 u_per <- scales::percent(table_to_vec(unitvec))
 ```
 
-Total abundance was reported in count (`r u_per["Count"]` of the sampling
-events), abundance density per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per
+Total abundance was reported in number of individuals (`r u_per["Count"]` of the sampling
+events), density of individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per
 Unit Effort (`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`).
 Although we selected for strict protocol consistency, 70% or more of the
 sampling events by unit of abundance did not reported sampling effort,
-preventing us to harmonize count, abundance density and Catch Per Unit Effort.
+preventing us to harmonize count, abundance density and Catch Per Unit Effort
+[@comte_rivfishtime_2021].
 
 ##  Species richness
 
@@ -231,11 +234,13 @@ round(., 2)
 
 As sampled species richness is a negatively biased estimator of the "true"
 species richness, we corrected sampled species richness with the coverage-based
-rarefaction and extrapolation [@chao_coverage-based_2012]. The coverage of a
-sample depends both on the number of individuals and number of singletons. We
-fixed the coverage of all samples to 98.5%.
+rarefaction and extrapolation methodology [@chao_coverage-based_2012]. The
+estimated coverage of a sample is respectively positively and negatively related
+to the number of individuals and number of singletons. For species richness to
+be comparable across samples, we fixed the coverage of all samples at 98.5%.
+HERE
 
-Since `r u_per["Ind.100m2"]` of the abundances were measured as density by 100
+As `r u_per["Ind.100m2"]` of the abundances were measured as density by 100
 $m^2$ and `r u_per["CPUE"]` by Catch per Unit of Effort, we did not direct have access
 to the number of individuals and number of singletons. In this case, we divided
 each species abundance ($x_i$) by the minimum values of abundance in the
