@@ -424,3 +424,15 @@ upload_file(
   force = FALSE
 )
 
+update_file(
+  file = here::here("paper/methods.Rmd"),
+  gfile = NULL,
+  gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
+  shared_drive = NULL,
+  hide_code = TRUE,
+  path_output = here::here("paper/methods.pdf"),
+  rich_text = TRUE,
+  rich_text_par = NULL,
+  force = FALSE
+)
+

@@ -3,9 +3,9 @@ title: "Material & Methods"
 author: "Danet, A, Giam, X, Olden, J, Comte, L"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
-  word_document:
   bookdown::pdf_document2:
     toc: true
+  word_document:
 bibliography: "bibliography.bib"
 ---
 
@@ -165,14 +165,15 @@ with $i$: species $i$, $p$: relative abundance and $\prime$: the focal community
 
 We further partitioned the Jaccard dissimilarity index into two sets
 of complementary indices. The first set was Appearance and Disappearance,
-respectively the proportion of immigrant species ($\dfrac{S_{gain}}{S_{tot}}$) and
-the proportion of extirpated species ($\dfrac{S_{loss}}{S_{tot}}$). The second set
+respectively the proportion of immigrant species ($S_{gain} / S_{tot}$) and
+the proportion of extirpated species ($S_{loss} / S_{tot}$). The second set
 was Turnover ($J_t$) and Nestedness ($J_n$), respectively
-($J_t = (2 * min(S_{loss}, S_{gain})) / (S_{common} + (2 * min(S_{loss},
-S_{gain})))$) and ($J_n = 1 - J_t$) [@baselga_betapart_2012]. High Turnover
-values indicate that the changes in community composition result from species
-replacement, whereas high values of Nestedness indicate species gains or losses
-from a nested community, i.e. that a community is a subset of the other
+$J_t = (2 * min(S_{loss}, S_{gain})) / (S_{common} + (2 * min(S_{loss},
+S_{gain})))$ and $J_n = 1 - J_t$ [@baselga_betapart_2012], $S_{common}$ being
+the number of species present in both communities. High Turnover values indicate
+that the changes in community composition result from species replacement,
+whereas high values of Nestedness indicate species gains or losses from a nested
+community, i.e. that a community is a subset of the other
 [@baselga_temporal_2015]. We took the first year of sampling of a community as
 the reference community.
 
@@ -539,14 +540,14 @@ INLA models were evaluated with defaults uninformative priors. The prior
 distribution of fixed coefficients followed a flat zero centered normal
 distribution ($\mathcal{N}(\mu,\, \sigma^2) = \mathcal{N}(0,\, 1000)$). The
 prior distribution of the random effects and the gaussian error
-($\epsilon_{it}$, eq. \@ref(eq:gen)) followed a log gamma distribution with shape and
-inverse scale parameters ($\mathcal{G}(s, \, \tau) = \mathcal{G}(1, \, 5.10^-5)$). We there had to
-back-transformed the estimated coefficients in order to obtained the standard
-deviations attributed to the random effects and the gaussian error ($\sigma =
-\dfrac{1}{\sqrt{\tau}}$). We checked that the 
-slope coefficients, random effects and the temporal trends by basin and site
-were the same than with a implementation in frequentist. Then, we concluded that
-the quality of parameter inference did not suffer from the uninformative priors.
+($\epsilon_{it}$, eq. \@ref(eq:gen)) followed a log gamma distribution with
+shape and inverse scale parameters ($\mathcal{G}(s, \, \tau) = \mathcal{G}(1, \,
+5.10^-5)$). We there had to back-transformed the estimated coefficients in order
+to obtained the standard deviations attributed to the random effects and the
+gaussian error ($\sigma = 1 / \sqrt{\tau}$). We checked that the slope
+coefficients, random effects and the temporal trends by basin and site were the
+same than with a implementation in frequentist. Then, we concluded that the
+quality of parameter inference did not suffer from the uninformative priors.
 
 ### Model validity
 
