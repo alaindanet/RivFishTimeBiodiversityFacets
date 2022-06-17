@@ -60,6 +60,7 @@ tbl_merge(list(t1, t2, t3)) %>%
 ecdf_fun <- function(x, perc) ecdf(x)(perc)
 ```
 
+- Add plot species richness / chao richness
 
 # Data selection
 

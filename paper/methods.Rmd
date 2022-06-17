@@ -38,6 +38,7 @@ if (Sys.info()["login"] == "alain")
     to = here("paper", "bibliography.bib")
   )
 source(here::here("R", "misc.R"))
+source(here::here("R", "variable_shortcut.R"))
 ```
 
 ```{r}
@@ -172,7 +173,8 @@ S_{gain})))$) and ($J_n = 1 - J_t$) [@baselga_betapart_2012]. High Turnover
 values indicate that the changes in community composition result from species
 replacement, whereas high values of Nestedness indicate species gains or losses
 from a nested community, i.e. that a community is a subset of the other
-[@baselga_temporal_2015].
+[@baselga_temporal_2015]. We took the first year of sampling of a community as
+the reference community.
 
 ## Total abundance
 
@@ -238,18 +240,18 @@ rarefaction and extrapolation methodology [@chao_coverage-based_2012]. The
 estimated coverage of a sample is respectively positively and negatively related
 to the number of individuals and number of singletons. For species richness to
 be comparable across samples, we fixed the coverage of all samples at 98.5%.
-HERE
 
 As `r u_per["Ind.100m2"]` of the abundances were measured as density by 100
-$m^2$ and `r u_per["CPUE"]` by Catch per Unit of Effort, we did not direct have access
-to the number of individuals and number of singletons. In this case, we divided
-each species abundance ($x_i$) by the minimum values of abundance in the
-community (i.e. $x^{\prime}_i = \dfrac{1}{min(x)}$) and then rounded the
-obtained abundances. Then, those communities had at minimum one singleton
-species. The correlation was very high raw species richness and chao richness
-($\rho = `r cor_chao_rich`$ for both raw variables and log transformed ones).
+$m^2$ and `r u_per["CPUE"]` as Catch per Unit Effort, we did not have direct access
+to the number of individuals and number of singletons to perform the
+computation. In this case, we first divided each species abundance ($x_i$) by
+the minimum values of abundance in the community (i.e. $x^{\prime}_i =
+1 / min(x_i)$), which we further rounded so that each community had at least one singleton
+species, i.e. a species with one individual. The correlation was very high
+between raw species richness and chao richness ($\rho = `r cor_chao_rich`$ for
+both raw variables and log transformed ones, Fig. SXX).
 
-# Environment and anthropogenic pressures
+# Stream gradient and anthropogenic pressures
 
 ```{r}
 n_na_riveratlas <- analysis_dataset[is.na(analysis_dataset$log_dist_up_km), ] %>%
@@ -275,56 +277,79 @@ nb_opa09 <- sum(
 perc_opa09 <- scales::percent(nb_opa09 / nrow(filtered_op_protocol_modelling))
 ```
 
+```{r}
+tar_load(pca_riv_str)
+perc_var_rc1 <- pca_riv_str$rotated$Vaccounted["Proportion Var", "RC1"] %>%
+  scales::percent(.)
+tar_load(riveratlas_site)
+env <- riveratlas_site[,
+        colnames(riveratlas_site) %in%
+          c("siteid", setNames(get_river_atlas_significant_var(), NULL))
+        ] %>%
+          sf::st_drop_geometry() %>%
+          mutate(
+              riv_str_rc1 =  pca_riv_str$rotated$scores[, "RC1"],
+              riv_str_rc2 =  pca_riv_str$rotated$scores[, "RC2"]
+          )
+cor_env <- cor(env[, colnames(env) != "siteid"], method = "spearman") %>%
+  round(., 2)
+cor_env_rc1 <- cor_env["riv_str_rc1", ]
+```
 
-Stream characteristics such as water flow, size of the streams, and
-position in the dentritic network constitute tremendous constraints on fishes,
-selecting the body shape of the fishes [ref], their life history traits [ref],
-immigration rates [ref] of community and so ultimately community composition
-[ref]. Such stream characteristics are often collinear and can be coined as 
-"stream gradient". We described stream characteristics at each site by the
+
+In dendritic networks, the environmental heterogeneity and connectivity along
+the longitudinal (upstream-downstream) gradient strongly shape species
+occurrences, immigration rates and community composition [ref].
+To capture this stream gradient, we described stream characteristics at each site by the
 altitude (m), slope (deg.), average annual discharge ($m^3.s^-1$), distance from
 source (km), and strahler order that we extracted from 
 the HydroAtlas database [@linke_global_2019; @robinson_earthenv-dem90_2014]. We did
-so by snapping the sites to the closest stream segment at the condition that
-distance of the site to the closest
-stream segment of the HydroAtlas database was inferior or equal to one kilometer
-(`r v_rvat` of the sites). We performed a PCA over the site stream
-characteristics after log transformation (added absolute minimum values plus
-one to avoid values $\leq 0$,
-$x^{\prime}_i = x_i + min(x_i) + 1$) and standardization, i.e. centering and scaling
-and log transformation of the variables. We rotated the two first principal
-components with the varimax algorithm to increase the quality of
-variable representation on the two first principal components.
-The first rotated component was related to average annual discharge, distance
-from source and strahler order (Fig. S\@ref(fig:pca-riv-str)), the second
-rotated component was related to stream altitude and slope. Then the first
-rotated component was used as a composite variable characterising the stream
-gradient from upstream to downstream.
+so by snapping the sites to the closest stream segment using a one kilometer
+buffer (`r v_rvat` of the sites). We performed a Principal Component Analysis
+over the site stream characteristics after log transforming (added absolute
+minimum values plus one to avoid values $\leq 0$,
+$x^{\prime}_i = x_i + min(x_i) + 1$) and standardizing all the variables, i.e. centering and scaling
+. We orthogonally rotated the two first principal
+components, using the varimax criterion [@kaiser_varimax_1958, @revelle_psych_2019],
+to increase the quality of the variable representation (i.e. their loadings) on
+the two first principal components. The first rotated component,
+related to average annual discharge, distance from source and Strahler order
+and capturing `r perc_var_rc1` of the variance (Fig. S\@ref(fig:pca-riv-str)),
+was used as a composite variable describing the stream gradient from upstream to
+downstream.
 
-Anthropogenic pressure was quantified with the Human footprint index
-[@venter_global_2016; @venter_sixteen_2016]. The human footprint aggregates
-human pressures namely as the extent of build environments, population density, 
-electric infrastructure, croplands, pasture lands, roads, railways and
-navigatable pathways. It does so by combining remote sensing data and
-systematic surveys and modelling from the bottom up, making it less prone to errors
-[@venter_global_2016]. The human footprint range between 0 and 50, values
-exceding four being considered as a degraded state [@williams_change_2020]. 
-A study showed that the human footprint is related to the extinction risk of
-mammals at world scale [@di_marco_changes_2018]. Two measures of human footprint
-exists, in 1993 and in 2009 (i.e. 16 years span), enabling to characterise both
-the legacy of Anthropogenic pressure and its recent changes. We took the human
-footprint of 1993 as a measure of the legacy of anthropogenic pressure and the
-ratio between the human footprint of 2009 and 1993. Only `r perc_opb93` of the
-samplings took place before 1993, while `r perc_op9309` took place between 1993
-and 2009 and `r perc_op9309` after 2009. The human footprint values were
-extracted from the HydroAtlas database [@linke_global_2019].
+The degree of anthropogenic pressure was quantified using the human footprint index
+[@venter_global_2016; @venter_sixteen_2016]. The human footprint index aggregates
+an array of human pressures, including the extent of build environments, population density, 
+electric infrastructures, croplands, pasture lands, roads, railways and
+navigable pathways. It does so by combining remote sensing data,
+systematic surveys and modelling from ground data, making it less prone to errors
+[@venter_global_2016]. The human footprint range between 0 and 50, with values
+superior to four being considered in a degraded state [@williams_change_2020]. 
+To capture both the effects of the legacy of past anthropogenic pressures
+and its recent changes, we considered the human footprint index computed in 1993
+and 2009 (i.e. 16 years span). Specifically, we used the human footprint index
+of 1993 as a measure of the legacy of anthropogenic pressures and the ratio
+between the human footprint of 2009 and 1993 as a measure of the recent changes
+in anthropogenic pressures. The human footprint values were extracted from the
+HydroAtlas database at the reach scale [original resolution of 450meters,
+@linke_global_2019]. In order to obtain interpretable coefficients of recent
+changes in human footprint, we log-transformed the ratio of human footprint with
+a base 2. Then, a value of minus one and one represent a division by two and a
+multiplication by two of the human footprint between 1993 and 2009,
+respectively. Only `r perc_opb93` of the samplings took place before 1993, while
+`r perc_op9309` took place between 1993 and 2009 and `r perc_opa09` after 2009.
+The human footprint indexes 1993 and 2009 were not correlated with the stream
+gradient (Spearman's $\rho$, `r cor_env_rc1["hft_ix_c93"]` and
+`r cor_env_rc1["hft_ix_c09"]` respectively).
 
-The spatial resolution of human footprint and of the variables characterising
-the stream gradient data was respectively 1 km and 3 arc degree. We extracted
-HydroAtlas values at the reach level, which have a length of 4.2 km in average
-[@linke_global_2019].
+```{r}
+# Resolution of hydrorivers:
+#https://www.hydrosheds.org/products/hydrorivers
+```
 
-## Exotic species data
+
+## Non-native species data
 
 ```{r}
 nat_ori <- table(measurement_exo$native_exotic_origin) / nrow(measurement_exo)
@@ -338,141 +363,153 @@ sp_country_handmade <- measurement_exo %>%
   distinct(species, country)
 ```
 
-The origin status of the fish species were characterised
-using a global database  at the basin scale [@tedesco_global_2017], for 
-`r nat_per["tedesco"]` of the species occurrence. The sites that were not
-perfectly included in a basin, such as the sites located close to the shore, were 
-matched to the closest basin in the country. For species missing of the
-database, we determined the origin status of the species at the country scale
-using fishbase [@froese_fishbase_2021] (`r nat_per["autofishbase"]` of species
-occurrence.). Given the extent of the United States, we specifically completed
-the global database with the Nonindigenous Aquatic Species (NAS) database of the
-USGS [https://nas.er.usgs.gov/](https://nas.er.usgs.gov/), at the state scale
-(`r nat_per2["usgs"]` of the species occurrence). Finally, we completed the
-remaining species status by hand (`r nat_per["handmade"]` of the species
-occurrence) at the country scale, such as *Piaractus brachypomus* and *Rutilus
-rutilus* in the United States for example.
+The biogeographic origin of the fish species describing whether species were
+native or introduced to a given drainage basin was retrieved using the global
+database of @tedesco_global_2017 ( `r nat_per["tedesco"]` of the species
+occurrences). For the sites
+falling outside of the river basins provided in @tedesco_global_2017, such as
+for the sites located close to the shore, we used the closest basin in the
+country (mean distance = xxx). For species not included in a given drainage
+basin, we determined the origin of the species at the country scale using
+Fishbase [@froese_fishbase_2021] (`r nat_per["autofishbase"]` of species
+occurrences). Given the extent of the United States, we specifically completed
+the global database with the Nonindigenous Aquatic Species (NAS) database
+developed by the
+U.S. Geological Survey ([https://nas.er.usgs.gov/](https://nas.er.usgs.gov/)), at the state scale
+(`r nat_per2["usgs"]` of the species occurrences). Finally, we completed the
+remaining species origins at the country scale, using national atlases and
+Fishbase data in neighboring countries, such as for *Piaractus brachypomus* and
+*Rutilus rutilus* in the United States (`r nat_per["handmade"]` of the species
+occurrences).
 
-We then characterised the composition in term of exotic species by the
-percentage of species richness being exotic and the percentage of community 
-abundance attributed to exotic species.
+We then estimated the percentage of non-native species for each sampling events,
+both for species richness and abundances.
 
 # Statistical analysis
 
-## Temporal trends assessment
+## General statistical model
 
-We modelled the temporal trends of biodiversity facets with hierarchical linear
-models. All the response variables were modelled with a Gaussian distribution as
-previous similar studies modelling temporal trends of community composition,
-species richness and total abundance at
-global scale [@dornelas_assemblage_2014; @blowes_geography_2019;
-@klink_meta-analysis_2020]. Particularly for the variables bounded between 0 and 1,
-namely here dissimilarity metrics and percentages of exotic species,
-@blowes_geography_2019 found that slope coefficients estimated with a gaussian error
-and a beta error had a spearman correlation superior to 0.90 and give qualitatively
-similar results. Furthermore, the response variables are modelled on logit scale
-(i.e. $\log\dfrac{p}{1-p}$) when assuming a beta error distribution and are
-therefore interpretable at logit scale, i.e.  temporal trends are not
-interpretable as rates of change [@blowes_geography_2019].
+- Lise suggests to present the drivers before the equations
+- A proposition:
+  - Present the philosophy: response versus drivers: why not all interactions?
+    justify them
+  - Transformation of the variables
 
-The value of each biodiversity facet ($Y$) at a site $i$ and time ($t$) was
-modelled as a function of time ($\beta_0Time_t$), the covariates ($\sum_{k=1}\beta_kX_k$), the
-interaction between time and covariates ($\sum_{k=0, n\neq k}\beta_{kn}X_kX_n$),
-and the double interaction among time and the covariates ($\sum_{k=0, m \neq
-n\neq k}\beta_{kmn}X_kX_mX_n$) plus an error term ($\epsilon_{it}$).
-We added random effects on the intercept ($\alpha$) and the slope of the temporal
-trends ($\beta_0$) such as they had random variations added to a main value
-($\alpha_0$ and $\mu$ respectively). Random variations were added as dependant
-on the basin identity ($n$) and on the site identity ($o$), nested in basin. The
+We modelled the temporal trends of the different biodiversity facets ($Y$) as
+dependant of time ($\beta_0Time_t$, eq. \@ref(eq:gen)) measured as the number
+of years since the beginning of the sampling at each site with $t_0 = 0$, the
+stream gradient measured by the rotated PCA axis over stream characteristics,
+the legacy of past anthropogenic pressures measured by the human footprint index
+of 1993, and the recent changes in anthropogenic pressures measured by the ratio
+between the human footprint index of 2009 and 1993. We included all the
+predictors as main effects ($\sum_{k=1}\beta_kX_k$) to capture the differences
+in biodiversity facets attributed to spatial effects of the ecological drivers.
+We further included interactions between time and the ecological drivers
+($\sum_{k=0, l\neq k}\beta_{kl}X_kX_l$) to test how stream gradient and
+anthropogenic pressures affect the temporal trends in
+biodiversity facets. Finally, we included the triple interactions between time
+and the pairs of other ecological drivers ($\sum_{k=0, m \neq
+n\neq k}\beta_{kmn}X_kX_mX_n$) to test for the presence synergistic
+or antagonistic effects of the stream gradient and anthropogenic pressures on
+the temporal trends in biodiversity facets.
+
+Furthermore, the statistical model (eq. \@ref(eq:gen)) was adapted according of
+the nature of the variables, namely total abundance and dissimilarity metrics.
+For total abundance, we added the measurement unit of abundance as a categorical
+variable both as a main effect and in interaction with time
+[@van_klink_meta-analysis_2020]. The temporal trends in the main text and
+supplementary are adjusted for raw count, i.e. the reference factor level in
+modelling was raw count. Because dissimilarity metrics at each site was 0 at the
+beginning of the time series, we fixed the intercept was fixed to zero. The
+dissimilarity metrics were relative to the site and bounded between 0 and 1, we
+did not expect average difference in dissimilarity which are not due to
+differences in the temporal trends. Then, we removed the main effect of
+ecological drivers ($\sum_{k=1}\beta_kX_k$ term from eq. \@ref(eq:gen)), but
+kept their effects on the temporal trends.
+
+We accounted for the spatial structure of the data by adding random effects to
+the intercept ($\alpha$) and the slope of the temporal trends ($\beta_0$) on the
+basin identity ($n$) and on the site identity, nested in basin ($i|n$). The
 random effects and the error terms were modelled as a Normal distribution of
 mean 0 and variance ($\sigma^2$).
 
 
+
 $$
 \begin{aligned}
-    Y_{it} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=0, l\neq k}\beta_{kl}X_kX_l + \sum_{k=0, m \neq l\neq k}\beta_{klm}X_kX_lX_m + \epsilon_{it}
+    Y_{i|n, t} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=0, l\neq k}\beta_{kl}X_kX_l + \sum_{k=0, m \neq l\neq k}\beta_{klm}X_kX_lX_m + \epsilon_{i|n, t}
   (\#eq:gen)
 \end{aligned}
 $$ 
 
 
-- $\alpha = \alpha_0 + a_n + a_o$
-- $\beta_0 = \mu + b_n + b_o$
-- $a_n, a_o, b_n, b_o, \epsilon_{it} \sim \mathcal{N}(0,\,\sigma^{2})$
-- $n$: basin, $o$: site within basin
-- $i$: site $i$, $t$: time $t$
+- $\alpha = \alpha_0 + a_n + a_{i|n}$
+- $\beta_0 = \mu + b_n + b_{i|n}$
+- $k, l, m \in [1,2,3]$: ecological drivers including stream gradient, legacy of past and recent changes in anthropogenic pressures
+- $a_n, a_{i|n}, b_n, b_{i|n}, \epsilon_{i|n, t} \sim \mathcal{N}(0,\,\sigma^{2})$
+- $n$: basin, $i$: site $i$, $t$: time $t$
 
-*Little cleaning to do in the notation: $Y_i|n,t and $i|n$ instead of $o$ ?*
+- suggestion:
+  - How model abundance and dissimilarity metrics?
+  - Choice of response distribution?
+  - Variable transformation
 
-The general model includes time and the ecological drivers, namely the PCA axis related to the stream gradient,
-the Human footprint 1993, and the ratio of the Human footprint between 1993 and
-2009 as main effects. We modelled the interactions among time and the ecological
-drivers to test how the latter covariates affect the temporal trends of
-biodiversity facets. Finally, we included the triple interactions among time and
-the pairs of other ecological drivers to test for the presence synergistic or antagonistic
-effects of the ecological drivers on the temporal trends of biodiversity facets.
- 
-In all the models, time was quantified as the number of years since the begining
-of the sampling at each site with $t_0 = 0$. We log-transford the number of
-years as $\log(year + 1)$ to signicantly improved the quality of the fit of the
-model on the data. We indeed found that log-transformed number of year increased   
-the AIC by 29% in average from 0% for total abundance to 124% for the abundance
-based dissimilarity index (Table S\@ref(tab:aic)) [missing chao richness and
+All the response variables were modelled with a Gaussian distribution following
+previous studies modelling temporal trends of community composition, species
+richness and total abundance at the global scale [@dornelas_assemblage_2014;
+@blowes_geography_2019; @van_klink_meta-analysis_2020]. Other error structures might
+be more appropriate to model response variables bounded between 0 and 1 and
+representing ratio of discrete numbers such as the dissimilarity metrics and the
+percentage of non-native species, doing so allows to obtain easily interpretable
+coefficients across all biodiversity facets (e.g. temporal trends are not
+interpretable as rates of change when modelled using a logit scale such as when
+using a beta distribution). In addition, @blowes_geography_2019 previously found
+that slope coefficients estimated with a gaussian error and a beta error had a
+spearman correlation superior to 0.90 and give qualitatively similar results. We
+therefore believe that this choice is not likely to alter our conclusions.
+
+## Variable transformations 
+
+We log-transformed the number of years as $\log(year + 1)$ as it improved the
+quality of the model fitting to the data, decreasing the AIC by 29% in average
+from 0% for total abundance to 124% for the Simpson based dissimilarity index
+(Table S\@ref(tab:aic)) [missing chao richness and
 percentage of exotic species in the comparison + refaire avec INLA?]. It
-indicates the presense of non-linearity in the temporal trends, which is
+suggests the presence of non-linearity in the temporal trends, which is
 particularly expected in the case of bounded variables such as the dissimilarity
-metrics. In this situation, logging the predictor is a convenient way to linearise the
-relationship. Then the rate of change of a given biodiversity facet for a decade
-is found for a time log-transformed value of `r round(log(10 + 1), 2)`
-approximatively (i.e. $\log(10 + 1)$) [Point to the model prediction plots with
-double abscisse scale (log + year)]. In order to obtain interpretable
-coefficients of recent changes in human footprint, we log-transformed the ratio
-of human footprint with a base 2 (i.e.
-$\log_2(\dfrac{HFT_{2009}}{HFT_{1993}})$). Then, a value of minus one and one
+metrics. Then the rate of change per decade of a given biodiversity facet
+is found for a time value of $\log(10 + 1)$, i.e. `r round(log(10 + 1), 2)`
+[Point to the model prediction plots with
+double abscissa scale (log + year)]. We further log-transformed with a base 2
+the recent changes in anthropogenic pressures quantified by the ratio
+of human footprint index between 2009 and 1993, i.e.
+$\log_2(HFT_{2009} / HFT_{1993})$. Then, a value of minus one and one
 represent respectively a division by two and a multiplication by two of the
-human footprint between 1993 and 2009. 
-
-### Statistical Models
+human footprint between 1993 and 2009. We log-transformed total abundance and
+Chao species richness, then the temporal trends are expressed in percentage by
+unit of time [@van_klink_meta-analysis_2020].
 
 [Add a table in supplementary with all the transformations of response and
 explicative variables.]
 
-We logged transformed total abundance and chao species richness in order to get
-temporal trends expressed in percentage by unit of time
-[@klink_meta-analysis_2020]. Furthermore, the general statistical model (eq.
-@ref(eq:gen)) was adapted according of the nature of the variables, namely total
-abundance and dissimilarity metrics. For total abundance, we added the
-measurement unit of abundance as a categorical variable both as a main effect
-and in interaction with time [@klink_meta-analysis_2020].  The temporal trends
-in the main text and supplementary are presented for raw count, i.e. the
-reference factor level in modelling was raw count.
-
-The value of dissimilarity metrics at each site was 0 are the begining of the
-temporal trends and the values were all bounded between 0 and 1. Then, we fixed the
-intercept was fixed to zero. Because the values of dissimilarity metrics are
-relative to the site, we do not expect average difference in dissimilarity which
-are not due to differences in the temporal trends. Then, we kept only the
-ecological driver effects as interactions with time,  i.e. we removed the
-$\sum_{k=1}\beta_kX_k$ term from eq.\@ref(eq:gen).
-
 ### Variable standardization
 
-In order to compare the magnitude of the temporal trends among biodiversity
-facets and to compare the magnitude of the effects of the ecological drivers, we
-scaled of the variables by their standard deviation prior to the model
-evaluation. 
+In order to compare the magnitude of the effects of time, stream gradient, and
+anthropogenic pressures among biodiversity facets and to compare the magnitude
+of the effects of the predictors, we scaled both biodiversity facets and the
+predictors by their standard deviation prior to the model evaluation.
 
-As our models contains interactions, the individuals slope coefficients can be
-difficult to interpret without centering explicative variables around ecological
+As our models contain interactions, the individuals slope coefficients can be
+difficult to interpret without centering the predictors around ecological
 relevant values [@gelman_scaling_2008]. As an example, the average temporal trends
 estimated by $\beta_0$ in eq.\@ref(eq:gen) can only be interpreted when all the $X_k
 = 0$. Without centering, it means that $\beta_0$ is interpretable when the
 legacy of anthropogenic pressures, measured by human footprint at the year 1993,
-and the values of PCA axis related to the stream gradient, are equal to 0.
-Hence, we centered the human footprint at the year 1993 and the coordinates
-along the PCA axis around their average values. Recent changes in anthropogenic
-pressures, measured by the ratio between the two human footprint
-($\log_2(\dfrac{HFT_{2009}}{HFT_{1993}})$), was not centered as 0 values
+and the stream gradient, measured by the values of the rotated PCA axis over
+stream characteristics, are equal to 0.  Hence, we centered the human footprint
+at the year 1993 and the coordinates along the PCA axis around their average
+values. Recent changes in anthropogenic pressures, measured by the ratio between
+the human footprint index of 2009 and 1993, was not centered as 0 values
 indicate no recent changes in anthropogenic pressures. Time variable was not
 centered either because then the main effects of the ecological drivers
 ($\sum_{k=1}\beta_k$) are then interpreted as a baseline effect, i.e. when time
@@ -480,25 +517,23 @@ is equal to 0.
 
 ### Model evaluation and confidence intervals 
 
-The models were evaluated in a bayesian framework using Integrated Nested
+The models were evaluated in a Bayesian framework using Integrated Nested
 Laplacian Approximation (INLA), which approximates the posterior distribution of
 the parameters and then do not rely on Markov chains and Monte Carlo
-simulations. We used default priors and checked that we obtain the same
-estimation of slope coefficients, random effects and the same estimation of
-temporal trends by basin and site (obtained by Best Linear Unbiased Prediction)
-than with a implementation in frequentist with glmmTMB. When estimating
-conjointly the temporal trends at multiple location, a advantage of the bayesian
-approach over the frequentist one is that it allows for the estimation of
-confidence intervals around the temporal trends estimated at each location. A
-second advantage is that it allows the computation of credible intervals at 80%,
-90% and 95%. When 0 is outside the credible intervals of the coefficients at
-80%, 90% and 95%, they can respectively be interpreted as weak, moderate and
-strong evidence of an effect [@klink_meta-analysis_2020]. We specifically
-computed the credible intervals using the Highest Posterior Density
-method, which fix the interval in the presence of asymmetric posterior
-distribution of the parameters [ref].
+simulations, and then is a computationally efficient method to evaluate Bayesian
+models [@rue_approximate_2009; @rue_bayesian_2017].  When estimating conjointly
+the temporal trends at multiple location, a advantage of the Bayesian approach
+is the estimation of credible intervals around the temporal trends estimated at
+each location. A second advantage is that it allows the computation of credible
+intervals, which translates in the probability that an unobserved parameter
+falls in a given interval, to the difference with frequentist approach
+[@greenland_statistical_2016].  We computed the credible intervals at 80%, 90%
+and 95% using Highest Posterior Density method [@hyndman_computing_1996]. When 0
+is outside the credible intervals of the coefficients at 80%, 90% and 95%, they
+can respectively be interpreted as weak, moderate and strong evidence of an
+effect [@van_klink_meta-analysis_2020; @mastrandrea_guidance_2010].
 
-### Priors
+### Bayesian priors
 
 INLA models were evaluated with defaults uninformative priors. The prior
 distribution of fixed coefficients followed a flat zero centered normal
@@ -508,51 +543,60 @@ prior distribution of the random effects and the gaussian error
 inverse scale parameters ($\mathcal{G}(s, \, \tau) = \mathcal{G}(1, \, 5.10^-5)$). We there had to
 back-transformed the estimated coefficients in order to obtained the standard
 deviations attributed to the random effects and the gaussian error ($\sigma =
-\dfrac{1}{\sqrt{\tau}}$). As the estimation of the main effects and the random
-effects are of the same with INLA than in frequentist in glmmTMB [show the table!], we
-concluded that the quality of parameter inference did not suffer from the
-informative priors.
+\dfrac{1}{\sqrt{\tau}}$). We checked that the 
+slope coefficients, random effects and the temporal trends by basin and site
+were the same than with a implementation in frequentist. Then, we concluded that
+the quality of parameter inference did not suffer from the uninformative priors.
 
 ### Model validity
 
-We checked the model validity visualy by plotting the fitted values versus the
-observed [ref plot].
+We checked the model validity visually by plotting the fitted versus the
+observed values [ref plot].
 
-- Add plots of posterior marginal distribution of the parameters? (it would be like
-  8*10 plots for the fixed effects only)
-- Add PIT and CPO [@klink_meta-analysis_2020]
+- Add plots of posterior marginal distribution of the parameters? (it would be
+  like 8*10 plots for the fixed effects only)
+- Add PIT and CPO [@van_klink_meta-analysis_2020]
 
-## PCA and clustering of the temporal trends of biodiversity facets
+## Assessing the dimensionality of temporal community changes
 
 We performed a PCA over the temporal trends of biodiversity facets at the site
-level in order to characterise the dimentionality of community changes. In
-complement of this analysis, we performed a cluster analysis to isolate and
-illustrate different groups of community changes. The temporal trends of biodiversity
-facets at site scale were extracted by the Best Linear Unbiased Prediction
-method. Prior to the analysis, we adjusted the temporal trends of total
-abundance for the unit of measurement with the main effect coefficients and the
-one in interaction with temporal trends. Furthermore, we did not include the
-temporal trends of the variables describing composition of exotic species.
+level. A PCA finds the linear combination of variables that explained the most
+variance and separates linearly uncorrelated variables. In complement, we
+performed a clustering analysis to group together sites that displayed similar
+temporal community changes. The temporal trends for each biodiversity facet and
+site were extracted by the Best Linear Unbiased Prediction method. Prior to the
+analysis, we adjusted the temporal trends of total abundance for the unit of
+measurement with the main effect coefficients and the one in interaction with
+temporal trends. We did not include the temporal trends of the variables
+describing composition of non-native species as the they are part of
+biodiversity [@schlaepfer_non-native_2018] and site temporal trends in percentage of
+non-native species displayed very little variation, then it was of little
+interest to include them in the dimensionality analysis.
 
-We performed the clustering using k-means and data trimming
-[@fritz_tclust_2012], this method is part of the family of robust clustering
-methods. The method consists on trimming the $\alpha$ most outlying data while
-taking in account is multidimentional structure. To choose a relevant number of
-clusters, we plotted the trimmed log-likelihood of the function in function of
-the proportion of the most outlying data trimmed [ref plot]. We finally selected six  
-clusters. We did not contraints the algorithm for the size the clusters, as we
-had no apriori expectation about them and we used a restricting factor. We
-started with 100 iterations and set the maximum to 125. To further control for
-the quality of the site assignment on a cluster, we set cluster assignment as NA
-if another cluster assignment would have been more 50% better. The clustering
-was performed using `tclust` R package.
+We performed the trimmed k-means clustering method [@fritz_tclust_2012], a
+robust clustering method because it avoids the identification of spurious
+clusters. The method consists of trimming the $\alpha$ most outlying data while
+taking in account the multidimentional structure, the number of dimension being
+the number of the biodiversity facets. To choose a relevant number of clusters,
+we plotted the trimmed log-likelihood of the function as a function of the
+proportion of the most outlying data trimmed ($alpha$) [ref plot]. We thus
+selected a partition of temporal community changes in six clusters with
+$\alpha=5\%$. We did not constraint the algorithm for the relative size of shape
+of the clusters, as we had no apriori expectation about them. The clustering
+algorithm was run for a minimum number of one hundred iterations and up to 125.
+To further control for the quality of each fish community changes assignment to
+a given cluster, we discarded any fish community for which the second best
+cluster assignment is 50% better, we did so by comparing the degree of
+affiliation to the clusters [@fritz_tclust_2012]. The clustering was performed
+using `tclust` R package.
 
 
 # Reproducibility, ROBITT assessment and open science statement
 
-All the code to reproduce the analysis from the raw data to the manuscript is
-available on github. We further implement a pipeline using the `targets` R
-package to ensure that all the code, the data, and the results are up to date.
+The manuscript and the supplementary materials are written in Rmarkdown, i.e.
+combining code and text, and are available on github. We further implement a
+code pipeline using the `targets` R package to ensure that all the code, the
+data, the figures, the manuscript and the results are up to date.
 
 - todo: Robitt assessment
 
