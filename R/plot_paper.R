@@ -45,7 +45,7 @@ target_bp_cl_dist <- function(cl_obj = site_cl_rm) {
     )
 
     bp_cl_dist <- bp_cl_df %>%
-      mutate(variable = get_var_replacement()[variable]) %>%
+      mutate(variable = get_var_replacement_vulgarisation()[variable]) %>%
       ggplot(aes(x = variable, y = value, fill = as.factor(cl)))
 
 
@@ -301,7 +301,7 @@ get_pca_clust_list <- function(
      add_ellipse = add_ellipse,
      xaxis = .x[1], yaxis = .x[2],
      ctb_thld = .2,
-     replace_var = get_var_replacement(),
+     replace_var = get_var_replacement_vulgarisation(),
      size_arrows_segment = 1,
      label_size = label_size,
      alpha_point = .2,

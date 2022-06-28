@@ -219,12 +219,35 @@ knitr::include_graphics(here("paper", "fig_paper", "fig1.png"))
 
 ## Typology of biodiversity trends
 
-
 ```{r}
 tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
+tar_load(c(clust_var_alter, site_cl_rm_red, site_env))
 pca_data <- site_no_drivers_inla_tot[,
     colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
     !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
+```
+```{r}
+tar_load(c(k4_fac_50_red, site_env))
+k4_fac_50_red <- tclust(
+     x = scale(pca_data,
+       center = FALSE),
+     iter.max = 100,
+     k = 4,
+     alpha = 0.05,
+     restr.fact = 50,
+     warnings = 2
+   )
+plot(k4_fac_50_red)
+site_cl_rm_red <- get_cluster_df(
+     tclust_obj = k4_fac_50_red,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "rm"
+     )
+```
+
+
+```{r}
 pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
 pca_clust3 <- compute_rotated_pca(pca_data, naxis = 3)
 pca_clust2 <- compute_rotated_pca(pca_data, naxis = 2)
@@ -265,8 +288,8 @@ axis_l <- list(
 
 cluster_names <- c(
   "Medium change", "High turnover",
-  "Increase in species richness", "Decrease in total abundance",
-  "Decrease in species richness", "Low change"
+  "Increase in\n species richness", "Decrease in\n total abundance",
+  "Decrease in\n species richness", "Low change"
 )
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
 per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
@@ -285,7 +308,7 @@ p_pca_cl_ell <- map(axis_l,
      add_ellipse = TRUE,
      xaxis = .x[1], yaxis = .x[2],
      ctb_thld = .4,
-     replace_var = get_var_replacement(),
+     replace_var = get_var_replacement_vulgarisation(),
      size_arrows_segment = 1,
      label_size = 2.5,
      alpha_point = .2,
@@ -298,7 +321,8 @@ p_pca_cl_ell <- map(axis_l,
    colour = guide_legend(
      override.aes = list(size = 10),
      title.theme = element_blank(),
-     ncol = 3)
+     label.position = "top",
+     nrow = 3)
  ) +
  theme(
    legend.position = "bottom",
@@ -315,22 +339,17 @@ leg_cl <- get_legend(
 
 p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 
-p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 5, 6, 7)], nrow = 2)
-p_pca_cl_bt <- target_bp_cl_dist(cl_obj = site_cl_rm) +
+p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2)
+
+bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
+p_pca_cl_bt <- target_bp_cl_dist(cl_obj = bp_data) +
   scale_color_viridis(discrete = TRUE) +
   scale_fill_viridis(discrete = TRUE) +
   theme(
-    axis.text.x = element_text(angle = 20, vjust = 0),
+    axis.text.x = element_text(angle = 0, vjust = 0),
     legend.position = "none"
   )
 
-fig2 <- plot_grid(
-  p_pca_cl_top,
-  p_pca_cl_bt,
-  leg_cl,
-  nrow = 3,
-  rel_heights = c(1, .5, .25)
-)
 ```
 
 ```{r} 
@@ -357,16 +376,24 @@ For the figure 2, I see the main question of whether we need to give to the clus
 or not. I would suggest to put them as medium change, high turnover, increase in
 species richness, decrease in total abundance and no change.  
 
+```{r}
+fig2 <- plot_grid(
+  p_pca_cl_top,
+  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(.8, .2)),
+  nrow = 2,
+  rel_heights = c(1, .7)
+)
+```
 ```{r save-fig2}
 #fig2
 ggsave(
-  filename = "fig2.png",
+  filename = "fig2.pdf",
   plot = fig2,
   path = here("paper", "fig_paper"),
-  scale = 1.0,
-  width = 4.75,
-  height = 4.75 * 1.7,
-  units = "in",
+  scale = 2.0,
+  width = 88,
+  height = 88 * .8,
+  units = "mm",
   dpi = "print"
 )
 ```
