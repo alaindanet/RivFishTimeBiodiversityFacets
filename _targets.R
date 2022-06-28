@@ -1925,8 +1925,7 @@ tar_target(mod_sampling_eff,
     ),
   tar_target(clust_var_alter,
     c("log_total_abundance", "log_chao_richness",
-      "hillebrand_dis_scaled", "perc_exo_sp",
-      "perc_exo_abun"
+      "hillebrand_dis_scaled", "turnover_scaled" 
       )
     ),
   tar_target(basin_no_drivers,
@@ -2199,7 +2198,14 @@ tar_target(mod_sampling_eff,
      )),
  tar_target(site_cl_na,
    get_cluster_df(
-     tclust_obj = k6_fac_1,
+     tclust_obj = k6_fac_50,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "na"
+     )),
+ tar_target(site_cl_na_red,
+   get_cluster_df(
+     tclust_obj = k4_fac_50_red,
      site_env = site_env,
      assign_threshold = .5,
      clean_method = "na"
