@@ -40,8 +40,9 @@ knitr::opts_chunk$set(
 - For clusters: the discrete version of the [viridis palette](https://cran.r-project.org/web/packages/viridis/vignettes/intro-to-viridis.html)
 
 ```{r}
+# control also the order of the legend
 restricted_dimension <- c(
-  "hillebrand_dis_scaled", "log_total_abundance",
+  "hillebrand_dis_scaled", "turnover_scaled", "log_total_abundance",
   "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
 ```
 
@@ -51,8 +52,10 @@ source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette
 
 #pal <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
 #pal2 <- palette_coolors("https://coolors.co/palette/01befe-ffdd00-ff7d00-ff006d-adff02-8f00ff")
-pal_variable <- palette_coolors("https://coolors.co/0f122a-4ba3a9-e4dd73-d6b594-ae5996")
-names(pal_variable) <- get_var_replacement()[restricted_dimension]
+#pal_variable <- palette_coolors("https://coolors.co/0f122a-4ba3a9-e4dd73-d6b594-ae5996")
+pal_variable <- palette_coolors("https://coolors.co/588aee-68de9f-f4ec7b-feb35d-ed6e6e-b885ff")
+
+names(pal_variable) <- get_var_replacement_vulgarisation()[restricted_dimension]
 #scale_color_brewer(palette = "RdYlBu") +
 #scale_color_viridis(discrete=TRUE) +
 ```
@@ -73,9 +76,37 @@ tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
   filter(!str_detect(term, "unitabundance|Intercept")) %>%
   filter(response %in% restricted_dimension) %>%
   mutate(
-    term = str_replace_all(term, get_model_term_replacement()),
-    response = get_var_replacement()[response]
+    term = str_replace_all(term,
+      get_model_term_replacement_paper_figure()),
+    response = get_var_replacement_vulgarisation()[response]
     )
+term_level <- c(
+      "Time",
+      "Stream gradient",
+      "Past pressures",
+      "Recent pressures",
+      "Time x\nStream gradient",
+      "Time x\nPast pressures",
+      "Time x\nRecent pressures",
+      "Time x\nStream gradient x\nPast pressures",
+      "Time x\nStream gradient x\nRecent pressures",
+      "Time x\nPast pressures x\nRecent pressures"
+          )
+# width_bar
+base_width <- .2
+increment <- .25
+tu %<>%
+  mutate(
+    width_bar = case_when(
+      width_bar == 1 ~ base_width,
+      width_bar == 2 ~ base_width + increment,
+      width_bar == 3 ~ base_width + increment * 2,
+      TRUE ~ width_bar
+
+    )
+
+  )
+
 ```
 
 ```{r, fig.show="hide"}
@@ -83,20 +114,24 @@ library(ggbreak)
 p1 <- tu %>%
   filter(facet == "main") %>%
   arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(scale_color = pal_variable) +
-  scale_x_break(c(.22, .66))
+  plot_inla_fixed_effect(
+    scale_color = pal_variable,
+    term_level = term_level) +
+  scale_x_break(c(.22, .55))
 
 p2 <- tu %>%
   filter(facet == "interaction") %>%
   arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(scale_color = pal_variable) +
-  scale_x_break(c(.10, .195))
+  plot_inla_fixed_effect(scale_color = pal_variable,
+    term_level = term_level) +
+  scale_x_break(c(.135, .195))
 
 p3 <- tu %>%
   filter(facet == "dbl_interaction") %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
     scale_color = pal_variable,
+    term_level = term_level,
     legend_present = TRUE,
     xaxis_title = TRUE
     ) +
@@ -104,10 +139,10 @@ p3 <- tu %>%
 
 leg_dis <- get_legend(p3 +
  guides(
-   colour = guide_legend(ncol = 2)) +
+   colour = guide_legend(nrow = 2)) +
   theme(
     legend.position = "bottom",
-    legend.text = element_text(size = 6),
+    legend.text = element_text(size = 10),
     legend.title = element_blank()
   )
 )
@@ -117,7 +152,7 @@ fig1 <- plot_grid(
   print(p2),
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1, 1, 1, .2),
+  rel_heights = c(1, 1, 1, .1),
   ncol = 1)
 ```
 
@@ -165,13 +200,13 @@ Do we need to name the legend?
 ```{r save-fig1}
 #fig1
 ggsave(
-  filename = "fig1.png",
+  filename = "fig1.pdf",
   plot = fig1,
   path = here("paper", "fig_paper"),
   scale = 1.75,
-  width = 2.25,
-  height = 2.25 * 3.1,
-  units = "in",
+  width = 88,
+  height = 88 * 3.1,
+  units = "mm",
   dpi = "print"
 )
 ```
@@ -187,10 +222,14 @@ knitr::include_graphics(here("paper", "fig_paper", "fig1.png"))
 
 ```{r}
 tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
-pca_clust <- compute_rotated_pca(
-  site_no_drivers_inla_tot[,
-    !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")],
-  naxis = 5)
+pca_data <- site_no_drivers_inla_tot[,
+    colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
+    !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
+pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
+pca_clust3 <- compute_rotated_pca(pca_data, naxis = 3)
+pca_clust2 <- compute_rotated_pca(pca_data, naxis = 2)
+pca3_var_expl <- scales::percent(max(pca_clust3$rotated$Vaccounted["Cumulative Var", ]))
+pca2_var_expl <- scales::percent(max(pca_clust2$rotated$Vaccounted["Cumulative Var", ]))
 p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
@@ -215,13 +254,13 @@ axis_l <- list(
   c("RC1", "RC2"),
   c("RC1", "RC3"),
   c("RC1", "RC4"),
-  c("RC1", "RC5"),
+#  c("RC1", "RC5"),
   c("RC2", "RC3"),
   c("RC2", "RC4"),
-  c("RC2", "RC5"),
-  c("RC3", "RC4"),
-  c("RC3", "RC5"),
-  c("RC4", "RC5")
+#  c("RC2", "RC5"),
+#  c("RC4", "RC5"),
+#  c("RC3", "RC5"),
+  c("RC3", "RC4")
 )
 
 cluster_names <- c(
@@ -302,8 +341,9 @@ pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
   model without anthropogenic pressures and extracted from random effect using
   BLUP (see methods). The principal components of the PCA were rotated with the
   varimax algorithm to increase the representation of the variables on the
-  principal components (RC: rotated components). The temporal trends of
-  community metrics were clustered using the k-means method while excluding 5%
+  principal components (RC: rotated components). PCA with two and three
+  principal components explained respectively", paste0(pca2_var_expl, " and ", pca2_var_expl)," of the variance. The temporal trends of community
+  metrics were clustered using the k-means method while excluding 5%
    of the most outlying data to avoid the identification of spurious clusters.
   Sites with a doubtful assignement to a cluster were removed ", na_cluster, ".
   The sites are colored by their cluster belongings. The ellipses represent the

@@ -67,12 +67,12 @@ get_var_replacement_vulgarisation <- function() {
     evenness = "Evenness",
     evenness_scaled = "Evenness",
     jaccard_dis = "Jaccard (binary, dissimilarity)",
-    jaccard_dis_scaled = "Jaccard (binary, dissimilarity)",
+    jaccard_dis_scaled = "Jaccard dissimilarity",
     jaccard = "Jaccard (binary, similarity)",
     horn = "Horn (binary, similarity)",
     "chao" = "Chao (binary, similarity)",
     hillebrand = "SER_a (rel abundance)",
-    hillebrand_dis_scaled = "Dissimilarity (Simpson index)",
+    hillebrand_dis_scaled = "Dissimilarity",
     total = "Total turnover (codyn)",
     appearance = "Appearance",
     appearance_scaled = "Appearance",
@@ -80,15 +80,15 @@ get_var_replacement_vulgarisation <- function() {
     shannon = "Shannon",
     simpson = "Simpson",
     nestedness = "Nestedness (jaccard)",
-    nestedness_scaled = "Nestedness (jaccard)",
-    turnover = "Turnover (jaccard)",
-    turnover_scaled = "Turnover (jaccard)",
+    nestedness_scaled = "Nestedness",
+    turnover = "Turnover",
+    turnover_scaled = "Turnover",
     species_nb_nat = "Species richness (native)",
     species_nb_exo = "Species richness (exotic)",
-    perc_exo_sp = "Percentage exotic species",
+    perc_exo_sp = "Non-native richness",
     perc_nat_sp = "Percentage native species",
-    perc_nat_abun = "Percentage native abundance",
-    perc_exo_abun = "Percentage exotic abundance",
+    perc_nat_abun = "Native abundance",
+    perc_exo_abun = "Non-native abundance",
     nat_abun = "Native abundance",
     exo_abun = "Exotic abundance"
       )
@@ -120,6 +120,23 @@ get_model_term_replacement_vulgarisation <- function() {
     hft_ix_c9309_diff_scaled = "Recent change",
     hft_ix_c9309_log2_ratio = "Recent change",
     hft_ix_c93 = "Legacy",
+    main_bas = "Basin",
+    siteid = "Site",
+    `siteid:main_bas` = "Site",
+    `:` = " x\n"
+
+  )
+}
+
+get_model_term_replacement_paper_figure <- function() {
+  c(
+    log1_year_nb = "Time",
+    year_nb = "Time",
+    riv_str_rc1 = "Stream gradient",
+    hft_c9309_scaled_no_center = "Recent pressures",
+    hft_ix_c9309_diff_scaled = "Recent pressures",
+    hft_ix_c9309_log2_ratio = "Recent pressures",
+    hft_ix_c93 = "Past pressures",
     main_bas = "Basin",
     siteid = "Site",
     `siteid:main_bas` = "Site",

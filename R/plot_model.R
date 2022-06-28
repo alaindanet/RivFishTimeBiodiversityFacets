@@ -138,33 +138,39 @@ plot_posterior_fixed <- function(inla_mod = NULL, scales = "free", ncol = 4) {
 plot_inla_fixed_effect <- function(
   dataset = NULL,
   scale_color = NULL,
+  term_level = NULL,
   xaxis_title = FALSE,
   yaxis_title = FALSE,
   legend_present = FALSE,
-  my_position_dodge = .9
+  my_position_dodge = .9,
+  point_size = 3,
+  scale_width_bar = .5
   ) {
+
+  if (is.null(term_level)) {
+    term_level <- c(
+      "Log (Year nb + 1)",
+      "PCA1\nstream gradient",
+      "Human footprint\n(1993)",
+      "Log2 Human footprint\nratio (2009/1993)",
+      "Log (Year nb + 1):\nPCA1\nstream gradient",
+      "Log (Year nb + 1):\nHuman footprint\n(1993)",
+      "Log (Year nb + 1):\nLog2 Human footprint\nratio (2009/1993)",
+      "Log (Year nb + 1):\nPCA1\nstream gradient:\nHuman footprint\n(1993)",
+      "Log (Year nb + 1):\nPCA1\nstream gradient:\nLog2 Human footprint\nratio (2009/1993)",
+      "Log (Year nb + 1):\nHuman footprint\n(1993):\nLog2 Human footprint\nratio (2009/1993)"
+          )
+  }
 
   p <- dataset %>%
     mutate(
-      term = factor(term,
-        levels = c(
-          "Log (Year nb + 1)",
-          "PCA1\nstream gradient",
-          "Human footprint\n(1993)",
-          "Log2 Human footprint\nratio (2009/1993)",
-          "Log (Year nb + 1):\nPCA1\nstream gradient",
-          "Log (Year nb + 1):\nHuman footprint\n(1993)",
-          "Log (Year nb + 1):\nLog2 Human footprint\nratio (2009/1993)",
-          "Log (Year nb + 1):\nPCA1\nstream gradient:\nHuman footprint\n(1993)",
-          "Log (Year nb + 1):\nPCA1\nstream gradient:\nLog2 Human footprint\nratio (2009/1993)",
-          "Log (Year nb + 1):\nHuman footprint\n(1993):\nLog2 Human footprint\nratio (2009/1993)"
-          ))
+      term = factor(term, levels = term_level)
     ) %>%
     ggplot(aes(
         y = term, x = mean,
         xmin = low, xmax = high,
         color = response,
-        size = width_bar, width = 0)
+        size = width_bar * scale_width_bar, width = 0)
       ) +
     geom_vline(xintercept = 0, linetype = "dashed") +
     scale_y_discrete(limits = rev) +
@@ -176,7 +182,7 @@ plot_inla_fixed_effect <- function(
       ) +
     geom_point(
       aes(x = mean, y = term, color = response),
-      alpha = 1, size = 5,
+      alpha = 1, size = point_size,
       position = position_dodge(width = my_position_dodge)
       )
 
