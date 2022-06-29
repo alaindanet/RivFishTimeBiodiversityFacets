@@ -322,12 +322,12 @@ p_pca_cl_ell <- map(axis_l,
      override.aes = list(size = 10),
      title.theme = element_blank(),
      label.position = "top",
-     nrow = 3)
+     ncol = 1)
  ) +
  theme(
    legend.position = "bottom",
    panel.background = element_blank(),
-   legend.text = element_text(size = 5),
+   legend.text = element_text(size = 10),
    legend.key = element_rect(fill = NA)) +
  scale_color_viridis(
    discrete = TRUE,
@@ -438,7 +438,6 @@ n_clust_basin <- site_cl_rm_loc %>%
     evenness = ifelse(div == 1, 1, diversity(table(cl)) / log(div))
   )
 
-
 # Take the most sampled basin by country
 fq_pal_bas <- site_cl_rm_loc %>%
   filter(basin_name %in% c("Avon.Moors", "Loire", "Gota.alv")) %>%
@@ -521,9 +520,14 @@ tab_australasia <- get_fq_tab_from_basin(
   basins = c("Murray.Darling", "Brisbane", "Logan")
 )
 
+all_basin <- c("Columbia", "Mississippi", "Saint.Laurent", "Derwent.UK", "Seine", "Umealven",
+  "Murray.Darling", "Brisbane", "Logan"
+)
+names(all_basin) <- letters[seq_along(all_basin)]
+
 tot_tab <- rbind(
-  tab_palearctic,
   tab_nearctic,
+  tab_palearctic,
   tab_australasia) %>%
   left_join(
     site_cl_rm_loc %>%
@@ -533,6 +537,12 @@ tot_tab <- rbind(
     by = "basin_name"
   ) %>%
   mutate(
+    label = map_chr(basin_name,
+      ~ifelse(
+        any(all_basin %in% .x),
+        names(all_basin)[all_basin == .x],
+        NA)
+      ),
     basin_name = str_replace(basin_name, "\\.", " "),
     basin_name = str_replace(basin_name, "UK", "")
     ) %>%
@@ -540,11 +550,17 @@ tot_tab <- rbind(
   mutate(
     total_n = sum(freq)) %>%
   ungroup() %>%
-arrange(ecoregion, total_n) %>%
+  arrange(label) %>%
   mutate(
     country = ifelse(is.na(country), "", paste0(", ", country)),
     basin_name_n = paste0(basin_name, " (", total_n, country, ")"),
-    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n))
+    basin_name_n = ifelse(
+      !is.na(label),
+      paste0("(", label,") ", basin_name_n),
+      basin_name_n
+      ),
+    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n)),
+
   )
 ```
 
@@ -574,13 +590,12 @@ p_tot_tab <- tot_tab %>%
 ```{r}
 tar_load(rivers10)
 world_site_sf$cl <- world_site_sf$site %>%
-    left_join(site_cl_rm[, c("siteid", "cl")], by = "siteid") %>%
+    left_join(site_cl_rm_loc[, c("siteid", "cl", "basin_name")], by = "siteid") %>%
     mutate(cl = relevel(as.factor(cl), ref = 1))
 
 zoom_map_world <- world_site_sf$cl %>%
   st_buffer(dist = .2) %>%
     st_bbox()
-
 
 main_map <- ggplot(world_site_sf$world) +
   geom_sf(color = NA) +
@@ -592,8 +607,8 @@ main_map <- ggplot(world_site_sf$world) +
   scale_fill_viridis(discrete = TRUE) +
   theme(legend.position = "none") +
   coord_sf(
-    xlim = zoom_map_world[c("xmin", "xmax")],
-    ylim = zoom_map_world[c("ymin", "ymax")],
+    #xlim = zoom_map_world[c("xmin", "xmax")],
+    #ylim = zoom_map_world[c("ymin", "ymax")],
     expand = FALSE)
 
 main_map4zoom <- ggplot(world_site_sf$world) +
@@ -614,6 +629,11 @@ zoom_map <- list(
   north_eu = c("FIN", "NOR", "SWE"),
   aus = "AUS"
 )
+zoom_map_basin_coord <- map(all_basin,
+  ~world_site_sf$cl %>%
+    filter(basin_name %in% .x) %>%
+    st_bbox()
+)
 
 zoom_map_coord <- map(zoom_map,
   ~world_site_sf$cl %>%
@@ -631,6 +651,18 @@ mutate(
   xmean = (xmax + xmin) / 2,
   ymean = (ymax + ymin) / 2
 )
+zoom_map_basin_coord_df <- map_dfr(zoom_map_basin_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_basin_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(
+  LABEL = LETTERS[seq_len(length(zoom_map_basin_coord))],
+  label = letters[seq_len(length(zoom_map_basin_coord))],
+  width_basin = xmax - xmin,
+  xmean = (xmax + xmin) / 2,
+  ymean = (ymax + ymin) / 2
+)
 ```
 
 ```{r}
@@ -639,6 +671,27 @@ main_map_rect <- main_map +
     data = zoom_map_coord_df,
     aes(x = xmin, y = ymean, label = label),
     vjust = -.55, hjust = 0, size = 7) +
+  theme(legend.position = "none")
+
+```
+```{r}
+main_map_rect_basin <- main_map +
+  geom_text(
+    data = zoom_map_basin_coord_df,
+    aes(x = xmin, y = ymax, label = label),
+    vjust = -.6, hjust = 0, size = 5) +
+  geom_rect(
+    data = zoom_map_basin_coord_df,
+    aes(
+      xmin = xmin,
+      xmax = xmax,
+      ymin = ymin,
+      ymax = ymax
+      ),
+    fill = NA,
+    colour = "black",
+    size = 0.6
+  ) +
   theme(legend.position = "none")
 ```
 
@@ -667,9 +720,22 @@ p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
       panel.border = element_rect(size = 1, color = "black")
     )
 )
+p_zoom_map_basin <- map2(zoom_map_basin_coord, zoom_map_basin_coord_df$label,
+  ~main_map4zoom +
+    coord_sf(
+      xlim = .x[c("xmin", "xmax")],
+      ylim = .x[c("ymin", "ymax")],
+      expand = FALSE) +
+    annotate("text", x = .x["xmin"], y = .x["ymax"],
+      label = .y, size = 7, vjust = 1.2, hjust = -.2) +
+    theme(
+      legend.position = "none",
+      panel.border = element_rect(size = 1, color = "black")
+    )
+)
 ```
 ```{r, eval=FALSE}
-p_zoom_map[[2]]
+p_zoom_map_basin[[2]]
 ```
 
 
@@ -742,30 +808,186 @@ knitr::include_graphics(here("paper", "fig_paper", "fig3_screenshot.png"))
 
 ```{r map-cl, fig.width = 4.75, fig.asp = 2, eval=FALSE} 
 #, fig.cap=map_cl_cap
-fig3_top <- plot_grid(p_main_map_rect)
-fig3_bottom <- plot_grid(
-  p_zoom_map$north_am, p_zoom_map$eng,  p_zoom_map$north_eu,
-  p_zoom_map$south_eu, p_zoom_map$aus,p_tot_tab,
-  ncol = 3, axis = "l"
+fig3_top <- plot_grid(main_map_rect_basin, p_tot_tab,
+  align = "h", axis = "lr", rel_widths = c(1, .65))
+ggsave(
+  filename = "fig3_top.pdf",
+  plot = fig3_top,
+  path = here("paper", "fig_paper"),
+  scale = 4.0,
+  width = 88,
+  height = 88 * .3,
+  units = "mm",
+  dpi = "print"
 )
-fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_widths = c(.5, 1))
+fig3_bottom_left <- plot_grid(plotlist = p_zoom_map_basin, nrow = 3, align = "v", axis = "b")
+ggsave(
+  filename = "fig3_bottom_left.pdf",
+  plot = fig3_bottom_left,
+  path = here("paper", "fig_paper"),
+  scale = 4.0,
+  width = 88,
+  height = 88 * .7,
+  units = "mm",
+  dpi = "print"
+)
+
+fig3_bottom_left_1st_row <- plot_grid(
+  plotlist = p_zoom_map_basin[1:3],
+  nrow = 1,
+  align = "h",
+  axis = "l",
+  rel_widths = zoom_map_basin_coord_df$width_basin[1:3]
+)
+fig3_bottom_left_2nd_row <- plot_grid(
+  plot_grid(
+    plotlist = p_zoom_map_basin[4:6],
+    nrow = 1,
+    align = "h",
+    axis = "b"),
+  NULL,
+  align = "v",
+  axis = "l",
+  nrow = 1
+)
+fig3_bottom_left_3rd_row <- plot_grid(
+  plot_grid(plotlist = p_zoom_map_basin[7:9], nrow = 1,
+  align = "h", axis = "l"),
+NULL,
+  nrow = 1,
+  rel_widths = c(zoom_map_basin_coord_df$width_basin[7:9], 1)
+
+  )
+
+fig3_bottom_left2 <- plot_grid(
+  fig3_bottom_left_1st_row,
+  fig3_bottom_left_2nd_row,
+  fig3_bottom_left_3rd_row,
+  nrow = 3)
+ggsave(
+  filename = "fig3_bottom_left2.pdf",
+  plot = fig3_bottom_left2,
+  path = here("paper", "fig_paper"),
+  scale = 5.0,
+  width = 44,
+  height = 44 * .9,
+  units = "mm",
+  dpi = "print"
+)
+
+
+fig3_bottom <- plot_grid(
+  fig3_bottom_left2, leg_cl_right,
+  ncol = 2, align = "v", axis = "b",
+  rel_widths = c(1, .2)
+)
+
+fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_widths = c(1, 1))
 fig3
 
-save_plot(
-  here("doc", "fig", "fig3_left.png"),
-  fig3_top,
-  base_height = 3.71,
-  base_asp = 2.618,
-)
-save_plot(
-  here("doc", "fig", "fig3_right.png"),
-  fig3_bottom,
-  base_height = 3.71,
-  base_asp = 2.618,
-)
-save_plot(here("doc/fig/fig3.png"),
-  fig3, base_height = 4, nrow = 1, ncol = 2)
 ```
+```{r}
+fig3_bottom_left3 <- ggdraw() +
+  draw_plot(
+    p_zoom_map_basin[[1]], x = 0, y = 1, width = .33, height = .33,
+    vjust = 1, halign = 0, valign = 0) +
+  draw_plot(
+    p_zoom_map_basin[[2]], x = .33, y = 1, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[3]], x = .66, y = 1, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[4]], x = 0, y = .66, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[5]], x = .33, y = .66, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[6]], x = .66, y = .66, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[7]], x = 0, y = .33, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[8]], x = 0.33, y = .33, width = .33, height = .33,
+    vjust = 1) +
+  draw_plot(
+    p_zoom_map_basin[[9]], x = 0.66, y = .33, width = .33, height = .33,
+    vjust = 1)
+```
+
+```{r}
+fig3 <- plot_grid(
+  plot_grid(main_map_rect_basin, p_tot_tab,align = "h", axis = "lr", rel_widths = c(1, .65), nrow = 1),
+  plot_grid(fig3_bottom_left3, leg_cl, NULL, nrow = 1, rel_widths = c(1, .1, .7)),
+  ncol = 1
+  )
+ggsave(
+  filename = "fig3.pdf",
+  plot = fig3,
+  path = here("paper", "fig_paper"),
+  scale = 5.0,
+  width = 88,
+  height = 88 * .65,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
+
+```{r, eval = FALSE}
+layout <- "
+AAAAAB
+AAAAAB
+CDELLL
+FGHLLL
+IJKLLL
+"
+map_cl_fin <- main_map_rect_basin + p_tot_tab +
+  p_zoom_map_basin[[1]] +  p_zoom_map_basin[[2]] + p_zoom_map_basin[[3]] +
+  p_zoom_map_basin[[4]] +  p_zoom_map_basin[[5]] + p_zoom_map_basin[[6]] +
+  p_zoom_map_basin[[7]] +  p_zoom_map_basin[[8]] + p_zoom_map_basin[[9]] +
+  leg_cl_right +
+  plot_layout(design = layout)
+map_cl_fin
+ggsave(
+  filename = "fig3.pdf",
+  plot = map_cl_fin,
+  path = here("paper", "fig_paper"),
+  scale = 4.0,
+  width = 88,
+  height = 88 * .5,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r, eval = FALSE}
+layout <- "
+ABC
+DEF
+GHI
+"
+map_cl_fin <-
+  p_zoom_map_basin[[1]] +  p_zoom_map_basin[[2]] + p_zoom_map_basin[[3]] +
+  p_zoom_map_basin[[4]] +  p_zoom_map_basin[[5]] + p_zoom_map_basin[[6]] +
+  p_zoom_map_basin[[7]] +  p_zoom_map_basin[[8]] + p_zoom_map_basin[[9]] +
+  plot_layout(design = layout)
+map_cl_fin
+ggsave(
+  filename = "fig3_bottom_left2.pdf",
+  plot = map_cl_fin,
+  path = here("paper", "fig_paper"),
+  scale = 4.0,
+  width = 88,
+  height = 88 * .5,
+  units = "mm",
+  dpi = "print"
+)
+```
+
 
 ```{r, eval=FALSE}
 leg_cl_right <- get_legend(p_pca_cl_ell[[1]] + theme(legend.position = "right"))
