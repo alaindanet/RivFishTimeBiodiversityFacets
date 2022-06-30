@@ -4,7 +4,7 @@ author: "Alain Danet"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   bookdown::pdf_document2
-
+bibliography: "bibliography.bib"
 ---
 
 ```{r setup, include=FALSE}
@@ -161,12 +161,6 @@ Robitt, Github, data repository, targets (proof of update), .Renv, Compendium
 
 ## 3 Results
 
-### Global temporal trends
-
-- Dissimilarity: driven by changes in dominance and changes in species
-  composition 
-
-
 ```{r}
 get_global_effect <- function (
   effect = inla_no_drivers_effects,
@@ -197,6 +191,29 @@ p_ci <- function(x, r = 2, p = TRUE) {
 
 }
 
+get_effect_ci <- function(
+  effect = tu,
+  resp = NULL,
+  term = "log1_year_nb",
+  ci_lvl = "level:0.95",
+  r = 2
+  ) {
+  term1 <- term
+
+  out <- effect %>%
+    filter(
+      ci_level == ci_lvl,
+      term == term1,
+      response == resp
+    )
+
+  out <- out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+
+  p_ci(x = out, r = r, p = FALSE)
+
+}
 ```
 
 ```{r}
@@ -232,15 +249,8 @@ names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
 
 ```
 
-- Global trends by decade (10 years) with no drivers:
-  - Total abundance: `r abun_trends`
-  - Chao richness: `r rich_trends`
-  - Hillebrand: `r hill_trends`
-  - Percentage of exotic species: `r exo_trends[["perc_exo_sp"]]`
-  - Percentage of exotic abundance: `r exo_trends[["perc_exo_abun"]]`
 
 
-### Effect of anthropogenic drivers
 
 
 ```{r}
@@ -270,8 +280,6 @@ get_ratio <- function(x, r = 1) {
 tar_load(pred_number)
 ```
 
-#### Baseline
-
 ```{r}
 pred_hft93_t0 <- map(
   setNames(names(pred_number$pred_hft93_t0), names(pred_number$pred_hft93_t0)),
@@ -295,15 +303,6 @@ other_hft93_int_max <- map_chr(
   )
 ```
 
-- Differences at t0 between intact sites and most degraded sites:
-  - Total abundance: `r abun_rich_hft93_int_max["log_chao_richness"]`
-  - Chao species richness: `r abun_rich_hft93_int_max["log_total_abundance"]`
-  - Percentage of exotic species: intact: `r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`,
-    most degraded: `r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`,
-    (diff: `r other_hft93_int_max["perc_exo_sp"]`)
-  - Percentage of exotic abundance: intact: `r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])`,
-    most degraded: `r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])`,
-    (diff: `r other_hft93_int_max["perc_exo_abun"]`)
 
 ```{r}
 pred_hft9309_t0 <- map(
@@ -328,16 +327,6 @@ other_hft93909_dec_inc_by2 <- map_chr(
   )
 ```
 
-- Differences at t0 between recently degraded sites and recently improved sites
-  (respectively hft multipled by 2  and divided by 2 between 93 and 09):
-  - Total abundance: `r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]`
-  - Chao species richness: `r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]`
-  - Percentage of exotic species: improved sites: `r scales::percent(pred_hft9309_t0$perc_exo_sp$val["div/2"])`,
-    recently degraded: `r scales::percent(pred_hft9309_t0$perc_exo_sp$val["inc/2"])`,
-    (diff: `r other_hft93909_dec_inc_by2["perc_exo_sp"]`)
-  - Percentage of exotic abundance: improved sites: `r scales::percent(pred_hft9309_t0$perc_exo_abun$val["div/2"])`,
-    recently degraded: `r scales::percent(pred_hft9309_t0$perc_exo_abun$val["inc/2"])`,
-    (diff: `r other_hft93909_dec_inc_by2["perc_exo_abun"]`)
 
 
 ```{r}
@@ -384,10 +373,186 @@ other_hft93909_dec_inc_by2_t10 <- map_chr(
       "log_total_abundance")],
   ~ get_ratio(pred_hft9309_t10[[.x]]$val, r = 0)
   )
-
 ```
 
-#### After a decade
+```{r}
+tar_load(c(gaussian_inla_std_effects, gaussian_inla_exo_std_effects))
+tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects)
+ci80 <- tu %>%
+  filter(ci_level == "level:0.80")
+ci90 <- tu %>%
+  filter(ci_level == "level:0.90")
+ci95 <- tu %>%
+  filter(ci_level == "level:0.95")
+unique(tu$term)
+```
+
+
+1. Global temporal trends
+    - Global trends by decade (10 years) with no drivers:
+      - Total abundance: `r abun_trends`
+      - Chao richness: `r rich_trends`
+      - Percentage of exotic species: `r exo_trends[["perc_exo_sp"]]`
+      - Percentage of exotic abundance: `r exo_trends[["perc_exo_abun"]]`
+1. Legacy of past anthropogenic pressures:
+    1. Spatial:
+       Higher species richness (`r abun_rich_hft93_int_max["log_chao_richness"]`)
+       but higher percentage of non-native richness 
+       (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`
+       and `r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])` for intact
+       and most degraded sites) and non-native abundance
+       (`r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])` vs
+       `r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])`) and  
+       lower total abundance: `r abun_rich_hft93_int_max["log_total_abundance"]`
+    1. Temporal trends:
+        1. Increase the temporal trends of total abundance and species richness (resp. CI 95%: `r get_effect_ci(resp = "log_total_abundance", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")` and `r get_effect_ci(resp = "log_chao_richness", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")`, Fig. 1)
+        1. Weak evidence that past pressures increase the temporal trends of
+           non-native richness (CI 80%: `r get_effect_ci(resp = "perc_exo_sp", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c93")`, Fig. 1)
+           but not of non-native abundance (CI 80%: `r get_effect_ci(resp = "perc_exo_abun", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c93")`, Fig. 1)
+        1. Strong evidence that past pressures increase temporal dissimilarity
+           and turnover (resp. CI 95%: `r get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")` and `r get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")`, Fig. 1)
+
+1. Recent increase in anthropogenic pressures:
+    1. Spatial: Lower species richness
+       (`r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]`) and lower total
+       abundance (`r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]`),
+       higher proportion of non-native species (`r scales::percent(pred_hft9309_t0$perc_exo_sp$val["div/2"])` vs `r scales::percent(pred_hft9309_t0$perc_exo_sp$val["inc/2"])` for sites whose anthropogenic pressures recently decrease and increase respectively) and of non-native
+       abundance (`r scales::percent(pred_hft9309_t0$perc_exo_abun$val["div/2"])` vs `r scales::percent(pred_hft9309_t0$perc_exo_abun$val["inc/2"])`)
+    1. Temporal trends:
+        1. Weak evidence of a decreasing effect of temporal trends of total abundance (CI 80%: `r get_effect_ci(resp = "log_total_abundance", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio")`, Fig. 1)
+          but not of species richness (CI 80%: `r get_effect_ci(resp = "log_chao_richness", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio")`, Fig. 1)
+        1. Moderate evidence of increase of percentage of non-native richness (CI 90%: `r get_effect_ci(resp = "perc_exo_sp", ci_lvl = "level:0.90", term = "log1_year_nb:hft_ix_c9309_log2_ratio", r = 2)`, Fig. 1)
+          but not of non-native abundance (CI 80%: `r get_effect_ci(resp = "perc_exo_abun", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio")`, Fig. 1)
+        1. Increase in dissimiliraty (CI 95%: `r get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c9309_log2_ratio")`, Fig. 1)
+          and turnover (CI 95%: `r get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c9309_log2_ratio")`, Fig. 1)
+1. Synergy between legacy and recent pressures on temporal trends
+    1. Temporal trends:
+        1. Strong evidence for a negative effect on total abundance but weak evidence
+           for a negative effect on species richness
+        1. Moderate evidence for an positive effect on non-native richness but
+           not on non-native abundance
+        1. Strong evidence for a positive effect on dissimilarity and turnover
+1. Facets of biodiversity temporal trends
+   1. PCA identified 4 orthogonal dimensions explaining each 25% of the variance
+      each, respectively related to the temporal trends of dissimilarity, species richness,
+      turnover and total abundance.
+   1. Clustering of temporal trends confirmed and expanded PCA analysis by identifying
+      clusters of medium community changes, high turnover, increase in species richness,
+      decrease in total abundance, decrease in species richness and low
+      community changes.
+1. Spatial scale of biodiversity trends
+   1. Variance of temporal trends attributed to sites was twice higher than the
+      one attributed to basin scale, suggesting that changes occur mainly due to
+      local conditions rather than at larger spatial scale
+   1. Distribution of clusters of biodiversity trends are homogeneous across
+      Realms, confirming the analysis of the variance.
+
+
+## 4 Discussion
+
+### Global trends
+
+- We found the same temporal trends in total abundance than
+  @van_klink_meta-analysis_2020 (+11%) in aquatic insects.
+- Turnover is the main components of dissimilarity as found in previous studies @blowes_geography_2019
+- We further found that dissimilarity is both related to change in dominance and
+  in species occurrence, i.e. changes in changes in species occurrence concerns
+  abundant species [@hillebrand_biodiversity_2018]
+- Our results on species richness contrast with @dornelas_assemblage_2014
+
+### Effect of anthropogenic pressures
+
+- Both past, recent pressures and their interactions increase temporal dissimilarity
+- We observe stronger recovery in species richness and abundance in sites more degraded 30 years ago
+  - Might be due to DCE in Europe and Clean Water Act (US), (are there same
+    thing in Canada, Australia and JPN?)
+  - However, 92% of our sites can be categorized as degraded
+  - Might explain @van_klink_meta-analysis_2020
+- Recent increase in human pressures left a strong spatial signature on richness
+  and abundance, confirming previous results on terrestrial vertebrates and
+  insects [@newbold_global_2015; @outhwaite_agriculture_2022]
+  - but was found in the temporal trends only on abundance in
+    interaction with past pressures, i.e. recent increases in anthropogenic
+    pressures seems to have an effect in most degraded sites in the past.
+- Anthropogenic pressures have strong spatial and temporal effects on community
+  changes
+
+### Constrasted community changes
+
+- Our results shows that community changes in different dimensions: richness,
+  abundance and dissimilarity, in accordance with previous results
+  [@dornelas_assemblage_2014; @blowes_geography_2019]
+- Community can change in different ways: richness, abundance, dissimilarity.
+  Related to the multidimensional nature of biodiversity [@lyashevska_how_2012;
+  @chase_embracing_2018]
+- Clustering reveals that most of our sites displays medium changes in
+  dissimilarity, low increase in richness and in abundance, to relate with the fact that
+  92% of our sites can be considered as degraded and that the model suggests
+  that past degradation increases the temporal trends of richness and abundance
+
+### Spatial scale of community changes (minor point)
+
+- Variance of temporal trends attributed to site twice higher than basin
+- Cluster distribution of community changes are homogeneous across realms,
+  relatively homogeneous across basin
+- Spatial heterogeneity of community changes at small spatial scale, echoes with 
+  abundant research on richness changes across spatial scale [@chase_embracing_2018]
+  Our results suggest that the way that community changes is very heterogeneous
+  at small spatial scale and might reflect the spatial heterogeneity in
+  anthropogenic pressures and stream characteristics.
+
+## 5 Conclusion
+
+- Temporal trends confirm previous results on dissimilarity and species richness
+  [@van_klink_meta-analysis_2020; @dornelas_assemblage_2014;
+  @blowes_geography_2019]
+- Past and recent changes in anthropogenic pressures have strong effects on
+  temporal trends, in addition to spatial signature [@newbold_global_2015;
+  @outhwaite_agriculture_2022]
+- Contrasted community changes: either species richness, abundance,
+  dissimilarity
+
+# Wordstack
+
+# References {-}
+
+<div id="refs"></div>
+
+# Supplementary numbers 
+
+- Global trends by decade (10 years) with no drivers:
+  - Total abundance: `r abun_trends`
+  - Chao richness: `r rich_trends`
+  - Hillebrand: `r hill_trends`
+  - Percentage of exotic species: `r exo_trends[["perc_exo_sp"]]`
+  - Percentage of exotic abundance: `r exo_trends[["perc_exo_abun"]]`
+
+## Effect of anthropogenic drivers
+
+### Baseline 
+
+- Differences at t0 between intact sites and most degraded sites:
+  - Total abundance: `r abun_rich_hft93_int_max["log_chao_richness"]`
+  - Chao species richness: `r abun_rich_hft93_int_max["log_total_abundance"]`
+  - Percentage of exotic species: intact: `r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`,
+    most degraded: `r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`,
+    (diff: `r other_hft93_int_max["perc_exo_sp"]`)
+  - Percentage of exotic abundance: intact: `r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])`,
+    most degraded: `r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])`,
+    (diff: `r other_hft93_int_max["perc_exo_abun"]`)
+
+- Differences at t0 between recently degraded sites and recently improved sites
+  (respectively hft multipled by 2  and divided by 2 between 93 and 09):
+  - Total abundance: `r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]`
+  - Chao species richness: `r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]`
+  - Percentage of exotic species: improved sites: `r scales::percent(pred_hft9309_t0$perc_exo_sp$val["div/2"])`,
+    recently degraded: `r scales::percent(pred_hft9309_t0$perc_exo_sp$val["inc/2"])`,
+    (diff: `r other_hft93909_dec_inc_by2["perc_exo_sp"]`)
+  - Percentage of exotic abundance: improved sites: `r scales::percent(pred_hft9309_t0$perc_exo_abun$val["div/2"])`,
+    recently degraded: `r scales::percent(pred_hft9309_t0$perc_exo_abun$val["inc/2"])`,
+    (diff: `r other_hft93909_dec_inc_by2["perc_exo_abun"]`)
+
+### After a decade
 
 - Differences at t = 10 years between intact sites and most degraded sites
   (legacy of past pressures, human footprint 1993):
@@ -430,102 +595,6 @@ other_hft93909_dec_inc_by2_t10 <- map_chr(
     `r other_hft93909_dec_inc_by2["appearance_scaled"]` at t = 0)
   - Disappearance: `r other_hft93909_dec_inc_by2_t10["disappearance_scaled"]` (vs
     `r other_hft93909_dec_inc_by2["disappearance_scaled"]` at t = 0)
-
-### Outline
-
-1. Positive global temporal trends (species richness & total abundance)
-1. Legacy of past anthropogenic pressures:
-  1. Spatial: Higher species richness, percentage of exotic abundance and exotic richness
-  1. Temporal trends:
-     1. Increase dissimilarity, much higher turnover, higher appearance and
-        disappearance
-     1. Increase in species richness and total abundance in most degraded sites
-     1. But no change in percentage of exotic species
-1. Recent increase in anthropogenic pressures:
-  1. Spatial: Lower species richness and lower total abundance but higher percentage of exotic species and 
-     percentage of exotic abundance
-  1. Temporal trends:
-     1. Decrease of (but not significant) species richness and total
-        abundance
-     1. Increase of percentage of exotic species but not of exotic abundance
-     1. Increase in dissimiliraty, much higher disappearance than appearance
-1. Synergy between legacy and recent pressures
-   1. Temporal trends:
-      1. Decrease in total abundance but not in species richness
-      1. Increase in percentage of exotic species but not in percentage of
-         exotic abundance
-      1. Increase in dissimilarity
-
-1. Facets of biodiversity temporal trends
-   1. PCA identified 4 orthogonal dimensions respectively related to the
-      temporal trends of dissimilarity (expect nestedness), species richness,
-      nestedness and total abundance.
-   1. Clustering of temporal trends confirmed and expended PCA analysis by identifying
-      clusters of low change, high turnover, increase in species richness,
-      decrease in total abundance, decrease in species richness and no change.
-
-1. Spatial scale of biodiversity trends
-   1. Variance of temporal trends attributed to sites was twice higher than the
-      one attributed to basin scale, suggesting that changes occur mainly due to
-      local conditions rather larger scale
-   1. Distribution of clusters of biodiversity trends are homogeneous across
-      Realms, confirming the analysis of the variance.
-
-
-## 4 Discussion
-
-### Global trends
-
-- We found the same temporal trends in total abundance than
-  @klink_meta-analysis_2020 (+11%) in aquatic insects.
-- Turnover is the main components of dissimilarity as found in previous studies @blowes_geography_2019
-- We further found that dissimilarity is related to change in dominance 
-- Our results on species richness contrast with @dornelas_assemblage_2014
-
-### Effect of anthropogenic pressures
-
-- single effect and Synergistic effect on dissimilarity
-- We observe stronger recovery in species richness and abundance in sites more degraded 30 years ago
-  - Might be due to DCE in Europe and Clean Water Act (US), (are there same
-    thing in Canada, Australia and JPN?) 
-  - However, 92% of our sites can be categorized as degraded
-  - Might explain @van_klink_meta-analysis_2020
-- Recent increase in human pressures left a strong spatial signature on richness
-  and abundance, confirming previous results on terrestrial vertebrates and
-  insects [@newbold_global_2015; @outhwaite_agriculture_2022]
-  - but was found in the temporal trends only on abundance in
-    interaction with past pressures, i.e. recent increases in anthropogenic
-    pressures seems to have an effect in most degraded sites in the past.
-- Anthropogenic pressures have strong spatial and temporal effects on community
-  changes
-
-### Constrasted community changes
-
-- Our results shows that community changes in different dimensions: richness,
-  abundance and dissimilarity
-- Community can changes in different ways: richness, abundance, dissimilarity
-
-### Spatial scale (minor point)
-
-- Variance of temporal trends attributed to site twice higher than basin
-- Cluster distribution of community changes are homogeneous across realms,
-  relatively homogeneous across basin
-- Spatial heterogeneity at small spatial scale
-
-## 5 Conclusion
-
-- Temporal trends confirm previous results on dissimilarity and species richness
-  [@van_klink_meta-analysis_2020; @dornelas_assemblage_2014;
-  @blowes_geography_2019]
-- Past and recent changes in anthropogenic pressures have strong effects on
-  temporal trends, in addition to spatial signature [@newbold_global_2015;
-  @outhwaite_agriculture_2022]
-- Contrasted community changes: either species richness, abundance,
-  dissimilarity
-
-# Wordstack
-
-# Misc
 
 ## Analysis
 
