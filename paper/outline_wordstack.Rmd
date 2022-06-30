@@ -86,26 +86,39 @@ get_comp(resp = "log_total_abundance",
 
 - Biodiversity crisis?
   - IPBES
-- Community crisis?
+  - Report on population declines (LPI) 
+    - LPI for freshwater population declines by 83% between 1970 and 2014
+- Community changes crisis?
   - Contrasted results in temporal trends:
     - High change in community change but no change in average in species
-      richness [@dornelas_assemblage_2014; @blowes_geography_2019], or even positive in aquatic insects
-      [@van_klink_meta-analysis_2020] 
+      richness [@vellend_global_2013; @dornelas_assemblage_2014;
+      @blowes_geography_2019], or even positive in aquatic insects
+      [@van_klink_meta-analysis_2020]
 
 ### 1.2 Antropogenic drivers
 
-- Land-use & Over-exploitation are the main drivers of bioversity losses (IPBES,
-  2019)
-  - Spatial comparison: @newbold_global_2015 (terrestrial vertebrate),
+- Land-use & Over-exploitation are the main drivers of biodiversity losses (IPBES,
+  2019; @reid_emerging_2019)
+  - Spatial comparison: @newbold_global_2015 (terrestrial vertebrates),
     @outhwaite_agriculture_2022 (terrestrial insects)
-- 
+  - Land-use in freshwater system is a major and continuous threats [@reid_emerging_2019], 
+    including pollution by cropland and urban zones.
+  - examples of land-use on freshwater biodiversity
+    - pollution by coal mines: @giam_impact_2018
+    - Ref in @reid_emerging_2019
+    - Flow alteration by dams decreased discharge, impedes fish migration, and
+      decrease the connectivity between terrestrial and aquatic compartment
+      [@juracek_aging_2015].
+    - Non-native fish species introduction can alter native fish abundance but
+      also invertebrates and macrophytes [@gallardo_global_2016]
 
-### 1.3 Biodiversity facets 
+### 1.3 Biodiversity facets
 
 - Trends in species richness, abundance, in dissimilarity
+  [@dornelas_assemblage_2014; @blowes_geography_2019; @lyashevska_how_2012]
 - Contrasted results and patterns
-- Does community trend of different bioversity facet lie in different
-  dimensions? Or are they linear combination of each other? 
+- Do community trends of different biodiversity facets lie in different
+  dimensions? Or are they linear combination of each other? [@lyashevska_how_2012]
 
 ### 1.4 Freshwater Fishes
 
