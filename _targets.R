@@ -1355,7 +1355,7 @@ tar_target(neutral_turnover,
     names(get_model_term_replacement())[
       !str_detect(
         names(get_model_term_replacement()),
-        "siteid|main_bas"
+        "siteid|main_bas|:"
       )
       ]
   ),

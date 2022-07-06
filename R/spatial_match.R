@@ -305,7 +305,7 @@ get_full_riveratlas <- function(
       river <- janitor::clean_names(river)
       
 
-      river <- river[, tolower(col_names)]
+      river <- river[, colnames(river) %in% tolower(col_names)]
       return(river)
 
     }, col_names = c(river_id, var_to_collect))
