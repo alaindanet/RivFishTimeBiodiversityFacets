@@ -118,6 +118,20 @@ list(
   tar_target(old_timeseries,
     load_time_series_data(raw_data_file)
     ),
+  tar_target(updated_rivfishtime_characteristic,
+    here("inst", "extdata", "RivFishTIME", "updatedVersion",
+      "Characteristics_time_series_updated_02120222.csv") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath() %>%
+      read_csv(),
+    format = "file"),
+  tar_target(published_rivfishtime_characteristic,
+    here("inst", "extdata", "RivFishTIME", "published_version",
+      "RivFishTIME_TimeseriesTable.csv") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath() %>%
+      read_csv(),
+    format = "file"),
   tar_target(occ_exotic,
     read_csv(occ_exotic_file,
       col_types = list(`5.Fishbase.Species.Code` = col_character())) %>%

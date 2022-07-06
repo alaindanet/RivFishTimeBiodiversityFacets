@@ -436,3 +436,19 @@ update_file(
   force = FALSE
 )
 
+######################
+#  Link folder riv  #
+######################
+
+rivfishtime_folder <- paste0(server_mounted_location, "RivFishTIME")
+
+R.utils::createLink(
+  link = here("inst", "extdata", "RivFishTIME"),
+  target = rivfishtime_folder,
+  method = ifelse(
+    machine_login == "ahdanet",
+    "windows-shortcut", "unix-symlink"
+    ),
+  overwrite = TRUE
+)
+
