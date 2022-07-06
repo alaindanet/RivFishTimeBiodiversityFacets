@@ -545,7 +545,6 @@ products of main variables (i.e. $X_1X_2$). The VIF values were all close to 1
 
 ```{r}
 tar_load(comp_log_year_no_evt_re)
-tar_load(gaussian_inla_exo_no_drivers)
 cap_aic_table <- "AIC of the models fitting either temporal trends with the
 number of year since the start of sampling or the log of the former variable
 added to one."

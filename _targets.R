@@ -2367,6 +2367,23 @@ tar_target(mod_sampling_eff,
         ) %>%
     select(-mod)
     ),
+  tar_target(dic_waic_comp_time,
+    rbind(
+      gaussian_inla_no_drivers %>%
+        mutate(time = "log1_year_nb"),
+      gaussian_inla_exo_no_drivers %>%
+        mutate(time = "log1_year_nb"),
+      gaussian_inla_exo_no_drivers_year_nb %>%
+        mutate(time = "year_nb"),
+      gaussian_inla_no_drivers_year_nb %>%
+        mutate(time = "year_nb")
+      ) %>%
+      mutate(
+        dic = map_dbl(mod, ~.x$dic$p.eff),
+        waic = map_dbl(mod, ~.x$waic$p.eff)
+        ) %>%
+    select(-mod)
+    ),
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {
       stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
