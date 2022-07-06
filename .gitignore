@@ -19,3 +19,5 @@ for_caelan
 doc/lise*
 doc/map_*
 data/*.rda
+paper/graphics/*.png
+paper/*.log
