@@ -43,13 +43,13 @@ get_var_replacement <- function() {
     turnover = "Turnover (jaccard)",
     turnover_scaled = "Turnover (jaccard)",
     species_nb_nat = "Species richness (native)",
-    species_nb_exo = "Species richness (exotic)",
-    perc_exo_sp = "Percentage exotic species",
-    perc_nat_sp = "Percentage native species",
-    perc_nat_abun = "Percentage native abundance",
-    perc_exo_abun = "Percentage exotic abundance",
+    species_nb_exo = "Species richness (non-native)",
+    perc_exo_sp = "Proportion non-native species",
+    perc_nat_sp = "Proportion native species",
+    perc_nat_abun = "Proportion native abundance",
+    perc_exo_abun = "Proportion non-native abundance",
     nat_abun = "Native abundance",
-    exo_abun = "Exotic abundance"
+    exo_abun = "Non-native abundance"
       )
 }
 
@@ -86,11 +86,11 @@ get_var_replacement_vulgarisation <- function() {
     species_nb_nat = "Species richness (native)",
     species_nb_exo = "Species richness (exotic)",
     perc_exo_sp = "Non-native richness",
-    perc_nat_sp = "Percentage native species",
+    perc_nat_sp = "Native richness",
     perc_nat_abun = "Native abundance",
     perc_exo_abun = "Non-native abundance",
     nat_abun = "Native abundance",
-    exo_abun = "Exotic abundance"
+    exo_abun = "Non-native abundance"
       )
 }
 
@@ -138,6 +138,7 @@ get_model_term_replacement_paper_figure <- function() {
     hft_ix_c9309_log2_ratio = "Recent pressures",
     hft_ix_c93 = "Past pressures",
     main_bas = "Basin",
+    unitabundance = "Abundance unit",
     siteid = "Site",
     `siteid:main_bas` = "Site",
     `:` = " x\n"
@@ -163,6 +164,8 @@ get_river_atlas_significant_var <- function() {
     #"River volume (reach segment, m3)" = "riv_tc_csu",
     "Protected area extent (%)" = "pac_pc_cse",
     "Urban extent (%)" = "urb_pc_cse",
+    "Human footprint ratio 2009/1993" = "hft_ix_c9309_ratio",
+    "Log2 Human footprint ratio (2009/1993)" = "hft_ix_c9309_log2_ratio",
     "Human footprint 1993 (index)" = "hft_ix_c93",
     "Human footprint 2009 (index)" = "hft_ix_c09"
   )
@@ -203,3 +206,18 @@ get_land_class_var <- function() {
   )
 }
 
+get_unitabun_replacement <- function() {
+  c(
+    "Ind.100m2" = "Individual number per 100m2",
+    "CPUE" = "Catch Per Unit Effort (CPUE)"
+  )
+}
+
+get_nat_origin_replacement <- function() {
+  c(
+    "tedesco" = "Tedesco database (basin scale)",
+    "autofishbase" = "Fishbase (country scale)",
+    "handmade" = "Atlas, fishbase (country scale)",
+    "usgs" = "NAS database (state scale, USA)" 
+  )
+}

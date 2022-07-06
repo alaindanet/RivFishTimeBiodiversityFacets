@@ -1260,6 +1260,22 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_no_drivers_year_nb,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla_year_nb(
+              x = facet_var,
+              drivers = FALSE,
+              tau_prior = FALSE
+              ),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = modelling_data
+            )))),
+    pattern = map(facet_var)
+    ),
   tar_target(gaussian_inla_effects,
     format_inla_model_list(x = gaussian_inla)),
   tar_target(gaussian_inla_no_drivers_effects,
@@ -1486,6 +1502,25 @@ tar_target(neutral_turnover,
       response = exo_resp_var,
       mod = list(try(inla(
             formula = fun_int_env_formula_inla(
+              x = exo_resp_var,
+              drivers = FALSE,
+              tau_prior = FALSE
+              ),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = rbind(
+              modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
+              pred_data_exo
+            )
+            )))),
+    pattern = map(exo_resp_var)
+    ),
+  tar_target(gaussian_inla_exo_no_drivers_year_nb,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = fun_int_env_formula_inla_year_nb(
               x = exo_resp_var,
               drivers = FALSE,
               tau_prior = FALSE
@@ -2324,7 +2359,17 @@ tar_target(mod_sampling_eff,
           return_df = TRUE
         )
     )
-    )),
+    )
+    ),
+  tar_target(cpo_pit,
+    rbind(gaussian_inla, gaussian_inla_exo) %>%
+      mutate(
+        cpo_pit = map(mod, ~inla.cpo(.x)),
+        cpo = map(cpo_pit, ~.x$cpo$cpo),
+        pit = map(cpo_pit, ~.x$cpo$pit)
+        ) %>%
+    select(-mod)
+    ),
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {
       stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
