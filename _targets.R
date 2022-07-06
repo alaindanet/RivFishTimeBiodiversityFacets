@@ -465,7 +465,7 @@ tar_target(neutral_turnover,
   tar_target(fr,
     analysis_dataset %>%
       filter(country == "FRA") %>%
-      select(all_of(
+      select(any_of(
           c(
             "siteid", "ecoregion", "main_bas", "year",
             var_temporal_trends,
@@ -825,7 +825,7 @@ tar_target(neutral_turnover,
   tar_target(modelling_data_scaled,
     modelling_data %>%
       mutate(
-        across(all_of(c(main_effect_var, facet_var)),
+        across(any_of(c(main_effect_var, facet_var)),
           ~scale(., center = FALSE)[, 1])
         ) %>%
     mutate(
@@ -838,7 +838,7 @@ tar_target(neutral_turnover,
     left_join(select(filtered_dataset$location, siteid, country), by = "siteid") %>%
     filter(country != "SWE") %>%
     mutate(
-      across(all_of(c(main_effect_var, facet_var)),
+      across(any_of(c(main_effect_var, facet_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
       mutate(
@@ -850,7 +850,7 @@ tar_target(neutral_turnover,
     modelling_data %>%
       filter(!siteid %in% unique(lime_site_swe$siteid)) %>%
       mutate(
-      across(all_of(c(main_effect_var, facet_var)),
+      across(any_of(c(main_effect_var, facet_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
       mutate(
@@ -876,7 +876,7 @@ tar_target(neutral_turnover,
       filter(!siteid %in% unique(lime_site_swe$siteid)) %>%
       mutate(
       across(
-        all_of(c(main_effect_var, exo_resp_var)),
+        any_of(c(main_effect_var, exo_resp_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
       mutate(
@@ -885,7 +885,7 @@ tar_target(neutral_turnover,
       )),
   tar_target(modelling_data_exo_scaled, modelling_data_exo %>%
     mutate(
-      across(all_of(c(main_effect_var, exo_resp_var)),
+      across(any_of(c(main_effect_var, exo_resp_var)),
         ~scale(., center = FALSE)[, 1])
               ) %>%
       mutate(

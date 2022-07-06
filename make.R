@@ -6,7 +6,7 @@ tar_make()
 exclusion_vector <- c("chao_hillnb_cov80", "ah_clust_tps", "test_autocor_tmb",
              "biodiversity_facets_support",
              "pred_gaussian", "filtered_data_watch", "trends_report",
-             "water_temperature", "raw_data_watch", "riveratlas_total")
+             "water_temperature", "raw_data_watch")
 
 tar_make_future(
   workers = min(future::availableCores() - 1, 24),
@@ -23,7 +23,7 @@ tar_visnetwork()
 
 tar_make(names = bib)
 
-tar_make(names = method)
+tar_make(names = riveratlas_total)
 tar_make(names = modelling_data_scaled)
 tar_make(names = hft_total_summary)
 tar_make(names = starts_with("pred_data"))
