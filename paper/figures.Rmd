@@ -174,10 +174,10 @@ fnop <- length(unique(filtered_dataset_modelling$measurement$op_id))
 fig1_cap <- paste0(
   "**Responses of five community metrics to time, local
   anthropogenic pressures, stream gradient and their interaction**. Responses of
-  dissimilarity based on the Simpson index, Total abundance, Chao species
+  dissimilarity based on the Simpson index, turnover, Total abundance, Chao species
   richness, the percentage of exotic species and of exotic species abundance.
   Time was quantified by the logged number of years since the first year of
-  sampling at a given site added to one. The legagy of past anthropogenic
+  sampling at a given site added to one. The legacy of past anthropogenic
   pressures and the recent changes in anthropogenic pressures were quantified
   respectively by the Human Footprint index (1993) and the ratio between the
   Human Footprint at the year 2009 and

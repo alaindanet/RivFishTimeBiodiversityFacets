@@ -1355,7 +1355,7 @@ tar_target(neutral_turnover,
     names(get_model_term_replacement())[
       !str_detect(
         names(get_model_term_replacement()),
-        "siteid|main_bas|:"
+        "siteid|main_bas"
       )
       ]
   ),
@@ -1528,10 +1528,7 @@ tar_target(neutral_turnover,
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
-            data = rbind(
-              modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
-              pred_data_exo
-            )
+            data = modelling_data_exo
             )))),
     pattern = map(exo_resp_var)
     ),

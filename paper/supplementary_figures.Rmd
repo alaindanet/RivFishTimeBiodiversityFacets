@@ -345,7 +345,7 @@ tar_load(pca_riv_str)
 ```
 
 
-```{r, tab-evt, fig.cap="Descriptive statistics for the environmental variables"}
+```{r}
 col_pca_riv <- c(
   "siteid", "dist_up_km", "ord_stra",
   "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav",
@@ -360,7 +360,9 @@ riveratlas_tmp <- riveratlas_site %>%
       distinct(siteid, hft_ix_c9309_log2_ratio),
     by = "siteid") %>%
   select(-siteid) %>%
-  mutate(hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93) %>%
+  mutate(hft_ix_c93  = hft_ix_c93 / 10,
+    hft_ix_c09 = hft_ix_c09 / 10,
+    hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93) %>%
   rename_with(~str_replace_all(.,
         get_rev_vec_name_val(get_river_atlas_significant_var())
     )
@@ -384,7 +386,10 @@ evt_summary <- riveratlas_tmp %>%
   arrange(`Environmental variables`)
 
 evt_summary %>%
-  as_kable_extra(format = "latex")
+  kbl(booktabs = T,
+    label = "tab-riv",
+    caption = "Descriptive statistics for the site environmental descriptors.") %>%
+  kable_styling(latex_options = "striped")
 ```
 
 ```{r}
@@ -416,7 +421,7 @@ p_pca_riv_str
 ```{r}
 lc_hft <- riveratlas_site %>%
   st_drop_geometry() %>%
-  select(all_of(c(
+  select(any_of(c(
         get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")],
         get_river_atlas_significant_var()[
           str_detect(get_river_atlas_significant_var(), "hft_")
@@ -456,8 +461,8 @@ variable_stat <- tibble(
     "Continuous", "Continuous", "Proportion", "Factor", "Character",
     "Character"),
   unit = c("Count (reference), Number of individuals by 100 sq meters,
-    Catch per Unit Effort (CPUE), Leslie index", rep("", 8), "Number of
-  year", "", "", "", "Factor with 4 levels", "", "", ""),
+    Catch per Unit Effort (CPUE), Leslie index", rep("", 8), "",
+  "Number of year", "", "", "Factor with 4 levels", "", "", ""),
 
   signification = c(
     "Total number of individuals",
@@ -485,7 +490,9 @@ variable_stat <- tibble(
     ),
     transformation = c("Log", "Log", rep("", 8), "Log + 1", "", "", "Log base
       2", "", "", "")
-)
+) %>%
+mutate(across(everything(), ~str_remove_all(., "\n")))
+
 
 variable_stat %>%
   select(-variables, `short name` = names, type = var_type) %>%
@@ -493,7 +500,7 @@ variable_stat %>%
   kbl(booktabs = T,
     label = "tab-var-mod",
     caption = "Description of the variables included in the model.") %>%
-  collapse_rows(columns = 1, latex_hline = "major", valign = "middle")
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   kable_styling(latex_options = "striped")
 ```
 
@@ -503,7 +510,7 @@ variable_stat %>%
 ```{r}
 vif_caption <- "Variance inflation factors on the variables included in the
 model. SE factor: inflation of the standard error of slope coefficients
-predicted by the multicollinearity of the variables"
+predicted by the multicollinearity of the variables."
 ```
 
 
@@ -524,7 +531,6 @@ ck_col_data %>%
     caption = vif_caption
     ) %>%
   kable_styling(latex_options = "striped")
-  kable()
 ```
 
 
@@ -533,12 +539,13 @@ measuring the Variance Inflation Factor (VIF) on a model formulation containing 
 the main effect, i.e. not the interactions. We did so because main variables ($X_1$,
 $X_2$) and the interactions are collinear by construction, interactions being the
 products of main variables (i.e. $X_1X_2$). The VIF values were all close to 1
-(Table \@ref(tab:vif)), indicating absence of multicollinearity.
+(Table \@ref(tab-vif)), indicating absence of multicollinearity.
 
 ## Selection of time modelling
 
 ```{r}
 tar_load(comp_log_year_no_evt_re)
+tar_load(gaussian_inla_exo_no_drivers)
 cap_aic_table <- "AIC of the models fitting either temporal trends with the
 number of year since the start of sampling or the log of the former variable
 added to one."
@@ -719,11 +726,130 @@ figS1 <- plot_grid(
   ncol = 1)
 ```
 
-```{r std-tot, fig.height = 12}
+```{r}
+std_tot_cap <- "**Responses of  community metrics to time, local
+  anthropogenic pressures, stream gradient and their interaction**. See Fig. 1
+in the main text for details. To the difference with the Fig. 2, we
+added Jaccard dissimilarity index and its partitions in two sets of
+complementary indices, respectively nestedness/turnover, and
+appearance/disappearance."
+```
+
+
+```{r std-tot, fig.height = 12, fig.cap=std_tot_cap}
 figS1
 ```
 
-## Unstandardized coefficients
+```{r}
+tar_load(c(site_cl_rm, site_cl_na))
+pca_data <- site_no_drivers_inla_tot[,
+    colnames(site_no_drivers_inla_tot) %in% clust_var]
+pca_clust <- compute_rotated_pca(pca_data, naxis = 5)
+```
+
+```{r}
+p_pca_clust <- plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_cl_rm,
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80
+   )
+
+axis_l <- list(
+  c("RC1", "RC2"),
+  c("RC1", "RC3"),
+  c("RC1", "RC4"),
+  c("RC1", "RC5"),
+  c("RC2", "RC3"),
+  c("RC2", "RC4"),
+  c("RC2", "RC5"),
+  c("RC4", "RC5"),
+  c("RC3", "RC5"),
+  c("RC3", "RC4")
+)
+
+cluster_names <- c(
+  "Medium change", "High turnover",
+  "Increase in\n species richness", "Decrease in\n total abundance",
+  "Decrease in\n species richness", "Low change"
+)
+fnsite <- nrow(site_cl_na)
+nb_clusters <- table_to_vec(table(site_cl_rm$cl))
+per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+na_cluster <- paste0("(N = ",
+  fnsite - sum(nb_clusters), ", ", scales::percent((fnsite - sum(nb_clusters)) / fnsite),")"
+)
+
+cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
+  ~paste0(.x, "\n(N = ", .y, ")"))
+
+p_pca_cl_ell <- map(axis_l,
+  ~plot_pca_clust(
+     .data = pca_clust$rotated,
+     site_cl = site_cl_rm,
+     add_point = TRUE,
+     add_ellipse = TRUE,
+     xaxis = .x[1], yaxis = .x[2],
+     ctb_thld = .4,
+     replace_var = get_var_replacement_vulgarisation(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80,
+     var_scaling_factor = 3.5
+   ) +
+ guides(
+   colour = guide_legend(
+     override.aes = list(size = 10),
+     title.theme = element_blank(),
+     label.position = "top",
+     ncol = 2)
+ ) +
+ theme(
+   legend.position = "bottom",
+   panel.background = element_blank(),
+   legend.text = element_text(size = 10),
+   legend.key = element_rect(fill = NA)) +
+ scale_color_viridis(
+   discrete = TRUE,
+   name = "Cluster", labels = cluster_labels)
+)
+leg_cl <- get_legend(
+  p_pca_cl_ell[[1]]
+)
+
+p_pca_cl_ell <- map(p_pca_cl_ell,
+  ~.x + theme(legend.position = "none"))
+```
+
+```{r}
+pca_total_cap <- "**PCA biplot on the temporal trends of the
+  community metrics at each site, and their cluster assignment**. See legend of
+the Fig. 2 in main text for details. To the difference with the Fig. 2, we
+added Jaccard dissimilarity index and its partitions in two sets of
+complementary indices, respectively nestedness/turnover, and
+appearance/disappearance." %>%
+  str_remove_all("\n|\r") %>%
+  str_replace_all("  ", " ")
+```
+
+```{r pca-tot, fig.cap = pca_total_cap}
+p_pca_cl_top <- plot_grid(
+  p_pca_cl_ell[[1]],
+  p_pca_cl_ell[[5]],
+  p_pca_cl_ell[[8]],
+  leg_cl,
+  ncol = 2)
+```
+
+
 
 ## Predictions of the model
 
