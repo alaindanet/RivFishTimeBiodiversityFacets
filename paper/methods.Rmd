@@ -471,8 +471,12 @@ therefore believe that this choice is not likely to alter our conclusions.
 
 ## Variable transformations 
 
+```{r}
+tar_load(tab_waic)
+```
+
 We log-transformed the number of years as $\log(year + 1)$ as it improved the
-quality of the model fitting to the data, decreasing the AIC by 29% in average
+quality of the model fitting to the data, decreasing the WAIC by 29% in average
 from 0% for total abundance to 124% for the Simpson based dissimilarity index
 (Table S\@ref(tab:aic)) [missing chao richness and
 percentage of exotic species in the comparison + refaire avec INLA?]. It

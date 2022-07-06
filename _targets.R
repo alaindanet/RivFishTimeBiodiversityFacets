@@ -2396,6 +2396,29 @@ tar_target(mod_sampling_eff,
         ) %>%
     select(-mod)
     ),
+  tar_target(tab_waic, 
+    dic_waic_comp_time %>%
+      filter(response %in% c(clust_var, exo_resp_var)) %>%
+      mutate(
+        response = get_var_replacement()[response],
+        waic = round(waic)
+        ) %>%
+      select(-dic) %>%
+      pivot_wider(names_from = "time", values_from = "waic") %>%
+      mutate(
+        `Min WAIC` = map2_chr(year_nb, log1_year_nb,
+          function (x, y) {
+            tmp <- c("year_nb", "log1_year_nb")[which.min(c(x, y))]
+            get_model_term_replacement()[tmp]
+          }),
+        `WAIC difference (to Year nb)` = scales::percent(
+          (log1_year_nb - year_nb) / year_nb,
+          accuracy = .1
+        )
+        ) %>%
+      rename_with(~str_replace_all(., get_model_term_replacement())) %>%
+      rename(Response = response)),
+
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {
       stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
