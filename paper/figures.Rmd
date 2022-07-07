@@ -1034,111 +1034,40 @@ fig3
 - Figure 3: `r knitr::knit(text = map_cl_cap)`
 
 
-# Instructions from Science 
+# Instructions from  NEE 
 
-Creating your figures It is best to create your figures as vector-based files
-such as those produced by Adobe Illustrator. Vector-based files will give us
-maximum flexibility for sizing your figures properly without losing resolution,
-as they can be altered in size while maintaining high print-quality resolution.
-We cannot accept PowerPoint files or files that are not readable by Adobe
-Photoshop, Macromedia Freehand, or Adobe Illustrator. To keep file sizes
-reasonable, please save art at a resolution of 150 to 300 dots per inch (dpi)
-for initial submission. A higher resolution applies for figures submitted at the
-revision stage – see instructions for preparing a revised manuscript. Digital
-color art should be submitted as CMYK (Cyan, Magenta, Yellow, Black) rather than
-RGB (Red, Green, Blue).
 
-Paper The width of figures, when printed, will usually be **5.5 cm** (2.25 inches or
-1 column) or **12.0 cm** (4.75 inches or 2 columns). Bar graphs, simple line graphs,
-and gels may be reduced to a smaller width. Symbols and lettering should be
-large enough to be legible after reduction [a reduced size of about 7 points (2
-mm) high, and not smaller than 5 points]. Avoid wide variation in type size
-within a single figure. In laying out information in a figure, the objective is
-to maximize the space given to presentation of the data. Avoid wasted white
-space and clutter.
+Effective figure preparation will enhance the readability of your manuscript –
+our image preparation guidelines will help you to produce effective
+publication-quality figures. In addition, please consider the following
+important requirements:  
 
-- The figure’s title should be at the beginning of the figure legend, not in the figure itself.
+## Images
 
-- Include the figure’s identifying number (e.g., “Fig. 1”) on the same manuscript page that includes the figure.
+All figures must be cited in sequence within the main article text in the form Fig. 1, Fig. 2.
 
-- Keys to symbols, if needed, should be kept as simple as possible and be
-  positioned so they do not needlessly enlarge the figure. Details can be put
-  into the captions.
+Figure panels should be prepared at a minimum resolution of 300 dpi and saved at a maximum width of 180 mm.  
 
-- Use solid symbols for plotting data if possible (unless data overlap or there
-  are multiple symbols). Size symbols so that they will be distinguishable when
-  the figure is reduced (6 pt minimum). Line widths should be legible upon
-  reduction (minimum of 0.5 pt at the final reduced size).
+Use a 5–7 pt san serif font for standard text labelling and Symbol font for Greek characters. 
 
-- Panels should be set close to each other, and common axis labels should not be
-  repeated.
+Use scale bars, not magnification factors, and include error bars where appropriate. 
 
-- Scales or axes should not extend beyond the range of the data plotted.
+Do not flatten labelling or scale/error bars onto images – uneditable or low-resolution images are two of the most common reasons for delay in manuscript preparation.  
 
-- Use scale bars in place of, or in addition to, magnifications. Do not use
-  minor tick marks in scales or grid lines. Avoid using y-axis labels on the
-  right that repeat those on the left.
+## Figure legends
 
-- Color-mix and contrast considerations
+Include a brief title for each figure with a short description of each panel cited in sequence. 
 
-- Avoid using red and green together. Color blind individuals will not be able
-  read the figure.
- 
-- Please do not use colors that are close in hue to identify different parts of
-  a figure.
- 
-- Avoid using grayscale.
- 
-- Use white type and scale bars over darker areas of images.
- 
-- Units should be metric and follow SI convention.
+Ensure the legend does not exceed the word limit of the article type.
 
-- Typefaces and labels
-  - Please observe the following guidelines for labels on graphs and figures:
-  - Use a sans-serif font whenever possible (we prefer Helvetica).
-  - Simple solid or open symbols reduce well.
-  - Label graphs on the ordinate and abscissa with the parameter or variable
-    being measured, the units of measure in parentheses, and the scale. Scales
-    with large or small numbers should be presented as powers of 10.
-  - Avoid the use of light lines and screen shading. Instead, use
-    black-and-white, hatched, and cross-hatched designs for emphasis.
-  - Capitalize the first letter in a label only, not every word (and proper
-    nouns, of course).
-  - Units should be included in parentheses. Use SI notation. If there is room,
-    write out variables – e.g., Pressure (MPa), Temperature (K).
-  - Variables are always set in italics or as plain Greek letters (e.g., P, T,
-    m). The rest of the text in the figure should be plain or bold text.
-  - Type on top of color in a color figure should be in bold face. Avoid using
-    color type.
-  - When figures are assembled from multiple gels or micrographs, a line or
-    space should indicate the border between two original images.
-  - Use leading zeros on all decimals – e.g., 0.3, 0.55 – and only report
-    significant digits.
-  - Use capital letters for part labels in multipart figures – A, B, C, etc.
-    These should be 9 pt and bold in the final figure. When possible, place part
-    labels at the upper left-hand corner of each figure part; if a part is an
-    image, set labels inside the perimeter so as not to waste space.
-  - Avoid subpart labels within a figure part; instead, maintain the established
-    sequence of part labels [e.g., use A, B, C, D, E instead of A, B, C(a),
-    C(b), C©]. If use of subpart labels is unavoidable, use lowercase letters
-    (a, b, c). Use numbers (1, 2, 3) only to represent a time sequence of
-    images.
-  - When reproducing images that include labels with illegible
-    computer-generated type (e.g., units for scale bars), omit such labels and
-    present the information in the legend instead.
-  - Sequences may be reduced considerably, so the typeface in the original
-    should be clear. There should be about 130 characters and spaces per line
-    for a sequence occupying the full width of the printed page and about 84
-    characters and spaces per line for a sequence occupying two columns.
+Avoid methodological detail.
 
-Modification of figures Science does not allow certain electronic enhancements
-or manipulations of micrographs, gels, or other digital images. Figures
-assembled from multiple photographs or images, or non-concurrent portions of the
-same image, must indicate the separate parts with lines between them. Linear
-adjustment of contrast, brightness, or color must be applied to an entire image
-or plate equally. Nonlinear adjustments must be specified in the figure legend.
-Selective enhancement or alteration of one part of an image is not acceptable.
-In addition, Science may ask authors of papers returned for revision to provide
-additional documentation of their primary data.
+Use verbal cues to describe keys, eg. "open red triangles", not visual cues or symbols.
+
+Include a description of centre values (median or average) and all error
+bars and how they were calculated.  Give an indication of sample size (n
+number), state the statistical test used and provide P values.
+
+
 
 
