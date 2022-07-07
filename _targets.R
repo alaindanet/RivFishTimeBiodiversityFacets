@@ -2431,6 +2431,20 @@ tar_target(mod_sampling_eff,
         ) %>%
       rename_with(~str_replace_all(., get_model_term_replacement())) %>%
       rename(Response = response)),
+  tar_target(r2_obs_fit,
+    obs_fit %>%
+      filter(response %in% c(clust_var, exo_resp_var)) %>%
+      mutate(response = get_var_replacement_vulgarisation()[response]) %>%
+      group_by(response) %>%
+      summarise(
+        r2 = round((cor(y = fit, x = obs))^2, 2),
+        gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
+        lab = paste0("~~~~R^2 == ", gelman_r2),
+        obs = -Inf,#(max(obs) - min(obs)) * .10,
+        fit = Inf#(max(fit) - min(fit)) * .90
+        )
+      ),
+
 
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {
