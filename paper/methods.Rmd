@@ -448,7 +448,7 @@ $$
 - $\beta_0 = \mu + b_n + b_{i|n}$
 - $k, l, m \in [1,2,3]$: ecological drivers including stream gradient, legacy of past and recent changes in anthropogenic pressures
 - $a_n, a_{i|n}, b_n, b_{i|n}, \epsilon_{i|n, t} \sim \mathcal{N}(0,\,\sigma^{2})$
-- $n$: basin, $i$: site $i$, $t$: time $t$
+- $n$: hydrographic basin, $i$: site $i$, $t$: time $t$
 
 - suggestion:
   - How model abundance and dissimilarity metrics?
@@ -469,17 +469,18 @@ that slope coefficients estimated with a gaussian error and a beta error had a
 spearman correlation superior to 0.90 and give qualitatively similar results. We
 therefore believe that this choice is not likely to alter our conclusions.
 
-## Variable transformations 
+## Variable transformations
 
 ```{r}
 tar_load(tab_waic)
+perc_dec_waic <- scales::percent(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]]) / tab_waic[["Year nb"]]))
+dec_waic <- round(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]]))) 
 ```
 
 We log-transformed the number of years as $\log(year + 1)$ as it improved the
-quality of the model fitting to the data, decreasing the WAIC by 29% in average
-from 0% for total abundance to 124% for the Simpson based dissimilarity index
-(Table S\@ref(tab:aic)) [missing chao richness and
-percentage of exotic species in the comparison + refaire avec INLA?]. It
+quality of the model fitting to the data, decreasing the WAIC [Watanabe-Akaike
+information criterion, @gelman_understanding_2014; @vehtari_pratical_2017] by 
+`r dec_waic` in average (`r perc_dec_waic`) (Table S\@ref(tab:aic)). It
 suggests the presence of non-linearity in the temporal trends, which is
 particularly expected in the case of bounded variables such as the dissimilarity
 metrics. Then the rate of change per decade of a given biodiversity facet
@@ -492,10 +493,7 @@ $\log_2(HFT_{2009} / HFT_{1993})$. Then, a value of minus one and one
 represent respectively a division by two and a multiplication by two of the
 human footprint between 1993 and 2009. We log-transformed total abundance and
 Chao species richness, then the temporal trends are expressed in percentage by
-unit of time [@van_klink_meta-analysis_2020].
-
-[Add a table in supplementary with all the transformations of response and
-explicative variables.]
+unit of time (See Table SXX for a summary of variable transformations).  
 
 ### Variable standardization
 
@@ -536,7 +534,8 @@ falls in a given interval, to the difference with frequentist approach
 and 95% using Highest Posterior Density method [@hyndman_computing_1996]. When 0
 is outside the credible intervals of the coefficients at 80%, 90% and 95%, they
 can respectively be interpreted as weak, moderate and strong evidence of an
-effect [@van_klink_meta-analysis_2020; @mastrandrea_guidance_2010].
+effect [@van_klink_meta-analysis_2020; @mastrandrea_guidance_2010]. The model
+evaluation was performed with the `INLA` R package [@rue_approximate_2009].
 
 ### Bayesian priors
 
@@ -556,16 +555,14 @@ quality of parameter inference did not suffer from the uninformative priors.
 ### Model validity
 
 We checked the model validity visually by plotting the fitted versus the
-observed values [ref plot].
-
-- Add plots of posterior marginal distribution of the parameters? (it would be
-  like 8*10 plots for the fixed effects only)
-- Add PIT and CPO [@van_klink_meta-analysis_2020]
+observed values (Fig. SXX). We visually inspected the PIT and CPO (respectively
+Posterior Integral Transform and Conditional Predictive Ordinate) distribution
+to assess both the overall quality of fitting, and the frequency of outliers.
 
 ## Assessing the dimensionality of temporal community changes
 
 We performed a PCA over the temporal trends of biodiversity facets at the site
-level. A PCA finds the linear combination of variables that explained the most
+level to find the linear combination of variables that explained the most
 variance and separates linearly uncorrelated variables. In complement, we
 performed a clustering analysis to group together sites that displayed similar
 temporal community changes. The temporal trends for each biodiversity facet and
@@ -574,9 +571,9 @@ analysis, we adjusted the temporal trends of total abundance for the unit of
 measurement with the main effect coefficients and the one in interaction with
 temporal trends. We did not include the temporal trends of the variables
 describing composition of non-native species as the they are part of
-biodiversity [@schlaepfer_non-native_2018] and site temporal trends in percentage of
-non-native species displayed very little variation, then it was of little
-interest to include them in the dimensionality analysis.
+biodiversity [@schlaepfer_non-native_2018] and site temporal trends in
+percentage of non-native species displayed very little variation, then it was of
+little interest to include them in the dimensionality analysis.
 
 We performed the trimmed k-means clustering method [@fritz_tclust_2012], a
 robust clustering method because it avoids the identification of spurious

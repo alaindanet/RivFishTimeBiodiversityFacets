@@ -2485,6 +2485,13 @@ tar_target(mod_sampling_eff,
       )
     )
     ),
+  tar_target(add_dataset_ref,
+    get_additional_dataset_ref_rivfistime(
+      published = published_rivfishtime_characteristic,
+      updated = updated_rivfishtime_characteristic,
+      site_paper = filtered_dataset_modelling$location
+    )
+  ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),

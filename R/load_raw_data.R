@@ -77,3 +77,73 @@ convert_chelsa_to_celcius <- function(x = NULL) {
   x / 10 - 273.15
 }
 
+get_additional_dataset_ref_rivfistime <- function(
+  published = published_rivfishtime_characteristic,
+  updated = updated_rivfishtime_characteristic,
+  site_paper = filtered_dataset_modelling$location
+) {
+
+  # Keep only sites used in analysis
+  published %<>%
+    filter(SiteID %in% unique(site_paper$siteid)) %>%
+    arrange(SiteID)
+
+  # Check that siteid match between published rivfishtime and updated version 
+  test_match <- updated %>%
+    select(Glob_ID, SiteID, Origin) %>%
+    filter(
+      SiteID %in% unique(c(
+          published$SiteID
+          ))) %>%
+    arrange(SiteID)
+  stopifnot(all(published$SiteID == test_match$SiteID))
+
+  # Filter site present in paper but not present in RivFishTime publication
+  ti <- updated %>%
+    filter(
+      SiteID %in% unique(site_paper$siteid) & !SiteID %in% unique(published$SiteID)
+      ) %>%
+    group_by(Origin, Country) %>%
+    summarise(n = n(), .groups = "drop")
+
+  # Get references about extra dataset
+  origin_link <- c(
+    "Maryland" = "https://www.montgomerycountymd.gov/water/streams/data.html",
+    "Ohio"     = "https://www.orsanco.org/programs/fish-population/",
+    "RAMP"     = "http://www.ramp-alberta.org/RAMP.aspx",
+    "MARIS"    = paste0(c("https://www.sciencebase.gov/catalog/item/54998234e4b08b255be64e6e",
+        "https://www.sciencebase.gov/catalog/item/529e0108e4b0516126f68e3c"), collapse = ", ")
+  )
+  origin_program <- c(
+    "Maryland"  = "Montgomery county monitoring program (2018)",
+    "Ohio"      = "Ohio statewide monitoring program (2018)",
+    "RAMP"      = "Regional Aquatics Monitoring Program (2018)",
+    "MARIS"     = "Multistate Aquatic Resources Information System"
+  )
+  origin_citation <- c(
+    "Maryland"  = "Montgomery county monitoring program (2018). Available at https://www.montgomerycountymd.gov/water/streams/data.html",
+    "Ohio"      = "Ohio statewide monitoring program (2018). Available at https://www.orsanco.org/programs/fish-population/",
+    "RAMP"      = "Regional Aquatics Monitoring Program (2018). Available at http://www.ramp-alberta.org/RAMP.aspx",
+    "MARIS"     = "U.S. Geological Survey, Core Science Analytics and Synthesis Program, 20131201, Multistate Aquatic Resources Information System (MARIS): United States Geological Survey, http://dx.doi.org/10.5066/F7BZ641R."
+  )
+
+  out <- ti %>%
+  mutate(
+    program = origin_program[Origin],
+    link = origin_link[Origin],
+    reference = origin_citation[Origin],
+    Country = str_replace(Country, "United States", "USA")
+    ) %>%
+  select(
+    `source id` = Origin,
+    Country,
+    n,
+    program,
+    `Database source` = link,
+    reference
+  ) %>%
+  rename_with(str_to_sentence)
+
+return(out)
+
+}
