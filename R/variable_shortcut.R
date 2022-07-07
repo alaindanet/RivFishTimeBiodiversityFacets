@@ -149,7 +149,7 @@ get_model_term_replacement_paper_figure <- function() {
 get_river_atlas_significant_var <- function() {
   c(
     #"Length of the reach" = "length_km",
-    "Distance from source" = "dist_up_km",
+    "Distance from source (km)" = "dist_up_km",
     "Strahler order" = "ord_stra",
     #"Order flow" = "ord_flow",
     "Average elevation (m)" = "ele_mt_cav",
@@ -219,5 +219,15 @@ get_nat_origin_replacement <- function() {
     "autofishbase" = "Fishbase (country scale)",
     "handmade" = "Atlas, fishbase (country scale)",
     "usgs" = "NAS database (state scale, USA)" 
+  )
+}
+
+replacement_random_term <- function() {
+  c(
+    "Gaussian observations" = "Error",
+    "intercept_main_bas" = "Intercept (basin)",
+    "main_bas1" = "Time (basin)",
+    "intercept_main_bassiteid" = "Intercept (site nested in basin)",
+    "siteid1" = "Time (site nested in basin)"
   )
 }

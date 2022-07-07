@@ -46,6 +46,7 @@ tar_load(c(site_desc_loc, measurement))
 tar_load(c(modelling_data, filtered_dataset_modelling, analysis_dataset))
 tar_load(filtered_op_protocol_modelling)
 tar_load(c(measurement_exo, modelling_data_exo))
+tar_load(add_dataset_ref)
 
 measurement_exo <- measurement_exo %>%
   filter(op_id %in% unique(modelling_data_exo$op_id))
@@ -91,6 +92,8 @@ pays_vec <- table_to_vec(pays)
 
 per_pays <- scales::percent(sort(pays_vec, decreasing = TRUE), accuracy = 1)
 per_s4pays <- scales::percent(sum(sort(pays_vec, decreasing = TRUE)[1:4]))
+
+# Add database
 ```
 
 
@@ -99,8 +102,8 @@ per_s4pays <- scales::percent(sum(sort(pays_vec, decreasing = TRUE)[1:4]))
 We used the RivFishTime database [@comte_rivfishtime_2021], a compilation of
 more than 12,000 time series of riverine fish community abundances, by species,
 mainly covering western and northern Europe, northern America, and southeastern
-Australia. We completed the database with time series from Japan and United
-States, following the same criteria than RivFishTime for integration
+Australia. We completed the database with time series from Canada and United
+States (Table S1), following the same criteria than RivFishTime for integration
 [@comte_rivfishtime_2021].
 
 We selected data to ensure that each time series had at least 5 years of data
@@ -118,8 +121,8 @@ The data selection resulted in `r fnsite` fish community time series, totalling 
 events, `r fnmeas` species abundance records, and `r fnsp`
 freshwater fish species. The median time span was of `r mspan`
 years, the median baseline of the time series was `r mbl`, and the median
-completeness of the time series was of `r mcpl`. Finally, . The distribution of
-those metrics are shown in supplementary figures (Fig. SX-X). The sites were
+completeness of the time series was of `r mcpl` (see Fig. SX-X for the complete distribution).
+The sites were
 mostly located in Palearctic (`r per_eco["Palearctic"]`),
 Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`).
 Four countries gathered `r per_s4pays` of the sites, namely Great Britain
@@ -137,9 +140,9 @@ and total abundances.
 As changes in community composition can be attributed either to changes of
 dominance or of rare species, we described temporal dissimilarity with both the
 complement of the Jaccard index (J) and the Simpson-based dissimilarity index
-($H_d$) [@hillebrand_biodiversity_2018].  The former index is based on
+($H_d$) [@hillebrand_biodiversity_2018]. The former index is based on
 presence/absence and is simply the sum of species gains and losses over the
-total number of species across two samples (eq.  \@ref(eq:jac)). The latter is
+total number of species across two samples (eq. \@ref(eq:jac)). The latter is
 based on species relative abundances and their variation across two samples (eq.
 \@ref(eq:hill)). The Jaccard index quantifies the extent of immigration /
 extinction processes while the Simpson-based dissimilarity index quantifies the
@@ -249,7 +252,7 @@ computation. In this case, we first divided each species abundance ($x_i$) by
 the minimum values of abundance in the community (i.e. $x^{\prime}_i =
 1 / min(x_i)$), which we further rounded so that each community had at least one singleton
 species, i.e. a species with one individual. The correlation was very high
-between raw species richness and chao richness ($\rho = `r cor_chao_rich`$ for
+between raw species richness and chao richness (Spearman's $\rho = `r cor_chao_rich`$ for
 both raw variables and log transformed ones, Fig. SXX).
 
 # Stream gradient and anthropogenic pressures
@@ -311,7 +314,7 @@ over the site stream characteristics after log transforming (added absolute
 minimum values plus one to avoid values $\leq 0$,
 $x^{\prime}_i = x_i + min(x_i) + 1$) and standardizing all the variables, i.e. centering and scaling
 . We orthogonally rotated the two first principal
-components, using the varimax criterion [@kaiser_varimax_1958, @revelle_psych_2019],
+components, using the varimax criterion [@kaiser_varimax_1958; @revelle_psych_2019],
 to increase the quality of the variable representation (i.e. their loadings) on
 the two first principal components. The first rotated component,
 related to average annual discharge, distance from source and Strahler order
@@ -330,7 +333,7 @@ superior to four being considered in a degraded state [@williams_change_2020].
 To capture both the effects of the legacy of past anthropogenic pressures
 and its recent changes, we considered the human footprint index computed in 1993
 and 2009 (i.e. 16 years span). Specifically, we used the human footprint index
-of 1993 as a measure of the legacy of anthropogenic pressures and the ratio
+of 1993 as a measure of the legacy of past anthropogenic pressures and the ratio
 between the human footprint of 2009 and 1993 as a measure of the recent changes
 in anthropogenic pressures. The human footprint values were extracted from the
 HydroAtlas database at the reach scale [original resolution of 450meters,
@@ -389,12 +392,6 @@ both for species richness and abundances.
 # Statistical analysis
 
 ## General statistical model
-
-- Lise suggests to present the drivers before the equations
-- A proposition:
-  - Present the philosophy: response versus drivers: why not all interactions?
-    justify them
-  - Transformation of the variables
 
 We modelled the temporal trends of the different biodiversity facets ($Y$) as
 dependant of time ($\beta_0Time_t$, eq. \@ref(eq:gen)) measured as the number
@@ -554,10 +551,25 @@ quality of parameter inference did not suffer from the uninformative priors.
 
 ### Model validity
 
+```{r}
+tar_load(r2_obs_fit)
+r2 <- c(min = min(r2_obs_fit$gelman_r2), max = max(r2_obs_fit$gelman_r2))
+```
+
 We checked the model validity visually by plotting the fitted versus the
 observed values (Fig. SXX). We visually inspected the PIT and CPO (respectively
 Posterior Integral Transform and Conditional Predictive Ordinate) distribution
-to assess both the overall quality of fitting, and the frequency of outliers.
+to assess both the overall quality of fitting, and the frequency of outliers. 
+We also computed $R^2$ to assess the quality of the fit of the bayesian models
+[$R^2 = Var_{fit} / (Var_{fit} + Var_{res}) = \sigma^2(\hat{y_i}) /
+(\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i}))$ with $y_i$ and $\hat{y_i}$
+being respectively the observations and the predicted values, $Var_{fit}$ and
+Var_{res} being respectively the variance of predictive means and the variance
+of the residuals, @gelman_r-squared_2019]. $R^2$ spans from `r r2$min` for
+nestedness to `r r2$max` for species richness (See Fig. SXX), indicating that the
+the predictors namely time, anthropogenic pressures, and stream
+gradient as well as the hierarchical structure of the models all together
+capture a significant share of the variance.
 
 ## Assessing the dimensionality of temporal community changes
 
