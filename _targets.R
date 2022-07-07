@@ -1929,7 +1929,8 @@ tar_target(mod_exo_comp,
           )
         )
         ) %>%
-    unnest(hpd_random)),
+      select(-mod) %>%
+      unnest(hpd_random)),
 
 #tar_target(pred_gaussian,
   #binded_gaussian %>%
