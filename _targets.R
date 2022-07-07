@@ -1899,25 +1899,37 @@ tar_target(mod_exo_comp,
         ) %>%
     select(-mod)
   ),
-tar_target(random_effect_self_c,
-  binded_gaussian_tmb %>%
-    filter(intercept == 1, year_var == "year_nb")  %>%
-    mutate(
-      random_site = map(mod,
-        ~try(get_random_effect_glmmTMB(
-            .x, effect = "siteid:main_bas")
-          )),
-      random_basin = map(mod,
-        ~try(get_random_effect_glmmTMB(
-            .x, effect = "main_bas")
-          )),
-      random_span = map(mod,
-        ~try(get_random_effect_glmmTMB(
-            .x, effect = "span")
-          )),
-      ) %>%
-    select(-mod)
-  ),
+  tar_target(random_effect_self_c,
+    binded_gaussian_tmb %>%
+      filter(intercept == 1, year_var == "year_nb")  %>%
+      mutate(
+        random_site = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "siteid:main_bas")
+            )),
+        random_basin = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "main_bas")
+            )),
+        random_span = map(mod,
+          ~try(get_random_effect_glmmTMB(
+              .x, effect = "span")
+            )),
+        ) %>%
+      select(-mod)
+    ),
+  tar_target(gaussian_inla_rand,
+    rbind(gaussian_inla_exo_no_drivers, gaussian_inla_no_drivers) %>%
+      mutate(
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(
+            inla_mod = .x,
+            type = "rand"
+          )
+        )
+        ) %>%
+    unnest(hpd_random)),
 
 #tar_target(pred_gaussian,
   #binded_gaussian %>%
