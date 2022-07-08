@@ -138,7 +138,7 @@ p3 <- tu %>%
   labs(x = "Standardized slope coefficients (SD unit)")
 ```
 
-```{r}
+```{r, fig.show = "hide"}
 tar_load(r2_obs_fit)
 
 var_labels <- map_chr(names(pal_variable),
@@ -154,7 +154,7 @@ leg_dis <- get_legend(
       colour = guide_legend(nrow = 2)) +
   theme(
     legend.position = "bottom",
-    legend.text = element_text(size = 10),
+    legend.text = element_text(size = 8),
     legend.title = element_blank()
   ) +
 scale_color_manual(
@@ -167,7 +167,7 @@ fig1 <- plot_grid(
   print(p2),
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1, 1, 1, .1),
+  rel_heights = c(1.2, 1, 1, .1),
   ncol = 1)
 ```
 
@@ -191,22 +191,21 @@ fig1_cap <- paste0(
   "**Responses of five community metrics to time, local
   anthropogenic pressures, stream gradient and their interaction**. Responses of
   dissimilarity based on the Simpson index, turnover, Total abundance, Chao species
-  richness, the percentage of exotic species and of exotic species abundance.
+  richness, the proportion of non-native richness and of non-native abundance.
   Time was quantified by the logged number of years since the first year of
   sampling at a given site added to one. The legacy of past anthropogenic
   pressures and the recent changes in anthropogenic pressures were quantified
   respectively by the Human Footprint index (1993) and the ratio between the
-  Human Footprint at the year 2009 and
-1993. The stream gradient was quantified by the first axis of a PCA preformed on
-the stream reach characteristics, related to the average annual discharge,
-the distance from the source, and the strahler order. All the predictors were
-standardized prior to model evaluation. The Legacy of past anthropogenic
-pressures, quantified by the Human Footprint index (1993) was centered around
-its median value. Large, medium and thin bars depict respectively the bayesian
-credible intervals at 80, 90 and 95%. Main effects but time were not included
-for the site dissimilarity metrics (See methods).  Please
-note the broken abscissa scale in the framed panels. N = ", fnop, " monitoring
-events over ", fnsite, " sites.") %>%
+  Human Footprint at the year 2009 and 1993. The stream gradient was summarized 
+  by the first axis of a PCA preformed on the stream reach characteristics,
+  related to the average annual discharge, the distance from the source, and the
+  strahler order. All the predictors and responses were standardized prior to model
+  evaluation. The Legacy of past anthropogenic pressures, quantified by the
+  Human Footprint index (1993) was centered around its median value. Large,
+  medium and thin bars depict respectively the bayesian credible intervals at
+  80, 90 and 95%. Main effects but time were not included for the site
+  dissimilarity metrics (See methods). Please note the broken abscissa scale in
+  the framed panels. N = ", fnop, " sampling events over ", fnsite, " sites.") %>%
   str_remove_all("\n|\r") %>%
   str_replace_all("  ", " ")
 ```
@@ -221,15 +220,15 @@ ggsave(
   path = here("paper", "fig_paper"),
   scale = 1.75,
   width = 88,
-  height = 88 * 3.1,
+  height = 88 * 2.5,
   units = "mm",
   dpi = "print"
 )
 ```
 
-```{r, fig.asp = 3.1, fig.width = 2.25}
+```{r eff, fig.asp = 2.5, fig.width = 88* 0.0393701}
 #, fig.cap=fig1_cap
-knitr::include_graphics(here("paper", "fig_paper", "fig1.png"))
+knitr::include_graphics(here("paper", "fig_paper", "fig1.pdf"))
 ```
 
 
@@ -242,27 +241,6 @@ pca_data <- site_no_drivers_inla_tot[,
     colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
     !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
 ```
-```{r}
-tar_load(c(k4_fac_50_red, site_env))
-k4_fac_50_red <- tclust(
-     x = scale(pca_data,
-       center = FALSE),
-     iter.max = 100,
-     k = 4,
-     alpha = 0.05,
-     restr.fact = 50,
-     warnings = 2
-   )
-plot(k4_fac_50_red)
-site_cl_rm_red <- get_cluster_df(
-     tclust_obj = k4_fac_50_red,
-     site_env = site_env,
-     assign_threshold = .5,
-     clean_method = "rm"
-     )
-```
-
-
 ```{r}
 pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
 pca_clust3 <- compute_rotated_pca(pca_data, naxis = 3)
@@ -338,17 +316,18 @@ p_pca_cl_ell <- map(axis_l,
      override.aes = list(size = 10),
      title.theme = element_blank(),
      label.position = "top",
-     ncol = 1)
+     ncol = 2)
  ) +
  theme(
    legend.position = "bottom",
    panel.background = element_blank(),
-   legend.text = element_text(size = 10),
+   legend.text = element_text(size = 7),
    legend.key = element_rect(fill = NA)) +
  scale_color_viridis(
    discrete = TRUE,
    name = "Cluster", labels = cluster_labels)
 )
+p_cl <- p_pca_cl_ell[[1]]
 leg_cl <- get_legend(
   p_pca_cl_ell[[1]]
 )
@@ -377,13 +356,15 @@ pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
   BLUP (see methods). The principal components of the PCA were rotated with the
   varimax algorithm to increase the representation of the variables on the
   principal components (RC: rotated components). PCA with two and three
-  principal components explained respectively", paste0(pca2_var_expl, " and ", pca2_var_expl)," of the variance. The temporal trends of community
-  metrics were clustered using the k-means method while excluding 5%
-   of the most outlying data to avoid the identification of spurious clusters.
-  Sites with a doubtful assignement to a cluster were removed ", na_cluster, ".
-  The sites are colored by their cluster belongings. The ellipses represent the
-  95% interval around the clusters assuming a Student's t distribution. The
-  clusters were named according to their unique characteristics.") %>%
+  principal components explained respectively ",
+  paste0(pca2_var_expl, " and ", pca3_var_expl), " of the variance. The temporal
+  trends of community metrics were clustered using the k-means method while
+  excluding 5% of the most outlying sites and sites with a doubtful assignement
+  to a cluster were removed ", na_cluster, ".  The sites are colored by their
+  cluster belongings. The ellipses represent the 95% interval around the
+  clusters assuming a Student's t distribution. The clusters were named
+  according to their unique characteristics. Scaled temporal trends are
+  displayed in the boxplot.") %>%
   str_remove_all("\n|\r") %>%
   str_replace_all("  ", " ")
 ```
@@ -395,10 +376,11 @@ species richness, decrease in total abundance and no change.
 ```{r}
 fig2 <- plot_grid(
   p_pca_cl_top,
-  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(.8, .2)),
+  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(.75, .25)),
   nrow = 2,
-  rel_heights = c(1, .7)
+  rel_heights = c(1, .8)
 )
+
 ```
 ```{r save-fig2}
 #fig2
@@ -408,15 +390,15 @@ ggsave(
   path = here("paper", "fig_paper"),
   scale = 2.0,
   width = 88,
-  height = 88 * .8,
+  height = 88 * .9,
   units = "mm",
   dpi = "print"
 )
 ```
 
-```{r, fig.width = 4.75, fig.asp = 1.7}
+```{r, fig.asp = .9, fig.width = 88 * 0.0393701}
 # , fig.cap=pca_clust_cap
-knitr::include_graphics(here("paper", "fig_paper", "fig2.png"))
+knitr::include_graphics(here("paper", "fig_paper", "fig2.pdf"))
 ```
 
 
@@ -757,15 +739,6 @@ p_zoom_map_basin[[2]]
 
 
 ```{r}
-map_cl_cap <- "**Distribution of the clusters of biodiversity temporal trends** (without
-cluster being NAs, see legend Fig. 2). Left panel: Spatial distribution of the
-the clusters with insets of the (A) United States of America (USA), (B) Great Britain (GBR), (C) France (FR),
-(D) Sweden (SWE) and (E) Australia (AUS). Right panel: cluster frequency distribution in the
-three most represented Realms (in capital letters) and their most sampled
-hydrographic basins. The number of sites are displayed between parenthesis.
-"
-```
-```{r}
 cluster_labels2 <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
   ~paste0(.x, "\n(N = ", .y, ")"))
 leg_cl_right <- get_legend(
@@ -814,10 +787,6 @@ dev.print(
 dev.off()
 ```
 
-```{r map-cl-fin, fig.width = 4.75, fig.asp = .42}
-#, fig.cap=map_cl_cap
-knitr::include_graphics(here("paper", "fig_paper", "fig3_screenshot.png"))
-```
 
 
 
@@ -934,9 +903,26 @@ fig3_bottom_left3 <- ggdraw() +
 ```
 
 ```{r}
+leg_cl <- get_legend(
+  p_cl +
+    guides(
+      colour = guide_legend(
+     override.aes = list(size = 10),
+     title.theme = element_blank(),
+     label.position = "top",
+     ncol = 1)
+  ) +
+theme(
+  legend.position = "bottom",
+  panel.background = element_blank(),
+  legend.text = element_text(size = 10),
+  legend.key = element_rect(fill = NA)
+)
+
+)
 fig3 <- plot_grid(
   plot_grid(main_map_rect_basin, p_tot_tab,align = "h", axis = "lr", rel_widths = c(1, .65), nrow = 1),
-  plot_grid(fig3_bottom_left3, leg_cl, NULL, nrow = 1, rel_widths = c(1, .1, .7)),
+  plot_grid(fig3_bottom_left3, leg_cl, NULL, nrow = 1, rel_widths = c(1, .2, .7)),
   ncol = 1
   )
 ggsave(
@@ -949,6 +935,19 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+```
+
+```{r}
+map_cl_cap <- "**Spatial distribution of the clusters of biodiversity temporal
+trends**. Left panel: Spatial distribution of the the clusters with insets of
+the most sampled hydrographic basins by realms. Right panel: cluster frequency
+distribution in the three most represented Realms (in capital letters) and their
+most sampled hydrographic basins, corresponding to the inset of the left panel.
+The number of sites and the country are displayed between parenthesis."
+```
+
+```{r cl-map, fig.asp = .65, fig.width = 88* 0.0393701}
+knitr::include_graphics(here("paper", "fig_paper", "fig3.pdf"))
 ```
 
 
