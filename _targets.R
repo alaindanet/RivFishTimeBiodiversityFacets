@@ -1920,8 +1920,21 @@ tar_target(mod_exo_comp,
         ) %>%
       select(-mod)
     ),
-  tar_target(gaussian_inla_rand,
+  tar_target(gaussian_inla_rand_no_drivers,
     rbind(gaussian_inla_exo_no_drivers, gaussian_inla_no_drivers) %>%
+      mutate(
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(
+            inla_mod = .x,
+            type = "rand"
+          )
+        )
+        ) %>%
+      select(-mod) %>%
+      unnest(hpd_random)),
+  tar_target(gaussian_inla_rand,
+    rbind(gaussian_inla_exo, gaussian_inla) %>%
       mutate(
         hpd_random = map(
           mod,
@@ -2411,7 +2424,7 @@ tar_target(mod_sampling_eff,
         ) %>%
     select(-mod)
     ),
-  tar_target(tab_waic, 
+  tar_target(tab_waic,
     dic_waic_comp_time %>%
       filter(response %in% c(clust_var, exo_resp_var)) %>%
       mutate(
@@ -2446,8 +2459,25 @@ tar_target(mod_sampling_eff,
         fit = Inf#(max(fit) - min(fit)) * .90
         )
       ),
-
-
+  tar_target(gaussian_inla_espilon_error,
+    gaussian_inla_rand %>%
+      filter(term == "Precision for the Gaussian observations") %>%
+      distinct(response, mean) %>%
+      mutate(var = mean^2) %>%
+      rename(std = mean)
+    ),
+  tar_target(gaussian_inla_var_fitted,
+    rbind(gaussian_inla_exo, gaussian_inla) %>%
+      mutate(
+        var_pred = furrr::future_map(mod, function(y) {
+          map_dbl(y$marginals.fitted.values,
+            ~var(inla.rmarginal(1000, .x))
+          )
+        }
+          )
+      ) %>%
+    select(-mod)
+    ),
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {
       stopifnot(nrow(stat_data) == length(unique(stat_data$op_id)))
