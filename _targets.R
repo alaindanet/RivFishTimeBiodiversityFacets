@@ -1226,7 +1226,8 @@ tar_target(neutral_turnover,
       response = facet_var,
       mod = list(try(inla(
             formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = FALSE),
-            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
+              return.marginals=TRUE, return.marginals.predictor=TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
             data = rbind(
@@ -1498,7 +1499,8 @@ tar_target(neutral_turnover,
       response = exo_resp_var,
       mod = list(try(inla(
             formula = fun_int_env_formula_inla(x = exo_resp_var),
-            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
+              return.marginals=TRUE, return.marginals.predictor=TRUE),
             control.predictor = list(link = 1, compute = T),
             verbose = F,
             data = rbind(
