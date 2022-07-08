@@ -1237,6 +1237,30 @@ tar_target(neutral_turnover,
             )))),
     pattern = map(facet_var)
     ),
+  tar_target(gaussian_inla_null,
+    tibble(
+      response = facet_var,
+      mod = list(try(inla(
+            formula = as.formula(
+              paste0(
+                facet_var,
+                " ~ ",
+                ifelse(facet_var %in% tps_var, "0","1"),
+                "+ ",
+                "f(intercept_main_bas, model = 'iid') +
+                f(intercept_main_bassiteid, model = 'iid')"
+                )),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
+              return.marginals=TRUE, return.marginals.predictor=TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = rbind(
+              modelling_data[,colnames(modelling_data) %in% colnames(pred_data)],
+              pred_data
+            )
+            )))),
+    pattern = map(facet_var)
+    ),
   tar_target(pred_gaussian_inla,
     gaussian_inla %>%
       mutate(
@@ -1499,6 +1523,28 @@ tar_target(neutral_turnover,
       response = exo_resp_var,
       mod = list(try(inla(
             formula = fun_int_env_formula_inla(x = exo_resp_var),
+            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
+              return.marginals=TRUE, return.marginals.predictor=TRUE),
+            control.predictor = list(link = 1, compute = T),
+            verbose = F,
+            data = rbind(
+              modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
+              pred_data_exo
+            )
+            )))),
+    pattern = map(exo_resp_var)
+    ),
+  tar_target(gaussian_inla_exo_null,
+    tibble(
+      response = exo_resp_var,
+      mod = list(try(inla(
+            formula = as.formula(
+              paste0(
+                exo_resp_var,
+                " ~ ", "1 ", "+ ",
+                "f(intercept_main_bas, model = 'iid') +
+                f(intercept_main_bassiteid, model = 'iid')"
+                )),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
               return.marginals=TRUE, return.marginals.predictor=TRUE),
             control.predictor = list(link = 1, compute = T),
@@ -1922,6 +1968,19 @@ tar_target(mod_exo_comp,
     ),
   tar_target(gaussian_inla_rand_no_drivers,
     rbind(gaussian_inla_exo_no_drivers, gaussian_inla_no_drivers) %>%
+      mutate(
+        hpd_random = map(
+          mod,
+          ~get_hpdmarginal_inla(
+            inla_mod = .x,
+            type = "rand"
+          )
+        )
+        ) %>%
+      select(-mod) %>%
+      unnest(hpd_random)),
+  tar_target(gaussian_inla_rand_null,
+    rbind(gaussian_inla_exo_null, gaussian_inla_null) %>%
       mutate(
         hpd_random = map(
           mod,
