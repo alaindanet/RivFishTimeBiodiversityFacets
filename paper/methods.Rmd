@@ -565,8 +565,8 @@ We also computed $R^2$ to assess the quality of the fit of the bayesian models
 (\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i}))$ with $y_i$ and $\hat{y_i}$
 being respectively the observations and the predicted values, $Var_{fit}$ and
 Var_{res} being respectively the variance of predictive means and the variance
-of the residuals, @gelman_r-squared_2019]. $R^2$ spans from `r r2$min` for
-nestedness to `r r2$max` for species richness (See Fig. SXX), indicating that the
+of the residuals, @gelman_r-squared_2019]. $R^2$ spans from `r r2["min"]` for
+nestedness to `r r2["max"]` for species richness (See Fig. SXX), indicating that the
 the predictors namely time, anthropogenic pressures, and stream
 gradient as well as the hierarchical structure of the models all together
 capture a significant share of the variance.
