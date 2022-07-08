@@ -2511,9 +2511,11 @@ tar_target(mod_sampling_eff,
       mutate(response = get_var_replacement_vulgarisation()[response]) %>%
       group_by(response) %>%
       summarise(
+        cor = round(cor(y = fit, x = obs), 2),
         r2 = round((cor(y = fit, x = obs))^2, 2),
         gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
-        lab = paste0("~~~~R^2 == ", gelman_r2),
+        lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
+        lab = paste0("~~~~rho == ", gelman_r2),
         obs = -Inf,#(max(obs) - min(obs)) * .10,
         fit = Inf#(max(fit) - min(fit)) * .90
         )
