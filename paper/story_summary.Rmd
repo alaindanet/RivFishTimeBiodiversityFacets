@@ -3,6 +3,7 @@ title: "Story summary"
 author: "Stephen Heard method"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
+  bookdown::pdf_document2:
   word_document:
     toc: true
 bibliography: "bibliography.bib"
@@ -144,7 +145,7 @@ temporal community changes.
  
 The global positive temporal trends of total abundance and species richness that
 we found are in accordance with the result of a recent meta-analysis on aquatic
-insects [@klink_meta-analysis_2020]. Our results suggest that in fish stream
+insects [@van_klink_meta-analysis_2020]. Our results suggest that in fish stream
 communities, those positive trends are partly attributed to the increase of
 exotic species percentage.
 Furthermore, the high rates of community changes that we found were related to

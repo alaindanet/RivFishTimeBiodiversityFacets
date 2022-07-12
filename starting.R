@@ -436,6 +436,36 @@ update_file(
   force = FALSE
 )
 
+ti <- c("story_summary", "outline_wordstack", "figures",
+  "supplementary_figures")
+for (i in seq_along(ti)) {
+  upload_file(
+    file = here::here(paste0("paper/", ti[i], ".Rmd")),
+    gfile = NULL,
+    gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
+    shared_drive = NULL,
+    hide_code = TRUE,
+    path_output = here::here(paste0("paper/", ti[i], ".pdf")),
+    rich_text = TRUE,
+    rich_text_par = NULL,
+    force = FALSE
+  )
+}
+
+for (i in seq_along(ti)) {
+  update_file(
+    file = here::here(paste0("paper/", ti[i], ".Rmd")),
+    gfile = NULL,
+    gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
+    shared_drive = NULL,
+    hide_code = TRUE,
+    path_output = here::here(paste0("paper/", ti[i], ".pdf")),
+    rich_text = TRUE,
+    rich_text_par = NULL,
+    force = FALSE
+  )
+}
+
 ######################
 #  Link folder riv  #
 ######################

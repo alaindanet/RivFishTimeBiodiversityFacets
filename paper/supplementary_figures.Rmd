@@ -28,18 +28,20 @@ header-includes:
 
 ```{r options, include = FALSE}
 knitr::opts_chunk$set(echo = FALSE,
-                      collapse = TRUE,
-                      comment = "#>",
-                      fig.path = "graphics/knitr-",
-                      fig.retina = 1.618, # Control using dpi
-                      fig.width = 6,  # generated images
-                      fig.pos = "t",  # pdf mode
-                      fig.align = "center",
-                      dpi = if (knitr::is_latex_output()) 72 else 300,
-                      out.width = "100%",
-                      dev = "svg",
-                      dev.args = list(png = list(type = "cairo-png")),
-                      optipng = "-o1 -quiet")
+  message = FALSE,
+  warning = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "graphics/knitr-",
+  fig.retina = 1.618, # Control using dpi
+  fig.width = 6,  # generated images
+  fig.pos = "t",  # pdf mode
+  fig.align = "center",
+  dpi = if (knitr::is_latex_output()) 72 else 300,
+  out.width = "80%",
+  dev = "svg",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet")
 ```
 
 ```{r library, include = FALSE}
@@ -103,7 +105,7 @@ add_dataset_ref %>%
     databases have already been used in a previous study (Comte et al.,
       2021b). N: number of sites.") %>%
   kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(4, width = "8cm")
+  column_spec(4, width = "10cm")
 ```
 
 ```{r tab-pro-ch}
@@ -539,10 +541,10 @@ variable_stat %>%
   kbl(booktabs = T,
     label = "tab-var-mod",
     caption = "Description of the variables included in the model.") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   column_spec(4, width = "3cm") %>%
-  column_spec(5, width = "4cm") %>%
-  collapse_rows(columns = 1, latex_hline = "major", valign = "middle")
+  column_spec(5, width = "3cm") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 
@@ -575,13 +577,12 @@ ck_col_data %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
-
 The presence of multicollinearity among explicative variables was checked by
 measuring the Variance Inflation Factor (VIF) on a model formulation containing only
 the main effect, i.e. not the interactions. We did so because main variables ($X_1$,
 $X_2$) and the interactions are collinear by construction, interactions being the
 products of main variables (i.e. $X_1X_2$). The VIF values were all close to 1
-(Table \@ref(tab-vif)), indicating absence of multicollinearity.
+(Table \@ref(tab:tab-vif)), indicating absence of multicollinearity.
 
 ## Time modelling
 
@@ -641,7 +642,7 @@ The Pearson's correlation coefficient is displayed in each panel."
 ```
 
 
-```{r fit-obs, fig.asp = 1.5, fig.cap = obs_fit_cap}
+```{r fit-obs, fig.width = 8, fig.asp = 1.2, fig.cap = obs_fit_cap}
 obs_fit %>%
   filter(response %in% c(clust_var, exo_resp_var)) %>%
   mutate(response = get_var_replacement_vulgarisation()[response]) %>%

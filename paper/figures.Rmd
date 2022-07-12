@@ -62,7 +62,7 @@ names(pal_variable) <- get_var_replacement_vulgarisation()[restricted_dimension]
 
 ```{r loading-targets, include=FALSE}
 tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects,
-    measurement_exo))
+    measurement_exo, gaussian_inla_var_fitted, gaussian_inla_rand))
 tar_load(c(clust_var, exo_resp_var))
 ```
 
@@ -1056,6 +1056,7 @@ fig3
 
 - Figure 3: `r knitr::knit(text = map_cl_cap)`
 
+\newpage
 
 # Instructions from  NEE 
 

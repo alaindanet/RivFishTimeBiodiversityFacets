@@ -70,11 +70,6 @@ get_comp <- function(
   ) {
   pred[[type]][[resp]][["mean"]][lvl_comp]
 }
-pred_number$pred_hft93_t0$log_total_abundance
-get_comp(resp = "log_total_abundance",
-  lvl_comp = c("intact", "max")
-)
-
 ```
 
 
@@ -259,12 +254,7 @@ exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
   ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
 )
 names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
-
 ```
-
-
-
-
 
 ```{r}
 extract_pred <- function (x = NULL, resp = NULL, val_to_extract = NULL) {
@@ -397,7 +387,6 @@ ci90 <- tu %>%
   filter(ci_level == "level:0.90")
 ci95 <- tu %>%
   filter(ci_level == "level:0.95")
-unique(tu$term)
 ```
 
 
