@@ -23,7 +23,7 @@ tar_visnetwork()
 
 tar_make(names = bib)
 
-tar_make(names = riveratlas_total)
+tar_make(names = r2)
 tar_make(names = tab_waic)
 tar_make(names = hft_total_summary)
 tar_make(names = starts_with("pred_data"))

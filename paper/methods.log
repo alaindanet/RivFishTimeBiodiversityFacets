@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/Debian) (preloaded format=pdflatex 2022.2.26)  6 JUL 2022 18:12
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020/Debian) (preloaded format=pdflatex 2022.2.26)  8 JUL 2022 13:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -534,16 +534,17 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 LaTeX Warning: Reference `fig:pca-riv-str' on page 3 undefined on input line 22
 4.
 
-LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 2
-86.
+[3]
+LaTeX Font Info:    Trying to load font information for TS1+lmr on input line 3
+29.
 (/usr/share/texmf/tex/latex/lm/ts1lmr.fd
 File: ts1lmr.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [3] [4]
+) [4]
 
-LaTeX Warning: Reference `tab:aic' on page 5 undefined on input line 388.
+LaTeX Warning: Reference `tab:aic' on page 5 undefined on input line 371.
 
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
-44.
+27.
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
 ) [5] [6] [7] [8] (./methods.aux)
@@ -552,13 +553,13 @@ LaTeX Warning: There were undefined references.
 
  ) 
 Here is how much of TeX's memory you used:
- 13442 strings out of 481223
- 197292 string characters out of 5914619
- 540298 words of memory out of 5000000
+ 13440 strings out of 481223
+ 197302 string characters out of 5914619
+ 540327 words of memory out of 5000000
  29925 multiletter control sequences out of 15000+600000
- 466930 words of font info for 153 fonts, out of 8000000 for 9000
+ 466764 words of font info for 151 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 85i,9n,88p,768b,389s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 85i,9n,88p,768b,367s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dv
 ips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-rm.enc}{/usr/share/te
 xmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-ma
@@ -572,10 +573,10 @@ e/texmf/fonts/type1/public/lm/lmr7.pfb></usr/share/texmf/fonts/type1/public/lm/
 lmri10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy10.pfb></usr/share/texmf
 /fonts/type1/public/lm/lmsy7.pfb></usr/share/texmf/fonts/type1/public/lm/lmtt10
 .pfb>
-Output written on methods.pdf (8 pages, 266805 bytes).
+Output written on methods.pdf (8 pages, 269035 bytes).
 PDF statistics:
- 271 PDF objects out of 1000 (max. 8388607)
- 245 compressed objects within 3 object streams
- 70 named destinations out of 1000 (max. 500000)
+ 275 PDF objects out of 1000 (max. 8388607)
+ 249 compressed objects within 3 object streams
+ 72 named destinations out of 1000 (max. 500000)
  34921 words of extra memory for PDF output out of 35830 (max. 10000000)
 

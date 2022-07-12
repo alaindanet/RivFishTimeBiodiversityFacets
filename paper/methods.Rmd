@@ -121,19 +121,19 @@ The data selection resulted in `r fnsite` fish community time series, totalling 
 events, `r fnmeas` species abundance records, and `r fnsp`
 freshwater fish species. The median time span was of `r mspan`
 years, the median baseline of the time series was `r mbl`, and the median
-completeness of the time series was of `r mcpl` (see Fig. SX-X for the complete distribution).
+completeness of the time series was of `r mcpl` (see Fig. S2 for the complete distribution).
 The sites were
 mostly located in Palearctic (`r per_eco["Palearctic"]`),
 Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`).
 Four countries gathered `r per_s4pays` of the sites, namely Great Britain
 (`r per_pays["GBR"]`), France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`),
-and the United States (`r per_pays["USA"]`).
+and the United States (`r per_pays["USA"]`, Table S4).
 
 # Biodiversity facets
 
 To evaluate temporal changes in freshwater fish communities, we assessed changes
 in several biodiversity facets related to species composition, species richness 
-and total abundances.
+and total abundances (Table S7).
 
 ## Dissimilarity metrics
 
@@ -214,7 +214,8 @@ u_per <- scales::percent(table_to_vec(unitvec))
 
 Total abundance was reported in number of individuals (`r u_per["Count"]` of the sampling
 events), density of individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per
-Unit Effort (`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`).
+Unit Effort (`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`,
+Table S3).
 Although we selected for strict protocol consistency, 70% or more of the
 sampling events by unit of abundance did not reported sampling effort,
 preventing us to harmonize count, abundance density and Catch Per Unit Effort
@@ -253,7 +254,7 @@ the minimum values of abundance in the community (i.e. $x^{\prime}_i =
 1 / min(x_i)$), which we further rounded so that each community had at least one singleton
 species, i.e. a species with one individual. The correlation was very high
 between raw species richness and chao richness (Spearman's $\rho = `r cor_chao_rich`$ for
-both raw variables and log transformed ones, Fig. SXX).
+both raw variables and log transformed ones, Fig. S3).
 
 # Stream gradient and anthropogenic pressures
 
@@ -307,7 +308,7 @@ occurrences, immigration rates and community composition [ref].
 To capture this stream gradient, we described stream characteristics at each site by the
 altitude (m), slope (deg.), average annual discharge ($m^3.s^-1$), distance from
 source (km), and strahler order that we extracted from 
-the HydroAtlas database [@linke_global_2019; @robinson_earthenv-dem90_2014]. We did
+the HydroAtlas database [@linke_global_2019; @robinson_earthenv-dem90_2014, Table S8]. We did
 so by snapping the sites to the closest stream segment using a one kilometer
 buffer (`r v_rvat` of the sites). We performed a Principal Component Analysis
 over the site stream characteristics after log transforming (added absolute
@@ -318,7 +319,7 @@ components, using the varimax criterion [@kaiser_varimax_1958; @revelle_psych_20
 to increase the quality of the variable representation (i.e. their loadings) on
 the two first principal components. The first rotated component,
 related to average annual discharge, distance from source and Strahler order
-and capturing `r perc_var_rc1` of the variance (Fig. S\@ref(fig:pca-riv-str)),
+and capturing `r perc_var_rc1` of the variance (Fig. S4),
 was used as a composite variable describing the stream gradient from upstream to
 downstream.
 
@@ -326,7 +327,7 @@ The degree of anthropogenic pressure was quantified using the human footprint in
 [@venter_global_2016; @venter_sixteen_2016]. The human footprint index aggregates
 an array of human pressures, including the extent of build environments, population density, 
 electric infrastructures, croplands, pasture lands, roads, railways and
-navigable pathways. It does so by combining remote sensing data,
+navigable pathways (Fig. S5). It does so by combining remote sensing data,
 systematic surveys and modelling from ground data, making it less prone to errors
 [@venter_global_2016]. The human footprint range between 0 and 50, with values
 superior to four being considered in a degraded state [@williams_change_2020]. 
@@ -342,7 +343,8 @@ changes in human footprint, we log-transformed the ratio of human footprint with
 a base 2. Then, a value of minus one and one represent a division by two and a
 multiplication by two of the human footprint between 1993 and 2009,
 respectively. Only `r perc_opb93` of the samplings took place before 1993, while
-`r perc_op9309` took place between 1993 and 2009 and `r perc_opa09` after 2009.
+`r perc_op9309` took place between 1993 and 2009 and `r perc_opa09` after 2009
+(Fig. S1).
 The human footprint indexes 1993 and 2009 were not correlated with the stream
 gradient (Spearman's $\rho$, `r cor_env_rc1["hft_ix_c93"]` and
 `r cor_env_rc1["hft_ix_c09"]` respectively).
@@ -384,10 +386,10 @@ U.S. Geological Survey ([https://nas.er.usgs.gov/](https://nas.er.usgs.gov/)), a
 remaining species origins at the country scale, using national atlases and
 Fishbase data in neighboring countries, such as for *Piaractus brachypomus* and
 *Rutilus rutilus* in the United States (`r nat_per["handmade"]` of the species
-occurrences).
+occurrences, Table S6).
 
 We then estimated the percentage of non-native species for each sampling events,
-both for species richness and abundances.
+both for species richness and abundances (Table S7).
 
 # Statistical analysis
 
@@ -477,7 +479,7 @@ dec_waic <- round(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]])
 We log-transformed the number of years as $\log(year + 1)$ as it improved the
 quality of the model fitting to the data, decreasing the WAIC [Watanabe-Akaike
 information criterion, @gelman_understanding_2014; @vehtari_pratical_2017] by 
-`r dec_waic` in average (`r perc_dec_waic`) (Table S\@ref(tab:aic)). It
+`r dec_waic` in average (`r perc_dec_waic`) (Table S11). It
 suggests the presence of non-linearity in the temporal trends, which is
 particularly expected in the case of bounded variables such as the dissimilarity
 metrics. Then the rate of change per decade of a given biodiversity facet
@@ -490,7 +492,7 @@ $\log_2(HFT_{2009} / HFT_{1993})$. Then, a value of minus one and one
 represent respectively a division by two and a multiplication by two of the
 human footprint between 1993 and 2009. We log-transformed total abundance and
 Chao species richness, then the temporal trends are expressed in percentage by
-unit of time (See Table SXX for a summary of variable transformations).  
+unit of time (See Table S9 for a summary of variable transformations).  
 
 ### Variable standardization
 
@@ -552,24 +554,43 @@ quality of parameter inference did not suffer from the uninformative priors.
 ### Model validity
 
 ```{r}
-tar_load(r2_obs_fit)
-r2 <- c(min = min(r2_obs_fit$gelman_r2), max = max(r2_obs_fit$gelman_r2))
+
 ```
 
 We checked the model validity visually by plotting the fitted versus the
-observed values (Fig. SXX). We visually inspected the PIT and CPO (respectively
+observed values (Fig. S6). We visually inspected the PIT and CPO (respectively
 Posterior Integral Transform and Conditional Predictive Ordinate) distribution
 to assess both the overall quality of fitting, and the frequency of outliers. 
-We also computed $R^2$ to assess the quality of the fit of the bayesian models
-[$R^2 = Var_{fit} / (Var_{fit} + Var_{res}) = \sigma^2(\hat{y_i}) /
-(\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i}))$ with $y_i$ and $\hat{y_i}$
-being respectively the observations and the predicted values, $Var_{fit}$ and
-Var_{res} being respectively the variance of predictive means and the variance
-of the residuals, @gelman_r-squared_2019]. $R^2$ spans from `r r2["min"]` for
-nestedness to `r r2["max"]` for species richness (See Fig. SXX), indicating that the
-the predictors namely time, anthropogenic pressures, and stream
-gradient as well as the hierarchical structure of the models all together
-capture a significant share of the variance.
+We also computed $R^2$ to assess the quality of the fit of the bayesian models.
+We computed the variance associated of each predicted values from their
+posterior distribution (`inla.rmarginal` in `INLA` R package), following @gelman_r-squared_2019
+recommandations to take in account variability associated with priors ($\theta$). We then
+computed marginal ($R^2_m$)and conditional ($R^2_c$) R-squared, respectively associated to the variance
+explained by fixed effects and the one explained by both fixed and random
+effects [@nakagawa_general_2013]. We only included
+random effect on intercept in the $R^2$ computation, i.e. the basin effect
+($a_n$) and the site effect (a_{i|n}) [@nakagawa_general_2013;
+@lahuis_explained_2014]. As we computed the variance of predicted values for
+each observations, we reported the median and the standard deviation of
+R-squared [Table S12, @gelman_r-squared_2019].
+
+$$
+R^2_m = Var_{fit} / (Var_{fit} + Var_{res}) = \sigma^2(\hat{y_i}) /
+(\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i}))
+$$
+
+$$
+R^2_c = (Var_{fit} + (a_n)^2 + (a_{i|n})^2) / (Var_{fit}  + (a_n)^2 + (a_{i|n})^2 + Var_{res}))
+$$
+
+$$ with $y_i$ and $\hat{y_i}$ being respectively the observations and the
+predicted values, $Var_{fit}$ and Var_{res} being respectively the variance of
+predictive means and the variance of the residuals, @gelman_r-squared_2019.
+$a_n$ and a_{i|n} are respectively the random standard deviation on the
+intercept associated to the hydrographic basin and the site.
+
+There was very multicollinearity in the model, as all Variance Inflation Factors
+were around 1 (Table S10).
 
 ## Assessing the dimensionality of temporal community changes
 
@@ -593,7 +614,7 @@ clusters. The method consists of trimming the $\alpha$ most outlying data while
 taking in account the multidimentional structure, the number of dimension being
 the number of the biodiversity facets. To choose a relevant number of clusters,
 we plotted the trimmed log-likelihood of the function as a function of the
-proportion of the most outlying data trimmed ($alpha$) [ref plot]. We thus
+proportion of the most outlying data trimmed ($alpha$) (Fig. S7). We thus
 selected a partition of temporal community changes in six clusters with
 $\alpha=5\%$. We did not constraint the algorithm for the relative size of shape
 of the clusters, as we had no apriori expectation about them. The clustering

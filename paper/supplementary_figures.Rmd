@@ -22,6 +22,8 @@ header-includes:
   - \usepackage[normalem]{ulem}
   - \usepackage{makecell}
   - \usepackage{xcolor}
+  - \renewcommand{\thefigure}{S\arabic{figure}}
+  - \renewcommand{\thetable}{S\arabic{table}}
 ---
 
 ```{r options, include = FALSE}
@@ -74,8 +76,7 @@ tbl_merge(list(t1, t2, t3)) %>%
 }
 ecdf_fun <- function(x, perc) ecdf(x)(perc)
 ```
-
-- Add plot species richness / chao richness
+\newpage
 
 # Dataset
 
@@ -94,13 +95,15 @@ tar_load(c(
 
 ```{r}
 add_dataset_ref %>%
+  select(-Program, -`Database source`) %>%
   kbl(booktabs = T,
     label = "tab-add-data",
     caption = "Databases included in the current study that were not included in
     RivFishTIME publication (Comte et al., 2021a). Apart from MARIS, these
     databases have already been used in a previous study (Comte et al.,
       2021b). N: number of sites.") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  column_spec(4, width = "8cm")
 ```
 
 ```{r tab-pro-ch}
@@ -115,7 +118,7 @@ tabyl_df(filtered_dataset_modelling$site_quali, "protocol") %>%
     label = "tab-pro",
     caption = "Protocol occurrence across sites"
     ) %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 
@@ -131,7 +134,7 @@ tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
     label = "tab-u",
     caption = "Abundance unit across sites"
     ) %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 
@@ -153,7 +156,7 @@ location_summary %>%
     label = "tab-loc",
     caption = "Realm and country occurrence across sites"
     ) %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 ```{r}
@@ -238,7 +241,7 @@ plot_grid(
   label = "AUTO"
 )
 ```
-
+\newpage
 
 # Biodiversity summary metrics 
 
@@ -268,7 +271,7 @@ resp_summary <- tmp %>%
       ")"),
     `(Min, Max)` = paste0("(", round(min, 2), ",", round(max, 2), ")")
   ) %>%
-  select(`Community metric`, n, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
+  select(`Community metric`, N = n, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
   arrange(median) %>%
   select(-median)
   
@@ -277,7 +280,7 @@ resp_summary %>%
     label = "tab-resp",
     caption = "Summary descriptors of response variables distribution"
     ) %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 ```{r}
@@ -359,7 +362,7 @@ exotic_source_summary %>%
   kbl(booktabs = T,
     label = "tab-exo-source",
     caption = "Data source for native species status in term of species occurrence") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 ```{r tab-exo-ck}
@@ -367,8 +370,10 @@ exotic_compo_summary %>%
   kbl(booktabs = T,
     label = "tab-exo",
     caption = "Summary distribution of native and non-native species metrics") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
+
+\newpage
 
 # Environmental variables
 
@@ -421,7 +426,7 @@ evt_summary %>%
   kbl(booktabs = T,
     label = "tab-riv",
     caption = "Descriptive statistics for the site environmental descriptors.") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 ```{r}
@@ -477,6 +482,8 @@ guides(colour = guide_legend(title.position = "top"))
 p_cor_lc_hft
 ```
 
+\newpage
+
 # Statistical analysis
 
 ## Variable
@@ -489,12 +496,12 @@ variable_stat <- tibble(
     "main_bas", "siteid"),
   names = c(get_model_term_replacement_paper_figure(),
     get_var_replacement_vulgarisation())[variables],
-  var_type = c("Factor", "Continuous", rep("Proportion", 8), "Continuous",
+  var_type = c("Numeric", "Continuous", rep("Proportion", 8), "Continuous",
     "Continuous", "Continuous", "Proportion", "Factor", "Character",
     "Character"),
-  unit = c("Count (reference), Number of individuals by 100 sq meters,
-    Catch per Unit Effort (CPUE), Leslie index", rep("", 8), "",
-  "Number of year", "", "", "Factor with 4 levels", "", "", ""),
+  unit = c("cf Abundance unit", rep("", 8), "",
+  "Number of year", "", "", "", "Factor with 4 levels: Count (reference), Number of individuals by 100 sq meters,
+    Catch per Unit Effort (CPUE), Leslie index", "", ""),
 
   signification = c(
     "Total number of individuals",
@@ -532,8 +539,10 @@ variable_stat %>%
   kbl(booktabs = T,
     label = "tab-var-mod",
     caption = "Description of the variables included in the model.") %>%
-  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  column_spec(4, width = "3cm") %>%
+  column_spec(5, width = "4cm") %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle")
 ```
 
 
@@ -563,7 +572,7 @@ ck_col_data %>%
     label = "tab-vif",
     caption = vif_caption
     ) %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 
@@ -591,7 +600,7 @@ tab_waic %>%
     label = "tab-aic",
     caption = cap_aic_table
     ) %>%
-  kable_styling(latex_options = "striped") %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
 add_header_above(c(" " = 1, "WAIC" = 2, " " = 2))
 ```
 
@@ -608,16 +617,31 @@ cpo <- gaussian_inla_exo_std %>%
     pit = map(cpo_pit, ~.x$cpo$pit)
     ) %>%
   select(-mod)
+
+r2_obs_fit <- obs_fit %>%
+  filter(response %in% c(clust_var, exo_resp_var)) %>%
+  mutate(response = get_var_replacement_vulgarisation()[response]) %>%
+  group_by(response) %>%
+  summarise(
+    cor = round(cor(y = fit, x = obs), 2),
+    r2 = round((cor(y = fit, x = obs))^2, 2),
+    gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
+    lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
+    lab = paste0("\n~~~~rho == ", cor),
+    obs = -Inf,#(max(obs) - min(obs)) * .10,
+    fit = Inf#(max(fit) - min(fit)) * .90
+  )
 ```
 
 ```{r}
 obs_fit_cap <- "Fitted values by the models vs observed values. The black line
 displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
-Sticks located at the abscissa and ordinate axis display value concentration."
+Sticks located at the abscissa and ordinate axis display value concentration.
+The Pearson's correlation coefficient is displayed in each panel."
 ```
 
 
-```{r fit-obs, fig.cap = obs_fit_cap}
+```{r fit-obs, fig.asp = 1.5, fig.cap = obs_fit_cap}
 obs_fit %>%
   filter(response %in% c(clust_var, exo_resp_var)) %>%
   mutate(response = get_var_replacement_vulgarisation()[response]) %>%
@@ -625,13 +649,58 @@ obs_fit %>%
   geom_point(alpha = .3, color = "gray70") +
   geom_abline(slope = 1, intercept = 0, size = 1) +
   geom_text(data = r2_obs_fit,
-    aes(label = lab), parse = T,
+    aes(label = lab), parse = TRUE,
     vjust = 1, hjust = 0
     ) +
-  facet_wrap(vars(response), scales = "free") +
+  facet_wrap(vars(response), scales = "free", ncol = 3) +
   labs(x = "Observed values", y = "Fitted values") +
   geom_rug(alpha = .05)
 ```
+
+```{r}
+tar_load(c(gaussian_inla_var_fitted, gaussian_inla_rand))
+r2 <- gaussian_inla_var_fitted %>%
+  filter(response %in% c(clust_var, exo_resp_var)) %>%
+  left_join(
+    get_std_inla_from_rand(inla_rand_tab = gaussian_inla_rand),
+    by = "response") %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    r2_mvp_marg = pmap(
+      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "marginal")
+      ),
+    r2_mvp_cond = pmap(
+      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "conditional")
+      ),
+    r2_mvp_marg_mean = map_dbl(r2_mvp_marg, mean),
+    r2_mvp_marg_med = map_dbl(r2_mvp_marg, median),
+    r2_mvp_marg_sd = map_dbl(r2_mvp_marg, sd),
+    r2_mvp_cond_mean = map_dbl(r2_mvp_cond, mean),
+    r2_mvp_cond_med = map_dbl(r2_mvp_cond, median),
+    r2_mvp_cond_sd = map_dbl(r2_mvp_cond, sd),
+    lab_r2_marg = paste0("~~~~R^2 == ", round(r2_mvp_marg_med, 2)),
+    lab_r2_cond = paste0("~~~~R^2 == ", round(r2_mvp_cond_med, 2))
+  )
+```
+
+```{r}
+r2 %>%
+  mutate(
+    `Marginal (s.d.)` = paste0(round(r2_mvp_marg_med, 2), " (",
+      round(r2_mvp_marg_sd, 2),")"),
+    `Conditional (s.d.)` = paste0(round(r2_mvp_cond_med, 2), " (",
+      round(r2_mvp_cond_sd, 2),")")) %>%
+  select(`Response variable` = response, `Marginal (s.d.)`, `Conditional (s.d.)`) %>%
+  kbl(booktabs = T,
+    label = "tab-r2",
+    caption = "Bayesian marginal and conditional R-squared from the models with
+    ecological drivers. Details of computations are presented in methods.") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+
 
 ## Clustering of temporal trends
 
@@ -649,14 +718,18 @@ factors of 1 and 50 respectively. Restricted factor of 1 was used for the main
 text"
 ```
 
-
-```{r, fig.cap=cap_clust_curv}
+```{r, fig.show = "hide"}
 library(tclust)
-plot_grid(
+p <- plot_grid(
   plot(clust_curv_site),
   plot(clust_curv_site_fac_50),
   nrow = 2
 )
+```
+
+
+```{r, fig.cap=cap_clust_curv}
+p
 ```
 
 ```{r}
@@ -873,7 +946,7 @@ p_pca_cl_top <- plot_grid(
 ## Predictions of the model
 
 ```{r}
-tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo))
+tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo, pred_data_explanation))
 
 pred_gaussian_inla_tot <- rbind(
   pred_gaussian_inla %>%
@@ -882,7 +955,57 @@ pred_gaussian_inla_tot <- rbind(
   )
 ```
 
-```{r, }
+```{r, fig.asp = .7}
+for (i in seq_len(nrow(pred_gaussian_inla_tot))) {
+  plot_grid(plotlist = pred_gaussian_inla_tot$pred_plot[[i]], ncol = 2)
+}
+```
+
+
+
+
+```{r}
+names(pred_data_explanation)
+selected_pred <- list(
+  "log1_year_nb" = c("0", "10"),
+  "riv_str_rc1" = c("median"),
+  "hft_ix_c93" = c("intact", "max"),
+  "hft_ix_c9309_log2_ratio" = c("div/2", "inc/2")
+)
+val_pred_selected <- map2(
+  pred_data_explanation, names(pred_data_explanation),
+  ~(.x[selected_pred[[.y]]])
+)
+
+tab_pred <- enframe(val_pred_selected) %>%
+  unnest(value) %>%
+  mutate(
+    signif = unlist(map(names(pred_data_explanation), ~selected_pred[[.x]])),
+    Signification = get_pred_signification()[signif],
+    driver_name =  get_model_term_replacement_paper_figure()[name],
+    name = str_replace(get_model_term_replacement()[name], "\n", " "),
+    value = round(value, 1)
+  ) %>%
+  select(
+    Driver = driver_name,
+    `Predictor variable` = name,
+    Value = value, Signification
+  )
+```
+
+```{r}
+tab_pred_cap <- "Values and signification of predictor variables used in the
+main text."
+tab_pred %>%
+  kbl(booktabs = T,
+    label = "tab-pred",
+    caption = tab_pred_cap) %>%
+  column_spec(4, width = "5cm") %>%
+  collapse_rows(columns = c(1, 2), latex_hline = "major", valign = "middle") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r}
 for (i in seq_along(pred_gaussian_inla_tot$response)) {
   p_list <- map(pred_gaussian_inla_tot$pred_plot[[i]],
     ~ .x + theme(legend.position = "bottom")
@@ -923,7 +1046,7 @@ tab_rand %>%
     label = "tab-rand",
     caption = tab_rand_cap) %>%
   collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = "striped")
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 

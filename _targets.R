@@ -102,7 +102,7 @@ list(
         "occurrence.txt"),
     expandLinks = "any") %>%
     normalizePath(),
-    format = "file"),
+    format = "file", error = "continue"),
   tar_target(updated_rivfishtime_file,
     here("inst", "extdata", "GlobalTimeSeries_time_series_updated_02120222.csv") %>%
       R.utils::filePath(., expandLinks = "any") %>%
@@ -2515,7 +2515,7 @@ tar_target(mod_sampling_eff,
         r2 = round((cor(y = fit, x = obs))^2, 2),
         gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
         lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
-        lab = paste0("~~~~rho == ", gelman_r2),
+        lab = paste0("~~~~rho == ", cor),
         obs = -Inf,#(max(obs) - min(obs)) * .10,
         fit = Inf#(max(fit) - min(fit)) * .90
         )
@@ -2538,6 +2538,28 @@ tar_target(mod_sampling_eff,
           )
       ) %>%
     select(-mod)
+    ),
+  tar_target(r2,
+    gaussian_inla_var_fitted %>%
+      left_join(get_std_inla_from_rand(inla_rand_tab = gaussian_inla_rand), by = "response") %>%
+      mutate(
+        r2_mvp_marg = pmap(
+          list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+          ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "marginal")
+          ),
+        r2_mvp_cond = pmap(
+          list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+          ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "conditional")
+          ),
+        r2_mvp_marg_mean = map_dbl(r2_mvp_marg, mean),
+        r2_mvp_marg_med = map_dbl(r2_mvp_marg, median),
+        r2_mvp_marg_sd = map_dbl(r2_mvp_marg, sd),
+        r2_mvp_cond_mean = map_dbl(r2_mvp_cond, mean),
+        r2_mvp_cond_med = map_dbl(r2_mvp_cond, median),
+        r2_mvp_cond_sd = map_dbl(r2_mvp_cond, sd),
+        lab_r2_marg = paste0("~~~~R^2 == ", round(r2_mvp_marg_med, 2)),
+        lab_r2_cond = paste0("~~~~R^2 == ", round(r2_mvp_cond_med, 2))
+      )
     ),
   tar_target(filtered_dataset_modelling,
     map(filtered_dataset, function(x, stat_data) {

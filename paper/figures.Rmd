@@ -63,6 +63,7 @@ names(pal_variable) <- get_var_replacement_vulgarisation()[restricted_dimension]
 ```{r loading-targets, include=FALSE}
 tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects,
     measurement_exo))
+tar_load(c(clust_var, exo_resp_var))
 ```
 
 
@@ -139,13 +140,34 @@ p3 <- tu %>%
 ```
 
 ```{r, fig.show = "hide"}
-tar_load(r2_obs_fit)
+r2 <- gaussian_inla_var_fitted %>%
+  filter(response %in% c(clust_var, exo_resp_var)) %>%
+  left_join(
+    get_std_inla_from_rand(inla_rand_tab = gaussian_inla_rand),
+    by = "response") %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    r2_mvp_marg = pmap(
+      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "marginal")
+      ),
+    r2_mvp_cond = pmap(
+      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
+      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "conditional")
+      ),
+    r2_mvp_marg_mean = map_dbl(r2_mvp_marg, mean),
+    r2_mvp_marg_med = map_dbl(r2_mvp_marg, median),
+    r2_mvp_cond_mean = map_dbl(r2_mvp_cond, mean),
+    r2_mvp_cond_med = map_dbl(r2_mvp_cond, median),
+    lab_r2_marg = paste0("~~~~R^2 == ", round(r2_mvp_marg_med, 2)),
+    lab_r2_cond = paste0("~~~~R^2 == ", round(r2_mvp_cond_med, 2))
+  )
 
 var_labels <- map_chr(names(pal_variable),
   ~paste0(
     "'", .x,"'",
     "~(R^2 == ",
-    r2_obs_fit[r2_obs_fit$response == .x, ]$gelman_r2,
+    round(r2[r2$response == .x, ]$r2_mvp_cond_med, 2),
     ")")
 )
 leg_dis <- get_legend(
@@ -204,8 +226,10 @@ fig1_cap <- paste0(
   Human Footprint index (1993) was centered around its median value. Large,
   medium and thin bars depict respectively the bayesian credible intervals at
   80, 90 and 95%. Main effects but time were not included for the site
-  dissimilarity metrics (See methods). Please note the broken abscissa scale in
-  the framed panels. N = ", fnop, " sampling events over ", fnsite, " sites.") %>%
+  dissimilarity metrics (See methods). R-Squared conditional to the hierarchical
+  structure of the model are displayed in the legend. Please note the broken
+  abscissa scale in the framed panels. N = ", fnop, " sampling events over ",
+  fnsite, " sites.") %>%
   str_remove_all("\n|\r") %>%
   str_replace_all("  ", " ")
 ```

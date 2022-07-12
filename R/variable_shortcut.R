@@ -231,3 +231,22 @@ replacement_random_term <- function() {
     "siteid1" = "Time (site nested in basin)"
   )
 }
+
+replacement_random_term_bis <- function() {
+  c(
+    "Gaussian observations" = "epsilon"
+  )
+}
+
+get_pred_signification <- function() {
+
+  c(
+    "0" = "Year nb of sample for a site = 0, i.e. baseline year",
+    "10" = "Year nb of sample for a site = 10, i.e. a decade",
+    "intact" = "Median intact site (human footprint index between 1 and 4, Williams et al. 2020)",
+    "max" = "Most degraded site in the dataset, i.e. highest human footprint index", 
+    "median" = "Median stream gradient",
+    "div/2" = "Anthropogenic pressures divided by two between 1993 and 2009", 
+    "inc/2" = "Anthropogenic pressures multipled by two between 1993 and 2009"
+  )
+}

@@ -722,3 +722,18 @@ HC.prior  = "expression:
   log_dens = log_dens - log(2) - theta / 2;
   return(log_dens);
 "
+
+get_std_inla_from_rand <- function (
+  inla_rand_tab = NULL
+  ) {
+  x <- inla_rand_tab %>%
+    filter(ci_level == "level:0.95") %>%
+    mutate(
+      term = str_remove(term, "Precision for "),
+      term = str_replace(term, "the Gaussian observations", "epsilon")
+      ) %>%
+    distinct(response, term, mean)
+  x %>%
+    pivot_wider(names_from = "term", values_from = "mean")
+}
+
