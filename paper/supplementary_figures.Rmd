@@ -588,7 +588,8 @@ products of main variables (i.e. $X_1X_2$). The VIF values were all close to 1
 
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
-cap_aic_table <- "WAIC of the statistical models fitting temporal trends with 
+cap_aic_table <- "Watanabe-Akaike
+information criterion (WAIC) of the statistical models fitting temporal trends with 
 either the number of year since the start of sampling or the log of the former 
 variable added to one." %>%
 str_remove_all("\n")

@@ -437,7 +437,7 @@ update_file(
 )
 
 ti <- c("story_summary", "outline_wordstack", "figures",
-  "supplementary_figures")
+  "supplementary_figures", "methods")
 for (i in seq_along(ti)) {
   upload_file(
     file = here::here(paste0("paper/", ti[i], ".Rmd")),

@@ -371,7 +371,7 @@ sp_country_handmade <- measurement_exo %>%
 
 The biogeographic origin of the fish species describing whether species were
 native or introduced to a given drainage basin was retrieved using the global
-database of @tedesco_global_2017 ( `r nat_per["tedesco"]` of the species
+database of @tedesco_global_2017 (`r nat_per["tedesco"]` of the species
 occurrences). For the sites
 falling outside of the river basins provided in @tedesco_global_2017, such as
 for the sites located close to the shore, we used the closest basin in the
@@ -478,7 +478,7 @@ dec_waic <- round(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]])
 
 We log-transformed the number of years as $\log(year + 1)$ as it improved the
 quality of the model fitting to the data, decreasing the WAIC [Watanabe-Akaike
-information criterion, @gelman_understanding_2014; @vehtari_pratical_2017] by 
+information criterion, @gelman_understanding_2014; @vehtari_practical_2017] by 
 `r dec_waic` in average (`r perc_dec_waic`) (Table S11). It
 suggests the presence of non-linearity in the temporal trends, which is
 particularly expected in the case of bounded variables such as the dissimilarity

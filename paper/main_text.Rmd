@@ -430,15 +430,16 @@ hft93hill <- get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95"
 hft93turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")
 ```
 We found strong evidence that past anthropogenic pressures increased the
-temporal trends of total abundancen, species richness (resp. Credible Interval 95%: 
+temporal trends of total abundancen, species richness (resp. Credible Interval 95%:$\beta\prime =$ 
 `r hft93abun` and `r hft93rich`, Fig. 1), and we found weak evidence that past
 anthropogenic pressures increased the temporal trends of temporal trends of
-the proportion of non-native richness (CI 80%: `r hft93exor`, Fig. 1). However we found no
-evidence that past anthropogenic pressures affect the proportion of non-native
-abundance (CI 80%: `r hft93exoa`, Fig. 1). We also found strong evidence that
-past anthropogenic pressures increased the temporal trends of temporal
-dissimilarity and turnover, i.e. respectively indicating changes in species dominance and
-species replacement (resp. CI 95%: `r hft93hill` and `r hft93turn`).
+the proportion of non-native richness (CI 80%:$\beta\prime =$ `r hft93exor`,
+Fig. 1). However we found no evidence that past anthropogenic pressures affect
+the proportion of non-native abundance (CI 80%:$\beta\prime =$ `r hft93exoa`,
+Fig. 1). We also found strong evidence that past anthropogenic pressures
+increased the temporal trends of temporal dissimilarity and turnover, i.e.
+respectively indicating changes in species dominance and species replacement
+(resp. CI 95%:$\beta\prime =$ `r hft93hill` and `r hft93turn`).
 
 In contrast, we found strong evidence that the recent increase in anthropogenic pressures,
 quantified by the ratio of the human footprint index between 2009 and 1993,
@@ -466,13 +467,13 @@ hft09turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term
 
 We did not found evidence for an effect of recent anthropogenic
 pressures on the temporal trends of both total abundance and species richness
-(resp. CI 80%: `r hft09abun` and `r hft09rich`, Fig. 1). However, we found
+(resp. CI 80%: $\beta\prime =$ `r hft09abun` and `r hft09rich`, Fig. 1). However, we found
 moderate evidence that recent increase in anthropogenic pressures increase the
-temporal trends of the proportion in non-native richness (CI 90%: `r hft09exor`,
+temporal trends of the proportion in non-native richness (CI 90%: $\beta\prime =$ `r hft09exor`,
 Fig. 1) but we found no evidence for an effect on the temporal trends of the
-proportion of non-native abundance (CI 80%: `r hft09exoa`, Fig. 1). We found
+proportion of non-native abundance (CI 80%: $\beta\prime =$ `r hft09exoa`, Fig. 1). We found
 also strong evidence that recent increase in anthropogenic pressures resulted in
-stronger species turnover and dissimilarity (resp. CI 95%: `r hft09turn` and
+stronger species turnover and dissimilarity (resp. CI 95%: $\beta\prime =$ `r hft09turn` and
 `r hft09hill`, Fig. 1).
 
 ```{r}
@@ -492,18 +493,16 @@ hft2turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95",
 
 We also found strong evidence for antagonistic effect between past and recent
 anthropogenic pressures on the temporal trends of total abundance
-(CI 95%: `r hft2abun`, Fig.1), meaning that recent anthropogenic decreased more
+(CI 95%: $\beta\prime =$ `r hft2abun`, Fig.1), meaning that recent anthropogenic decreased more
 temporal trends of total abundance in sites that were previously more degraded.
 We did not find evidence for such interaction for species richness
-(CI 80%: `r hft2rich`, Fig. 1). We also found moderate evidence for a
+(CI 80%: $\beta\prime =$ `r hft2rich`, Fig. 1). We also found moderate evidence for a
 synergistic effect between past and recent anthropogenic pressures on the
 temporal trends of the proportion of non-native species, but not of non-native
-abundance (resp. CI 90%: `r hft2exor` and CI 80% `r hft2exoa`, Fig.1). Finally, we
+abundance (resp. CI 90%: $\beta\prime =$ `r hft2exor` and CI 80% `r hft2exoa`, Fig.1). Finally, we
 found strong evidence for a synergistic between past and recent anthropogenic
-pressures on temporal dissimilarity and turnover (resp. CI 95%: `r hft2hill` and
+pressures on temporal dissimilarity and turnover (resp. CI 95%: $\beta\prime =$ `r hft2hill` and
 `r hft2turn`, Fig.1).
-
-$\beta\prime$
 
 ## Typology of community temporal trends
 

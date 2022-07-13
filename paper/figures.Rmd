@@ -136,7 +136,12 @@ p3 <- tu %>%
     legend_present = TRUE,
     xaxis_title = TRUE
     ) +
-  labs(x = "Standardized slope coefficients (SD unit)")
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "SD unit)",
+        sep = "")
+    )
+  )
 ```
 
 ```{r, fig.show = "hide"}
