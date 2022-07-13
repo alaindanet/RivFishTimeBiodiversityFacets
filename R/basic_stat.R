@@ -43,6 +43,7 @@ r2_mvp <- function(
   type = "all"
   ) {
 
+  # from std to var
   var_interp <- sum(map_dbl(std_intercept, ~.x^2))
 
   out <- list(

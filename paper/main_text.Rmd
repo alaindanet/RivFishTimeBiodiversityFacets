@@ -1,0 +1,607 @@
+---
+title: "Main text"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::pdf_document2
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+                      collapse = TRUE,
+                      comment = "#>",
+                      fig.path = "graphics/knitr-",
+                      fig.retina = 1.618, # Control using dpi
+                      fig.width = 6,  # generated images
+                      fig.pos = "t",  # pdf mode
+                      fig.align = "center",
+                      dpi = if (knitr::is_latex_output()) 72 else 300,
+                      out.width = "100%",
+                      dev = "svg",
+                      dev.args = list(png = list(type = "cairo-png")),
+                      optipng = "-o1 -quiet")
+
+library(here)
+source(here::here("R", "misc.R"))
+source(here::here("R", "variable_shortcut.R"))
+source(here::here("R", "basic_stat.R"))
+library(tidyverse)
+library(magrittr)
+library(cowplot)
+library(targets)
+
+if (Sys.info()["login"] == "alain")
+  file.copy(
+    from = "~/Documents/post-these/references.bib",
+    to = here("paper", "bibliography.bib")
+  )
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(site_desc_loc, measurement))
+tar_load(c(modelling_data, filtered_dataset_modelling, analysis_dataset))
+tar_load(filtered_op_protocol_modelling)
+tar_load(c(measurement_exo, modelling_data_exo))
+
+measurement_exo <- measurement_exo %>%
+  filter(op_id %in% unique(modelling_data_exo$op_id))
+
+tar_load(c(
+    gaussian_inla_no_drivers_effects,
+    gaussian_inla_exo_no_drivers_effects)
+)
+inla_no_drivers_effects <- rbind(
+  gaussian_inla_no_drivers_effects,
+  gaussian_inla_exo_no_drivers_effects
+)
+
+tar_load(c(pred_number, pred_inla))
+```
+```{r}
+table_to_vec <- function(x) {
+  setNames(as.numeric(x), names(x))
+}
+get_comp <- function(
+  pred = pred_number,
+  type = "pred_hft93_t0",
+  resp = NULL,
+  lvl_comp = NULL
+  ) {
+  pred[[type]][[resp]][["mean"]][lvl_comp]
+}
+```
+
+- Article guidelines by Nature in Ecology and Evolution: 
+  - Main text – up to 3,500 words, excluding abstract, Methods, references and figure legends.
+  - Abstract – up to 200 words, unreferenced. 
+  - Display items – up to 6 items (figures and/or tables). 
+  - Extended Data – up to 10 items (figures and/or tables, linked from the main text in the html version of the paper).
+  - Article should be divided as follows: 
+    - Introduction (without heading, up to 500 words of referenced text on the background of the work) 
+    - Results (concise, focused account of the findings)
+    - Discussion
+    - Online Methods.
+- Results and Methods should be divided by topical subheadings; the Discussion does not contain subheadings.
+- References – as a guideline, we typically recommend up to 50.
+
+
+# Introduction (up to 500 words)
+
+### 1.1 Community changes
+
+- Biodiversity crisis?
+  - IPBES
+  - Report on population declines (LPI) 
+    - LPI for freshwater population declines by 83% between 1970 and 2014
+- Community changes crisis?
+  - Contrasted results in temporal trends:
+    - High change in community change but no change in average in species
+      richness [@vellend_global_2013; @dornelas_assemblage_2014;
+      @blowes_geography_2019], or even positive in aquatic insects
+      [@van_klink_meta-analysis_2020]
+
+### 1.2 Antropogenic drivers
+
+- Land-use & Over-exploitation are the main drivers of biodiversity losses (IPBES,
+  2019; @reid_emerging_2019)
+  - Spatial comparison: @newbold_global_2015 (terrestrial vertebrates),
+    @outhwaite_agriculture_2022 (terrestrial insects)
+  - Land-use in freshwater system is a major and continuous threats [@reid_emerging_2019], 
+    including pollution by cropland and urban zones.
+  - examples of land-use on freshwater biodiversity
+    - pollution by coal mines: @giam_impact_2018
+    - Ref in @reid_emerging_2019
+    - Flow alteration by dams decreased discharge, impedes fish migration, and
+      decrease the connectivity between terrestrial and aquatic compartment
+      [@juracek_aging_2015].
+    - Non-native fish species introduction can alter native fish abundance but
+      also invertebrates and macrophytes [@gallardo_global_2016]
+
+### 1.3 Biodiversity facets
+
+- Trends in species richness, abundance, in dissimilarity
+  [@dornelas_assemblage_2014; @blowes_geography_2019; @lyashevska_how_2012]
+- Contrasted results and patterns
+- Do community trends of different biodiversity facets lie in different
+  dimensions? Or are they linear combination of each other? [@lyashevska_how_2012]
+
+### 1.4 Freshwater Fishes
+
+- Research gap on aquatic freshwater fishes
+- Critical elements of freshwater ecosystems
+- Big anthropogenic pressures: receptacle of terrestrial land alteration + flow
+  alteration + pollution + introduction of non-native species + exploitation
+  [@reid_emerging_2019]
+
+### 1.5 Study objectives
+
+- Assess the effect of anthropogenic pressures on the spatio-temporal trends of
+  fish freshwater communities at global scale
+- Assess the dimensionality of community changes?
+
+# Results
+
+```{r}
+get_global_effect <- function (
+  effect = inla_no_drivers_effects,
+  resp = NULL,
+  ci_lvl = "level:0.95"
+  ) {
+
+  out <- effect %>% 
+    filter(
+      ci_level == ci_lvl,
+      term == "log1_year_nb",
+      response == resp 
+    )
+
+  out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+}
+
+p_ci <- function(x, r = 2, p = TRUE) {
+  out <- round(x, r)
+
+  if (p) {
+    paste0(out["mean"], "%", " [", out["low"],"%,", out["high"],"%]")
+  } else {
+    paste0(out["mean"], " [", out["low"],",", out["high"],"]")
+  }
+
+}
+
+get_effect_ci <- function(
+  effect = tu,
+  resp = NULL,
+  term = "log1_year_nb",
+  ci_lvl = "level:0.95",
+  r = 2
+  ) {
+  term1 <- term
+
+  out <- effect %>%
+    filter(
+      ci_level == ci_lvl,
+      term == term1,
+      response == resp
+    )
+
+  out <- out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+
+  p_ci(x = out, r = r, p = FALSE)
+
+}
+```
+
+```{r}
+trends <- map(unique(inla_no_drivers_effects$response),
+  ~get_global_effect(
+  effect = inla_no_drivers_effects,
+  resp = .x,
+  ci_lvl = "level:0.95"
+  )
+)
+names(trends) <- unique(inla_no_drivers_effects$response)
+
+trends80 <- map(unique(inla_no_drivers_effects$response),
+  ~get_global_effect(
+  effect = inla_no_drivers_effects,
+  resp = .x,
+  ci_lvl = "level:0.80"
+  )
+)
+names(trends80) <- unique(inla_no_drivers_effects$response)
+
+trends90 <- map(unique(inla_no_drivers_effects$response),
+  ~get_global_effect(
+  effect = inla_no_drivers_effects,
+  resp = .x,
+  ci_lvl = "level:0.90"
+  )
+)
+names(trends90) <- unique(inla_no_drivers_effects$response)
+
+```
+
+```{r}
+abun_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_total_abundance)
+  * log(10 + 1),
+  r = 1)
+rich_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_chao_richness)
+  * log(10 + 1),
+  r = 1
+)
+hill_trends <- p_ci(
+  trends$hillebrand_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends90 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends90[[.x]] * log(10 + 1), r = 4, p = FALSE)
+)
+names(exo_trends90) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends80 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends80[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends80) <- c("perc_exo_sp", "perc_exo_abun")
+```
+
+```{r}
+extract_pred <- function (x = NULL, resp = NULL, val_to_extract = NULL) {
+
+  ci_low <- x[[resp]]$quant0.025[val_to_extract]
+  ci_high <- x[[resp]]$quant0.975[val_to_extract]
+
+  # Does the ci at 95 overlap? 
+  ci_overlap <- ci_low[val_to_extract[1]] > ci_high[val_to_extract[2]] |
+    ci_high[val_to_extract[1]] < ci_low[val_to_extract[2]]
+
+  list(
+    val = x[[resp]]$mean[val_to_extract],
+    ci_overlap = !ci_overlap
+  )
+}
+#' Get percentage of difference, the first value being the reference
+get_ratio <- function(x, r = 1) {
+  #reduce(x, `/`)
+  out <- round((x[2] - x[1]) / x[1] * 100, r)
+  paste0(out, "%")
+}
+```
+
+```{r}
+tar_load(pred_number)
+```
+
+```{r}
+pred_hft93_t0 <- map(
+  setNames(names(pred_number$pred_hft93_t0), names(pred_number$pred_hft93_t0)),
+  ~extract_pred(
+    x = pred_number$pred_hft93_t0,
+    resp = .x,
+    val_to_extract = c("intact", "max")
+  )
+)
+
+abun_rich_hft93_int_max <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft93_t0[[.x]]$val), r = 0)
+)
+other_hft93_int_max <- map_chr(
+  setNames(names(pred_number$pred_hft93_t0), names(pred_number$pred_hft93_t0))[
+    !names(pred_number$pred_hft93_t0) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft93_t0[[.x]]$val, r = 0)
+  )
+```
+
+
+```{r}
+pred_hft9309_t0 <- map(
+  setNames(names(pred_number$pred_hft9309_t0), names(pred_number$pred_hft9309_t0)),
+  ~extract_pred(
+    x = pred_number$pred_hft9309_t0,
+    resp = .x,
+    val_to_extract = c("div/2", "inc/2")
+  )
+)
+
+abun_rich_hft93909_dec_inc_by2 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft9309_t0[[.x]]$val), r = 0)
+)
+other_hft93909_dec_inc_by2 <- map_chr(
+  setNames(names(pred_number$pred_hft9309_t0), names(pred_number$pred_hft9309_t0))[
+    !names(pred_number$pred_hft9309_t0) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft9309_t0[[.x]]$val, r = 0)
+  )
+```
+
+```{r}
+pred_hft93_t10 <- map(
+  setNames(names(pred_number$pred_hft93_t10), names(pred_number$pred_hft93_t10)),
+  ~extract_pred(
+    x = pred_number$pred_hft93_t10,
+    resp = .x,
+    val_to_extract = c("intact", "max")
+  )
+)
+
+abun_rich_hft93_int_max_t10 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft93_t10[[.x]]$val), r = 0)
+)
+other_hft93_int_max_t10 <- map_chr(
+  setNames(names(pred_number$pred_hft93_t10), names(pred_number$pred_hft93_t10))[
+    !names(pred_number$pred_hft93_t10) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft93_t10[[.x]]$val, r = 0)
+  )
+```
+
+```{r}
+pred_hft9309_t10 <- map(
+  setNames(names(pred_number$pred_hft9309_t10), names(pred_number$pred_hft9309_t10)),
+  ~extract_pred(
+    x = pred_number$pred_hft9309_t10,
+    resp = .x,
+    val_to_extract = c("div/2", "inc/2")
+  )
+)
+
+abun_rich_hft93909_dec_inc_by2_t10 <- map_chr(
+  setNames(c("log_total_abundance", "log_chao_richness"),
+    c("log_total_abundance", "log_chao_richness")),
+  ~ get_ratio(exp(pred_hft9309_t10[[.x]]$val), r = 0)
+)
+other_hft93909_dec_inc_by2_t10 <- map_chr(
+  setNames(names(pred_number$pred_hft9309_t10), names(pred_number$pred_hft9309_t10))[
+    !names(pred_number$pred_hft9309_t10) %in% c("log_chao_richness",
+      "log_total_abundance")],
+  ~ get_ratio(pred_hft9309_t10[[.x]]$val, r = 0)
+  )
+```
+
+```{r}
+tar_load(c(gaussian_inla_std_effects, gaussian_inla_exo_std_effects))
+tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects)
+ci80 <- tu %>%
+  filter(ci_level == "level:0.80")
+ci90 <- tu %>%
+  filter(ci_level == "level:0.90")
+ci95 <- tu %>%
+  filter(ci_level == "level:0.95")
+```
+
+## Global temporal trends
+
+We found strong evidence for a global increase in both total abundance and
+species richness of freshwater fish communities, respectively `r abun_trends`
+and `r rich_trends` by decade (CI 95%). We further found moderate evidence for a
+decline in the proportion of non-native abundance,
+`r exo_trends[["perc_exo_abun"]]` by decade (CI 90%) but no evidence for a net
+temporal trend in the proportion of non-native richness 
+(`r exo_trends[["perc_exo_sp"]]`, CI 80%). We also found that temporal
+dissimilarity metrics of Jaccard, Turnover and Simpson-based have overall effect
+comparable in magnitude (Fig. S10), indicating the temporal changes of fish communities
+are driven by both species replacement and changes in species dominance.
+
+## Effect of anthropogenic pressures 
+
+We found strong evidence that past anthopogenic pressures, quantified by the
+human footprint index at the year 1993, result in higher species richness (Fig.
+1), as most degraded sites have `r abun_rich_hft93_int_max["log_chao_richness"]`
+more richness than intact sites. Sites with higher past anthropogenic pressures
+also had an higher proportion of non-native richness and non-native abundance
+(strong evidence, Fig. 1), such as most degraded sites had a proportion of
+non-native species twice higher than intact sites (resp.  
+`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])` and 
+`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`) and a proportion
+of non-native abundance three times higher 
+(`r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])` and
+`r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])` resp.). 
+We found also strong evidence that past anthropogenic pressures resulted in
+lower total abundance (Fig. 1), such as most degraded sites had 
+`r abun_rich_hft93_int_max["log_total_abundance"]` lower total abundance than
+intact sites.
+
+```{r}
+hft93abun <- get_effect_ci(resp = "log_total_abundance", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")
+hft93rich <- get_effect_ci(resp = "log_chao_richness", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")
+hft93exor <- get_effect_ci(resp = "perc_exo_sp", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c93")
+hft93exoa <- get_effect_ci(resp = "perc_exo_abun", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c93")
+hft93hill <- get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")
+hft93turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c93")
+```
+We found strong evidence that past anthropogenic pressures increased the
+temporal trends of total abundancen, species richness (resp. Credible Interval 95%: 
+`r hft93abun` and `r hft93rich`, Fig. 1), and we found weak evidence that past
+anthropogenic pressures increased the temporal trends of temporal trends of
+the proportion of non-native richness (CI 80%: `r hft93exor`, Fig. 1). However we found no
+evidence that past anthropogenic pressures affect the proportion of non-native
+abundance (CI 80%: `r hft93exoa`, Fig. 1). We also found strong evidence that
+past anthropogenic pressures increased the temporal trends of temporal
+dissimilarity and turnover, i.e. respectively indicating changes in species dominance and
+species replacement (resp. CI 95%: `r hft93hill` and `r hft93turn`).
+
+In contrast, we found strong evidence that the recent increase in anthropogenic pressures,
+quantified by the ratio of the human footprint index between 2009 and 1993,
+decreased both species richness and total abundance (Fig. 1). 
+A multiplication by two of human footprint between 1993 and 2009 decreased
+species richness by `r abun_rich_hft93909_dec_inc_by2["log_chao_richness"]` 
+and total abundance by `r abun_rich_hft93909_dec_inc_by2["log_total_abundance"]`
+compared to a division by two of human footprint in the same time range. We also
+found strong evidence that recent increase in anthropogenic pressures increased
+the proportion of non-native species and abundances (Fig. 1), respectively by five times
+(`r scales::percent(pred_hft9309_t0$perc_exo_sp$val["div/2"])` vs
+`r scales::percent(pred_hft9309_t0$perc_exo_sp$val["inc/2"])` for sites whose
+anthropogenic pressures recently decrease and increase respectively) and by
+eight times (`r scales::percent(pred_hft9309_t0$perc_exo_abun$val["div/2"])` vs
+`r scales::percent(pred_hft9309_t0$perc_exo_abun$val["inc/2"])`).
+
+```{r}
+hft09abun <- get_effect_ci(resp = "log_total_abundance", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio", r = 3)
+hft09rich <- get_effect_ci(resp = "log_chao_richness", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio", r = 3)
+hft09exor <- get_effect_ci(resp = "perc_exo_sp", ci_lvl = "level:0.90", term = "log1_year_nb:hft_ix_c9309_log2_ratio", r = 2)
+hft09exoa <- get_effect_ci(resp = "perc_exo_abun", ci_lvl = "level:0.80", term = "log1_year_nb:hft_ix_c9309_log2_ratio", )
+hft09hill <- get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c9309_log2_ratio")
+hft09turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95", term = "log1_year_nb:hft_ix_c9309_log2_ratio")
+```
+
+We did not found evidence for an effect of recent anthropogenic
+pressures on the temporal trends of both total abundance and species richness
+(resp. CI 80%: `r hft09abun` and `r hft09rich`, Fig. 1). However, we found
+moderate evidence that recent increase in anthropogenic pressures increase the
+temporal trends of the proportion in non-native richness (CI 90%: `r hft09exor`,
+Fig. 1) but we found no evidence for an effect on the temporal trends of the
+proportion of non-native abundance (CI 80%: `r hft09exoa`, Fig. 1). We found
+also strong evidence that recent increase in anthropogenic pressures resulted in
+stronger species turnover and dissimilarity (resp. CI 95%: `r hft09turn` and
+`r hft09hill`, Fig. 1).
+
+```{r}
+hft2abun <- get_effect_ci(resp = "log_total_abundance", ci_lvl = "level:0.95",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio", r = 3)
+hft2rich <- get_effect_ci(resp = "log_chao_richness", ci_lvl = "level:0.80",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio", r = 3)
+hft2exor <- get_effect_ci(resp = "perc_exo_sp", ci_lvl = "level:0.90",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio", r = 3)
+hft2exoa <- get_effect_ci(resp = "perc_exo_abun", ci_lvl = "level:0.80",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio")
+hft2hill <- get_effect_ci(resp = "hillebrand_dis_scaled", ci_lvl = "level:0.95",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio")
+hft2turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95",
+  term = "log1_year_nb:hft_ix_c93:hft_ix_c9309_log2_ratio")
+```
+
+We also found strong evidence for antagonistic effect between past and recent
+anthropogenic pressures on the temporal trends of total abundance
+(CI 95%: `r hft2abun`, Fig.1), meaning that recent anthropogenic decreased more
+temporal trends of total abundance in sites that were previously more degraded.
+We did not find evidence for such interaction for species richness
+(CI 80%: `r hft2rich`, Fig. 1). We also found moderate evidence for a
+synergistic effect between past and recent anthropogenic pressures on the
+temporal trends of the proportion of non-native species, but not of non-native
+abundance (resp. CI 90%: `r hft2exor` and CI 80% `r hft2exoa`, Fig.1). Finally, we
+found strong evidence for a synergistic between past and recent anthropogenic
+pressures on temporal dissimilarity and turnover (resp. CI 95%: `r hft2hill` and
+`r hft2turn`, Fig.1).
+
+$\beta\prime$
+
+## Typology of community temporal trends
+
+We found that the Principal Component Analysis necessitated four principal
+components over the four community metrics to explain more than 90% of variation
+in temporal trends (69% and 87% with respectively two and three principal
+components), one axis for each community metrics, meaning that there was a low
+collinearity among the temporal trends of community metrics (Fig. 2). Clustering
+of commmunity temporal trends identified six clusters related to PCA axis.
+Around 40% of the sites were attributed to a cluster related to a medium temporal increase
+in species richness and total abundance, as well a medium temporal dissimilarity
+and turnover (Fig. 2). The second cluster (16% of the sites) was related to
+communities displaying an high turnover, and a relatively moderate temporal
+increase in species richness, total abundance and dissimilarity. The third, fourth
+and fifth clusters (resp. 13%, 12% and 9% of the sites, Fig. 2) were
+respectively related to a temporal increase in species richness, temporal
+decrease in total abundance and to a temporal decrease in species richness. The
+last cluster (7% of the sites) was related to communities displaying relatively
+low temporal changes.
+
+## Spatial distribution of community temporal trends 
+
+We found that the spatial distribution of clusters of community temporal trends
+were relatively homogeneous across realms and more heterogeneous across
+hydrographic basin (Fig. 3). We further found that the random variance in
+temporal trends, i.e. in the slope coefficient of time predictor, attributed to
+site identity was higher than the one attributed to hydrographic basin for all
+variables (Table S14). Expect for total abundance and species richness, the
+variance attributed to site was at least twice higher than the one attributed to
+basin (Table S14).
+
+
+# Discussion
+
+### Global trends
+
+- We found the same temporal trends in total abundance than
+  @van_klink_meta-analysis_2020 (+11%) in aquatic insects.
+- Turnover is the main components of dissimilarity as found in previous studies @blowes_geography_2019
+- We further found that dissimilarity is both related to change in dominance and
+  in species occurrence, i.e. changes in changes in species occurrence concerns
+  abundant species [@hillebrand_biodiversity_2018]
+- Our results on species richness contrast with @dornelas_assemblage_2014
+
+### Effect of anthropogenic pressures
+
+- Both past, recent pressures and their interactions increase temporal dissimilarity
+- We observe stronger recovery in species richness and abundance in sites more degraded 30 years ago
+  - Might be due to DCE in Europe and Clean Water Act (US), (are there same
+    thing in Canada, Australia and JPN?)
+  - However, 92% of our sites can be categorized as degraded
+  - Might explain @van_klink_meta-analysis_2020
+- Recent increase in human pressures left a strong spatial signature on richness
+  and abundance, confirming previous results on terrestrial vertebrates and
+  insects [@newbold_global_2015; @outhwaite_agriculture_2022]
+  - but was found in the temporal trends only on abundance in
+    interaction with past pressures, i.e. recent increases in anthropogenic
+    pressures seems to have an effect in most degraded sites in the past.
+- Anthropogenic pressures have strong spatial and temporal effects on community
+  changes
+
+### Constrasted community changes
+
+- Our results shows that community changes in different dimensions: richness,
+  abundance and dissimilarity, in accordance with previous results
+  [@dornelas_assemblage_2014; @blowes_geography_2019]
+- Community can change in different ways: richness, abundance, dissimilarity.
+  Related to the multidimensional nature of biodiversity [@lyashevska_how_2012;
+  @chase_embracing_2018]
+- Clustering reveals that most of our sites displays medium changes in
+  dissimilarity, low increase in richness and in abundance, to relate with the fact that
+  92% of our sites can be considered as degraded and that the model suggests
+  that past degradation increases the temporal trends of richness and abundance
+
+### Spatial scale of community changes (minor point)
+
+- Variance of temporal trends attributed to site twice higher than basin
+- Cluster distribution of community changes are homogeneous across realms,
+  relatively homogeneous across basin
+- Spatial heterogeneity of community changes at small spatial scale, echoes with 
+  abundant research on richness changes across spatial scale [@chase_embracing_2018]
+  Our results suggest that the way that community changes is very heterogeneous
+  at small spatial scale and might reflect the spatial heterogeneity in
+  anthropogenic pressures and stream characteristics.
+
+## 5 Conclusion
+
+- Temporal trends confirm previous results on dissimilarity and species richness
+  [@van_klink_meta-analysis_2020; @dornelas_assemblage_2014;
+  @blowes_geography_2019]
+- Past and recent changes in anthropogenic pressures have strong effects on
+  temporal trends, in addition to spatial signature [@newbold_global_2015;
+  @outhwaite_agriculture_2022]
+- Contrasted community changes: either species richness, abundance,
+  dissimilarity
+
+# Wordstack
+
+# References {-}
+
+<div id="refs"></div>
