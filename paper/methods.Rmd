@@ -117,13 +117,12 @@ events the same year, we selected the sampling that took place at the closest
 date from the mode sampled date of the site. We further checked that the
 reported unit of abundance was homogeneous for each time series.
 
-The data selection resulted in `r fnsite` fish community time series, totalling `r fnop` sampling
-events, `r fnmeas` species abundance records, and `r fnsp`
+The data selection resulted in `r fnsite` fish community time series, totalling
+`r fnop` sampling events, `r fnmeas` species abundance records, and `r fnsp`
 freshwater fish species. The median time span was of `r mspan`
 years, the median baseline of the time series was `r mbl`, and the median
 completeness of the time series was of `r mcpl` (see Fig. S2 for the complete distribution).
-The sites were
-mostly located in Palearctic (`r per_eco["Palearctic"]`),
+The sites were mostly located in Palearctic (`r per_eco["Palearctic"]`),
 Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`).
 Four countries gathered `r per_s4pays` of the sites, namely Great Britain
 (`r per_pays["GBR"]`), France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`),
@@ -158,8 +157,8 @@ extirpated and total species respectively.
 
 $$
 \begin{aligned}
-H &= 1 - H \\
-H &= 1 - \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}
+H_d &= 1 - H \\
+H_d &= 1 - \dfrac{\sum_i (p_i - p^{\prime}_i)^2}{\sum_i p_i^2 + \sum_i p^{\prime2}_i - \sum_i p_i p^{\prime}_i}
 (\#eq:hill)
 \end{aligned}
 $$ 
@@ -237,8 +236,6 @@ cor_log_chao_rich <-  cor(
   method = "spearman") %>%
 round(., 2)
 ```
-
-
 As sampled species richness is a negatively biased estimator of the "true"
 species richness, we corrected sampled species richness with the coverage-based
 rarefaction and extrapolation methodology [@chao_coverage-based_2012]. The
@@ -304,24 +301,23 @@ cor_env_rc1 <- cor_env["riv_str_rc1", ]
 
 In dendritic networks, the environmental heterogeneity and connectivity along
 the longitudinal (upstream-downstream) gradient strongly shape species
-occurrences, immigration rates and community composition [ref].
-To capture this stream gradient, we described stream characteristics at each site by the
+occurrences, immigration rates and community composition [ref].  To capture this
+stream gradient, we described stream characteristics at each site by the
 altitude (m), slope (deg.), average annual discharge ($m^3.s^-1$), distance from
-source (km), and strahler order that we extracted from 
-the HydroAtlas database [@linke_global_2019; @robinson_earthenv-dem90_2014, Table S8]. We did
-so by snapping the sites to the closest stream segment using a one kilometer
-buffer (`r v_rvat` of the sites). We performed a Principal Component Analysis
-over the site stream characteristics after log transforming (added absolute
-minimum values plus one to avoid values $\leq 0$,
-$x^{\prime}_i = x_i + min(x_i) + 1$) and standardizing all the variables, i.e. centering and scaling
-. We orthogonally rotated the two first principal
-components, using the varimax criterion [@kaiser_varimax_1958; @revelle_psych_2019],
-to increase the quality of the variable representation (i.e. their loadings) on
-the two first principal components. The first rotated component,
-related to average annual discharge, distance from source and Strahler order
-and capturing `r perc_var_rc1` of the variance (Fig. S4),
-was used as a composite variable describing the stream gradient from upstream to
-downstream.
+source (km), and strahler order that we extracted from the HydroAtlas database
+[@linke_global_2019; @robinson_earthenv-dem90_2014, Table S8]. We did so by
+snapping the sites to the closest stream segment using a one kilometer buffer
+(`r v_rvat` of the sites). We performed a Principal Component Analysis over the
+site stream characteristics after log transforming (added absolute minimum
+values plus one to avoid values $\leq 0$, $x^{\prime}_i = x_i + min(x_i) + 1$)
+and standardizing all the variables, i.e. centering and scaling. We
+orthogonally rotated the two first principal components, using the varimax
+criterion [@kaiser_varimax_1958; @revelle_psych_2019], to increase the quality
+of the variable representation (i.e. their loadings) on the two first principal
+components. The first rotated component, related to average annual discharge,
+distance from source and Strahler order and capturing `r perc_var_rc1` of the
+variance (Fig. S4), was used as a composite variable describing the stream
+gradient from upstream to downstream.
 
 The degree of anthropogenic pressure was quantified using the human footprint index
 [@venter_global_2016; @venter_sixteen_2016]. The human footprint index aggregates
