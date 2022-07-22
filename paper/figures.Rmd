@@ -280,6 +280,15 @@ p_rotated_pca_clust <- my_pca_plot(
   pca_clust$rotated,
   replace_var = get_var_replacement())
 ```
+```{r, results = "hide"}
+summary(pca_clust$normal)
+summary(pca_clust$rotated)
+
+summary(pca_clust2$normal)
+summary(pca_clust2$rotated)
+
+```
+
 
 ```{r}
 p_pca_clust <- plot_pca_clust(
