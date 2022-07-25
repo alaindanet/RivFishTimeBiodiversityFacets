@@ -38,6 +38,8 @@ library(tidyverse)
 library(magrittr)
 library(cowplot)
 library(targets)
+library(kableExtra)
+
 
 if (Sys.info()["login"] == "alain")
   file.copy(

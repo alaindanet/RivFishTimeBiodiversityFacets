@@ -482,3 +482,31 @@ R.utils::createLink(
   overwrite = TRUE
 )
 
+######################
+#  main text trackdown  #
+######################
+
+library(trackdown)
+upload_file(
+  file = here::here("paper/main_text.Rmd"),
+  gfile = NULL,
+  gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
+  shared_drive = NULL,
+  hide_code = TRUE,
+  path_output = here::here("paper/main_text.pdf"),
+  rich_text = TRUE,
+  rich_text_par = NULL,
+  force = FALSE
+)
+
+update_file(
+  file = here::here("paper/main_text.Rmd"),
+  gfile = NULL,
+  gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
+  shared_drive = NULL,
+  hide_code = TRUE,
+  path_output = here::here("paper/main_text.pdf"),
+  rich_text = TRUE,
+  rich_text_par = NULL,
+  force = FALSE
+)
