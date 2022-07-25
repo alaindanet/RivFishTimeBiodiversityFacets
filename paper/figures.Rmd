@@ -43,7 +43,7 @@ knitr::opts_chunk$set(
 # control also the order of the legend
 restricted_dimension <- c(
   "hillebrand_dis_scaled", "turnover_scaled", "log_total_abundance",
-  "log_chao_richness", "perc_exo_sp", "perc_exo_abun")
+  "log_chao_richness", "perc_exo_abun", "perc_exo_sp")
 ```
 
 
@@ -79,8 +79,10 @@ tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
   mutate(
     term = str_replace_all(term,
       get_model_term_replacement_paper_figure()),
-    response = get_var_replacement_vulgarisation()[response]
+    response = get_var_replacement_vulgarisation()[response],
+    response = factor(response, levels = rev(names(pal_variable)))
     )
+
 term_level <- c(
       "Time",
       "Stream gradient",
@@ -114,31 +116,31 @@ tu %<>%
 library(ggbreak)
 p1 <- tu %>%
   filter(facet == "main") %>%
-  arrange(desc(width_bar)) %>%
+  arrange(response, desc(width_bar)) %>%
   plot_inla_fixed_effect(
-    scale_color = pal_variable,
+    scale_color = rev(pal_variable),
     term_level = term_level) +
   scale_x_break(c(.22, .55))
 
 p2 <- tu %>%
   filter(facet == "interaction") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(scale_color = pal_variable,
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(scale_color = rev(pal_variable),
     term_level = term_level) +
   scale_x_break(c(.135, .195))
 
 p3 <- tu %>%
   filter(facet == "dbl_interaction") %>%
-  arrange(desc(width_bar)) %>%
+  arrange(response, desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
-    scale_color = pal_variable,
+    scale_color = rev(pal_variable),
     term_level = term_level,
     legend_present = TRUE,
     xaxis_title = TRUE
     ) +
   labs(x = expression(
       paste("Standardized slope coefficients ",
-        beta, "' (", "SD unit)",
+        beta, "' (", "s.d. unit)",
         sep = "")
     )
   )
@@ -181,12 +183,13 @@ leg_dis <- get_legend(
       colour = guide_legend(nrow = 2)) +
   theme(
     legend.position = "bottom",
-    legend.text = element_text(size = 8),
+    legend.text = element_text(size = 10),
     legend.title = element_blank()
   ) +
 scale_color_manual(
   values = pal_variable,
-  labels = map(var_labels, ~parse(text = .x)))
+  labels = names(pal_variable)#map(var_labels, ~parse(text = .x))
+)
 )
 
 fig1 <- plot_grid(
@@ -194,7 +197,7 @@ fig1 <- plot_grid(
   print(p2),
   p3 + theme(legend.position = "none"),
   leg_dis,
-  rel_heights = c(1.2, 1, 1, .1),
+  rel_heights = c(1.2, 1, 1, .2),
   ncol = 1)
 ```
 
@@ -253,6 +256,7 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+
 ```
 
 ```{r eff, fig.asp = 2.5, fig.width = 88* 0.0393701}
@@ -277,26 +281,50 @@ pca_clust2 <- compute_rotated_pca(pca_data, naxis = 2)
 pca3_var_expl <- scales::percent(max(pca_clust3$rotated$Vaccounted["Cumulative Var", ]))
 pca2_var_expl <- scales::percent(max(pca_clust2$rotated$Vaccounted["Cumulative Var", ]))
 p_rotated_pca_clust <- my_pca_plot(
-  pca_clust$rotated,
+  pca_clust$normal,
   replace_var = get_var_replacement())
+
+tt <- pca_clust$normal$l1 %>%
+  as.data.frame() %>%
+  rownames_to_column("siteid") %>%
+  as_tibble() %>%
+  left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
+  na.omit()
 ```
+
 ```{r, results = "hide"}
 summary(pca_clust$normal)
 summary(pca_clust$rotated)
 
 summary(pca_clust2$normal)
 summary(pca_clust2$rotated)
-
 ```
 
 
 ```{r}
+debugonce(plot_pca_clust)
 p_pca_clust <- plot_pca_clust(
-     .data = pca_clust$rotated,
+     .data = pca_clust$normal,
      site_cl = site_cl_rm,
+     xaxis = "CS1", yaxis = "CS2",
      replace_var = get_var_replacement(),
      size_arrows_segment = 1,
      label_size = 2.5,
+     var_scaling_factor = 4,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 80
+   )
+
+p_pca_clust <- plot_pca_clust(
+     .data = pca_clust$normal,
+     site_cl = site_cl_rm,
+     xaxis = "CS1", yaxis = "CS2",
+     replace_var = get_var_replacement(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     var_scaling_factor = 4,
      alpha_point = .2,
      lim_x_y = c(-3.5, 3.5),
      force_pull = 1,
@@ -306,16 +334,16 @@ p_pca_clust <- plot_pca_clust(
 
 ```{r pca-cor-tps, fig.height=8}
 axis_l <- list(
-  c("RC1", "RC2"),
-  c("RC1", "RC3"),
-  c("RC1", "RC4"),
-#  c("RC1", "RC5"),
-  c("RC2", "RC3"),
-  c("RC2", "RC4"),
-#  c("RC2", "RC5"),
-#  c("RC4", "RC5"),
-#  c("RC3", "RC5"),
-  c("RC3", "RC4")
+  c("CS1", "CS2"),
+  c("CS1", "CS3"),
+  c("CS1", "CS4"),
+#  c("CS1", "CS5"),
+  c("CS2", "CS3"),
+  c("CS2", "CS4"),
+#  c("CS2", "CS5"),
+#  c("CS4", "CS5"),
+#  c("CS3", "CS5"),
+  c("CS3", "CS4")
 )
 
 cluster_names <- c(
@@ -334,7 +362,7 @@ cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster)
 
 p_pca_cl_ell <- map(axis_l,
   ~plot_pca_clust(
-     .data = pca_clust$rotated,
+     .data = pca_clust$normal,
      site_cl = site_cl_rm,
      add_point = TRUE,
      add_ellipse = TRUE,
@@ -375,14 +403,17 @@ p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2)
 
 bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
-p_pca_cl_bt <- target_bp_cl_dist(cl_obj = bp_data) +
+p_pca_cl_bt <- target_bp_cl_dist(
+  cl_obj = bp_data,
+  fct_var_lvl = names(pal_variable)[1:4]
+  ) +
   scale_color_viridis(discrete = TRUE) +
   scale_fill_viridis(discrete = TRUE) +
+  scale_x_discrete(position = "bottom") +
   theme(
     axis.text.x = element_text(angle = 0, vjust = 0),
     legend.position = "none"
   )
-
 ```
 
 ```{r} 
@@ -391,9 +422,7 @@ pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
   boxplots describing the distribution of the temporal trends by cluster (lower
     panel)**. The temporal trends of each community metrics were obtained from a
   model without anthropogenic pressures and extracted from random effect using
-  BLUP (see methods). The principal components of the PCA were rotated with the
-  varimax algorithm to increase the representation of the variables on the
-  principal components (RC: rotated components). PCA with two and three
+  BLUP (see methods). PCA with two and three
   principal components explained respectively ",
   paste0(pca2_var_expl, " and ", pca3_var_expl), " of the variance. The temporal
   trends of community metrics were clustered using the k-means method while
@@ -418,7 +447,6 @@ fig2 <- plot_grid(
   nrow = 2,
   rel_heights = c(1, .8)
 )
-
 ```
 ```{r save-fig2}
 #fig2

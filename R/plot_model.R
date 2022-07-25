@@ -164,7 +164,8 @@ plot_inla_fixed_effect <- function(
 
   p <- dataset %>%
     mutate(
-      term = factor(term, levels = term_level)
+      term = factor(term, levels = term_level),
+      response = factor(response, levels = names(scale_color)) 
     ) %>%
     ggplot(aes(
         y = term, x = mean,

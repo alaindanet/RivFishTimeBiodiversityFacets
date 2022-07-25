@@ -33,7 +33,7 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
     bp_theme
 }
 
-target_bp_cl_dist <- function(cl_obj = site_cl_rm) {
+target_bp_cl_dist <- function(cl_obj = site_cl_rm, fct_var_lvl = NULL) {
 
   bp_cl_df <- cl_obj %>%
     mutate(cl = as.factor(cl)) %>%
@@ -44,8 +44,15 @@ target_bp_cl_dist <- function(cl_obj = site_cl_rm) {
       values_to = "value"
     )
 
+    bp_cl_df <- bp_cl_df %>%
+      mutate(variable = get_var_replacement_vulgarisation()[variable])
+
+    if (!is.null(fct_var_lvl)) {
+      bp_cl_df <- bp_cl_df %>%
+        mutate(variable = factor(variable, levels = fct_var_lvl))
+    }
+
     bp_cl_dist <- bp_cl_df %>%
-      mutate(variable = get_var_replacement_vulgarisation()[variable]) %>%
       ggplot(aes(x = variable, y = value, fill = as.factor(cl)))
 
 
@@ -179,18 +186,29 @@ plot_pca_clust <- function(
   key_glyph_rect = TRUE
   ) {
 
-  pca_data <- .data$loadings[seq_len(nrow(.data$loadings)), ] %>%
+  if ("psych" %in% class(.data)) {
+    var_loadings <- .data$loadings[seq_len(nrow(.data$loadings)), ]
+  } else {
+    var_loadings <- .data$c1[seq_len(nrow(.data$c1)), ]
+  }
+  pca_data <- var_loadings %>%
     as.data.frame() %>%
     rownames_to_column("variable") %>%
     as_tibble()
 
   if (add_point | add_ellipse) {
-    tt <- .data$scores %>%
-      as.data.frame() %>%
-      rownames_to_column("siteid") %>%
-      as_tibble() %>%
-      left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
-      na.omit()
+    if ("psych" %in% class(.data)) {
+      ind_score <- .data$scores
+    } else {
+      ind_score <- .data$l1
+      colnames(ind_score) <- str_replace(colnames(ind_score), "R", "C")
+    }
+      tt <- ind_score %>%
+        as.data.frame() %>%
+        rownames_to_column("siteid") %>%
+        as_tibble() %>%
+        left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
+        na.omit()
   }
 
   if (!is.null(replace_var)) {
@@ -198,7 +216,12 @@ plot_pca_clust <- function(
       mutate(variable = replace_var[variable])
   }
 
-  var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
+  if ("psych" %in% class(.data)) {
+    var_exp <- round(.data$Vaccounted["Proportion Var", ] * 100)
+  } else {
+    var_exp <- round(.data$eig / sum(.data$eig) * 100)
+    names(var_exp) <- colnames(.data$c1)
+  }
 
   p <- ggplot() +
     geom_segment(
