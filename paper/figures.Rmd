@@ -274,62 +274,13 @@ pca_data <- site_no_drivers_inla_tot[,
     colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
     !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
 ```
+
 ```{r}
 pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
 pca_clust3 <- compute_rotated_pca(pca_data, naxis = 3)
 pca_clust2 <- compute_rotated_pca(pca_data, naxis = 2)
 pca3_var_expl <- scales::percent(max(pca_clust3$rotated$Vaccounted["Cumulative Var", ]))
 pca2_var_expl <- scales::percent(max(pca_clust2$rotated$Vaccounted["Cumulative Var", ]))
-p_rotated_pca_clust <- my_pca_plot(
-  pca_clust$normal,
-  replace_var = get_var_replacement())
-
-tt <- pca_clust$normal$l1 %>%
-  as.data.frame() %>%
-  rownames_to_column("siteid") %>%
-  as_tibble() %>%
-  left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
-  na.omit()
-```
-
-```{r, results = "hide"}
-summary(pca_clust$normal)
-summary(pca_clust$rotated)
-
-summary(pca_clust2$normal)
-summary(pca_clust2$rotated)
-```
-
-
-```{r}
-debugonce(plot_pca_clust)
-p_pca_clust <- plot_pca_clust(
-     .data = pca_clust$normal,
-     site_cl = site_cl_rm,
-     xaxis = "CS1", yaxis = "CS2",
-     replace_var = get_var_replacement(),
-     size_arrows_segment = 1,
-     label_size = 2.5,
-     var_scaling_factor = 4,
-     alpha_point = .2,
-     lim_x_y = c(-3.5, 3.5),
-     force_pull = 1,
-     force = 80
-   )
-
-p_pca_clust <- plot_pca_clust(
-     .data = pca_clust$normal,
-     site_cl = site_cl_rm,
-     xaxis = "CS1", yaxis = "CS2",
-     replace_var = get_var_replacement(),
-     size_arrows_segment = 1,
-     label_size = 2.5,
-     var_scaling_factor = 4,
-     alpha_point = .2,
-     lim_x_y = c(-3.5, 3.5),
-     force_pull = 1,
-     force = 80
-   )
 ```
 
 ```{r pca-cor-tps, fig.height=8}
@@ -617,7 +568,7 @@ tot_tab <- rbind(
   arrange(label) %>%
   mutate(
     country = ifelse(is.na(country), "", paste0(", ", country)),
-    basin_name_n = paste0(basin_name, " (", total_n, country, ")"),
+    basin_name_n = paste0(basin_name, " (", total_n, ")"),
     basin_name_n = ifelse(
       !is.na(label),
       paste0("(", label,") ", basin_name_n),
@@ -626,12 +577,33 @@ tot_tab <- rbind(
     basin_name_f = factor(basin_name_n, levels = unique(basin_name_n)),
 
   )
+levels(tot_tab$basin_name_f)
+unique(tot_tab$ecoregion)
+lvl_basin <- c(
+  "(i) Logan (16)",
+  "(h) Brisbane (52)",
+  "(g) Murray Darling (82)",
+  "AUSTRALASIA (330)",
+  "(f) Umealven (81)",
+  "(e) Seine (119)",
+  "(d) Derwent  (136)",
+  "PALEARCTIC (3470)",
+  "(c) Saint Laurent (118)",
+  "(b) Mississippi (322)",
+  "(a) Columbia (54)",
+  "NEARCTIC (1083)"
+)
+rev(lvl_basin)
+lvl_ecoregion <- c("Nearctic", "Palearctic", "Australasia")
+rev(lvl_ecoregion)
+
 ```
 
 ```{r}
 p_tot_tab <- tot_tab %>%
   mutate(
-    ecoregion = toupper(ecoregion)
+     basin_name_f = factor(basin_name_n, levels = lvl_basin),
+     ecoregion_f = factor(ecoregion, levels = lvl_ecoregion)
     ) %>%
   ggplot(aes(x = pc, y = basin_name_f, fill = as.factor(cl))) +
   geom_col() +
@@ -645,8 +617,14 @@ p_tot_tab <- tot_tab %>%
     legend.position = "none",
     strip.text = element_blank()
     ) +
-  facet_grid(rows = vars(ecoregion), scale = "free_y") +
+  facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
   scale_fill_viridis(discrete = TRUE, name = "Cluster")
+```
+
+```{r}
+gbr <- world_site_sf$site %>%
+  filter(country == "GBR")
+unique(gbr$main_bas)
 ```
 
 
@@ -660,8 +638,11 @@ world_site_sf$cl <- world_site_sf$site %>%
 zoom_map_world <- world_site_sf$cl %>%
   st_buffer(dist = .2) %>%
     st_bbox()
-
-main_map <- ggplot(world_site_sf$world) +
+unique(world_site_sf$world$continent)
+main_map <-
+  world_site_sf$world %>%
+  filter(continent != "Antarctica") %>%
+  ggplot() +
   geom_sf(color = NA) +
   theme_void() +
   geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
@@ -935,8 +916,8 @@ fig3_bottom <- plot_grid(
 
 fig3 <- plot_grid(fig3_top, fig3_bottom, nrow = 2, rel_widths = c(1, 1))
 fig3
-
 ```
+
 ```{r}
 fig3_bottom_left3 <- ggdraw() +
   draw_plot(
@@ -987,8 +968,8 @@ theme(
 
 )
 fig3 <- plot_grid(
-  plot_grid(main_map_rect_basin, p_tot_tab,align = "h", axis = "lr", rel_widths = c(1, .65), nrow = 1),
-  plot_grid(fig3_bottom_left3, leg_cl, NULL, nrow = 1, rel_widths = c(1, .2, .7)),
+  plot_grid(main_map_rect_basin, leg_cl, align = "h", axis = "lr", rel_widths = c(1, .2), nrow = 1),
+  plot_grid(fig3_bottom_left3, p_tot_tab, nrow = 1, rel_widths = c(1, .7)),
   ncol = 1
   )
 ggsave(
@@ -1027,9 +1008,9 @@ FGHLLL
 IJKLLL
 "
 map_cl_fin <- main_map_rect_basin + p_tot_tab +
-  p_zoom_map_basin[[1]] +  p_zoom_map_basin[[2]] + p_zoom_map_basin[[3]] +
-  p_zoom_map_basin[[4]] +  p_zoom_map_basin[[5]] + p_zoom_map_basin[[6]] +
-  p_zoom_map_basin[[7]] +  p_zoom_map_basin[[8]] + p_zoom_map_basin[[9]] +
+  p_zoom_map_basin[[1]] + p_zoom_map_basin[[2]] + p_zoom_map_basin[[3]] +
+  p_zoom_map_basin[[4]] + p_zoom_map_basin[[5]] + p_zoom_map_basin[[6]] +
+  p_zoom_map_basin[[7]] + p_zoom_map_basin[[8]] + p_zoom_map_basin[[9]] +
   leg_cl_right +
   plot_layout(design = layout)
 map_cl_fin
