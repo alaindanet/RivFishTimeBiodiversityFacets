@@ -2,11 +2,8 @@
 title: "Past and recent anthropogenic pressures drive community changes over space and time in riverine fish assemblages"
 author: "Alain Danet, Xingli Giam, Julian Olden, Lise Comte"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-header-includes:
-  - \usepackage[left]{lineno}
-  - \linenumbers
-  - \hypersetup{backref=true}
 output:
+  bookdown::word_document2:
   bookdown::pdf_document2:
 bibliography: "bibliography.bib"
 csl: nature.csl
@@ -14,6 +11,11 @@ link-citations: true
 indent: true
 spacing: double
 ---
+
+<!--header-includes:-->
+  <!--- \usepackage[left]{lineno}-->
+  <!--- \linenumbers-->
+  <!--- \hypersetup{backref=true}-->
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE,
