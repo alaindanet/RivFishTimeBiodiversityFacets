@@ -28,12 +28,12 @@ list(
     error = "continue"
     ),
   tar_target(basinatlas_shp_folder,
-    here("inst", "extdata", "BasinATLAS_v10_shp") %>%
+    here("inst", "extdata", "RivFishTIME", "HYDROBASINS_v1c") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
   tar_target(basinatlas_shp_file,
-    paste0(basinatlas_shp_folder, "/BasinATLAS_v10_lev04.shp") %>%
+    paste0(basinatlas_shp_folder, "/HydroBAS_merge_Drainage.shp") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
