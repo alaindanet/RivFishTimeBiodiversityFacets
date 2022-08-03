@@ -2603,6 +2603,9 @@ tar_target(mod_sampling_eff,
     filtered_op_protocol %>%
       filter(op_id %in% filtered_dataset_modelling$abun_rich$op_id)
     ),
+  tar_target(filtered_basinatlas_modelling,
+    basinatlas %>%
+      filter(main_bas %in% filtered_dataset_modelling$location)),
   tar_target(pred_number,
     list(
       pred_hft93_t0 = map(setNames(pred_inla$pred, pred_inla$response),
