@@ -2559,7 +2559,7 @@ tar_target(mod_sampling_eff,
         r2_mvp_cond_sd = map_dbl(r2_mvp_cond, sd),
         lab_r2_marg = paste0("~~~~R^2 == ", round(r2_mvp_marg_med, 2)),
         lab_r2_cond = paste0("~~~~R^2 == ", round(r2_mvp_cond_med, 2)),
-        r2_mvp_marg95hpd = map(r2_mvp_marg, ~HPDinterval(as.mcmc(.x))),
+        r2_mvp_marg95hpd = map(r2_mvp_marg, ~coda::HPDinterval(coda::as.mcmc(.x))),
         r2_mvp_marg95hpdci = map2_chr(r2_mvp_marg95hpd, r2_mvp_marg_mean,
           ~paste0(
             format(round(.y, 2), nsmall = 2),
@@ -2569,7 +2569,7 @@ tar_target(mod_sampling_eff,
             format(round(.x[, "upper"], 2), nsmall = 2),
             "]")
           ),
-        r2_mvp_cond95hpd = map(r2_mvp_cond, ~HPDinterval(as.mcmc(.x))),
+        r2_mvp_cond95hpd = map(r2_mvp_cond, ~coda::HPDinterval(coda::as.mcmc(.x))),
         r2_mvp_cond95hpdci = map2_chr(r2_mvp_cond95hpd, r2_mvp_cond_mean,
           ~paste0(
             format(round(.y, 2), nsmall = 2),
