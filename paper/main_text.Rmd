@@ -96,21 +96,22 @@ get_comp <- function(
   - [ ] Is it possible to capture the number of spliting of fish species in the
     database? (if not available, may be prepare a mail for fishbase)
   - [ ] Supplementary
-    - [ ] Grosse table avec toutes les variables, main text names, les distributions
-    - [ ] refaire graph correspondance données / dates des human footprint index
+    - [x] Grosse table avec toutes les variables, main text names, les distributions
+    - [x] refaire graph correspondance données / dates des human footprint index
     - [ ] Mapper les tendances de biodiversité plus histogrammes
     - [ ] Review all comments
   - [ ] Review figures:
     - [x] Check PCA axis contribution: it is the varimax rotation of the PC that
       equalized the contribution of each axis. 
-      - [ ] Replace by non rotated PCA? 
-    - [ ] Figure 
-      - [ ] fig 3: enlever l'antartique, agrandir la carte du monde, enlever les pays
+      - [x] Replace by non rotated PCA? 
+      - [x] Update results
+    - [x] Figure 
+      - [x] fig 3: enlever l'antartique, agrandir la carte du monde, enlever les pays
       dans les labels des histrogrammes des clusters, forme des insets doit être
       égal à la forme des bassins, ordre des bassins dans histogrammes doit
       correspondre à celui des insets
-      - [ ] Review all figure comments 
-  - [ ] Table random variance + both R-squared in main text
+      - [x] Review all figure comments 
+  - [x] Table random effects + both R-squared in main text (cf figures.pdf)
 
 ```{r, results="hide"}
 word_count <- wordcountaddin::text_stats(here("paper", "main_text.Rmd"))
@@ -388,6 +389,23 @@ hill_trends <- p_ci(
   * log(10 + 1),
   r = 2, p = FALSE
 )
+jac_trends <- p_ci(
+  trends$jaccard_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+tu_trends <- p_ci(
+  trends$turnover_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+ne_trends <- p_ci(
+  trends$nestedness_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+
+
 exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
   ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
 )

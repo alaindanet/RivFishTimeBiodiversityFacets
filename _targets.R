@@ -2457,6 +2457,21 @@ tar_target(mod_sampling_eff,
     )
     )
     ),
+  tar_target(p_obs_fit,
+    obs_fit %>%
+      filter(response %in% c(clust_var, exo_resp_var)) %>%
+      mutate(response = get_var_replacement_vulgarisation()[response]) %>%
+      ggplot(aes(x = obs, y = fit)) +
+      geom_point(alpha = .3, color = "gray70") +
+      geom_abline(slope = 1, intercept = 0, size = 1) +
+      geom_text(data = r2_obs_fit,
+        aes(label = lab), parse = TRUE,
+        vjust = 1, hjust = 0
+        ) +
+      facet_wrap(vars(response), scales = "free", ncol = 3) +
+      labs(x = "Observed values", y = "Fitted values") +
+      geom_rug(alpha = .05)
+    ),
   tar_target(cpo_pit,
     rbind(gaussian_inla, gaussian_inla_exo) %>%
       mutate(

@@ -131,7 +131,6 @@ get_model_term_replacement_vulgarisation <- function() {
 get_model_term_replacement_paper_figure <- function() {
   c(
     log1_year_nb = "Time",
-    year_nb = "Time",
     riv_str_rc1 = "Stream gradient",
     hft_c9309_scaled_no_center = "Recent pressures",
     hft_ix_c9309_diff_scaled = "Recent pressures",
@@ -166,8 +165,8 @@ get_river_atlas_significant_var <- function() {
     "Urban extent (%)" = "urb_pc_cse",
     "Human footprint ratio 2009/1993" = "hft_ix_c9309_ratio",
     "Log2 Human footprint ratio (2009/1993)" = "hft_ix_c9309_log2_ratio",
-    "Human footprint 1993 (index)" = "hft_ix_c93",
-    "Human footprint 2009 (index)" = "hft_ix_c09"
+    "Human footprint index 1993" = "hft_ix_c93",
+    "Human footprint index 2009" = "hft_ix_c09"
   )
 }
 
@@ -249,4 +248,20 @@ get_pred_signification <- function() {
     "div/2" = "Anthropogenic pressures divided by two between 1993 and 2009", 
     "inc/2" = "Anthropogenic pressures multipled by two between 1993 and 2009"
   )
+}
+
+get_term_level <- function() {
+  c(
+    "Time",
+    "Stream gradient",
+    "Past pressures",
+    "Recent pressures",
+    "Time x\nStream gradient",
+    "Time x\nPast pressures",
+    "Time x\nRecent pressures",
+    "Time x\nStream gradient x\nPast pressures",
+    "Time x\nStream gradient x\nRecent pressures",
+    "Time x\nPast pressures x\nRecent pressures"
+  )
+
 }

@@ -83,18 +83,7 @@ tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
     response = factor(response, levels = rev(names(pal_variable)))
     )
 
-term_level <- c(
-      "Time",
-      "Stream gradient",
-      "Past pressures",
-      "Recent pressures",
-      "Time x\nStream gradient",
-      "Time x\nPast pressures",
-      "Time x\nRecent pressures",
-      "Time x\nStream gradient x\nPast pressures",
-      "Time x\nStream gradient x\nRecent pressures",
-      "Time x\nPast pressures x\nRecent pressures"
-          )
+term_level <- get_term_level()
 # width_bar
 base_width <- .2
 increment <- .25
@@ -218,24 +207,22 @@ fnop <- length(unique(filtered_dataset_modelling$measurement$op_id))
 
 ```{r}
 fig1_cap <- paste0(
-  "**Responses of five community metrics to time, local
+  "**Responses of six community metrics to time, local
   anthropogenic pressures, stream gradient and their interaction**. Responses of
-  dissimilarity based on the Simpson index, turnover, Total abundance, Chao species
-  richness, the proportion of non-native richness and of non-native abundance.
+  dissimilarity based on the Simpson index, Turnover, Total abundance, Chao species
+  richness, the proportion of non-native species and of non-native abundance.
   Time was quantified by the logged number of years since the first year of
   sampling at a given site added to one. The legacy of past anthropogenic
   pressures and the recent changes in anthropogenic pressures were quantified
   respectively by the Human Footprint index (1993) and the ratio between the
-  Human Footprint at the year 2009 and 1993. The stream gradient was summarized 
+  Human Footprint at the year 2009 and 1993. The stream gradient was summarized
   by the first axis of a PCA preformed on the stream reach characteristics,
   related to the average annual discharge, the distance from the source, and the
   strahler order. All the predictors and responses were standardized prior to model
   evaluation. The Legacy of past anthropogenic pressures, quantified by the
   Human Footprint index (1993) was centered around its median value. Large,
-  medium and thin bars depict respectively the bayesian credible intervals at
-  80, 90 and 95%. Main effects but time were not included for the site
-  dissimilarity metrics (See methods). R-Squared conditional to the hierarchical
-  structure of the model are displayed in the legend. Please note the broken
+  medium and thin bars depict respectively the Bayesian credible intervals at
+  80, 90 and 95%. Please note the broken
   abscissa scale in the framed panels. N = ", fnop, " sampling events over ",
   fnsite, " sites.") %>%
   str_remove_all("\n|\r") %>%
@@ -325,13 +312,15 @@ p_pca_cl_ell <- map(axis_l,
      alpha_point = .2,
      lim_x_y = c(-3.5, 3.5),
      force_pull = 1,
-     force = 80,
+     force = 1,
      var_scaling_factor = 3.5
    ) +
  guides(
    colour = guide_legend(
      override.aes = list(size = 10),
-     title.theme = element_blank(),
+     #title.theme = element_blank(),
+     title.position = "top",
+     title.hjust = .5,
      label.position = "top",
      ncol = 2)
  ) +
@@ -342,7 +331,7 @@ p_pca_cl_ell <- map(axis_l,
    legend.key = element_rect(fill = NA)) +
  scale_color_viridis(
    discrete = TRUE,
-   name = "Cluster", labels = cluster_labels)
+   name = "Cluster assignment", labels = cluster_labels)
 )
 p_cl <- p_pca_cl_ell[[1]]
 leg_cl <- get_legend(
@@ -356,13 +345,16 @@ p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2)
 bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
 p_pca_cl_bt <- target_bp_cl_dist(
   cl_obj = bp_data,
-  fct_var_lvl = names(pal_variable)[1:4]
+  fct_var_lvl = names(pal_variable)[1:4],
+  dodge = .85
   ) +
   scale_color_viridis(discrete = TRUE) +
   scale_fill_viridis(discrete = TRUE) +
   scale_x_discrete(position = "bottom") +
+  labs(y = "Scaled temporal trends (SD units)") +
   theme(
     axis.text.x = element_text(angle = 0, vjust = 0),
+    axis.title.y = element_text(angle = 90, vjust = 0),
     legend.position = "none"
   )
 ```
@@ -371,18 +363,15 @@ p_pca_cl_bt <- target_bp_cl_dist(
 pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
   community metrics at each site, their cluster assignment (upper panel) and the
   boxplots describing the distribution of the temporal trends by cluster (lower
-    panel)**. The temporal trends of each community metrics were obtained from a
-  model without anthropogenic pressures and extracted from random effect using
-  BLUP (see methods). PCA with two and three
-  principal components explained respectively ",
-  paste0(pca2_var_expl, " and ", pca3_var_expl), " of the variance. The temporal
-  trends of community metrics were clustered using the k-means method while
-  excluding 5% of the most outlying sites and sites with a doubtful assignement
-  to a cluster were removed ", na_cluster, ".  The sites are colored by their
-  cluster belongings. The ellipses represent the 95% interval around the
-  clusters assuming a Student's t distribution. The clusters were named
-  according to their unique characteristics. Scaled temporal trends are
-  displayed in the boxplot.") %>%
+    panel)**. The temporal trends of each community metrics were derived from
+  the model with time only. PCA with two and three principal components
+  explained respectively ", paste0(pca2_var_expl, " and ", pca3_var_expl), " of
+  the variance. The temporal trends of community metrics were clustered using
+  the k-means method while excluding 5% of the most outlying sites and sites
+  with a doubtful assignement to a cluster were removed ", na_cluster, ".  The
+  sites are colored by their cluster belongings. The ellipses represent the 95%
+  interval around the clusters assuming a Student's t distribution. The
+  clusters were named according to their unique characteristics.") %>%
   str_remove_all("\n|\r") %>%
   str_replace_all("  ", " ")
 ```
@@ -394,18 +383,16 @@ species richness, decrease in total abundance and no change.
 ```{r}
 fig2 <- plot_grid(
   p_pca_cl_top,
-  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(.75, .25)),
+  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25)),
   nrow = 2,
   rel_heights = c(1, .8)
 )
-```
-```{r save-fig2}
 #fig2
 ggsave(
   filename = "fig2.pdf",
   plot = fig2,
   path = here("paper", "fig_paper"),
-  scale = 2.0,
+  scale = 2.5,
   width = 88,
   height = 88 * .9,
   units = "mm",
@@ -436,6 +423,7 @@ loc <- filtered_dataset_modelling$location %>%
 
 
 ```{r}
+tar_load(filtered_basinatlas_modelling)
 site_cl_rm_loc <- site_cl_rm %>%
   select(siteid, cl) %>%
   left_join(loc, by = "siteid") %>%
@@ -446,7 +434,7 @@ site_cl_rm_loc <- site_cl_rm %>%
     by = "siteid")
 
 n_clust_basin <- site_cl_rm_loc %>%
-  group_by(ecoregion, country, basin_name) %>%
+  group_by(ecoregion, country, main_bas) %>%
   summarise(
     n = n(),
     div = length(unique(cl)),
@@ -475,17 +463,25 @@ fq_tab <- rbind(
 get_fq_tab_from_basin <- function(
   x = site_cl_rm_loc,
   ecoregion = NULL,
+  basin_var = basin_name,
   basins = NULL) {
 
+  if (is.null(names(basins))) {
+    names(basins) <- basins
+  }
+
   fq_pal_bas <- x %>%
-    filter(basin_name %in% basins) %>%
-    group_by(basin_name, cl) %>%
+    filter({{basin_var}} %in% basins) %>%
+    group_by({{basin_var}}, cl) %>%
     summarise(freq = n()) %>%
-    mutate(pc = prop.table(freq)) %>%
+    mutate(
+      pc = prop.table(freq),
+      basin_name = str_replace_all(as.character({{basin_var}}), setNames(names(basins), as.character(basins)))
+      ) %>%
     ungroup()
 
   ecoregion2 <- ecoregion# to not mess up filter
-  fq_pal <- site_cl_rm_loc %>%
+  fq_pal <- x %>%
     filter(ecoregion == ecoregion2) %>%
     group_by(cl) %>%
     summarise(freq = n()) %>%
@@ -495,10 +491,10 @@ get_fq_tab_from_basin <- function(
       ) %>%
     ungroup()
 
-  fq_tab <- rbind(fq_pal, fq_pal_bas) %>%
+  fq_tab <- rbind(fq_pal, select(fq_pal_bas, cl, freq, pc, basin_name)) %>%
     mutate(
       basin_name = factor(
-        basin_name, levels = c(toupper(ecoregion), basins)),
+        basin_name, levels = c(toupper(ecoregion), names(basins))),
       ecoregion = ecoregion
     )
   return(fq_tab)
@@ -509,35 +505,66 @@ basin_name_palearctic <- n_clust_basin %>%
   filter(ecoregion == "Palearctic", div == 6) %>%
   arrange(desc(n))
 
+basin_names_pal <- site_cl_rm_loc %>%
+  filter(main_bas %in% c(2080021030, 2080053790, 2080033320)) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(basin_name != "Lagan.Swe")
+
+pal_basin <- deframe(basin_names_pal[, 2:1])
+
 tab_palearctic <- get_fq_tab_from_basin(
   x = site_cl_rm_loc,
   ecoregion = "Palearctic",
-  basins = c("Seine", "Derwent.UK", "Umealven")
+  basin_var = main_bas,
+  basins = pal_basin
 )
 
 basin_name_nearctic <- n_clust_basin %>%
   filter(ecoregion == "Nearctic", div >= 5) %>%
   arrange(desc(n))
 
+basin_names_nea <- site_cl_rm_loc %>%
+  filter(main_bas %in% basin_name_nearctic$main_bas[1:4]) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(!is.na(basin_name) & basin_name != "Red")
+
+
+nea_basin <- deframe(basin_names_nea[, 2:1])
+
 tab_nearctic <- get_fq_tab_from_basin(
   x = site_cl_rm_loc,
   ecoregion = "Nearctic",
-  basins = c("Mississippi", "Saint.Laurent", "Columbia")
+  basin_var = main_bas,
+  basins = nea_basin
 )
 
 basin_name_australasia <- n_clust_basin %>%
   filter(ecoregion == "Australasia", div >= 5) %>%
   arrange(desc(n))
 
+basin_names_aus <- site_cl_rm_loc %>%
+  filter(main_bas %in% basin_name_australasia$main_bas[1:3]) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(!is.na(basin_name)) %>%
+  slice(-1,-3)
+aus_basin <- deframe(basin_names_aus[, 2:1])
+
 tab_australasia <- get_fq_tab_from_basin(
   x = site_cl_rm_loc,
   ecoregion = "Australasia",
-  basins = c("Murray.Darling", "Brisbane", "Logan")
+  basin_var = main_bas,
+  basins = aus_basin
 )
 
-all_basin <- c("Columbia", "Mississippi", "Saint.Laurent", "Derwent.UK", "Seine", "Umealven",
-  "Murray.Darling", "Brisbane", "Logan"
-)
+filtered_basinatlas_modelling %>%
+  filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))))%>%
+  ggplot() +
+  geom_sf(aes(color = main_bas)) +
+  geom_sf_text(aes(label = basin_name), colour = "black")
+
+
+all_basin <- c("Mississippi", "Saint.Laurent", "Potomac", "Thames.UK", "Loire", "Gota.alv", "Avoca", "Brisbane", "Logan") 
 names(all_basin) <- letters[seq_along(all_basin)]
 
 tot_tab <- rbind(
@@ -546,7 +573,8 @@ tot_tab <- rbind(
   tab_australasia) %>%
   left_join(
     site_cl_rm_loc %>%
-      filter(basin_name %in% .$basin_name) %>%
+      filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+      mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))))%>%
       mutate(country = ifelse(basin_name == "Saint.Laurent", "CAN/USA", country)) %>%
       distinct(basin_name, country),
     by = "basin_name"
@@ -559,7 +587,7 @@ tot_tab <- rbind(
         NA)
       ),
     basin_name = str_replace(basin_name, "\\.", " "),
-    basin_name = str_replace(basin_name, "UK", "")
+    basin_name = str_replace(basin_name, "UK|alv", "")
     ) %>%
   group_by(basin_name) %>%
   mutate(
@@ -574,29 +602,29 @@ tot_tab <- rbind(
       paste0("(", label,") ", basin_name_n),
       basin_name_n
       ),
-    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n)),
+    basin_name_n = str_replace(basin_name_n, "\\s{2}", " "),
+    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n))
 
   )
 levels(tot_tab$basin_name_f)
 unique(tot_tab$ecoregion)
 lvl_basin <- c(
-  "(i) Logan (16)",
-  "(h) Brisbane (52)",
-  "(g) Murray Darling (82)",
+  "(i) Logan (32)",
+  "(h) Brisbane (89)",
+  "(g) Avoca (129)",
   "AUSTRALASIA (330)",
-  "(f) Umealven (81)",
-  "(e) Seine (119)",
-  "(d) Derwent  (136)",
+  "(f) Gota (50)",
+  "(e) Loire (240)",
+  "(d) Thames (139)",
   "PALEARCTIC (3470)",
-  "(c) Saint Laurent (118)",
-  "(b) Mississippi (322)",
-  "(a) Columbia (54)",
+  "(c) Potomac (66)",
+  "(b) Saint Laurent (164)",
+  "(a) Mississippi (574)",
   "NEARCTIC (1083)"
 )
 rev(lvl_basin)
 lvl_ecoregion <- c("Nearctic", "Palearctic", "Australasia")
 rev(lvl_ecoregion)
-
 ```
 
 ```{r}
@@ -621,13 +649,6 @@ p_tot_tab <- tot_tab %>%
   scale_fill_viridis(discrete = TRUE, name = "Cluster")
 ```
 
-```{r}
-gbr <- world_site_sf$site %>%
-  filter(country == "GBR")
-unique(gbr$main_bas)
-```
-
-
 
 ```{r}
 tar_load(rivers10)
@@ -639,6 +660,7 @@ zoom_map_world <- world_site_sf$cl %>%
   st_buffer(dist = .2) %>%
     st_bbox()
 unique(world_site_sf$world$continent)
+
 main_map <-
   world_site_sf$world %>%
   filter(continent != "Antarctica") %>%
@@ -711,47 +733,32 @@ mutate(
 ```
 
 ```{r}
-main_map_rect <- main_map +
-  geom_text(
-    data = zoom_map_coord_df,
-    aes(x = xmin, y = ymean, label = label),
-    vjust = -.55, hjust = 0, size = 7) +
-  theme(legend.position = "none")
+basin_map <- filtered_basinatlas_modelling %>%
+  filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))), 
+    label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
+    label2 = str_replace_all(label, c("i" = "  i")),
+  )
 
-```
-```{r}
 main_map_rect_basin <- main_map +
-  geom_text(
-    data = zoom_map_basin_coord_df,
-    aes(x = xmin, y = ymax, label = label),
-    vjust = -.6, hjust = 0, size = 5) +
-  geom_rect(
-    data = zoom_map_basin_coord_df,
-    aes(
-      xmin = xmin,
-      xmax = xmax,
-      ymin = ymin,
-      ymax = ymax
-      ),
-    fill = NA,
-    colour = "black",
-    size = 0.6
-  ) +
-  theme(legend.position = "none")
+  geom_sf(data = basin_map, color = "black", fill = NA) +
+  geom_sf_text(data = basin_map, aes(label = label2), colour = "black", size = 7, vjust = -.3, hjust = 0) +
+theme(legend.position = "none")
 ```
 
-
 ```{r}
-p_main_map_rect <- main_map_rect +
-  draw_plot(leg_cl, x = 0, y = zoom_map_world["ymin"] + 5, vjust = 0)
+p_main_map_rect <- main_map_rect_basin +
+  draw_plot(leg_cl, x = -100, y = zoom_map_world["ymin"] + 5, vjust = 0, hjust = 0)
 
 save_plot(
   here("doc", "fig", "global_map.png"),
-  main_map_rect,
+  p_main_map_rect,
   base_height = 3.71,
   base_asp = 2.618,
 )
 
+```
+```{r, eval=FALSE}
 p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
   ~main_map4zoom +
     coord_sf(
@@ -779,9 +786,44 @@ p_zoom_map_basin <- map2(zoom_map_basin_coord, zoom_map_basin_coord_df$label,
     )
 )
 ```
+
+
 ```{r, eval=FALSE}
-p_zoom_map_basin[[2]]
+box = c(xmin = 0, ymin = 0, xmax = 1, ymax = 1)
+pol = st_sfc(st_buffer(st_point(c(.5, .5)), .6))
+pol_sf = st_sf(a=1, geom=pol)
+plot(st_crop(pol, box))
+plot(pol)
 ```
+```{r}
+inset_basin <- map(sort(basin_map$label),
+  function(l) {
+    x <- basin_map %>%
+    filter(label == l)
+   x %>%
+    ggplot() +
+    geom_sf(color = NA) +
+    annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 10) +
+    theme_void() +
+    geom_sf(data = st_intersection(rivers10, x), colour = "lightblue", alpha = .4) +
+    geom_sf(data = st_intersection(world_site_sf$cl %>%
+        filter(!is.na(cl)), x),
+      aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 4) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position = "none") +
+    coord_sf(expand = FALSE)
+  }
+)
+names(inset_basin) <- sort(basin_map$label)
+box_basin <- map(setNames(basin_map$geometry, basin_map$label), ~st_bbox(.x))
+width_height_box <- map(box_basin,
+  ~setNames(
+    c(.x["xmax"] - .x["xmin"], .x["ymax"] - .x["ymin"]),
+    c("width", "height")
+  )
+)
+```
+
 
 
 
@@ -810,7 +852,7 @@ png(
   units = "px", res = 300)
 ```
 
-```{r map-cl3, fig.width = 4.75, fig.asp = .42, fig.show = "hide"}
+```{r map-cl3, fig.width = 4.75, fig.asp = .42, fig.show = "hide", eval=FALSE}
 layout <- "
 AAAAAH
 AAAAAH
@@ -919,37 +961,60 @@ fig3
 ```
 
 ```{r}
+refs <- width_height_box[["a"]]
+ref_width_basin <- .33
+ratio_width_to_a <- map_dbl(width_height_box, ~round(.x["width"] / refs["width"], 2))
+log10(ratio_width_to_a + 1) / max(log10(ratio_width_to_a + 1))
+
 fig3_bottom_left3 <- ggdraw() +
   draw_plot(
-    p_zoom_map_basin[[1]], x = 0, y = 1, width = .33, height = .33,
+    inset_basin[["a"]], x = 0, y = 1,
+    width = ref_width_basin,
+    height = ref_width_basin * refs["height"] / refs["width"],
     vjust = 1, halign = 0, valign = 0) +
   draw_plot(
-    p_zoom_map_basin[[2]], x = .33, y = 1, width = .33, height = .33,
+    inset_basin[["b"]], x = .33, y = 1,
+    width = ref_width_basin,
+    height = ref_width_basin*width_height_box$b["height"]/width_height_box$b["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[3]], x = .66, y = 1, width = .33, height = .33,
+    inset_basin[["c"]], x = .66, y = 1,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$c["height"] / width_height_box$c["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[4]], x = 0, y = .66, width = .33, height = .33,
+    inset_basin[["d"]], x = 0, y = .66,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$d["height"] / width_height_box$d["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[5]], x = .33, y = .66, width = .33, height = .33,
+    inset_basin[["e"]], x = .33, y = .66,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$e["height"] / width_height_box$e["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[6]], x = .66, y = .66, width = .33, height = .33,
+    inset_basin[["f"]], x = .66, y = .66,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$f["height"] / width_height_box$f["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[7]], x = 0, y = .33, width = .33, height = .33,
+    inset_basin[["g"]], x = 0, y = .33,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$g["height"] / width_height_box$g["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[8]], x = 0.33, y = .33, width = .33, height = .33,
+    inset_basin[["h"]], x = 0.33, y = .33,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$h["height"] / width_height_box$h["width"],
     vjust = 1) +
   draw_plot(
-    p_zoom_map_basin[[9]], x = 0.66, y = .33, width = .33, height = .33,
+    inset_basin[["i"]], x = 0.66, y = .33,
+    width = ref_width_basin,
+    height = ref_width_basin * width_height_box$i["height"] / width_height_box$i["width"],
     vjust = 1)
 ```
 
-```{r}
+```{r, eval=FALSE}
 leg_cl <- get_legend(
   p_cl +
     guides(
@@ -985,12 +1050,50 @@ ggsave(
 ```
 
 ```{r}
+leg_cl <- get_legend(
+  p_cl +
+    guides(
+      colour = guide_legend(
+     override.aes = list(size = 10),
+     title.theme = element_blank(),
+     label.position = "top",
+     nrow = 2)
+  ) +
+theme(
+  legend.position = "bottom",
+  panel.background = element_blank(),
+  legend.text = element_text(size = 11),
+  legend.key = element_rect(fill = NA)
+))
+
+bottom_left <- plot_grid(plotlist = inset_basin, ncol = 3)
+bottom_right <- plot_grid(p_tot_tab, leg_cl, ncol = 1, rel_heights = c(1, .5))
+
+bottom <- plot_grid(bottom_left, bottom_right, ncol = 2, rel_widths = c(1, .5))
+
+fig3 <- plot_grid(
+  main_map_rect_basin + coord_sf(expand = FALSE),
+  bottom,
+  ncol = 1, rel_heights = c(1, 1))
+ggsave(
+  filename = "fig3.pdf",
+  plot = fig3,
+  path = here("paper", "fig_paper"),
+  scale = 5.0,
+  width = 88,
+  height = 88 * .8,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r}
 map_cl_cap <- "**Spatial distribution of the clusters of biodiversity temporal
 trends**. Left panel: Spatial distribution of the the clusters with insets of
 the most sampled hydrographic basins by realms. Right panel: cluster frequency
 distribution in the three most represented Realms (in capital letters) and their
 most sampled hydrographic basins, corresponding to the inset of the left panel.
-The number of sites and the country are displayed between parenthesis."
+The number of sites are displayed between parenthesis."
 ```
 
 ```{r cl-map, fig.asp = .65, fig.width = 88* 0.0393701}
@@ -1001,16 +1104,16 @@ knitr::include_graphics(here("paper", "fig_paper", "fig3.pdf"))
 
 ```{r, eval = FALSE}
 layout <- "
-AAAAAB
-AAAAAB
-CDELLL
-FGHLLL
+AAAAAA
+AAAAAA
+CDEBBB
+FGHBBB
 IJKLLL
 "
 map_cl_fin <- main_map_rect_basin + p_tot_tab +
-  p_zoom_map_basin[[1]] + p_zoom_map_basin[[2]] + p_zoom_map_basin[[3]] +
-  p_zoom_map_basin[[4]] + p_zoom_map_basin[[5]] + p_zoom_map_basin[[6]] +
-  p_zoom_map_basin[[7]] + p_zoom_map_basin[[8]] + p_zoom_map_basin[[9]] +
+  inset_basin[[1]] + inset_basin[[2]] + inset_basin[[3]] +
+  inset_basin[[4]] + inset_basin[[5]] + inset_basin[[6]] +
+  inset_basin[[7]] + inset_basin[[8]] + inset_basin[[9]] +
   leg_cl_right +
   plot_layout(design = layout)
 map_cl_fin
@@ -1020,7 +1123,7 @@ ggsave(
   path = here("paper", "fig_paper"),
   scale = 4.0,
   width = 88,
-  height = 88 * .5,
+  height = 88 * 1,
   units = "mm",
   dpi = "print"
 )
@@ -1049,6 +1152,7 @@ ggsave(
   dpi = "print"
 )
 ```
+
 
 
 ```{r, eval=FALSE}
@@ -1080,6 +1184,82 @@ fig3
 - Figure 3: `r knitr::knit(text = map_cl_cap)`
 
 \newpage
+
+# Table
+
+```{r}
+tar_load(c(gaussian_inla_rand, r2))
+library(coda)
+
+tu <- r2 %>%
+  mutate(
+    r2_mvp_marg95hpd = map(r2_mvp_marg, ~HPDinterval(as.mcmc(.x))),
+    r2_mvp_marg95hpdci = map2_chr(r2_mvp_marg95hpd, r2_mvp_marg_mean,
+      ~paste0(
+        format(round(.y, 2), nsmall = 2),
+        " [",
+        format(round(.x[, "lower"], 2), nsmall = 2),
+        ",",
+        format(round(.x[, "upper"], 2), nsmall = 2),
+          "]")
+      ),
+    r2_mvp_cond95hpd = map(r2_mvp_cond, ~HPDinterval(as.mcmc(.x))),
+    r2_mvp_cond95hpdci = map2_chr(r2_mvp_cond95hpd, r2_mvp_cond_mean,
+      ~paste0(
+        format(round(.y, 2), nsmall = 2),
+        " [",
+        format(round(.x[, "lower"], 2), nsmall = 2),
+        ",",
+        format(round(.x[, "upper"], 2), nsmall = 2),
+          "]")
+      ),
+  )
+
+
+tab_rand <- gaussian_inla_rand %>%
+  filter(
+    ci_level == "level:0.95",
+    response %in% c(restricted_dimension, exo_resp_var)
+    ) %>%
+  select(-ci_level) %>%
+  mutate(across(c(mean, low, high), ~round(., 3))) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    term = str_remove(term, "Precision for the |Precision for |"),
+    term = replacement_random_term()[term],
+    ci = paste0(mean, " [", high,",", low,"]")
+  ) %>%
+  arrange(response, desc(term)) %>%
+  select(
+    `Response variable` = response,
+    Term = term,
+    `Standard deviation mean [95% CI]` = ci
+  )
+
+tab_rand2 <- tab_rand %>%
+  left_join(
+    tu %>%
+      select(
+        `Response variable` = response,
+        `Marg. R2 mean [95% CI]` = r2_mvp_marg95hpdci,
+        `Cond. R2 mean [95% CI]` = r2_mvp_cond95hpdci
+        ),
+    by = "Response variable"
+  ) %>%
+select(1, 4, 5, 2, 3) %>%
+mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
+arrange(`Response variable`)
+```
+
+```{r}
+tab_rand_cap <- "Marginal and conditional R-squared of the models and the standard deviation estimated for the random effect and the error terms. CI: Credible Interval computed using Highest Posterior Density method."
+tab_rand2 %>%
+  kbl(booktabs = T,
+    label = "tab-rand",
+    caption = tab_rand_cap) %>%
+  collapse_rows(columns = c(1, 2, 3), latex_hline = "major", valign = "middle") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
 
 # Instructions from  NEE 
 
