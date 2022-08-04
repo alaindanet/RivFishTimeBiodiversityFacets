@@ -1,9 +1,10 @@
 
 source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
 
-make_custom_boxplot <- function(x = NULL, aes_col = cl) {
+make_custom_boxplot <- function(x = NULL, aes_col = cl, dodge = .5) {
   bp_theme <- theme_minimal() +
     theme(
+      axis.text = element_text(colour = "black"),
       legend.title = element_blank(),
       panel.grid.major.x = element_blank(),
       title = element_blank()#, legend.position = "none"
@@ -11,8 +12,10 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
 
   x <- x +
     geom_hline(yintercept = 0) +
-    geom_boxplot(outlier.colour = NA, outlier.fill = NA,
+    geom_boxplot(
+      outlier.colour = NA, outlier.fill = NA,
       outlier.size = NA,
+      position = position_dodge(dodge),
       aes(colour = {{aes_col}}, fill = {{aes_col}}))
 
   dat_tmp <- ggplot_build(x)$data
@@ -24,7 +27,7 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
 
 
   x +
-    labs(x = "Response variable", y = "Scaled values") +
+    labs(x = "Response variable", y = "Scaled temporal trends (SD unit)") +
     scale_x_discrete(position = "top") +
     geom_segment(data = dat,
       inherit.aes = FALSE,
@@ -33,7 +36,7 @@ make_custom_boxplot <- function(x = NULL, aes_col = cl) {
     bp_theme
 }
 
-target_bp_cl_dist <- function(cl_obj = site_cl_rm, fct_var_lvl = NULL) {
+target_bp_cl_dist <- function(cl_obj = site_cl_rm, fct_var_lvl = NULL, dodge = .5) {
 
   bp_cl_df <- cl_obj %>%
     mutate(cl = as.factor(cl)) %>%
@@ -56,7 +59,7 @@ target_bp_cl_dist <- function(cl_obj = site_cl_rm, fct_var_lvl = NULL) {
       ggplot(aes(x = variable, y = value, fill = as.factor(cl)))
 
 
-    make_custom_boxplot(bp_cl_dist)
+    make_custom_boxplot(bp_cl_dist, dodge = dodge)
 
 }
 

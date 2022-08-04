@@ -500,12 +500,12 @@ upload_file(
 )
 
 update_file(
-  file = here::here("paper/main_text.Rmd"),
+  file = here::here("paper/figures.Rmd"),
   gfile = NULL,
   gpath = "trackdown/biodiv_trends_anthropogenic_pressures",
   shared_drive = NULL,
   hide_code = TRUE,
-  path_output = here::here("paper/main_text.pdf"),
+  path_output = here::here("paper/figures.pdf"),
   rich_text = TRUE,
   rich_text_par = NULL,
   force = FALSE
