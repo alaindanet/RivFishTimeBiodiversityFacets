@@ -478,27 +478,6 @@ arrange(main_text, `Community metric`) %>%
 select(1, `Main text name` = main_text, N, 3, 4)
 ```
 
-```{r}
-rbind(
-  response_summary_tot %>%
-    mutate( Type = "Response") %>%
-    select(Type, Variable = `Community metric`, everything()),
-  evt_summary %>%
-    mutate(Type = "Predictor") %>%
-    select(Type, Variable = `Environmental variables`, everything())
-
-) %>%
-  kbl(booktabs = T,
-    label = "tab-resp",
-    caption = paste0("Summary descriptors of response and environmental
-      variables. Main text
-    names display the name used in the legend of the figures in main text. The
-    community metrics that do not have main text name were not used in the
-    analysis reported in main text."
-    )) %>%
-  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
 
 
 ```{r, results = "hide"}
@@ -616,6 +595,28 @@ evt_summary %>%
     figures in main text. The community metrics that do not have main text name
     were not used in the analysis reported in main text. The PCA summarising the stream gradient
     was computed with Average annual discharge, Average elevation, Average slope, Distance from source, and Strahler order (Fig. SXX).") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r}
+rbind(
+  response_summary_tot %>%
+    mutate( Type = "Response") %>%
+    select(Type, Variable = `Community metric`, everything()),
+  evt_summary %>%
+    mutate(Type = "Predictor") %>%
+    select(Type, Variable = `Environmental variables`, everything())
+
+) %>%
+  kbl(booktabs = T,
+    label = "tab-resp",
+    caption = paste0("Summary descriptors of response and environmental
+      variables. Main text
+    names display the name used in the legend of the figures in main text. The
+    community metrics that do not have main text name were not used in the
+    analysis reported in main text."
+    )) %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
@@ -1117,7 +1118,7 @@ pred_gaussian_inla_tot <- rbind(
   pred_gaussian_inla_exo
   )
 # exclude riv
-pred_to_keep <- names(pred_gaussian_inla_tot$pred_plot[[1]])[!str_detect(names(pred_gaussian_inla_tot$pred_plot[[i]]), "riv")]
+pred_to_keep <- names(pred_gaussian_inla_tot$pred_plot[[1]])[!str_detect(names(pred_gaussian_inla_tot$pred_plot[[1]]), "riv")]
 pred_gaussian_inla_tot <-
   pred_gaussian_inla_tot %>%
   mutate(
