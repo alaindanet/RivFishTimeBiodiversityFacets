@@ -2643,6 +2643,17 @@ tar_target(mod_sampling_eff,
             hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
             ))
         ),
+      pred_rivstr_t0 = map(setNames(pred_inla$pred, pred_inla$response),
+        ~comp_pred_main(
+          pred = .x,
+          var_comp = list(riv_str_rc1 = pred_data_explanation$riv_str_rc1),
+          control = list(
+            log1_year_nb = pred_data_explanation$log1_year_nb["0"],
+            hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio["0"],
+            hft_ix_c93 = pred_data_explanation$hft_ix_c93["median"]
+            ))
+        ),
+      pred_hft9309_t10 = map(setNames(pred_inla$pred, pred_inla$response),
       pred_hft9309_t10 = map(setNames(pred_inla$pred, pred_inla$response),
         ~comp_pred_main(
           pred = .x,
