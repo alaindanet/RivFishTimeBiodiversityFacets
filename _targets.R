@@ -2654,7 +2654,6 @@ tar_target(mod_sampling_eff,
             ))
         ),
       pred_hft9309_t10 = map(setNames(pred_inla$pred, pred_inla$response),
-      pred_hft9309_t10 = map(setNames(pred_inla$pred, pred_inla$response),
         ~comp_pred_main(
           pred = .x,
           var_comp = list(hft_ix_c9309_log2_ratio = pred_data_explanation$hft_ix_c9309_log2_ratio),
