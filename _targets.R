@@ -912,6 +912,22 @@ tar_target(neutral_turnover,
       arrange(match(siteid, row.names(site_no_drivers_inla))) %>%
       left_join(filtered_dataset$location, by = "siteid")
     ),
+  tar_target(site_year,
+    filtered_dataset_modelling$site_quanti %>%
+      filter(variable == "year") %>%
+      left_join(filtered_dataset_modelling$location, by = "siteid") %>%
+      mutate(
+        span = max - min + 1,
+        completeness = n / (span),
+        cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
+          include.lowest = TRUE
+          ),
+        cat_completeness = cut(
+          completeness, c(0, .1, .25, .5, .75, 1), right = TRUE,
+          include.lowest = TRUE
+        )
+      )
+    ),
   tar_target(var_jaccard,
     c("jaccard_dis_scaled", "turnover_scaled",
       "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
@@ -2433,6 +2449,42 @@ tar_target(mod_sampling_eff,
         time = log(10 + 1))
     )
     ),
+  tar_target(trends,
+    map(
+      setNames(
+        unique(inla_no_drivers_effects$response),
+        unique(inla_no_drivers_effects$response)
+        ),
+      ~get_global_effect(
+        effect = inla_no_drivers_effects,
+        resp = .x,
+        ci_lvl = "level:0.95"
+      )
+    )
+    ),
+  tar_target(trends80, map(
+      setNames(
+        unique(inla_no_drivers_effects$response),
+        unique(inla_no_drivers_effects$response)
+        ),
+      ~get_global_effect(
+        effect = inla_no_drivers_effects,
+        resp = .x,
+        ci_lvl = "level:0.80"
+      )
+    )
+    ),
+  tar_target(trends90, map(setNames(
+        unique(inla_no_drivers_effects$response),
+        unique(inla_no_drivers_effects$response)
+        ),
+      ~get_global_effect(
+        effect = inla_no_drivers_effects,
+        resp = .x,
+        ci_lvl = "level:0.90"
+      )
+    )
+    ),
 
   # Obs-fit inla
   tar_target(obs_fit,
@@ -2718,3 +2770,4 @@ tar_target(mod_sampling_eff,
   tar_render(outline_wordstack, here("paper/outline_wordstack.Rmd")),
   tar_render(supp_fig, here("paper/supplementary_figures.Rmd"))
                 )
+

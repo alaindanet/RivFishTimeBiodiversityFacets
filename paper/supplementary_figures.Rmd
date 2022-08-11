@@ -287,20 +287,7 @@ distr_protocol <- filtered_op_protocol_modelling %>%
 ```
 
 ```{r}
-site_year <- filtered_dataset_modelling$site_quanti %>%
-  filter(variable == "year") %>%
-  left_join(filtered_dataset_modelling$location, by = "siteid") %>%
-  mutate(
-    span = max - min + 1,
-    completeness = n / (span),
-    cat_span = cut(span, c(0, 10, 20, 30, 40, 70), right = TRUE,
-      include.lowest = TRUE
-    ),
-    cat_completeness = cut(
-      completeness, c(0, .1, .25, .5, .75, 1), right = TRUE,
-      include.lowest = TRUE
-    )
-    )
+tar_load(site_year)
 ```
 
 ```{r}
