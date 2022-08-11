@@ -60,3 +60,56 @@ r2_mvp <- function(
   }
 
 }
+
+get_global_effect <- function (
+  effect = inla_no_drivers_effects,
+  resp = NULL,
+  ci_lvl = "level:0.95"
+  ) {
+
+  out <- effect %>% 
+    filter(
+      ci_level == ci_lvl,
+      term == "log1_year_nb",
+      response == resp 
+    )
+
+  out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+}
+
+p_ci <- function(x, r = 2, p = TRUE) {
+  out <- format(round(x, r), nsmall = r)
+
+  if (p) {
+    paste0(out["mean"], "%", " [", out["low"],"%,", out["high"],"%]")
+  } else {
+    paste0(out["mean"], " [", out["low"],",", out["high"],"]")
+  }
+
+}
+
+get_effect_ci <- function(
+  effect = tu,
+  resp = NULL,
+  term = "log1_year_nb",
+  ci_lvl = "level:0.95",
+  r = 2
+  ) {
+  term1 <- term
+
+  out <- effect %>%
+    filter(
+      ci_level == ci_lvl,
+      term == term1,
+      response == resp
+    )
+
+  out <- out[, c("low", "high", "mean")] %>%
+    pivot_longer(everything()) %>%
+    deframe()
+
+  p_ci(x = out, r = r, p = FALSE)
+
+}
