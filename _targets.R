@@ -2449,6 +2449,11 @@ tar_target(mod_sampling_eff,
         time = log(10 + 1))
     )
     ),
+tar_target(inla_no_drivers_effects, rbind(
+    gaussian_inla_no_drivers_effects,
+    gaussian_inla_exo_no_drivers_effects
+  )
+),
   tar_target(trends,
     map(
       setNames(
