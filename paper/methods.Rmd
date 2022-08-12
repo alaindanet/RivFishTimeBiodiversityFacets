@@ -99,12 +99,11 @@ per_s4pays <- scales::percent(sum(sort(pays_vec, decreasing = TRUE)[1:4]))
 
 # Fish community time series
 
-We used the RivFishTime database [@comte_rivfishtime_2021], a compilation of
+We used the RivFishTime database[@comte_rivfishtime_2021], a compilation of
 more than 12,000 time series of riverine fish community abundances, by species,
 mainly covering western and northern Europe, northern America, and southeastern
 Australia. We completed the database with time series from Canada and United
-States (Table S1), following the same criteria than RivFishTime for integration
-[@comte_rivfishtime_2021].
+States (Table S1), following the same criteria than RivFishTime for integration[@comte_rivfishtime_2021].
 
 We selected data to ensure that each time series had at least 5 years of data
 over a 10 year period as well as a consistent sampling protocol through time. As
@@ -138,14 +137,13 @@ and total abundances (Table S7).
 
 As changes in community composition can be attributed either to changes of
 dominance or of rare species, we described temporal dissimilarity with both the
-complement of the Jaccard index (J) and the Simpson-based dissimilarity index
-($H_d$) [@hillebrand_biodiversity_2018]. The former index is based on
+complement of the Jaccard index (J) and the Simpson-based dissimilarity index[@hillebrand_biodiversity_2018] ($H_d$). The former index is based on
 presence/absence and is simply the sum of species gains and losses over the
 total number of species across two samples (eq. \@ref(eq:jac)). The latter is
 based on species relative abundances and their variation across two samples (eq.
 \@ref(eq:hill)). The Jaccard index quantifies the extent of immigration /
 extinction processes while the Simpson-based dissimilarity index quantifies the
-extent of change in species dominance [@hillebrand_biodiversity_2018].
+extent of change in species dominance[@hillebrand_biodiversity_2018].
 
 $$
 J = \dfrac{S_{gain} + S_{loss}}{S_{tot}}
@@ -171,12 +169,11 @@ respectively the proportion of immigrant species ($S_{gain} / S_{tot}$) and
 the proportion of extirpated species ($S_{loss} / S_{tot}$). The second set
 was Turnover ($J_t$) and Nestedness ($J_n$), respectively
 $J_t = (2 * min(S_{loss}, S_{gain})) / (S_{common} + (2 * min(S_{loss},
-S_{gain})))$ and $J_n = 1 - J_t$ [@baselga_betapart_2012], $S_{common}$ being
+S_{gain})))$ and $J_n = 1 - J_t$[@baselga_betapart_2012] , $S_{common}$ being
 the number of species present in both communities. High Turnover values indicate
 that the changes in community composition result from species replacement,
 whereas high values of Nestedness indicate species gains or losses from a nested
-community, i.e. that a community is a subset of the other
-[@baselga_temporal_2015]. We took the first year of sampling of a community as
+community, i.e. that a community is a subset of the other[@baselga_temporal_2015]. We took the first year of sampling of a community as
 the reference community.
 
 ## Total abundance
@@ -217,8 +214,7 @@ Unit Effort (`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`,
 Table S3).
 Although we selected for strict protocol consistency, 70% or more of the
 sampling events by unit of abundance did not reported sampling effort,
-preventing us to harmonize count, abundance density and Catch Per Unit Effort
-[@comte_rivfishtime_2021].
+preventing us to harmonize count, abundance density and Catch Per Unit Effort[@comte_rivfishtime_2021].
 
 ##  Species richness
 
@@ -445,11 +441,6 @@ $$
 - $a_n, a_{i|n}, b_n, b_{i|n}, \epsilon_{i|n, t} \sim \mathcal{N}(0,\,\sigma^{2})$
 - $n$: hydrographic basin, $i$: site $i$, $t$: time $t$
 
-- suggestion:
-  - How model abundance and dissimilarity metrics?
-  - Choice of response distribution?
-  - Variable transformation
-
 All the response variables were modelled with a Gaussian distribution following
 previous studies modelling temporal trends of community composition, species
 richness and total abundance at the global scale [@dornelas_assemblage_2014;
@@ -557,15 +548,18 @@ We checked the model validity visually by plotting the fitted versus the
 observed values (Fig. S6). We visually inspected the PIT and CPO (respectively
 Posterior Integral Transform and Conditional Predictive Ordinate) distribution
 to assess both the overall quality of fitting, and the frequency of outliers. 
-We also computed $R^2$ to assess the quality of the fit of the bayesian models.
+There was very multicollinearity in the model, as all Variance Inflation Factors
+were around 1 (Table S10).
+
+We computed $R^2$ to assess the quality of the fit of the bayesian models.
 We computed the variance associated of each predicted values from their
 posterior distribution (`inla.rmarginal` in `INLA` R package), following @gelman_r-squared_2019
 recommandations to take in account variability associated with priors ($\theta$). We then
-computed marginal ($R^2_m$)and conditional ($R^2_c$) R-squared, respectively associated to the variance
-explained by fixed effects and the one explained by both fixed and random
-effects [@nakagawa_general_2013]. We only included
+computed marginal ($R^2_m$)and conditional ($R^2_c$) R-squared, respectively
+associated to the variance explained by fixed effects and the one explained by
+both fixed and random effects [@nakagawa_general_2013]. We only included
 random effect on intercept in the $R^2$ computation, i.e. the basin effect
-($a_n$) and the site effect (a_{i|n}) [@nakagawa_general_2013;
+($a_n$) and the site effect ($a_{i|n}$) [@nakagawa_general_2013;
 @lahuis_explained_2014]. As we computed the variance of predicted values for
 each observations, we reported the median and the standard deviation of
 R-squared [Table S12, @gelman_r-squared_2019].
@@ -579,14 +573,13 @@ $$
 R^2_c = (Var_{fit} + (a_n)^2 + (a_{i|n})^2) / (Var_{fit}  + (a_n)^2 + (a_{i|n})^2 + Var_{res}))
 $$
 
-$$ with $y_i$ and $\hat{y_i}$ being respectively the observations and the
+$y_i$ and $\hat{y_i}$ being respectively the observations and the
 predicted values, $Var_{fit}$ and Var_{res} being respectively the variance of
 predictive means and the variance of the residuals, @gelman_r-squared_2019.
 $a_n$ and a_{i|n} are respectively the random standard deviation on the
 intercept associated to the hydrographic basin and the site.
 
-There was very multicollinearity in the model, as all Variance Inflation Factors
-were around 1 (Table S10).
+
 
 ## Assessing the dimensionality of temporal community changes
 
@@ -622,13 +615,13 @@ affiliation to the clusters [@fritz_tclust_2012]. The clustering was performed
 using `tclust` R package.
 
 
-# Reproducibility, ROBITT assessment and open science statement
+# Reproducibility and open science statement
 
-The manuscript and the supplementary materials are written in Rmarkdown, i.e.
-combining code and text, and are available on github. We further implement a
-code pipeline using the `targets` R package to ensure that all the code, the
-data, the figures, the manuscript and the results are up to date.
+The main text, the present document and the supplementary materials are written
+in Rmarkdown, i.e. combining code and text, and are available on github. We
+further implement a code pipeline using the `targets` R package to ensure that
+all the code, the data, the figures, the manuscript and the results are up to
+date.
 
-- todo: Robitt assessment
 
 # References {-}
