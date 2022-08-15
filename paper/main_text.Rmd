@@ -66,9 +66,6 @@ measurement_exo <- measurement_exo %>%
 
 tar_load(inla_no_drivers_effects)
 tar_load(c(trends, trends80, trends90))
-tar_load(c(abun_trends, rich_trends, hill_trends, jac_trends, ne_trends,
-    tu_trends))
-abun_trends <- str_replace(abun_trends, "\\[ ", "\\[")
 tar_load(c(pred_number, pred_inla, pred_data_explanation))
 ```
 ```{r}
@@ -94,16 +91,64 @@ ci90 <- tu %>%
 ci95 <- tu %>%
   filter(ci_level == "level:0.95")
 ```
+```{r global-trends}
+abun_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_total_abundance)
+  * log(10 + 1),
+  r = 1)
+abun_trends <- str_replace(abun_trends, "\\[ ", "\\[")
+rich_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_chao_richness)
+  * log(10 + 1),
+  r = 1
+)
+hill_trends <- p_ci(
+  trends$hillebrand_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+jac_trends <- p_ci(
+  trends$jaccard_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+tu_trends <- p_ci(
+  trends$turnover_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+ne_trends <- p_ci(
+  trends$nestedness_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
 
+exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends90 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends90[[.x]] * log(10 + 1), r = 4, p = FALSE)
+)
+names(exo_trends90) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends80 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends80[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends80) <- c("perc_exo_sp", "perc_exo_abun")
+```
 
 
 ```{r, results="hide"}
 word_count <- wordcountaddin::text_stats(here("paper", "main_text.Rmd"))
 readable <- wordcountaddin::readability(filename = here("paper", "main_text.Rmd"), quiet = TRUE)
 ```
-```{r}
+```{r, results = "hide"}
 word_count
 ```
+- Now 3578 words without abstract and references (max NEE: 3500)
+
 ---
 #- TODO: 
 #  - [ ] Is it possible to capture the number of spliting of fish species in the
@@ -148,7 +193,7 @@ community changes to reported biotic homogenization explains why reported local
 gains and global declines in biodiversity are not contradictory.
 
 
-# Introduction (up to 500 words / 489 words)
+# Introduction (up to 500 words / 496 words)
 
 Whereas global diversity is reported to decline at an alarming
 rate[@diaz_global_2019], local diversity shows no net change in species
@@ -229,22 +274,6 @@ tss$completeness <- paste0(tss$completeness["median"], "% [", tss$completeness["
 tss$span <- paste0(tss$span["median"], " [", tss$span["1st_quart"], ",", tss$span["2nd_quart"], "]")
 ```
 
-```{r}
-exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
-  ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
-)
-names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
-
-exo_trends90 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
-  ~p_ci(trends90[[.x]] * log(10 + 1), r = 4, p = FALSE)
-)
-names(exo_trends90) <- c("perc_exo_sp", "perc_exo_abun")
-
-exo_trends80 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
-  ~p_ci(trends80[[.x]] * log(10 + 1), r = 3, p = FALSE)
-)
-names(exo_trends80) <- c("perc_exo_sp", "perc_exo_abun")
-```
 
 ```{r}
 extract_pred <- function (x = NULL, resp = NULL, val_to_extract = NULL) {
