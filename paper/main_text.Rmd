@@ -140,11 +140,11 @@ names(exo_trends80) <- c("perc_exo_sp", "perc_exo_abun")
 ```
 
 
-```{r, results="hide"}
+```{r, results="hide", eval=FALSE}
 word_count <- wordcountaddin::text_stats(here("paper", "main_text.Rmd"))
 readable <- wordcountaddin::readability(filename = here("paper", "main_text.Rmd"), quiet = TRUE)
 ```
-```{r, results = "hide"}
+```{r, results = "hide", eval=FALSE}
 word_count
 ```
 - Now 3578 words without abstract and references (max NEE: 3500)
@@ -516,7 +516,7 @@ species relative abundance. Turnover, which describes composition changes arisin
 replacement, and nestedness, describing changes arising from species gains and
 losses from a common pool, displayed a comparable increase over time  (CI 95%:
 `r tu_trends` by dec), corresponding to an equal share from the rate of increase
-of the Jaccard dissimilarity index (Fig. SXX). Together, it indicates that
+of the Jaccard dissimilarity index (Fig. S8). Together, it indicates that
 composition changes were related to changes in species richness and species
 identity but also changes in dominance structure, i.e. changes in the identity
 of the dominant species.
