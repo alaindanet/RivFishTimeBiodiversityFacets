@@ -22,6 +22,8 @@ tar_load(c(riveratlas_total, snapped_site_river, riveratlas_site))
 evt_riv <- c("tmp_dc_cyr", "hft_ix_c93", "dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "pac_pc_cse", "urb_pc_cse", "hft9309_perc")
 ```
 
+# Land-use and stream characteristics coverage
+
 ```{r}
 match_site_riveratlas <- do.call(rbind, snapped_site_river[!map_lgl(snapped_site_river, ~all(is.na(.x)))]) %>%
   filter(!is.na(riverid))
@@ -54,6 +56,43 @@ ti %>%
   geom_boxplot(stat = "identity") +
   facet_wrap(vars(variable), scale = "free")
 ```
+
+# Temporal changes in temperature 
+
+- Methods:
+  - Take the temp max of each month [@comte_climate_2021]
+
+```{r}
+tar_load(c(wt_mv_avg_roll, wt, site_desc_loc))
+site_desc_loc %>%
+  filter(!origin %in% c("MARIS", "Maryland", "Ohio", "RAMP"))
+
+tu <- wt_mv_avg_roll %>%
+  mutate(year = year(date)) %>%
+  group_by(siteid, year) %>%
+  summarise(
+    max_m_tmp = max(mv_avg_12m),
+    med_m_tmp = median(mv_avg_12m),
+    .groups = "drop"
+  )
+
+ml <- glmmTMB(max_m_tmp ~ year + (1 + year | siteid), tu)
+hist(coef(ml)$cond$siteid[, "year"] * 10)
+summary_distribution(coef(ml)$cond$siteid[, "year"] * 10)
+str(coef(ml))
+
+inla(
+  tmp ~ date +
+  f(siteid, model = 'iid') +
+  f(siteid_year, date, model = 'iid'),
+data = wt_mv_avg_roll %>%
+  filter(siteid %in% sample(siteid, 100)) %>%
+  mutate(siteid_year = siteid)
+)
+```
+
+
+#Misc
 
 
 ## Analysis

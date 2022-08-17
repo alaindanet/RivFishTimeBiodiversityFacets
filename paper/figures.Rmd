@@ -2,6 +2,7 @@
 title: "Main figures of the manuscript"
 author: Danet, A., Giam, X., Olden, J. and Comte L.
 output:
+  bookdown::word_document2:
   bookdown::pdf_document2:
     toc: true
 ---

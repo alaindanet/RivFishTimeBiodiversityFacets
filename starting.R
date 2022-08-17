@@ -518,3 +518,38 @@ update_file(
 
 use_rmd("coverage_rivfishtime")
 
+########################################
+#  New waterflow and temperature data  #
+########################################
+
+hist_date <- c("1979-01-07_to_1985-12-30", "1986-01-07_to_1995-12-30", "1996-01-07_to_2005-12-30")
+# Download water temperature data
+water_temp_url <- paste0(
+  "https://geo.public.data.uu.nl/vault-futurestreams/research-futurestreams%5B1633685642%5D/original/waterTemp/hist/E2O/waterTemp_weekAvg_output_E2O_hist_",
+  hist_date,
+  ".nc"
+)
+dir.create("L:/ENV_LAYERS/futurestreams")
+destfile_wt <- paste0(
+  "L:/ENV_LAYERS/futurestreams/waterTemp_weekAvg_output_E2O_hist_",
+  hist_date, ".nc"
+  )
+for (i in seq_along(hist_date)) {
+
+  download.file(
+    url = water_temp_url,
+    destfile = destfile_wt,
+    method = "auto",
+    quiet = FALSE,
+    mode = "wb",
+    cacheOK = TRUE
+  )
+    
+}
+
+R.utils::createLink(
+  link = here("inst", "extdata", "futurestreams"),
+  target = paste0(server_mounted_location, "ENV_LAYERS/futurestreams"),
+  method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
+  overwrite = TRUE
+)

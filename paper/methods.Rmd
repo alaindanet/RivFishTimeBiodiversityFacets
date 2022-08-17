@@ -3,6 +3,7 @@ title: "Material & Methods"
 author: "Danet, A, Giam, X, Olden, J, Comte, L"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output: 
+  bookdown::word_document2:
   bookdown::pdf_document2:
     latex_engine: xelatex
     toc: false 
