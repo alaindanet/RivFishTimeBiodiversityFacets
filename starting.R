@@ -452,6 +452,7 @@ for (i in seq_along(ti)) {
   )
 }
 
+ti <- c("figures", "supplementary_figures", "methods", "main_text")
 for (i in seq_along(ti)) {
   update_file(
     file = here::here(paste0("paper/", ti[i], ".Rmd")),
@@ -510,3 +511,10 @@ update_file(
   rich_text_par = NULL,
   force = FALSE
 )
+
+##########################
+#  Coverage rivfishtime  #
+##########################
+
+use_rmd("coverage_rivfishtime")
+

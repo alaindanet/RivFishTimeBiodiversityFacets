@@ -1,0 +1,83 @@
+---
+title: "RivFishTIME coverage"
+author: "Alain Danet"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output: 
+  bookdown::html_document2:
+    df_print: paged
+    toc: true
+    toc_float: true
+    theme: "readable"
+    code_folding: hide
+bibliography: "bibliography.bib"
+---
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+```
+
+```{r load-targets, include=FALSE}
+tar_load(c(riveratlas_total, snapped_site_river, riveratlas_site))
+
+evt_riv <- c("tmp_dc_cyr", "hft_ix_c93", "dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "pac_pc_cse", "urb_pc_cse", "hft9309_perc")
+```
+
+```{r}
+match_site_riveratlas <- do.call(rbind, snapped_site_river[!map_lgl(snapped_site_river, ~all(is.na(.x)))]) %>%
+  filter(!is.na(riverid))
+
+river_atlas_total <- riveratlas_total %>%
+  mutate(
+    rivfishtime = ifelse(hyriv_id %in% match_site_riveratlas$riverid, TRUE, FALSE),
+    hft9309_perc = (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100
+
+    ) %>%
+  mutate(across(c(slp_dg_cav, tmp_dc_cyr, hft_ix_c93, hft_ix_c09), ~.x/10))
+```
+
+```{r}
+ti <- river_atlas_total %>%
+  group_by(rivfishtime) %>%
+  summarise(across(all_of(evt_riv), function(x) {
+      stats <- boxplot.stats(x)$stats
+      list(data.frame(
+          ymin=stats[1], lower=stats[2], middle=stats[3], 
+          upper=stats[4], ymax=stats[5]
+          ))
+  }))
+ti %>%
+  pivot_longer(!c(rivfishtime), names_to = "variable", values_to = "values") %>%
+  mutate(variable = get_rev_vec_name_val(get_river_atlas_significant_var())[variable]) %>%
+  unnest(values) %>%
+  ggplot(aes(x = rivfishtime, lower=lower, upper=upper, middle=middle, ymin=ymin,
+      ymax=ymax)) +
+  geom_boxplot(stat = "identity") +
+  facet_wrap(vars(variable), scale = "free")
+```
+
+
+## Analysis
+
+## Reproducibility
+
+<details><summary>Reproducibility receipt</summary>
+
+```{r}
+## datetime
+Sys.time()
+
+## repository
+if(requireNamespace('git2r', quietly = TRUE)) {
+  git2r::repository()
+} else {
+  c(
+    system2("git", args = c("log", "--name-status", "-1"), stdout = TRUE),
+    system2("git", args = c("remote", "-v"), stdout = TRUE)
+  )
+}
+
+## session info
+sessionInfo()
+```
+
+</details>

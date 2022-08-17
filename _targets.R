@@ -649,7 +649,10 @@ tar_target(neutral_turnover,
       river_shp_files = map_chr(riveratlas_shp_files,
         ~get_full_file_name(filename = .x)),
       river_id = "HYRIV_ID",
-      var_to_collect = get_river_atlas_significant_var() 
+      var_to_collect = unique(c(
+        get_river_atlas_significant_var(),
+        get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")]
+      )) 
     )
     ),
   tar_target(p_atlas_rivfishtime_env,
@@ -2769,6 +2772,7 @@ tar_target(inla_no_drivers_effects, rbind(
     here("paper", "bibliography.bib"),
     format = "file",
     error = "continue"),
+  tar_render(coverage_rivfishtime, "doc/coverage_rivfishtime.Rmd")
   # Paper
   tar_render(method, here("paper/methods.Rmd")),
   tar_render(story_summary, here("paper/story_summary.Rmd")),
