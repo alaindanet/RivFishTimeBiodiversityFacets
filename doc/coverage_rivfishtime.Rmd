@@ -16,56 +16,101 @@ bibliography: "bibliography.bib"
 source(here::here("start_rmd.R"))
 ```
 
-```{r load-targets, include=FALSE}
-tar_load(c(riveratlas_total, snapped_site_river, riveratlas_site))
+# Outline 
 
-evt_riv <- c("tmp_dc_cyr", "hft_ix_c93", "dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "pac_pc_cse", "urb_pc_cse", "hft9309_perc")
-```
+- Biodiversity trends are assessed with available timeseries
+  - Biaised toward western countries
+  - How well do they cover global change?
+- What is the environmental coverage of usual timeseries dataset?
+  - Crucial when assessing trends without taking in account drivers because in
+    that case the value of your conclusion can only be extrapolated on the
+    critical assumption that the analyzed dataset is representative of the
+    considered statistical population
+  - Here, we use a dataset dominated by western countries 
+    - Trends in streamflow, water temperature, changes in anthropogenic
+      pressures
+    - Coverage in land-use
+
 
 # Land-use and stream characteristics coverage
 
-```{r}
+```{r, eval = FALSE}
+tar_load(c(riveratlas_total, snapped_site_river, riveratlas_site))
+evt_riv <- c("tmp_dc_cyr", "hft_ix_c93", "dist_up_km", "ord_stra", "dis_m3_pyr", "ele_mt_cav", "pac_pc_cse", "urb_pc_cse", "hft9309_perc")
 match_site_riveratlas <- do.call(rbind, snapped_site_river[!map_lgl(snapped_site_river, ~all(is.na(.x)))]) %>%
   filter(!is.na(riverid))
 
-river_atlas_total <- riveratlas_total %>%
+riveratlas_total <- riveratlas_total %>%
   mutate(
     rivfishtime = ifelse(hyriv_id %in% match_site_riveratlas$riverid, TRUE, FALSE),
-    hft9309_perc = (hft_ix_c09 - hft_ix_c93) / hft_ix_c93 * 100
-
+    hft9309_perc = ((hft_ix_c09 - hft_ix_c93) / hft_ix_c93) * 100
     ) %>%
-  mutate(across(c(slp_dg_cav, tmp_dc_cyr, hft_ix_c93, hft_ix_c09), ~.x/10))
+  select(-hft_ix_c09) %>%
+  mutate(across(c(slp_dg_cav, tmp_dc_cyr, hft_ix_c93), ~.x / 10))
 ```
-
-```{r}
-ti <- river_atlas_total %>%
+```{r, eval = FALSE}
+riveratlas_total_bp_stat <- riveratlas_total %>%
   group_by(rivfishtime) %>%
-  summarise(across(all_of(evt_riv), function(x) {
+  summarise(across(!c(hyriv_id), function(x) {
       stats <- boxplot.stats(x)$stats
       list(data.frame(
-          ymin=stats[1], lower=stats[2], middle=stats[3], 
-          upper=stats[4], ymax=stats[5]
+          min = stats[1], q25 = stats[2], median = stats[3],
+          q75 = stats[4], max = stats[5]
           ))
-  }))
-ti %>%
+  })) %>%
   pivot_longer(!c(rivfishtime), names_to = "variable", values_to = "values") %>%
-  mutate(variable = get_rev_vec_name_val(get_river_atlas_significant_var())[variable]) %>%
-  unnest(values) %>%
-  ggplot(aes(x = rivfishtime, lower=lower, upper=upper, middle=middle, ymin=ymin,
-      ymax=ymax)) +
-  geom_boxplot(stat = "identity") +
-  facet_wrap(vars(variable), scale = "free")
+  unnest(values)
+save(riveratlas_total_bp_stat, file = here("data", "riveratlas_total_bp_stat.rda"))
+rm(riveratlas_total, riveratlas_site)
+gc()
 ```
 
-# Temporal changes in temperature 
+- Anthropogenic pressures:
+  - RivFishTIME sites are located in areas much more degraded than globally
+    (median human footprint index 1993 three times higher)
+  - Paradoxally, RivFishTIME sites are also located where anthropogenic
+    pressures decreased in average across the last decades (more than 50% of the sites),
+    while at global scale we observe recent increase in anthropogenic pressures
+    (75% of the sites had a increase from +0% up to +75%).
+  - Linked with anthropogenic pressures: higher percentage of protected, urban, cropland and pasture
+    areas, and higher population density than globally 
+
+
+```{r, fig.width = 10, fig.asp = 2.5}
+load(file = here("data", "riveratlas_total_bp_stat.rda"))
+riveratlas_var_name <- c(
+  get_rev_vec_name_val(c(
+      get_river_atlas_significant_var(),
+      get_land_class_var())),
+  "hft9309_perc" =  "Human footprint change 93-09 (%)"
+)
+riveratlas_total_bp_stat %>%
+  mutate(variable = riveratlas_var_name[variable]) %>%
+  ggplot(
+    aes(x = rivfishtime,
+      lower = q25, upper = q75, middle = median, ymin = min, ymax = max)
+    ) +
+  geom_boxplot(stat = "identity") +
+  scale_x_discrete(breaks = c(FALSE, TRUE), labels = c("RiverAtlas", "RivFishTIME")) +
+  facet_wrap(vars(variable), scale = "free", ncol = 3) +
+  theme(axis.title.x = element_blank())
+```
+
+# Temporal changes in temperature and streamflow 
+
+- TODO:
+  - Futurestreams:
+    - [ ] Build monthly average SpatRast (1969-2005)
+    - [ ] Build annual max monthly SpatRast [@comte_climate_2021]
+    - [ ] Get crap lm trends over SpatRast
+    - [ ] redo with one GCM model?
 
 - Methods:
-  - Take the temp max of each month [@comte_climate_2021]
+  - Take the temp max of each avg month value 
+  - Linear model
 
-```{r}
+```{r, eval=TRUE, fig.cap="Use of previous water temperature dataset"}
 tar_load(c(wt_mv_avg_roll, wt, site_desc_loc))
-site_desc_loc %>%
-  filter(!origin %in% c("MARIS", "Maryland", "Ohio", "RAMP"))
 
 tu <- wt_mv_avg_roll %>%
   mutate(year = year(date)) %>%
@@ -77,7 +122,16 @@ tu <- wt_mv_avg_roll %>%
   )
 
 ml <- glmmTMB(max_m_tmp ~ year + (1 + year | siteid), tu)
-hist(coef(ml)$cond$siteid[, "year"] * 10)
+tibble(y = coef(ml)$cond$siteid[, "year"] * 10) %>%
+  ggplot(aes(x = y)) +
+  geom_histogram(bins = 100) +
+  labs(
+    x = "Annual maximum water temperature trends (°C by decade) RivFishTIME",
+    y = "Number of sites"
+  )
+```
+
+```{r, eval = FALSE}
 summary_distribution(coef(ml)$cond$siteid[, "year"] * 10)
 str(coef(ml))
 
@@ -92,8 +146,8 @@ data = wt_mv_avg_roll %>%
 ```
 
 
-#Misc
 
+# Misc {-}
 
 ## Analysis
 
@@ -120,3 +174,5 @@ sessionInfo()
 ```
 
 </details>
+
+# References {-}

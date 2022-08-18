@@ -192,15 +192,15 @@ get_land_class_var <- function() {
   c(
     #  "Potential Natural Vegetation Extent (catchment)" = "pnv_pc_c01-c15",
     #  "Potential Natural Vegetation Extent (watershed)" = "pnv_pc_u01-u15",
-    "Forest Cover Extent (catchment)" = "for_pc_cse",
-    "Forest Cover Extent (watershed)" = "for_pc_use",
-    "Cropland Extent (catchment)" = "crp_pc_cse",
-    "Cropland Extent (watershed)" = "crp_pc_use",
-    "Pasture Extent (catchment)" = "pst_pc_cse",
-    "Pasture Extent (watershed)" = "pst_pc_use",
-    "Urban Extent (catchment)" = "urb_pc_cse",
-    "Urban Extent (watershed)" = "urb_pc_use",
-    "Population Density (catchment)" = "ppd_pk_cav",
+    "Forest Cover Extent (%, catchment)" = "for_pc_cse",
+    "Forest Cover Extent (%, watershed)" = "for_pc_use",
+    "Cropland Extent (%, catchment)" = "crp_pc_cse",
+    "Cropland Extent (%, watershed)" = "crp_pc_use",
+    "Pasture Extent (%, catchment)" = "pst_pc_cse",
+    "Pasture Extent (%, watershed)" = "pst_pc_use",
+    "Urban Extent (%, catchment)" = "urb_pc_cse",
+    "Urban Extent (%, watershed)" = "urb_pc_use",
+    "Population Density (people per km2, catchment)" = "ppd_pk_cav",
     "Population Density (watershed)" = "ppd_pk_uav"
   )
 }
