@@ -42,9 +42,8 @@ knitr::opts_chunk$set(
 
 ```{r}
 # control also the order of the legend
-restricted_dimension <- c(
-  "hillebrand_dis_scaled", "turnover_scaled", "log_total_abundance",
-  "log_chao_richness", "perc_exo_abun", "perc_exo_sp")
+restricted_dimension <- c("log_total_abundance", "log_chao_richness",
+  "perc_exo_sp", "perc_exo_abun", "turnover_scaled", "hillebrand_dis_scaled")
 ```
 
 
@@ -115,7 +114,7 @@ p2 <- tu %>%
   arrange(response, desc(width_bar)) %>%
   plot_inla_fixed_effect(scale_color = rev(pal_variable),
     term_level = term_level) +
-  scale_x_break(c(.135, .195))
+  scale_x_break(c(.135, .195)) 
 
 p3 <- tu %>%
   filter(facet == "dbl_interaction") %>%
@@ -131,7 +130,11 @@ p3 <- tu %>%
         beta, "' (", "s.d. unit)",
         sep = "")
     )
-  )
+  ) +
+theme(
+  plot.margin = margin(5, 5, 5, 5, "pt"),
+  plot.background = element_rect(fill = NA, color = "black"))
+p2
 ```
 
 ```{r, fig.show = "hide"}
@@ -183,9 +186,12 @@ scale_color_manual(
 fig1 <- plot_grid(
   print(p1),
   print(p2),
-  p3 + theme(legend.position = "none"),
+  ggdraw(p3 + theme(legend.position = "none"), xlim = c(-.02, 1.015), ylim = c(-.01, 1.01)),
+
   leg_dis,
   rel_heights = c(1.2, 1, 1, .2),
+  labels = c(letters[1:3], NULL),
+  hjust = -1.25, vjust = 1.8,
   ncol = 1)
 ```
 
@@ -205,23 +211,15 @@ fnop <- length(unique(filtered_dataset_modelling$measurement$op_id))
 
 
 ```{r}
-fig1_cap <- paste0(
-  "**Responses of six community metrics to time, local
-  anthropogenic pressures, stream gradient and their interaction**. Responses of
-  dissimilarity based on the Simpson index, Turnover, Total abundance, Chao species
-  richness, the proportion of non-native species and of non-native abundance.
-  Time was quantified by the logged number of years since the first year of
-  sampling at a given site added to one. The legacy of past anthropogenic
-  pressures and the recent changes in anthropogenic pressures were quantified
-  respectively by the Human Footprint index (1993) and the ratio between the
-  Human Footprint at the year 2009 and 1993. The stream gradient was summarized
-  by the first axis of a PCA preformed on the stream reach characteristics,
-  related to the average annual discharge, the distance from the source, and the
-  strahler order. All the predictors and responses were standardized prior to model
-  evaluation. The Legacy of past anthropogenic pressures, quantified by the
-  Human Footprint index (1993) was centered around its median value. Large,
-  medium and thin bars depict respectively the Bayesian credible intervals at
-  80, 90 and 95%. Please note the broken
+fig1_cap <- paste0("**Response of riverine fish communities to time,
+  anthropogenic pressures and stream gradient**. Community metrics include total
+  community abundance, species richness, proportion of non-native species and
+  non-native abundance, Simpson dissimilarity, and turnover. **a**, single
+  effects. **b**, effects of anthropogenic pressures and stream gradient on
+  temporal trends. **c**, interacting effects among anthropogenic pressures and
+  stream gradient on temporal trends. Points depict the average of
+  posterior distribution. Large, medium and thin bars depict the Bayesian
+  credible intervals at 80, 90 and 95%, respectively. Please note the broken
   abscissa scale in the framed panels. N = ", fnop, " sampling events over ",
   fnsite, " sites.") %>%
   str_remove_all("\n|\r") %>%
@@ -285,8 +283,8 @@ axis_l <- list(
 
 cluster_names <- c(
   "Medium change", "High turnover",
-  "Increase in\n species richness", "Decrease in\n total abundance",
-  "Decrease in\n species richness", "Low change"
+  "Increase in\nspecies richness", "Decrease in\ntotal abundance",
+  "Decrease in\nspecies richness", "Low change"
 )
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
 per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
@@ -339,18 +337,41 @@ leg_cl <- get_legend(
 
 p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 
-p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2)
+p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2, labels =
+  letters[1:2])
 
+```
+
+```{r}
+tar_load(site_no_drivers_inla)
+site_trends_dec <- site_no_drivers_inla %>%
+  mutate(across(c(turnover_scaled, hillebrand_dis_scaled), ~.x * log(10 + 1) * 100)) %>% 
+  mutate(across(
+      c(log_chao_richness, log_total_abundance),
+      ~log_beta_to_perc_rate(.x * log(10 + 1))
+      )) %>%
+  select(turnover_scaled, hillebrand_dis_scaled,
+    log_chao_richness, log_total_abundance) %>% 
+  rownames_to_column(var = "siteid")
+hist(site_trends_dec$log_total_abundance)
+```
+
+```{r}
 bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
+bp_data_dec_no_scaled_trends <- bp_data[, !colnames(bp_data) %in% c("turnover_scaled", "hillebrand_dis_scaled",
+    "log_chao_richness", "log_total_abundance")] %>%
+left_join(site_trends_dec, by = "siteid")
+
 p_pca_cl_bt <- target_bp_cl_dist(
-  cl_obj = bp_data,
-  fct_var_lvl = names(pal_variable)[1:4],
+  cl_obj = bp_data_dec_no_scaled_trends,
+  fct_var_lvl = names(pal_variable)[c(1:2, 5:6)],
   dodge = .85
   ) +
   scale_color_viridis(discrete = TRUE) +
   scale_fill_viridis(discrete = TRUE) +
   scale_x_discrete(position = "bottom") +
-  labs(y = "Scaled temporal trends (SD units)") +
+  ylim(-75, 125) +
+  labs(y = "Temporal trends per decade (%)") +
   theme(
     axis.text.x = element_text(angle = 0, vjust = 0),
     axis.title.y = element_text(angle = 90, vjust = 0),
@@ -358,21 +379,19 @@ p_pca_cl_bt <- target_bp_cl_dist(
   )
 ```
 
+
+
 ```{r} 
-pca_clust_cap <- paste0("**PCA biplot on the temporal trends of the
-  community metrics at each site, their cluster assignment (upper panel) and the
-  boxplots describing the distribution of the temporal trends by cluster (lower
-    panel)**. The temporal trends of each community metrics were derived from
-  the model with time only. PCA with two and three principal components
-  explained respectively ", paste0(pca2_var_expl, " and ", pca3_var_expl), " of
-  the variance. The temporal trends of community metrics were clustered using
-  the k-means method while excluding 5% of the most outlying sites and sites
-  with a doubtful assignement to a cluster were removed ", na_cluster, ".  The
-  sites are colored by their cluster belongings. The ellipses represent the 95%
-  interval around the clusters assuming a Student's t distribution. The
-  clusters were named according to their unique characteristics.") %>%
-  str_remove_all("\n|\r") %>%
-  str_replace_all("  ", " ")
+pca_clust_map <- paste0("**Covariation among the temporal trends in biodiversity metrics
+and identification of community trajectories**. **a**, **b**, PCA biplot of the community
+temporal trends and their cluster assignment (upper panel). **c**, boxplots
+displaying the distribution of the temporal trends by cluster (lower panel). The
+sites are colored by their cluster belongings. The ellipses represent the 95%
+  intervals around the clusters assuming a Student’s t distribution. The
+clusters were named according to their unique characteristics.",
+" Sites not assigned to a cluster are not displayed (N = ", na_cluster, ").") %>%
+str_remove_all("\n|\r") %>%
+str_replace_all("  ", " ")
 ```
 
 For the figure 2, I see the main question of whether we need to give to the clusters
@@ -382,7 +401,7 @@ species richness, decrease in total abundance and no change.
 ```{r}
 fig2 <- plot_grid(
   p_pca_cl_top,
-  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25)),
+  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25), labels = c(letters[3], NULL)),
   nrow = 2,
   rel_heights = c(1, .8)
 )
@@ -397,6 +416,7 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+
 ```
 
 ```{r, fig.asp = .9, fig.width = 88 * 0.0393701}
@@ -626,7 +646,7 @@ p_tot_tab <- tot_tab %>%
      basin_name_f = factor(basin_name_n, levels = lvl_basin),
      ecoregion_f = factor(ecoregion, levels = lvl_ecoregion)
     ) %>%
-  ggplot(aes(x = pc, y = basin_name_f, fill = as.factor(cl))) +
+  ggplot(aes(x = pc, y = basin_name_f, fill = factor(cl, levels = rev(unique(cl))))) +
   geom_col() +
   labs(x = "Proportion") +
   scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
@@ -639,7 +659,7 @@ p_tot_tab <- tot_tab %>%
     strip.text = element_blank()
     ) +
   facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
-  scale_fill_viridis(discrete = TRUE, name = "Cluster")
+  scale_fill_viridis(discrete = TRUE, name = "Cluster", direction = -1)
 ```
 
 
@@ -780,8 +800,33 @@ p_zoom_map_basin <- map2(zoom_map_basin_coord, zoom_map_basin_coord_df$label,
 )
 ```
 
-
 ```{r}
+box_inset_country <- list(
+  usa_can = c(-126, 25, -65, 51),
+  eu = c(-15, 41, 30, 68), 
+  aus = c(112, -39, 155, -10.5)
+) 
+box_inset_country <- map(box_inset_country,
+  ~setNames(.x, c("xmin", "ymin", "xmax", "ymax")))
+usa_can <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-126, -65),
+    ylim = c(25, 51),
+    expand = FALSE)
+aus <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(112, 155),
+    ylim = c(-39, -10.5),
+    expand = FALSE)
+eu <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-13, 30),
+    ylim = c(41, 68),
+    expand = FALSE)
+```
+
+
+```{r inset-basin}
 inset_basin <- map(sort(basin_map$label),
   function(l) {
     x <- basin_map %>%
@@ -789,7 +834,7 @@ inset_basin <- map(sort(basin_map$label),
    x %>%
     ggplot() +
     geom_sf(color = NA) +
-    annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 10) +
+    #annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 7) +
     theme_void() +
     geom_sf(data = st_intersection(rivers10, x), colour = "lightblue", alpha = .4) +
     geom_sf(data = st_intersection(world_site_sf$cl %>%
@@ -810,9 +855,6 @@ width_height_box <- map(box_basin,
 )
 ```
 
-
-
-
 ```{r}
 cluster_labels2 <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
   ~paste0(.x, "\n(N = ", .y, ")"))
@@ -827,88 +869,79 @@ leg_cl_right <- get_legend(
 ```
 
 ```{r}
-refs <- width_height_box[["a"]]
-ref_width_basin <- .33
+inset_country <- list(usa_can = usa_can, eu = eu, aus = aus)
+width_height_box <- map(box_inset_country,
+  ~setNames(
+    c(.x["xmax"] - .x["xmin"], .x["ymax"] - .x["ymin"]),
+    c("width", "height")
+  )
+)
+refs <- width_height_box[["usa_can"]]
+ref_height_country <- .33
 ratio_width_to_a <- map_dbl(width_height_box, ~round(.x["width"] / refs["width"], 2))
+ratio_height_to_a <- map_dbl(width_height_box, ~round(.x["height"] / refs["height"], 2))
 
-fig3_bottom_left3 <- ggdraw() +
+fig3_inset_country <- ggdraw() +
   draw_plot(
-    inset_basin[["a"]], x = 0, y = 1,
-    width = ref_width_basin,
-    height = ref_width_basin * refs["height"] / refs["width"],
-    vjust = 1, halign = 0, valign = 0) +
+    usa_can, x = 0, y = 1,
+    width = ref_height_country*width_height_box$usa_can["width"]/width_height_box$usa_can["height"],
+    height = .33,
+    vjust = 1, hjust = .2
+    ) +
   draw_plot(
-    inset_basin[["b"]], x = .33, y = 1,
-    width = ref_width_basin,
-    height = ref_width_basin*width_height_box$b["height"]/width_height_box$b["width"],
-    vjust = 1) +
+    eu, x = 0, y = .66,
+    width = ref_height_country*width_height_box$eu["width"]/width_height_box$eu["height"],
+    height = .33,
+    vjust = 1, hjust = .2 
+    ) +
   draw_plot(
-    inset_basin[["c"]], x = .66, y = 1,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$c["height"] / width_height_box$c["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["d"]], x = 0, y = .66,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$d["height"] / width_height_box$d["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["e"]], x = .33, y = .66,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$e["height"] / width_height_box$e["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["f"]], x = .66, y = .66,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$f["height"] / width_height_box$f["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["g"]], x = 0, y = .33,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$g["height"] / width_height_box$g["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["h"]], x = 0.33, y = .33,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$h["height"] / width_height_box$h["width"],
-    vjust = 1) +
-  draw_plot(
-    inset_basin[["i"]], x = 0.66, y = .33,
-    width = ref_width_basin,
-    height = ref_width_basin * width_height_box$i["height"] / width_height_box$i["width"],
-    vjust = 1)
+    aus, x = 0, y = .33,
+    width = ref_height_country * width_height_box$aus["width"] / width_height_box$aus["height"],
+    height = .33,
+    vjust = 1, hjust = .3
+  )
+```
+
+```{r}
+fig3_inset_country <-
+  plot_grid(plotlist = inset_country, ncol = 1)
 ```
 
 
 ```{r}
-leg_cl <- get_legend(
-  p_cl +
-    guides(
-      colour = guide_legend(
-     override.aes = list(size = 10),
-     title.theme = element_blank(),
-     label.position = "top",
-     nrow = 2)
-  ) +
-theme(
-  legend.position = "bottom",
-  panel.background = element_blank(),
-  legend.text = element_text(size = 11),
-  legend.key = element_rect(fill = NA)
-))
+leg_cl_right <- get_legend(
+  p_pca_cl_ell[[1]] +
+    theme(
+      legend.position = "bottom",
+      legend.text = element_text(size = 12),
+      legend.title = element_text(size = 12)
+      ) +
+    guides(col = guide_legend(
+        nrow = 1, override.aes = list(size = 10)
+        ))
+    )
+bottom <- plot_grid(p_tot_tab, leg_cl_right, ncol = 1, rel_heights = c(1, .11),
+  labels = c("iv)", ""))
+#fig3_alt <- plot_grid(top, bottom, nrow = 2, rel_heights = c(1, .40))
 
-bottom_left <- plot_grid(plotlist = inset_basin, ncol = 3)
-bottom_right <- plot_grid(p_tot_tab, leg_cl, ncol = 1, rel_heights = c(1, .5))
-
-bottom <- plot_grid(bottom_left, bottom_right, ncol = 2, rel_widths = c(1, .5))
-
-fig3 <- plot_grid(
-  main_map_rect_basin + coord_sf(expand = FALSE),
-  bottom,
-  ncol = 1, rel_heights = c(1, 1))
+inset_tot <- plot_grid(plotlist = append(
+    inset_country[1], append(inset_basin[1:3],
+    append(inset_country[2], append(inset_basin[4:6],
+    append(inset_country[3], inset_basin[7:9]))))
+    ),
+  ncol = 4,
+  rel_widths = c(1, .70, .7, .50),
+  rel_heights = c(1, 1.5, 1),
+  labels = c(
+    "i)", letters[1:3],
+    "ii)", letters[4:6],
+    "iii)", letters[7:9]
+    )
+  )
+fig3_alt <- plot_grid(inset_tot, bottom, nrow = 2, rel_heights = c(1, .70))
 ggsave(
-  filename = "fig3.pdf",
-  plot = fig3,
+  filename = "fig3_alt.pdf",
+  plot = fig3_alt,
   path = here("paper", "fig_paper"),
   scale = 5.0,
   width = 88,
@@ -918,13 +951,18 @@ ggsave(
 )
 ```
 
+
+
+
 ```{r}
-map_cl_cap <- "**Spatial distribution of the clusters of biodiversity temporal
-trends**. Top panel: spatial distribution of the the clusters with insets of
-the most sampled hydrographic basins by realms. Right panel: cluster frequency
-distribution in the three most represented Realms (in capital letters) and their
-most sampled hydrographic basins, corresponding to the insets displayed on the left panel.
-The number of sites are displayed between parenthesis."
+map_cl_cap <- "**Spatial distribution of community trajectories**.
+Insets of the most sampled Realms, namely i) Palearctic, ii) Nearctic and iii)
+Australasia displaying the location of their three most sampled basins (a to i).
+iv) Cluster frequency distribution in the three most represented Realms (in
+capital letters) and their most sampled hydrographic basins, corresponding to
+the insets (a to i). The numbers of sites are displayed
+between parentheses. Site not assigned to a cluster (N = 630, see Methods) are
+not displayed. See supplementary material for an interactive world map of the cluster distribution."
 ```
 
 ```{r cl-map, fig.asp = .65, fig.width = 88* 0.0393701}
@@ -951,33 +989,10 @@ tar_load(c(gaussian_inla_rand, r2))
 library(coda)
 
 tu <- r2 %>%
-  filter(response %in% c(clust_var, exo_resp_var)) %>%
-  mutate(
-    r2_mvp_marg95hpd = map(r2_mvp_marg, ~HPDinterval(as.mcmc(.x))),
-    r2_mvp_marg95hpdci = map2_chr(r2_mvp_marg95hpd, r2_mvp_marg_mean,
-      ~paste0(
-        format(round(.y, 2), nsmall = 2),
-        " [",
-        format(round(.x[, "lower"], 2), nsmall = 2),
-        ",",
-        format(round(.x[, "upper"], 2), nsmall = 2),
-          "]")
-      ),
-    r2_mvp_cond95hpd = map(r2_mvp_cond, ~HPDinterval(as.mcmc(.x))),
-    r2_mvp_cond95hpdci = map2_chr(r2_mvp_cond95hpd, r2_mvp_cond_mean,
-      ~paste0(
-        format(round(.y, 2), nsmall = 2),
-        " [",
-        format(round(.x[, "lower"], 2), nsmall = 2),
-        ",",
-        format(round(.x[, "upper"], 2), nsmall = 2),
-          "]")
-      )
-  )
-
-
+  filter(response %in% c(clust_var, exo_resp_var))
 tab_rand <- gaussian_inla_rand %>%
   filter(
+    term %in% paste0("Precision for ", c("main_bas1", "siteid1")),
     ci_level == "level:0.95",
     response %in% c(restricted_dimension, exo_resp_var)
     ) %>%
@@ -986,14 +1001,14 @@ tab_rand <- gaussian_inla_rand %>%
   mutate(
     response = get_var_replacement_vulgarisation()[response],
     term = str_remove(term, "Precision for the |Precision for |"),
-    term = replacement_random_term()[term],
+    term = replacement_random_term_table()[term],
     ci = paste0(mean, " [", high,",", low,"]")
   ) %>%
   arrange(response, desc(term)) %>%
   select(
     `Response variable` = response,
-    Term = term,
-    `Standard deviation` = ci
+    `Spatial scale` = term,
+    `Temporal trends s.d.` = ci
   )
 
 tab_rand2 <- tab_rand %>%
@@ -1002,18 +1017,17 @@ tab_rand2 <- tab_rand %>%
       mutate(response = get_var_replacement_vulgarisation()[response]) %>%
       select(
         `Response variable` = response,
-        `Marg. R2` = r2_mvp_marg95hpdci,
         `Cond. R2` = r2_mvp_cond95hpdci
         ),
     by = "Response variable"
-  ) %>%
-select(1, 4, 5, 2, 3) %>%
-mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
-arrange(`Response variable`)
+    ) %>%
+  select(1, 4, 2, 3) %>%
+  mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
+  arrange(`Response variable`)
 ```
 
 ```{r}
-tab_rand_cap <- "Marginal and conditional mean R-squared of the models and the mean standard deviation estimated for the random effect and the error terms. [95% CI]: Credible Interval computed using Highest Posterior Density method."
+tab_rand_cap <- "R-squared of the models Conditional mean R2 of the models and the mean standard deviation estimated for the random effect and the error terms. [95% CI]: Credible Interval computed using Highest Posterior Density method."
 tab_rand2 %>%
   kbl(booktabs = T,
     label = "tab-rand",
@@ -1034,7 +1048,8 @@ important requirements:
 
 All figures must be cited in sequence within the main article text in the form Fig. 1, Fig. 2.
 
-Figure panels should be prepared at a minimum resolution of 300 dpi and saved at a maximum width of 180 mm.  
+Figure panels should be prepared at a minimum resolution of 300 dpi and saved at
+a maximum width of 180 mm.  
 
 Use a 5–7 pt san serif font for standard text labelling and Symbol font for Greek characters. 
 

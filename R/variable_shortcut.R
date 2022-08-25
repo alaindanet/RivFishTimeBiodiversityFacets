@@ -231,6 +231,16 @@ replacement_random_term <- function() {
   )
 }
 
+replacement_random_term_table <- function() {
+  c(
+    #"Gaussian observations" = "Error",
+    #"intercept_main_bas" = "Basin",
+    "main_bas1" = "Basin",
+    #"intercept_main_bassiteid" = "Intercept (site nested in basin)",
+    "siteid1" = "Site"
+  )
+}
+
 replacement_random_term_bis <- function() {
   c(
     "Gaussian observations" = "epsilon"

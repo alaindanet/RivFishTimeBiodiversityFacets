@@ -1,7 +1,8 @@
 #' Select protocol and site
 #'
 #'
-#' @param type character string of length one "all", "site_quali", sit 
+#' @param type character string of length one "all", "quali", "quanti",
+#' "abun_rich_op", "location"
 #'
 get_filtered_dataset <- function(
   op_protocol = NULL,
