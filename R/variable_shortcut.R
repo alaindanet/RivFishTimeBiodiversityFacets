@@ -263,15 +263,15 @@ get_pred_signification <- function() {
 get_term_level <- function() {
   c(
     "Time",
-    "Stream gradient",
     "Past pressures",
     "Recent pressures",
-    "Time x\nStream gradient",
+    "Stream gradient",
     "Time x\nPast pressures",
     "Time x\nRecent pressures",
+    "Time x\nStream gradient",
+    "Time x\nPast pressures x\nRecent pressures",
     "Time x\nStream gradient x\nPast pressures",
-    "Time x\nStream gradient x\nRecent pressures",
-    "Time x\nPast pressures x\nRecent pressures"
+    "Time x\nStream gradient x\nRecent pressures"
   )
 
 }

@@ -2,9 +2,10 @@
 title: "Main figures of the manuscript"
 author: Danet, A., Giam, X., Olden, J. and Comte L.
 output:
-  bookdown::word_document2:
   bookdown::pdf_document2:
-    toc: true
+    keep_tex: true
+  bookdown::word_document2:
+always_allow_html: true
 ---
 
 
@@ -31,6 +32,9 @@ knitr::opts_chunk$set(
   dev.args = list(png = list(type = "cairo-png")),
   optipng = "-o1 -quiet"
 )
+
+options(kableExtra.latex.load_packages = TRUE)
+library(kableExtra)
 ```
 
 # Options
@@ -43,7 +47,7 @@ knitr::opts_chunk$set(
 ```{r}
 # control also the order of the legend
 restricted_dimension <- c("log_total_abundance", "log_chao_richness",
-  "perc_exo_sp", "perc_exo_abun", "turnover_scaled", "hillebrand_dis_scaled")
+  "perc_exo_sp", "perc_exo_abun", "hillebrand_dis_scaled", "turnover_scaled")
 ```
 
 
@@ -106,23 +110,7 @@ p1 <- tu %>%
   arrange(response, desc(width_bar)) %>%
   plot_inla_fixed_effect(
     scale_color = rev(pal_variable),
-    term_level = term_level) +
-  scale_x_break(c(.22, .55))
-
-p2 <- tu %>%
-  filter(facet == "interaction") %>%
-  arrange(response, desc(width_bar)) %>%
-  plot_inla_fixed_effect(scale_color = rev(pal_variable),
-    term_level = term_level) +
-  scale_x_break(c(.135, .195)) 
-
-p3 <- tu %>%
-  filter(facet == "dbl_interaction") %>%
-  arrange(response, desc(width_bar)) %>%
-  plot_inla_fixed_effect(.,
-    scale_color = rev(pal_variable),
     term_level = term_level,
-    legend_present = TRUE,
     xaxis_title = TRUE
     ) +
   labs(x = expression(
@@ -131,6 +119,23 @@ p3 <- tu %>%
         sep = "")
     )
   ) +
+  scale_x_break(c(.22, .55))
+
+p2 <- tu %>%
+  filter(facet == "interaction") %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(scale_color = rev(pal_variable),
+    term_level = term_level) +
+  scale_x_break(c(.135, .195))
+
+p3 <- tu %>%
+  filter(facet == "dbl_interaction") %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(.,
+    scale_color = rev(pal_variable),
+    term_level = term_level,
+    legend_present = TRUE
+    )  +
 theme(
   plot.margin = margin(5, 5, 5, 5, "pt"),
   plot.background = element_rect(fill = NA, color = "black"))
@@ -184,15 +189,16 @@ scale_color_manual(
 )
 
 fig1 <- plot_grid(
-  print(p1),
   print(p2),
   ggdraw(p3 + theme(legend.position = "none"), xlim = c(-.02, 1.015), ylim = c(-.01, 1.01)),
+  print(p1),
 
   leg_dis,
   rel_heights = c(1.2, 1, 1, .2),
   labels = c(letters[1:3], NULL),
   hjust = -1.25, vjust = 1.8,
   ncol = 1)
+fig1
 ```
 
 
@@ -353,7 +359,6 @@ site_trends_dec <- site_no_drivers_inla %>%
   select(turnover_scaled, hillebrand_dis_scaled,
     log_chao_richness, log_total_abundance) %>% 
   rownames_to_column(var = "siteid")
-hist(site_trends_dec$log_total_abundance)
 ```
 
 ```{r}
@@ -382,7 +387,7 @@ p_pca_cl_bt <- target_bp_cl_dist(
 
 
 ```{r} 
-pca_clust_map <- paste0("**Covariation among the temporal trends in biodiversity metrics
+pca_clust_cap <- paste0("**Covariation among the temporal trends in biodiversity metrics
 and identification of community trajectories**. **a**, **b**, PCA biplot of the community
 temporal trends and their cluster assignment (upper panel). **c**, boxplots
 displaying the distribution of the temporal trends by cluster (lower panel). The
@@ -955,18 +960,21 @@ ggsave(
 
 
 ```{r}
-map_cl_cap <- "**Spatial distribution of community trajectories**.
-Insets of the most sampled Realms, namely i) Palearctic, ii) Nearctic and iii)
-Australasia displaying the location of their three most sampled basins (a to i).
-iv) Cluster frequency distribution in the three most represented Realms (in
-capital letters) and their most sampled hydrographic basins, corresponding to
-the insets (a to i). The numbers of sites are displayed
-between parentheses. Site not assigned to a cluster (N = 630, see Methods) are
-not displayed. See supplementary material for an interactive world map of the cluster distribution."
+map_cl_cap <- "**Spatial distribution of community trajectories**.  Insets of
+ the most sampled Realms, namely i) Palearctic, ii) Nearctic and iii) Australasia
+ displaying the location of their three most sampled basins (a to i). iv)
+ Cluster frequency distribution in the three most represented Realms (in capital
+ letters) and their most sampled hydrographic basins, corresponding to the
+ insets (a to i). The numbers of sites are displayed between parentheses. Site
+ not assigned to a cluster (N = 630, see Methods) are not displayed. See
+ supplementary material for an interactive world map of the cluster 
+ distribution." %>%
+str_remove_all("\n|\r") %>%
+str_replace_all("  ", " ")
 ```
 
 ```{r cl-map, fig.asp = .65, fig.width = 88* 0.0393701}
-knitr::include_graphics(here("paper", "fig_paper", "fig3.pdf"))
+knitr::include_graphics(here("paper", "fig_paper", "fig3_alt.pdf"))
 ```
 
 
@@ -1027,13 +1035,13 @@ tab_rand2 <- tab_rand %>%
 ```
 
 ```{r}
-tab_rand_cap <- "R-squared of the models Conditional mean R2 of the models and the mean standard deviation estimated for the random effect and the error terms. [95% CI]: Credible Interval computed using Highest Posterior Density method."
+tab_rand_cap <- " Mean conditional R-squared of the models and the mean standard deviation estimated for the random temporal trends. [95% CI]: Credible Interval computed using Highest Posterior Density method."
 tab_rand2 %>%
   kbl(booktabs = T,
     label = "tab-rand",
     caption = tab_rand_cap) %>%
-  collapse_rows(columns = c(1, 2, 3), latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
+  collapse_rows(columns = c(1, 2), latex_hline = "major", valign = "middle") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 # Instructions from  NEE 
