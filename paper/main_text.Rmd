@@ -635,7 +635,7 @@ from upstream to downstream, was summarized using a PCA axis positively related
 Strahler order, distance from source, and annual discharge, with large values
 indicating downstream areas. We quantified the legacy of past anthropogenic
 pressures with the human footprint index of 1993, as only 7% of the monitoring
-surveys were realized before this date (Fig. S3), and the effect of recent
+surveys were realized before this date (Fig. S4), and the effect of recent
 anthropogenic pressures by the ratio of the human footprint index between 2009
 and 1993. Overall, the hierarchical spatial structure of the models captured
 well the variance in the community metrics, as the R² conditional on the
@@ -643,7 +643,7 @@ random intercepts varied from `r r2turn` (average [CI 95%]) for turnover
 to `r r2rich` for species richness (Table 1). However, the marginal R² were much
 lower than the R² conditional on the random intercept, indicating that the
 variance in community metrics captured by the hierarchical random effects was
-much more higher than the one captured by the fixed effects (Table SXX).
+much more higher than the one captured by the fixed effects (Table S1).
 
 We also found strong evidence that a higher degree of past anthropogenic
 pressures was associated with faster rates of total abundance and species
@@ -981,7 +981,7 @@ We used the RivFishTime database[@comte_rivfishtime_2021], a compilation of
 more than 12,000 time series containing species abundances of riverine fish
 communities. The database mainly covers western and northern Europe, northern
 America, and southeastern Australia. We completed the database with time series
-from Canada and United States (Table S1), following the same criteria than
+from Canada and United States (Table S2), following the same criteria than
 RivFishTime for integration[@comte_rivfishtime_2021].
 
 We selected time series having at least 5 years of data
@@ -1000,12 +1000,12 @@ The data selection resulted in `r fnsite` fish community time series, totalling
 freshwater fish species. The median time span was of `r tss$span`
 years ([25th quantile, 75th quantile]), the median baseline of the time series
 was `r tss$min`, and the median completeness of the time series was of `r tss$completeness` (see
-Fig. S2 for the complete distribution).
+Fig. S4 for the complete distribution).
 The sites were mostly located in Palearctic (`r per_eco["Palearctic"]`),
 Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`).
 Four countries gathered `r per_s4pays` of the sites, namely Great Britain
 (`r per_pays["GBR"]`), France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`),
-and the United States (`r per_pays["USA"]`, Table S4).
+and the United States (`r per_pays["USA"]`, Table S3).
 
 ## Community metrics 
 
@@ -1042,7 +1042,7 @@ u_per <- scales::percent(table_to_vec(unitvec))
 
 We assessed community changes in riverine fish communities using several
 biodiversity facets related to species richness and total abundance, non-native
-species and community composition (Table S7).  Total abundance was reported in
+species and community composition (Table S4). Total abundance was reported in
 number of individuals (`r u_per["Count"]` of the sampling events), density of
 individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per Unit Effort (`r
 u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`, Table S3).
@@ -1083,7 +1083,7 @@ the minimum values of abundance in the community (i.e. $x^{\prime}_i =
 1 / min(x_i)$), which we further rounded so that each community had at least one singleton
 species, i.e. a species with one individual. The correlation was very high
 between raw species richness and Chao richness (Spearman's $\rho = `r cor_chao_rich`$ for
-both raw variables and log transformed ones, Fig. S3).
+both raw variables and log transformed ones, Fig. S5).
 
 ```{r}
 nat_ori <- table(measurement_exo$native_exotic_origin) / nrow(measurement_exo)
@@ -1237,7 +1237,7 @@ criterion[@kaiser_varimax_1958], to increase the quality of
 the variable representation (i.e. their loadings) on the two first principal
 components. The first rotated component was positively related to average annual
 discharge, distance from source and Strahler order and capturing 
-`r perc_var_rc1` of the variance (Fig. S4), and then was used as a composite
+`r perc_var_rc1` of the variance (Fig. S6), and then was used as a composite
 variable describing the stream gradient from upstream to downstream.
 
 We quantified the degree of anthropogenic pressures using the human footprint
@@ -1245,7 +1245,7 @@ index[@venter_global_2016; @venter_sixteen_2016]. The human footprint index
 aggregates an array of human pressures, including population density, the extent
 of forested, cropland and pasture land areas, but also the extent of built
 environments such as roads, railways, electric infrastructures, and navigable
-pathways (Fig.  S5). It does so by combining remote sensing data, systematic
+pathways (Fig.  S7). It does so by combining remote sensing data, systematic
 surveys and modelling from ground data, making it less prone to
 errors[@venter_global_2016]. The human footprint index ranges from 0 to 50, with
 values superior to four being considered in a degraded
@@ -1260,7 +1260,7 @@ log-transformed the ratio of human footprint with a base 2. Then, a value of
 minus one and one represent a division by two and a multiplication by two of the
 human footprint between 1993 and 2009, respectively. Only `r perc_opb93` of the
 samplings took place before 1993, while `r perc_op9309` took place between 1993
-and 2009 and `r perc_opa09` after 2009 (Fig. S1). The human footprint index
+and 2009 and `r perc_opa09` after 2009 (Fig. S4). The human footprint index
 values were extracted from the HydroAtlas database at the reach
 scale[@linke_global_2019] (original resolution of 450meters). The human
 footprint indexes of 1993 and 2009 were not correlated with the stream gradient
@@ -1421,11 +1421,11 @@ similar than with an implementation in frequentist. Then, we concluded that the
 quality of parameter inference did not suffer from the uninformative priors.
 
 We checked the model validity visually by plotting the fitted versus the
-observed values (Fig. S6). We visually inspected the PIT and CPO (respectively
+observed values (Fig. S8). We visually inspected the PIT and CPO (respectively
 Posterior Integral Transform and Conditional Predictive Ordinate) distribution
 to assess both the overall quality of fitting, and the frequency of outliers. 
 There was very multicollinearity in the model, as all Variance Inflation Factors
-were around 1 (Table S10).
+were around 1 (Table S3).
 
 We computed $R^2$ to assess the quality of the fit of the bayesian models.  We
 then computed marginal ($R^2_m$)and conditional ($R^2_c$) R-squared,
@@ -1487,9 +1487,9 @@ clusters. The method consists of trimming the $\alpha$ most outlying data while
 taking in account the multidimentional structure, the number of dimension being
 the number of community metrics. To choose a relevant number of clusters, we
 plotted the trimmed log-likelihood of the function as a function of the
-proportion of the most outlying data trimmed ($\alpha$) (Fig. S7). We thus
+proportion of the most outlying data trimmed ($\alpha$) (Fig. S9). We thus
 selected a partition of temporal community changes in six clusters with
-$\alpha=5\%$. We did not constraint the algorithm for the relative size of shape
+$\alpha=5\%$ (See Fig. S10 with four clusters). We did not constraint the algorithm for the relative size of shape
 of the clusters, as we had no apriori expectation about them. The clustering
 algorithm was run for a minimum number of one hundred iterations and up to 125.
 To further control for the quality of each fish community changes assignment to
@@ -1558,7 +1558,7 @@ str_replace_all("\n|\r", " ")
 
 ```{r}
 tab_rand_cap <- " Mean conditional R-squared of the models and the mean standard
-deviation estimated for the random temporal trends. [95% CI]: Credible Interval
+deviation estimated for the random temporal trends. [95\\% CI]: Credible Interval
 computed using Highest Posterior Density method." %>%
 str_replace_all("  ", " ") %>%
 str_replace_all("\n|\r", " ")

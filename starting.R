@@ -535,7 +535,6 @@ destfile_wt <- paste0(
   hist_date, ".nc"
   )
 for (i in seq_along(hist_date)) {
-
   download.file(
     url = water_temp_url,
     destfile = destfile_wt,
@@ -544,7 +543,6 @@ for (i in seq_along(hist_date)) {
     mode = "wb",
     cacheOK = TRUE
   )
-    
 }
 
 R.utils::createLink(
