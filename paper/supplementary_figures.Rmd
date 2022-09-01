@@ -227,9 +227,11 @@ figS1
 ```
 
 ```{r}
-tar_load(c(site_cl_rm, site_cl_na))
+tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
+tar_load(c(clust_var_alter, site_cl_rm_red, site_env))
 pca_data <- site_no_drivers_inla_tot[,
-    colnames(site_no_drivers_inla_tot) %in% clust_var]
+    colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
+    !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
 pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
 ```
 

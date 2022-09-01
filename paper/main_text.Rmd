@@ -715,12 +715,13 @@ abundance `r abun_rich_hft93_int_max["log_chao_richness"]` lower than â€˜intactâ
 sites (i.e. with a human footprint index =
 `r round(pred_data_explanation$hft_ix_c93["intact"],1)`). In contrast, we found
 that past anthropogenic pressures resulted in higher species richness 
-(Fig. 3c, orange), with the most degraded sites displaying `r
-abun_rich_hft93_int_max["log_chao_richness"]` more species than intact sites.
+(Fig. 3c, orange), with the most degraded sites displaying 
+`r abun_rich_hft93_int_max["log_chao_richness"]` more species than intact sites.
 Sites subject to a higher degree of past anthropogenic pressures also
 had a higher proportion of non-native richness and non-native abundance (strong
 evidence, Fig. 3c), such as the most degraded sites had a proportion of
-non-native species richness (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`)
+non-native species richness
+(`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`)
 twice higher than intact sites
 (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`), and a
 proportion of non-native species abundance three times higher
@@ -728,7 +729,7 @@ proportion of non-native species abundance three times higher
 `r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])` respectively).
 In contrast, we found strong evidence that recent increases in
 anthropogenic pressures were associated with communities displaying on average
-lower total abundance and species richness but an increased share of nonnative
+lower total abundance and species richness but an increased share of non-native
 species. For instance, sites that had been subject to a recent two-fold increase
 in anthropogenic pressures displayed total abundance
 `r abun_rich_hft9309_0_inc_by2["log_total_abundance"]` and species richness
