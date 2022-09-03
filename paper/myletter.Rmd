@@ -99,12 +99,18 @@ study:
 
 - Charlotte Outhwaite, Centre for Biodiversity and Environment Research,
   University College London, London, UK:
-  - expertise: Effects of human pressures on biodiversity trends 
+  - relevant expertise: Effects of human pressures on biodiversity trends 
   - `charlotte.outhwaite.14@ucl.ac.uk`
 - Mark Vellend, Département de biologie, Université de Sherbrooke, Sherbrooke, QC, Canada: 
-  - expertise: biodiversity trends at local and regional scale 
+  - relevant expertise: biodiversity trends at local and regional scale 
   - `mark.vellend@usherbrooke.ca`
 - Sébastien Villéger: MARBEC, Univ Montpellier, CNRS, Ifremer, IRD, Montpellier, France: 
-  - expertise: Biotic homogeneization and non-native species introduction in riverine fish communities
+  - relevant expertise: Biotic homogeneization and non-native species introduction in riverine fish communities
   - `sebastien.villeger@cnrs.fr`
+-  Roel van Klink: sDiv
+  - relevant expertise: local community changes notably in freshwater systems
+- Steve Osmerod: Univ Cardiff 
+- Kirk Winemiller: Texas A & M
+- Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul
+- Fengzhi He: IGB
     
