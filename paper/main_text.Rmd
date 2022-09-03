@@ -3,9 +3,9 @@ title: "Past and recent anthropogenic pressures drive community changes over spa
 author: "Alain Danet, Xingli Giam, Julian Olden, Lise Comte"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
+  bookdown::word_document2:
   bookdown::pdf_document2:
     keep_tex: true
-  bookdown::word_document2:
 bibliography: "bibliography.bib"
 csl: nature.csl
 link-citations: true
@@ -491,8 +491,8 @@ r2 %>%
 ## Global community changes over time
 
 Our dataset comprised 4476 riverine fish community timeseries that had been
-repeatedly sampled over the last three decades (baseline: `r tss$min`; span: `r
-tss$span` years; completeness:`r tss$completeness`; median [25th quantile,75th
+repeatedly sampled over the last three decades (baseline: `r tss$min`; span:
+`r tss$span` years; completeness:`r tss$completeness`; median [25th quantile,75th
 quantile]), mainly in Western and Northern Europe, Northeastern America,
 Southeastern Australia and Japan. We found an overall increase in total
 abundance and species richness, together with strong changes in community
@@ -720,8 +720,7 @@ that past anthropogenic pressures resulted in higher species richness
 Sites subject to a higher degree of past anthropogenic pressures also
 had a higher proportion of non-native richness and non-native abundance (strong
 evidence, Fig. 3c), such as the most degraded sites had a proportion of
-non-native species richness
-(`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`)
+non-native species richness (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])`)
 twice higher than intact sites
 (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`), and a
 proportion of non-native species abundance three times higher
@@ -1045,8 +1044,8 @@ We assessed community changes in riverine fish communities using several
 biodiversity facets related to species richness and total abundance, non-native
 species and community composition (Table S4). Total abundance was reported in
 number of individuals (`r u_per["Count"]` of the sampling events), density of
-individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per Unit Effort (`r
-u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`, Table S3).
+individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per Unit Effort
+(`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`, Table S3).
 Although we selected for strict protocol consistency, 70% or more of the
 sampling events by unit of abundance did not reported sampling effort,
 preventing us to harmonize count, abundance density and Catch Per Unit
