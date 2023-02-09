@@ -20,4 +20,16 @@ doc/lise*
 doc/map_*
 data/*.rda
 paper/graphics/*.png
-paper/*.log
+*.log
+*.tex
+*.aux
+*.fls
+*.rtf
+*.toc
+*.png
+*.jpg
+*.html
+*.svg
+*.fdb_latexmk
+*.synctex(busy)
+*.docx

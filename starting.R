@@ -31,7 +31,7 @@ use_data_raw()
 # Copy the address of the Lise shared drive
 machine_login <- Sys.info()["login"]
 if (machine_login == "alain") {
-  server_mounted_location <- "/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/" 
+  server_mounted_location <- "/run/user/1000/gvfs/smb-share:server=caslab.ad.ilstu.edu,share=bio/Comte/"
 } else if (machine_login == "ahdanet") {
   server_mounted_location <- "L:/"
 }
@@ -103,7 +103,7 @@ destfile_riveratlas <- "L:/ENV_LAYERS/river_atlas_v10_shp.zip"
 download.file(
   url = riveratlas_shp_url,
   destfile = destfile_riveratlas,
-  method="auto", 
+  method="auto",
   quiet = FALSE,
   mode = "wb",
   cacheOK = TRUE
@@ -192,7 +192,7 @@ for (i in seq_along(files)) {
     overwrite = TRUE
   )
 }
-shell(sprintf('mklink "%s" "%s"', 
+shell(sprintf('mklink "%s" "%s"',
               normalizePath(links[1], mustWork = FALSE),
               normalizePath(targets[1])
 ))
@@ -201,7 +201,7 @@ shell(sprintf('mklink "%s" "%s"',
 # Tmp figure script
 file.create(here("doc", "tmp_figures.R"))
 
-# Conceptual figures 
+# Conceptual figures
 use_rmd("xxa-conceptual-figures")
 # Figure papers
 use_rmd("xxb-conceptual-figures")
@@ -394,6 +394,14 @@ st_write(loc, here::here("data", "sweden", "sweden_site_rivfishtime.shp"))
 st_write(lime_data_site, here::here("data", "sweden", "liming_data_site.shp"))
 st_write(lime_data_stream,
   here::here("data", "sweden", "liming_data_stream.shp"))
+
+R.utils::createLink(
+  link = here("inst", "extdata", "liming_data_site_sweden"),
+  target = paste0(server_mounted_location, "ENV_LAYERS/futurestreams"),
+  method = ifelse(machine_login == "ahdanet", "windows-shortcut", "unix-symlink"),
+  overwrite = TRUE
+)
+
 
 #########################
 #  Basic stats helpers  #

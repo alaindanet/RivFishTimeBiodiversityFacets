@@ -78,7 +78,7 @@ list(
           status == "Vilande" ~ "resting",
           status == "Avslutad" ~ "terminated",
           TRUE ~ "other")) %>%
-      st_zm(drop = TRUE, what = "ZM") 
+      st_zm(drop = TRUE, what = "ZM")
     ),
   tar_target(water_temperature_file,
     here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
@@ -168,7 +168,7 @@ list(
     complete_native_exotic_data(
       meas = .,
       loc = site_desc_loc
-    )), 
+    )),
   tar_target(measurement_exo,
     add_usgs_data_to_measurement_exo(
       meas_exo = measurement_exo_tmp,
@@ -239,7 +239,7 @@ tar_target(filtered_dataset_avg3y, get_filtered_dataset(
     add_var_from_protocol = c("siteid", "year"),
       lime_data = lime_site_swe
     )),
-tar_target(world_site_sf, 
+tar_target(world_site_sf,
   get_world_site_sf(loc = filtered_dataset$location)
   ),
 tar_target(rivers10, ne_download(
@@ -269,7 +269,7 @@ tar_target(neutral_turnover,
     get_site_community_matrix(
       x = filtered_dataset$measurement,
       average_first_year = FALSE,
-      nb_sampling_to_average = NULL 
+      nb_sampling_to_average = NULL
     )
     ),
   tar_target(com_mat_site_avg3y,
@@ -652,7 +652,7 @@ tar_target(neutral_turnover,
       var_to_collect = unique(c(
         get_river_atlas_significant_var(),
         get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")]
-      )) 
+      ))
     )
     ),
   tar_target(p_atlas_rivfishtime_env,
@@ -814,7 +814,7 @@ tar_target(neutral_turnover,
       list_parameter = list(
         log1_year_nb = log(c(0, 10, 20) + 1),
         hft_ix_c93 = with(modelling_data, c(
-            min(hft_ix_c93), 
+            min(hft_ix_c93),
             2.5, #Intact sites 1 < x < 4
             quantile(hft_ix_c93, probs = .25),
             median(hft_ix_c93), quantile(hft_ix_c93, probs = .75),
@@ -834,7 +834,7 @@ tar_target(neutral_turnover,
         "siteid1", "intercept_main_bassiteid",
         "intercept_main_bas", "main_bas1",
         exo_resp_var
-        
+
       )
   )),
   tar_target(modelling_data_scaled,
@@ -990,7 +990,7 @@ tar_target(neutral_turnover,
             ", year_var, " * riv_str_rc1 +",
           year_var, " * hft_ix_c9309_diff_scaled +
           (1 + ", year_var," | main_bas:siteid) +
-          (1 + 
+          (1 +
             ", year_var, " +
             hft_ix_c9309_diff_scaled +
             riv_str_rc1 +",
@@ -1113,7 +1113,7 @@ tar_target(neutral_turnover,
                           year_var, "* unitabundance +",
                           year_var, " * hft_ix_c9309_diff_scaled +
                           (1 + hft_ix_c9309_diff_scaled + ", year_var, ":hft_ix_c9309_diff_scaled +  riv_str_rc1 + ", year_var, ":riv_str_rc1 | main_bas) +
-                          (1 + ", year_var, " | main_bas:siteid) 
+                          (1 + ", year_var, " | main_bas:siteid)
                         ")),
                         data = modelling_data,
                         family = gaussian(link = "identity")
@@ -1131,7 +1131,7 @@ tar_target(neutral_turnover,
                           year_var, "* unitabundance +",
                           year_var, " * hft_ix_c9309_diff_scaled +
                           (1 + ", year_var, "+  hft_ix_c9309_diff_scaled +  riv_str_rc1 | main_bas) +
-                          (1 + ", year_var, " | main_bas:siteid) 
+                          (1 + ", year_var, " | main_bas:siteid)
                         ")),
                         data = modelling_data,
                         family = gaussian(link = "identity")
@@ -1149,7 +1149,7 @@ tar_target(neutral_turnover,
                           year_var, "* unitabundance +",
                           year_var, " * hft_ix_c9309_diff_scaled +
                           (1 + ", year_var, "| main_bas) +
-                          (1 + ", year_var, " | main_bas:siteid) 
+                          (1 + ", year_var, " | main_bas:siteid)
                         ")),
                         data = modelling_data,
                         family = gaussian(link = "identity")
@@ -1289,7 +1289,7 @@ tar_target(neutral_turnover,
             pred_data = pred_data)),
           pred_plot = map2(pred, response, ~get_pred_list_plot(
               pred_data = .x,
-              response = get_var_replacement()[.y], 
+              response = get_var_replacement()[.y],
           control = list(
             log1_year_nb = with(pred_data_explanation, log1_year_nb["0"]),
             riv_str_rc1 = with(pred_data_explanation, riv_str_rc1["median"]),
@@ -1515,7 +1515,7 @@ tar_target(neutral_turnover,
       response = facet_var,
       tau_prior = list(
         prec = list(prior = "pc.prec", param =
-          # normally, should be three of the scaled values right? 
+          # normally, should be three of the scaled values right?
           c(3 * sd(modelling_data_scaled[[facet_var]]), 0.01)
         )),
       mod = list(try(inla(
@@ -1529,7 +1529,13 @@ tar_target(neutral_turnover,
     pattern = map(facet_var)
     ),
   tar_target(gaussian_inla_prior_std_effects,
-    format_inla_model_list(x = gaussian_inla_prior_std)),
+    format_inla_model_list(x = gaussian_inla_prior_std,
+      response_to_skip = c(
+        "species_nb", "species_nb_tps_scaled",
+        "chao_richness_tps_scaled", "total_abundance",
+        "total_abundance_scaled", "total_abundance_tps")
+
+      )),
   tar_target(gaussian_inla_prior_std_re_pred,
     target_inla_re_pred(
     mod_list = gaussian_inla_prior_std,
@@ -1612,7 +1618,12 @@ tar_target(neutral_turnover,
     pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_no_drivers_effects,
-    format_inla_model_list(x = gaussian_inla_exo_no_drivers)),
+    format_inla_model_list(x = gaussian_inla_exo_no_drivers,
+      response_to_skip = c(
+        "species_nb", "species_nb_tps_scaled",
+        "chao_richness_tps_scaled", "total_abundance",
+        "total_abundance_scaled", "total_abundance_tps")
+      )),
   tar_target(gaussian_inla_exo_no_drivers_re_pred,
     target_inla_re_pred(
     mod_list = gaussian_inla_exo_no_drivers,
@@ -1639,7 +1650,7 @@ tar_target(neutral_turnover,
         pred_plot = map2(pred, response, ~get_pred_list_plot(
               pred_data =.x,
               response = get_var_replacement()[.y],
-            control = list(  
+            control = list(
             log1_year_nb = with(pred_data_explanation, log1_year_nb["0"]),
             riv_str_rc1 = with(pred_data_explanation, riv_str_rc1["median"]),
             hft_ix_c9309_log2_ratio = with(pred_data_explanation, hft_ix_c9309_log2_ratio["0"]),
@@ -1674,7 +1685,12 @@ tar_target(neutral_turnover,
     pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_std_effects,
-    format_inla_model_list(x = gaussian_inla_exo_std)),
+    format_inla_model_list(x = gaussian_inla_exo_std,
+      response_to_skip = c(
+        "species_nb", "species_nb_tps_scaled",
+        "chao_richness_tps_scaled", "total_abundance",
+        "total_abundance_scaled", "total_abundance_tps")
+      )),
   tar_target(gaussian_inla_exo_wo_liming_std_effects,
     format_inla_model_list(x = gaussian_inla_exo_wo_liming_std)),
   tar_target(gaussian_inla_exo_prior_std,
@@ -1882,7 +1898,7 @@ tar_target(neutral_turnover,
     rbind(
       gaussian_jaccard_tmb %>%
         filter(intercept == 1 & year_var == "year_nb") %>%
-        select(-intercept), 
+        select(-intercept),
       gaussian_rich_tmb %>%
         filter(year_var == "year_nb"),
       gaussian_abun_tmb %>%
@@ -2035,7 +2051,7 @@ tar_target(mod_exo_comp,
         #),
       #pred_plot_riv = furrr::future_map(pred_riv, plot),
       #pred_hft = furrr::future_map(
-        #mod, 
+        #mod,
         #~ggemmeans(.x,
           #terms = c("log1_year_nb", "hft_ix_c9309_diff_scaled [quart2]"),
           #type = "fe")
@@ -2068,14 +2084,14 @@ tar_target(mod_sampling_eff,
     standardize = "refit")
 ),
   tar_target(clust_var,
-    c("log_total_abundance", "log_chao_richness",
+    c("log_total_abundance", "log_species_nb",
       "jaccard_dis_scaled", "hillebrand_dis_scaled",
       "appearance_scaled", "disappearance_scaled",
       "turnover_scaled", "nestedness_scaled")
     ),
   tar_target(clust_var_alter,
-    c("log_total_abundance", "log_chao_richness",
-      "hillebrand_dis_scaled", "turnover_scaled" 
+    c("log_total_abundance", "log_species_nb",
+      "hillebrand_dis_scaled", "turnover_scaled"
       )
     ),
   tar_target(basin_no_drivers,
@@ -2162,7 +2178,7 @@ tar_target(mod_sampling_eff,
      x = scale(site_no_drivers_inla, center = FALSE),
      k = 1:12,
      alpha = seq(0, .3, by = .05),
-     restr.fact = 50 
+     restr.fact = 50
      )
    ),
 
@@ -2171,7 +2187,7 @@ tar_target(mod_sampling_eff,
      x = scale(site_no_drivers_inla_tot, center = FALSE),
      k = 1:12,
      alpha = seq(0, .2, by = .05),
-     restr.fact = 50 
+     restr.fact = 50
      )
    ),
  tar_target(clust_curv_site_tot_fac_1,
@@ -2179,7 +2195,7 @@ tar_target(mod_sampling_eff,
      x = scale(site_no_drivers_inla_tot, center = FALSE),
      k = 1:12,
      alpha = seq(0, .2, by = .05),
-     restr.fact = 50 
+     restr.fact = 50
      )
    ),
  tar_target(clust_curv_site_red_fac_50,
@@ -2188,7 +2204,7 @@ tar_target(mod_sampling_eff,
        center = FALSE),
      k = 1:12,
      alpha = seq(0, .2, by = .05),
-     restr.fact = 50 
+     restr.fact = 50
      )
    ),
  tar_target(clust_curv_site_red_fac_1,
@@ -2197,7 +2213,7 @@ tar_target(mod_sampling_eff,
        center = FALSE),
      k = 1:12,
      alpha = seq(0, .2, by = .05),
-     restr.fact = 1 
+     restr.fact = 1
      )
    ),
  tar_target(k6_fac_1,
@@ -2277,7 +2293,7 @@ tar_target(mod_sampling_eff,
      k = 7, alpha = 0.05, restr.fact = 1)),
  tar_target(k12_fac_1,
    tclust(x = scale(site_no_drivers_inla, center = FALSE),
-     iter.max = 100, 
+     iter.max = 100,
      k = 12, alpha = 0.05,
      restr.fact = 1, warnings = 2)
  ),
@@ -2375,7 +2391,7 @@ tar_target(mod_sampling_eff,
      p = list(plot_loc_cluster(
          cluster_df = site_cl_na,
          world_site = world_site_sf,
-         pays = country_to_plot 
+         pays = country_to_plot
          ))),
    pattern = map(country_to_plot)
    ),
@@ -2742,6 +2758,46 @@ tar_target(inla_no_drivers_effects, rbind(
       site_paper = filtered_dataset_modelling$location
     )
   ),
+  tar_target(tab_rand, {
+    tu <- r2 %>%
+      filter(response %in% c(clust_var, exo_resp_var))
+    tab_rand <- gaussian_inla_rand %>%
+      filter(
+        term %in% paste0("Precision for ", c("main_bas1", "siteid1")),
+        ci_level == "level:0.95",
+        response %in% c(restricted_dimension, exo_resp_var)
+        ) %>%
+    select(-ci_level) %>%
+    mutate(across(c(mean, low, high), ~round(., 3))) %>%
+    mutate(
+      response = get_var_replacement_vulgarisation()[response],
+      term = str_remove(term, "Precision for the |Precision for |"),
+      term = replacement_random_term_table()[term],
+      ci = paste0(mean, " [", high,",", low,"]")
+      ) %>%
+    arrange(response, desc(term)) %>%
+    select(
+      `Response variable` = response,
+      `Spatial scale` = term,
+      `Temporal trends s.d.` = ci
+    )
+
+    tab_rand %>%
+      left_join(
+        tu %>%
+          mutate(response = get_var_replacement_vulgarisation()[response]) %>%
+          select(
+            `Response variable` = response,
+            `Cond. R2` = r2_mvp_cond95hpdci
+            ),
+          by = "Response variable"
+          ) %>%
+    select(1, 4, 2, 3) %>%
+    mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
+    arrange(`Response variable`)
+
+  }
+    ),
 
   # Report
   tar_render(intro, here("vignettes/intro.Rmd")),
@@ -2772,11 +2828,10 @@ tar_target(inla_no_drivers_effects, rbind(
     here("paper", "bibliography.bib"),
     format = "file",
     error = "continue"),
-  tar_render(coverage_rivfishtime, "doc/coverage_rivfishtime.Rmd")
+  tar_render(coverage_rivfishtime, "doc/coverage_rivfishtime.Rmd"),
   # Paper
   tar_render(method, here("paper/methods.Rmd")),
   tar_render(story_summary, here("paper/story_summary.Rmd")),
   tar_render(outline_wordstack, here("paper/outline_wordstack.Rmd")),
   tar_render(supp_fig, here("paper/supplementary_figures.Rmd"))
                 )
-

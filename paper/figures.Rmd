@@ -351,13 +351,13 @@ p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2, labels =
 ```{r}
 tar_load(site_no_drivers_inla)
 site_trends_dec <- site_no_drivers_inla %>%
-  mutate(across(c(turnover_scaled, hillebrand_dis_scaled), ~.x * log(10 + 1) * 100)) %>% 
+  mutate(across(c(turnover_scaled, hillebrand_dis_scaled), ~.x * log(10 + 1) * 100)) %>%
   mutate(across(
       c(log_chao_richness, log_total_abundance),
       ~log_beta_to_perc_rate(.x * log(10 + 1))
       )) %>%
   select(turnover_scaled, hillebrand_dis_scaled,
-    log_chao_richness, log_total_abundance) %>% 
+    log_chao_richness, log_total_abundance) %>%
   rownames_to_column(var = "siteid")
 ```
 
@@ -386,7 +386,7 @@ p_pca_cl_bt <- target_bp_cl_dist(
 
 
 
-```{r} 
+```{r}
 pca_clust_cap <- paste0("**Covariation among the temporal trends in biodiversity metrics
 and identification of community trajectories**. **a**, **b**, PCA biplot of the community
 temporal trends and their cluster assignment (upper panel). **c**, boxplots
@@ -401,7 +401,7 @@ str_replace_all("  ", " ")
 
 For the figure 2, I see the main question of whether we need to give to the clusters
 or not. I would suggest to put them as medium change, high turnover, increase in
-species richness, decrease in total abundance and no change.  
+species richness, decrease in total abundance and no change.
 
 ```{r}
 fig2 <- plot_grid(
@@ -586,7 +586,7 @@ filtered_basinatlas_modelling %>%
   geom_sf_text(aes(label = basin_name), colour = "black")
 
 
-all_basin <- c("Mississippi", "Saint.Laurent", "Potomac", "Thames.UK", "Loire", "Gota.alv", "Avoca", "Brisbane", "Logan") 
+all_basin <- c("Mississippi", "Saint.Laurent", "Potomac", "Thames.UK", "Loire", "Gota.alv", "Avoca", "Brisbane", "Logan")
 names(all_basin) <- letters[seq_along(all_basin)]
 
 tot_tab <- rbind(
@@ -753,7 +753,7 @@ mutate(
 ```{r}
 basin_map <- filtered_basinatlas_modelling %>%
   filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
-  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))), 
+  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))),
     label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
     label2 = str_replace_all(label, c("i" = "  i")),
   )
@@ -808,9 +808,9 @@ p_zoom_map_basin <- map2(zoom_map_basin_coord, zoom_map_basin_coord_df$label,
 ```{r}
 box_inset_country <- list(
   usa_can = c(-126, 25, -65, 51),
-  eu = c(-15, 41, 30, 68), 
+  eu = c(-15, 41, 30, 68),
   aus = c(112, -39, 155, -10.5)
-) 
+)
 box_inset_country <- map(box_inset_country,
   ~setNames(.x, c("xmin", "ymin", "xmax", "ymax")))
 usa_can <- main_map_rect_basin +
@@ -897,7 +897,7 @@ fig3_inset_country <- ggdraw() +
     eu, x = 0, y = .66,
     width = ref_height_country*width_height_box$eu["width"]/width_height_box$eu["height"],
     height = .33,
-    vjust = 1, hjust = .2 
+    vjust = 1, hjust = .2
     ) +
   draw_plot(
     aus, x = 0, y = .33,
@@ -943,7 +943,9 @@ inset_tot <- plot_grid(plotlist = append(
     "iii)", letters[7:9]
     )
   )
-fig3_alt <- plot_grid(inset_tot, bottom, nrow = 2, rel_heights = c(1, .70))
+fig3_alt <- plot_grid(
+  inset_tot,
+  bottom, nrow = 2, rel_heights = c(1, .70))
 ggsave(
   filename = "fig3_alt.pdf",
   plot = fig3_alt,
@@ -956,25 +958,147 @@ ggsave(
 )
 ```
 
+```{r}
+leg_cl_right <- get_legend(
+  p_pca_cl_ell[[1]] +
+    theme(
+      legend.position = "bottom",
+      legend.text = element_text(size = 7),
+      legend.title = element_blank()
+      ) +
+    guides(col = guide_legend(
+        nrow = 1, override.aes = list(size = 7)
+        ))
+    )
+bottom <- plot_grid(
+  p_tot_tab + theme(
+    text = element_text(size = 7),
+    axis.text = element_text(size = 7)
+    ),
+  leg_cl_right, ncol = 1,
+  rel_heights = c(1, .11),
+  label_size = 7,
+  labels = c("iv)", ""))
+
+leg_cl2 <- get_legend(
+  p_pca_cl_ell[[1]] +
+    theme(
+      legend.position = "right",
+      legend.text = element_text(size = 7),
+      legend.title = element_text(size = 7)
+      ) +
+    guides(col = guide_legend(
+        ncol = 1, override.aes = list(size = 7)
+        ))
+    )
+bottom2 <- plot_grid(
+  p_tot_tab + theme(
+    text = element_text(size = 7),
+    axis.text = element_text(size = 7)
+    ),
+  leg_cl2, ncol = 2,
+  rel_widths = c(1, .2),
+  label_size = 7,
+  labels = c("j", ""))
+#fig3_alt <- plot_grid(top, bottom, nrow = 2, rel_heights = c(1, .40))
+
+main_map_rect_basin <- main_map +
+  geom_sf(data = basin_map, color = "black", fill = NA) +
+  geom_sf_text(data = basin_map, aes(label = label2),
+    #fontface = "bold",
+    colour = "black",
+    size = 4,
+    vjust = -.2, hjust = 0) +
+theme(legend.position = "none")
+usa_can <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-126, -65),
+    ylim = c(25, 51),
+    expand = FALSE)
+aus <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(112, 155),
+    ylim = c(-39, -10.5),
+    expand = FALSE)
+eu <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-13, 30),
+    ylim = c(41, 68),
+    expand = FALSE)
+inset_country <- list(usa_can = usa_can, eu = eu, aus = aus)
+
+inset_basin <- map(sort(basin_map$label),
+  function(l) {
+    x <- basin_map %>%
+    filter(label == l)
+   x %>%
+    ggplot() +
+    geom_sf(color = NA) +
+    #annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 7) +
+    theme_void() +
+    geom_sf(data = st_intersection(rivers10, x), colour = "lightblue", alpha = .4) +
+    geom_sf(data = st_intersection(world_site_sf$cl %>%
+        filter(!is.na(cl)), x),
+      aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 2) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position = "none") +
+    coord_sf(expand = FALSE)
+  }
+)
+names(inset_basin) <- sort(basin_map$label)
+
+inset_tot <- plot_grid(
+  plotlist = append(
+    inset_country[1], append(inset_basin[1:3],
+    append(inset_country[2], append(inset_basin[4:6],
+    append(inset_country[3], inset_basin[7:9]))))
+    ),
+  ncol = 4,
+  rel_widths = c(1, .70, .7, .50),
+  rel_heights = c(1, 1.5, 1),
+  label_size = 7,
+  labels = c(
+    "I)", letters[1:3],
+    "II)", letters[4:6],
+    "III)", letters[7:9]
+    )
+  )
+fig3_alt <- plot_grid(
+  inset_tot,
+  bottom2, nrow = 2, rel_heights = c(1, .80))
+ggsave(
+  filename = "fig3_alt2.pdf",
+  plot = fig3_alt,
+  path = here("paper", "fig_paper"),
+  scale = 1,
+  width = 180,
+  height = 180 * 1.0,
+  units = "mm",
+  dpi = "print"
+)
+
+```
+
+
 
 
 
 ```{r}
 map_cl_cap <- "**Spatial distribution of community trajectories**.  Insets of
- the most sampled Realms, namely i) Palearctic, ii) Nearctic and iii) Australasia
- displaying the location of their three most sampled basins (a to i). iv)
+ the most sampled Realms, namely I) Palearctic, II) Nearctic and I) Australasia
+ displaying the location of their three most sampled basins (a to i). (j)
  Cluster frequency distribution in the three most represented Realms (in capital
  letters) and their most sampled hydrographic basins, corresponding to the
  insets (a to i). The numbers of sites are displayed between parentheses. Site
  not assigned to a cluster (N = 630, see Methods) are not displayed. See
- supplementary material for an interactive world map of the cluster 
+ supplementary material for an interactive world map of the cluster
  distribution." %>%
 str_remove_all("\n|\r") %>%
 str_replace_all("  ", " ")
 ```
 
 ```{r cl-map, fig.asp = .65, fig.width = 88* 0.0393701}
-knitr::include_graphics(here("paper", "fig_paper", "fig3_alt.pdf"))
+knitr::include_graphics(here("paper", "fig_paper", "fig3_alt2.pdf"))
 ```
 
 
@@ -982,7 +1106,7 @@ knitr::include_graphics(here("paper", "fig_paper", "fig3_alt.pdf"))
 
 # Figure legends
 
-- Figure 1: `r knitr::knit(text = fig1_cap)` 
+- Figure 1: `r knitr::knit(text = fig1_cap)`
 
 - Figure 2: `r knitr::knit(text = pca_clust_cap)`
 
@@ -1044,30 +1168,30 @@ tab_rand2 %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
-# Instructions from  NEE 
+# Instructions from  NEE
 
 
 Effective figure preparation will enhance the readability of your manuscript –
 our image preparation guidelines will help you to produce effective
 publication-quality figures. In addition, please consider the following
-important requirements:  
+important requirements:
 
 ## Images
 
 All figures must be cited in sequence within the main article text in the form Fig. 1, Fig. 2.
 
 Figure panels should be prepared at a minimum resolution of 300 dpi and saved at
-a maximum width of 180 mm.  
+a maximum width of 180 mm.
 
-Use a 5–7 pt san serif font for standard text labelling and Symbol font for Greek characters. 
+Use a 5–7 pt san serif font for standard text labelling and Symbol font for Greek characters.
 
-Use scale bars, not magnification factors, and include error bars where appropriate. 
+Use scale bars, not magnification factors, and include error bars where appropriate.
 
-Do not flatten labelling or scale/error bars onto images – uneditable or low-resolution images are two of the most common reasons for delay in manuscript preparation.  
+Do not flatten labelling or scale/error bars onto images – uneditable or low-resolution images are two of the most common reasons for delay in manuscript preparation.
 
 ## Figure legends
 
-Include a brief title for each figure with a short description of each panel cited in sequence. 
+Include a brief title for each figure with a short description of each panel cited in sequence.
 
 Ensure the legend does not exceed the word limit of the article type.
 

@@ -14,7 +14,7 @@ output:
   linl::linl:
     keep_tex: true
 
-letterhead: misc/letterhead.pdf 
+letterhead: misc/letterhead.pdf
 signature: /home/alain/Documents/Administration/signature.pdf
 ---
 
@@ -52,11 +52,11 @@ the stream gradients.
 
 We found a global increase in fish species richness and total abundance over
 time and that those increases are driven by the legacy of past anthropogenic
-pressures, confirming previous findings. But we show that high degree of
+pressures, confirming previous findings. But we show that a high degree of
 historical anthropogenic pressures also result in strong changes in species
 identity and changes in dominant species, but also in a increasing share of
 non-native species. Our results are coherent with previous findings of ongoing
-biotic homogenization of riverine fish communities at larger scale, with and a
+biotic homogenization of riverine fish communities at larger scale, with a
 key role of non-native species. All together, our results suggest that those
 increases in species richness and total abundance are more related to ongoing
 recomposition of community to degraded ecosystems rather than a recovery hold by
@@ -86,31 +86,32 @@ As we selected the double-blind peer-review process, we enlist below the ordered
 of authors with their respective affiliation:
 
 - Alain Danet: School of Biological Sciences, Illinois State University, Normal,
-    Illinois, USA
+    Illinois, USA; School of Biosciences, University of Sheffield, Western Bank,
+  S10 2TN, Sheffield, UK
 - Xingli Giam: Department of Ecology and Evolutionary Biology, The University of
   Tennessee, Knoxville, Tennessee, USA
-- Julian Olden: School of Aquatic and Fishery Sciences, University of
+- Julian D. Olden: School of Aquatic and Fishery Sciences, University of
   Washington, Seattle, Washington, USA
 - Lise Comte: School of Biological Sciences, Illinois State University, Normal,
   Illinois, USA
 
-We propose potential reviewers for their respective expertise regarding our
+We suggest the following potential reviewers for their respective expertise regarding our
 study:
 
 - Charlotte Outhwaite, Centre for Biodiversity and Environment Research,
   University College London, London, UK:
-  - relevant expertise: Effects of human pressures on biodiversity trends 
+  - relevant expertise: Effects of human pressures on biodiversity trends
   - `charlotte.outhwaite.14@ucl.ac.uk`
-- Mark Vellend, Département de biologie, Université de Sherbrooke, Sherbrooke, QC, Canada: 
-  - relevant expertise: biodiversity trends at local and regional scale 
+- Mark Vellend, Département de biologie, Université de Sherbrooke, Sherbrooke, QC, Canada:
+  - relevant expertise: biodiversity trends at local and regional scale
   - `mark.vellend@usherbrooke.ca`
-- Sébastien Villéger: MARBEC, Univ Montpellier, CNRS, Ifremer, IRD, Montpellier, France: 
+- Sébastien Villéger: MARBEC, Univ Montpellier, CNRS, Ifremer, IRD, Montpellier, France:
   - relevant expertise: Biotic homogeneization and non-native species introduction in riverine fish communities
   - `sebastien.villeger@cnrs.fr`
 -  Roel van Klink: sDiv
   - relevant expertise: local community changes notably in freshwater systems
-- Steve Osmerod: Univ Cardiff 
+- Steve Osmerod: Univ Cardiff
 - Kirk Winemiller: Texas A & M
 - Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul
 - Fengzhi He: IGB
-    
+
