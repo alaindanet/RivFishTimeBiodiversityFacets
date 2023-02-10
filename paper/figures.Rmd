@@ -87,20 +87,18 @@ tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
 
 term_level <- get_term_level()
 # width_bar
-base_width <- .2
-increment <- .25
+base_width <- 1
+increment <- .5
 tu %<>%
   mutate(
     width_bar = case_when(
-      width_bar == 1 ~ base_width,
-      width_bar == 2 ~ base_width + increment,
-      width_bar == 3 ~ base_width + increment * 2,
+      width_bar == 1 ~ .1,
+      width_bar == 2 ~ 1,
+      width_bar == 3 ~ 10,
       TRUE ~ width_bar
 
     )
-
   )
-
 ```
 
 ```{r, fig.show="hide"}
@@ -111,7 +109,7 @@ p1 <- tu %>%
   plot_inla_fixed_effect(
     scale_color = rev(pal_variable),
     term_level = term_level,
-    xaxis_title = TRUE
+    xaxis_title = TRUE,
     ) +
   labs(x = expression(
       paste("Standardized slope coefficients ",
@@ -194,11 +192,25 @@ fig1 <- plot_grid(
   print(p1),
 
   leg_dis,
-  rel_heights = c(1.2, 1, 1, .2),
+  rel_heights = c(1, 1, 1, .2),
   labels = c(letters[1:3], NULL),
   hjust = -1.25, vjust = 1.8,
   ncol = 1)
 fig1
+```
+
+```{r save-fig1}
+#fig1
+ggsave(
+  filename = "fig1.pdf",
+  plot = fig1,
+  path = here("paper", "fig_paper"),
+  scale = 1.75,
+  width = 88,
+  height = 88 * 2.5,
+  units = "mm",
+  dpi = "print"
+)
 ```
 
 
@@ -234,20 +246,6 @@ fig1_cap <- paste0("**Response of riverine fish communities to time,
 
 Do we need to name the legend?
 
-```{r save-fig1}
-#fig1
-ggsave(
-  filename = "fig1.pdf",
-  plot = fig1,
-  path = here("paper", "fig_paper"),
-  scale = 1.75,
-  width = 88,
-  height = 88 * 2.5,
-  units = "mm",
-  dpi = "print"
-)
-
-```
 
 ```{r eff, fig.asp = 2.5, fig.width = 88* 0.0393701}
 #, fig.cap=fig1_cap
@@ -289,8 +287,8 @@ axis_l <- list(
 
 cluster_names <- c(
   "Medium change", "High turnover",
-  "Increase in\nspecies richness", "Decrease in\ntotal abundance",
-  "Decrease in\nspecies richness", "Low change"
+  "Increase in\nrichness", "Decrease in\nabundance (total)",
+  "Decrease in\nrichness", "Low change"
 )
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
 per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
@@ -369,7 +367,7 @@ left_join(site_trends_dec, by = "siteid")
 
 p_pca_cl_bt <- target_bp_cl_dist(
   cl_obj = bp_data_dec_no_scaled_trends,
-  fct_var_lvl = names(pal_variable)[c(1:2, 5:6)],
+  fct_var_lvl = names(pal_variable)[c(3:4, 1:2)],
   dodge = .85
   ) +
   scale_color_viridis(discrete = TRUE) +
@@ -586,8 +584,8 @@ filtered_basinatlas_modelling %>%
   geom_sf_text(aes(label = basin_name), colour = "black")
 
 
-all_basin <- c("Mississippi", "Saint.Laurent", "Potomac", "Thames.UK", "Loire", "Gota.alv", "Avoca", "Brisbane", "Logan")
-names(all_basin) <- letters[seq_along(all_basin)]
+all_basin <- c("NEARCTIC", "Mississippi", "Saint.Laurent", "Potomac", "PALEARCTIC", "Thames.UK", "Loire", "Gota.alv", "AUSTRALASIA", "Avoca", "Brisbane", "Logan")
+names(all_basin) <- letters[seq_along(all_basin)] #c("a", "b", "c", "d", "f", "g", "h", "j", "k", "l") #
 
 tot_tab <- rbind(
   tab_nearctic,
@@ -629,31 +627,32 @@ tot_tab <- rbind(
 
   )
 lvl_basin <- c(
-  "(i) Logan (32)",
-  "(h) Brisbane (89)",
-  "(g) Avoca (129)",
-  "AUSTRALASIA (330)",
-  "(f) Gota (50)",
-  "(e) Loire (240)",
-  "(d) Thames (139)",
-  "PALEARCTIC (3470)",
-  "(c) Potomac (66)",
-  "(b) Saint Laurent (164)",
-  "(a) Mississippi (574)",
-  "NEARCTIC (1083)"
+  "(l) Logan (32)",
+  "(k) Brisbane (89)",
+  "(j) Avoca (129)",
+  "(i) AUSTRALASIA (330)",
+  "(h) Gota (50)",
+  "(g) Loire (240)",
+  "(f) Thames (139)",
+  "(e) PALEARCTIC (3470)",
+  "(d) Potomac (66)",
+  "(c) Saint Laurent (164)",
+  "(b) Mississippi (574)",
+  "(a) NEARCTIC (1083)"
 )
-lvl_ecoregion <- c("Nearctic", "Palearctic", "Australasia")
+lvl_ecoregion <- c(Nearctic = "(a) Nearctic", Palearctic = "(b) Palearctic", Australasia = "(c) Australasia")
 ```
-
 ```{r}
+unique(tot_tab$basin_name_n)
 p_tot_tab <- tot_tab %>%
   mutate(
      basin_name_f = factor(basin_name_n, levels = lvl_basin),
-     ecoregion_f = factor(ecoregion, levels = lvl_ecoregion)
+     ecoregion2 = str_replace_all(ecoregion, lvl_ecoregion),
+     ecoregion_f = factor(ecoregion2)
     ) %>%
   ggplot(aes(x = pc, y = basin_name_f, fill = factor(cl, levels = rev(unique(cl))))) +
   geom_col() +
-  labs(x = "Proportion") +
+  labs(x = "Percentage") +
   scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
   theme_cowplot() +
   theme(
@@ -755,7 +754,7 @@ basin_map <- filtered_basinatlas_modelling %>%
   filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
   mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))),
     label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
-    label2 = str_replace_all(label, c("i" = "  i")),
+    label2 = str_replace_all(label, c("l" = "\n  l", g = "g", d = " d")),
   )
 
 main_map_rect_basin <- main_map +
@@ -913,7 +912,7 @@ fig3_inset_country <-
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 leg_cl_right <- get_legend(
   p_pca_cl_ell[[1]] +
     theme(
@@ -999,8 +998,15 @@ bottom2 <- plot_grid(
   leg_cl2, ncol = 2,
   rel_widths = c(1, .2),
   label_size = 7,
-  labels = c("j", ""))
+  labels = c("m", ""))
 #fig3_alt <- plot_grid(top, bottom, nrow = 2, rel_heights = c(1, .40))
+
+basin_map <- filtered_basinatlas_modelling %>%
+  filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))),
+    label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
+    label2 = str_replace_all(label, c("l" = "l     ", g = "   g", d = " d", "k" = "k   ")),
+  )
 
 main_map_rect_basin <- main_map +
   geom_sf(data = basin_map, color = "black", fill = NA) +
@@ -1057,11 +1063,7 @@ inset_tot <- plot_grid(
   rel_widths = c(1, .70, .7, .50),
   rel_heights = c(1, 1.5, 1),
   label_size = 7,
-  labels = c(
-    "I)", letters[1:3],
-    "II)", letters[4:6],
-    "III)", letters[7:9]
-    )
+  labels = "auto"
   )
 fig3_alt <- plot_grid(
   inset_tot,
@@ -1076,7 +1078,6 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
-
 ```
 
 
@@ -1085,8 +1086,8 @@ ggsave(
 
 ```{r}
 map_cl_cap <- "**Spatial distribution of community trajectories**.  Insets of
- the most sampled Realms, namely I) Palearctic, II) Nearctic and I) Australasia
- displaying the location of their three most sampled basins (a to i). (j)
+ the most sampled Realms, namely a) Palearctic, e) Nearctic and i) Australasia
+ displaying the location of their three most sampled basins (b, c, d, f, g, h, j, k). (l)
  Cluster frequency distribution in the three most represented Realms (in capital
  letters) and their most sampled hydrographic basins, corresponding to the
  insets (a to i). The numbers of sites are displayed between parentheses. Site

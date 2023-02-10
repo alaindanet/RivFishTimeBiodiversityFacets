@@ -2,17 +2,19 @@
 title: "Supplementary Figures and Tables"
 author: "Danet, A, Giam, X, Olden, J, Comte, L"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
-output: 
+output:
   bookdown::pdf_document2:
     keep_tex: true
     df_print: paged
-    toc: true
+    toc: false
 bibliography: "bibliography.bib"
 always_allow_html: true
 header-includes:
   \usepackage{float}
   \usepackage{booktabs}
   \usepackage{colortbl}
+  \renewcommand{\thetable}{S\arabic{table}}%
+  \renewcommand{\thefigure}{S\arabic{figure}}
 ---
 
 ```{r options, include = FALSE}
@@ -92,7 +94,7 @@ tar_load(c(add_dataset_ref))
 tar_load(filtered_op_protocol_modelling)
 tar_load(filtered_dataset_modelling)
 tar_load(c(modelling_data, modelling_data_exo))
-tar_load(c(clust_var, exo_resp_var))
+tar_load(c(clust_var, exo_resp_var, facet_var))
 tar_load(riveratlas_site)
 tar_load(c(
     site_no_drivers_inla_tot, site_env,
@@ -128,7 +130,7 @@ tps_trends_10y <- site_no_drivers_inla_tot %>%
     response_f = fct_recode(response_f,
       "Total abundance (%)" = "Total abundance",
       "Species richness (%)" = "Species richness",
-      ), 
+      ),
     value = value * log(10 + 1)
   )
 tps_trends_10y %>%
@@ -141,7 +143,7 @@ tps_trends_10y %>%
     ncol = 3, strip.position = "top") +
   theme(strip.background = element_blank())
 ```
- 
+
 ```{r}
 tu_full <- rbind(gaussian_inla_std_effects,
   gaussian_inla_exo_std_effects) %>%
@@ -227,7 +229,7 @@ figS1
 ```
 
 ```{r}
-tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
+tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot, site_cl_na))
 tar_load(c(clust_var_alter, site_cl_rm_red, site_env))
 pca_data <- site_no_drivers_inla_tot[,
     colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
@@ -300,12 +302,11 @@ p_pca_cl_ell <- map(p_pca_cl_ell,
 ```
 
 ```{r}
-pca_total_cap <- "**PCA biplot on the temporal trends of the
-  community metrics at each site, and their cluster assignment**. See legend of
-the Fig. 1 in main text for details. To the difference with the Fig. 1, we
-added Jaccard dissimilarity index and its partitions in two sets of
-complementary indices, respectively nestedness/turnover, and
-appearance/disappearance." %>%
+pca_total_cap <- "**PCA biplot on the temporal trends of the community metrics
+ at each site, and their cluster assignment**. See legend of the Fig. 1 in main
+ text for details. To the difference with the Fig. 1, we added Jaccard
+ dissimilarity index and its partitions in two sets of complementary indices,
+ respectively nestedness/turnover, and appearance/disappearance." %>%
   str_remove_all("\n|\r") %>%
   str_replace_all("  ", " ")
 ```
@@ -483,7 +484,7 @@ tab_protocol <- tabyl_df(filtered_dataset_modelling$site_quali, "protocol") %>%
     # For rotenone:
     protocol = str_replace_all(protocol, "([a-z])([A-Z])", "\\1 \\2")
     ) %>%
-  rename_with(str_to_sentence) 
+  rename_with(str_to_sentence)
 
 ```
 ```{r, eval=FALSE}
@@ -559,7 +560,7 @@ exotic_source_summary <- measurement_exo[, "native_exotic_origin"] %>%
 ```
 
 ```{r met-tab}
-method_lvl <- c("Site location (Country, Realm)", "Protocol", "Abundance unit", 
+method_lvl <- c("Site location (Country, Realm)", "Protocol", "Abundance unit",
   "Source for native species status")
 tab_quali <- rbind(
   location_summary %>%
@@ -709,7 +710,7 @@ p_baseline_year <- site_year %>%
   ggplot(aes(x = min)) +
   geom_histogram() +
   scale_x_continuous(breaks = c(1960, 1980, 1993, 2000, 2009, 2020),
-  limits = c(1960, 2020) 
+  limits = c(1960, 2020)
     ) +
   labs(x = "Baseline year", y = "Number of sites") +
   geom_segment(data = seg_bl,
@@ -726,7 +727,7 @@ p_baseline_year <- site_year %>%
 p_span <- site_year %>%
   ggplot(aes(x = cat_span, fill = ecoregion)) +
   geom_bar() +
-  labs(x = "Year span (year)", y = "Number of sites") 
+  labs(x = "Year span (year)", y = "Number of sites")
 #+
 #  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
@@ -865,13 +866,66 @@ exotic_compo_summary %>%
 ```
 
 ```{r}
+raw_chao_caption <- "Comparison of the model estimates between Chao-corrected
+species richness and raw measures of species richness. The results are highly
+similar."
+```
+
+```{r raw-chao, fig.cap =raw_chao_caption}
+ti = tar_read(gaussian_inla_std, branches = which(facet_var == "log_species_nb"))
+log_species_richness_effect  <- format_inla_model_list(x = ti, response_to_skip = NULL)
+
+col = c(pal_variable[names(pal_variable) == get_var_replacement_vulgarisation()["log_chao_richness"]], "red")
+names(col) <- get_var_replacement_vulgarisation()[c("log_chao_richness", "log_species_nb")]
+
+base_width <- .2
+increment <- .25
+
+tar_load(gaussian_inla_std_effects)
+rbind(
+  log_species_richness_effect,
+  gaussian_inla_std_effects
+  ) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  mutate(
+    term = str_replace_all(term,
+      get_model_term_replacement_paper_figure()),
+    response = get_var_replacement_vulgarisation()[response],
+    response = factor(response, levels = rev(names(col)))
+  ) %>%
+  filter(response %in% names(col)) %>%
+  arrange(response, desc(width_bar)) %>%
+  mutate(
+    width_bar = case_when(
+      width_bar == 1 ~ base_width,
+      width_bar == 2 ~ base_width + increment,
+      width_bar == 3 ~ base_width + increment * 2,
+      TRUE ~ width_bar
+    )
+    ) %>%
+  plot_inla_fixed_effect(
+    scale_color = col,
+    term_level = get_term_level(),
+    xaxis_title = TRUE,
+    legend_present = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  theme(legend.position = "bottom")
+```
+
+```{r}
 cor_chao_rich <- cor(
   modelling_data$chao_richness,
   modelling_data$species_nb,
   method = "spearman") %>%
 round(., 2)
 chao_richness_cap <- paste0("Relationship between Chao-corrected species richness and
-species richness, added to their respective distribution. The black line
+raw species richness, added to their respective distribution. The black line
 displays the bissection, i.e. the intercept and slope are respectively 0 and 1.
 Spearman's correlation is equal to ", cor_chao_rich, ".")
 ```
@@ -886,6 +940,9 @@ p <- modelling_data %>%
 
 ggExtra::ggMarginal(p, type = "histogram")
 ```
+
+
+
 
 ```{r}
 tar_load(pca_riv_str)
@@ -1133,8 +1190,8 @@ ck_col_data %>%
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
 cap_aic_table <- "Watanabe-Akaike
-information criterion (WAIC) of the statistical models fitting temporal trends with 
-either the number of year since the start of sampling or the log of the former 
+information criterion (WAIC) of the statistical models fitting temporal trends with
+either the number of year since the start of sampling or the log of the former
 variable added to one." %>%
 str_remove_all("\n")
 ```

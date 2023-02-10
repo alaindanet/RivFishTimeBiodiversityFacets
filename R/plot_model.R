@@ -1,7 +1,7 @@
 #' Compare the fixed coefficients of models
 #'
 #' @param model_list list of model
-#' 
+#'
 plot_model_comp_coeff <- function(model_list = NULL) {
 
   comp_intercept <- compare_models(model_list, effects = "fixed")
@@ -26,7 +26,7 @@ plot_model_comp_coeff <- function(model_list = NULL) {
 plot_credible_interval <- function (dataset) {
 
   # Borrowed from
-  # https://github.com/roelvanklink/Final-insect-abundance-changes/blob/master/Full%20INLA%20analysis%20FINAL%20cleaned%2020191230.R 
+  # https://github.com/roelvanklink/Final-insect-abundance-changes/blob/master/Full%20INLA%20analysis%20FINAL%20cleaned%2020191230.R
   dataset %>%
   ggplot() +
     geom_errorbar(aes(x = Unit, ymin = X0.025quant, ymax = X0.975quant, color = Realm),
@@ -144,7 +144,7 @@ plot_inla_fixed_effect <- function(
   legend_present = FALSE,
   my_position_dodge = .9,
   point_size = 3,
-  scale_width_bar = .5
+  scale_width_bar = 1
   ) {
 
   if (is.null(term_level)) {
@@ -165,7 +165,7 @@ plot_inla_fixed_effect <- function(
   p <- dataset %>%
     mutate(
       term = factor(term, levels = term_level),
-      response = factor(response, levels = names(scale_color)) 
+      response = factor(response, levels = names(scale_color))
     ) %>%
     ggplot(aes(
         y = term, x = mean,

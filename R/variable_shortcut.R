@@ -1,4 +1,4 @@
-#' Shortcut to obtain vector of variable names 
+#' Shortcut to obtain vector of variable names
 #'
 #' @param NULL
 #' @return character vector
@@ -55,12 +55,12 @@ get_var_replacement <- function() {
 
 get_var_replacement_vulgarisation <- function() {
   c(
-    log_species_nb = "Species richness",
+    log_species_nb = "Species richness (raw)",
     species_nb = "Species richness",
-    log_total_abundance = "Total abundance",
+    log_total_abundance = "Abundance (total)",
     total_abundance = "Total abundance",
     chao_richness = "Chao species richness",
-    log_chao_richness = "Species richness",
+    log_chao_richness = "Richness",
     chao_shannon = "Chao shannon",
     chao_simpson = "Chao simpson",
     chao_evenness = "Chao evenness",
@@ -217,7 +217,7 @@ get_nat_origin_replacement <- function() {
     "tedesco" = "Tedesco database (basin scale)",
     "autofishbase" = "Fishbase (country scale)",
     "handmade" = "Atlas, fishbase (country scale)",
-    "usgs" = "NAS database (state scale, USA)" 
+    "usgs" = "NAS database (state scale, USA)"
   )
 }
 
@@ -253,9 +253,9 @@ get_pred_signification <- function() {
     "0" = "Year nb of sample for a site = 0, i.e. baseline year",
     "10" = "Year nb of sample for a site = 10, i.e. a decade",
     "intact" = "Median intact site (human footprint index between 1 and 4, Williams et al. 2020)",
-    "max" = "Most degraded site in the dataset, i.e. highest human footprint index", 
+    "max" = "Most degraded site in the dataset, i.e. highest human footprint index",
     "median" = "Median stream gradient",
-    "div/2" = "Anthropogenic pressures divided by two between 1993 and 2009", 
+    "div/2" = "Anthropogenic pressures divided by two between 1993 and 2009",
     "inc/2" = "Anthropogenic pressures multipled by two between 1993 and 2009"
   )
 }

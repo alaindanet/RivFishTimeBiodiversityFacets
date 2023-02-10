@@ -236,8 +236,8 @@ plot_pca_clust <- function(
     coord_cartesian(
       expand = FALSE
     ) +
-    labs(x = paste0(xaxis, " (", var_exp[xaxis], "%)"),
-      y = paste0(yaxis, " (", var_exp[yaxis], "%)")) +
+    labs(x = paste0(str_replace(xaxis, "CS", "PC"), " (", var_exp[xaxis], "%)"),
+      y = paste0(str_replace(yaxis, "CS", "PC"), " (", var_exp[yaxis], "%)")) +
     theme_bw()
 
   if (add_point) {
@@ -348,7 +348,7 @@ get_pca_clust_list <- function(
 
   output <- list(
     pca_list = p_pca_cl_ell,
-    leg = leg_cl, 
+    leg = leg_cl,
     bp = bp
   )
 

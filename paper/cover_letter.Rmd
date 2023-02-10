@@ -1,0 +1,16 @@
+---
+title: "Cover letter"
+author: "Alain Danet, Xingli Giam, Julian Olden, Lise Comte"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::word_document2:
+  bookdown::pdf_document2:
+    keep_tex: true
+---
+
+```{r}
+library(linl)
+library(rmarkdown)
+draft("myletter.Rmd", template="pdf", package="linl", edit=FALSE)
+```
+
