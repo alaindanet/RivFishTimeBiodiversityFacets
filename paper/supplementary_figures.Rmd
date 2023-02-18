@@ -78,15 +78,18 @@ source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette
 pal_variable <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
 
 legend_order <- c(
-  "hillebrand_dis_scaled", "jaccard_dis_scaled", "turnover_scaled", "nestedness_scaled", "appearance_scaled", "disappearance_scaled",
-  "log_total_abundance",
-  "log_chao_richness", "perc_exo_abun", "perc_exo_sp")
+  "log_total_abundance", "log_chao_richness",
+  "hillebrand_dis_scaled", "turnover_scaled", "perc_exo_abun", "perc_exo_sp",
+  "jaccard_dis_scaled", "nestedness_scaled", "appearance_scaled",
+  "disappearance_scaled"
+)
 
 names(pal_variable) <- get_var_replacement_vulgarisation()[legend_order]
 
 restricted_dimension <- c(
-  "hillebrand_dis_scaled", "turnover_scaled", "log_total_abundance",
-  "log_chao_richness", "perc_exo_abun", "perc_exo_sp")
+  "log_total_abundance", "log_chao_richness", "hillebrand_dis_scaled",
+  "turnover_scaled", "perc_exo_abun", "perc_exo_sp"
+)
 ```
 
 ```{r}
@@ -110,39 +113,6 @@ measurement_exo <- measurement_exo %>%
 \newpage
 
 
-```{r}
-trends_cap <- "Distribution of temporal trends by decade of community metrics
-across sites. Total abundance and species richness are expressed in percentage change by decade."
-```
-
-```{r, fig.width = 12, fig.asp = 1, fig.cap=trends_cap}
-resp_lvl <- get_var_replacement_vulgarisation()[legend_order]
-
-tps_trends_10y <- site_no_drivers_inla_tot %>%
-  pivot_longer(everything(), names_to = "response", values_to = "value") %>%
-  mutate(
-    response = get_var_replacement_vulgarisation()[response],
-    response_f = factor(response, levels = get_var_replacement_vulgarisation()[legend_order]),
-    value = ifelse(response %in% c("Total abundance", "Species richness"),
-      log_beta_to_perc_rate(value), value),
-    response = ifelse(response %in% c("Total abundance", "Species richness"),
-      paste0(response, " (%)"), response),
-    response_f = fct_recode(response_f,
-      "Total abundance (%)" = "Total abundance",
-      "Species richness (%)" = "Species richness",
-      ),
-    value = value * log(10 + 1)
-  )
-tps_trends_10y %>%
-  ggplot(aes(x = value)) +
-  geom_histogram(fill = "lightblue", bins = 60) +
-  geom_vline(xintercept = 0, linetype = "dashed", colour = "red") +
-  labs(x = "Temporal trends by decade", y = "Number of sites") +
-  scale_x_continuous(n.breaks = 10) +
-  facet_wrap(vars(response_f), scales = "free",
-    ncol = 3, strip.position = "top") +
-  theme(strip.background = element_blank())
-```
 
 ```{r}
 tu_full <- rbind(gaussian_inla_std_effects,
@@ -155,7 +125,6 @@ tu_full <- rbind(gaussian_inla_std_effects,
 ```
 
 ```{r, fig.show = "hide"}
-
 p1_f <- tu_full %>%
   filter(facet == "main") %>%
   arrange(desc(width_bar)) %>%

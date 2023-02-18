@@ -1,7 +1,7 @@
 ---
 title: "Past and recent anthropogenic pressures drive community changes over space and time in riverine fish communities"
 author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+date: ""
 output:
   bookdown::pdf_document2:
     latex_engine: xelatex
@@ -64,7 +64,6 @@ tar_load(c(modelling_data, filtered_dataset_modelling, analysis_dataset))
 tar_load(filtered_op_protocol_modelling)
 tar_load(c(measurement_exo, modelling_data_exo))
 
-
 fnsite <- nrow(filtered_dataset_modelling$location)
 
 measurement_exo <- measurement_exo %>%
@@ -82,19 +81,7 @@ names(restricted_dimension) <-
 
 tar_load(c(gaussian_inla_rand, r2, clust_var, exo_resp_var))
 ```
-```{r}
-table_to_vec <- function(x) {
-  setNames(as.numeric(x), names(x))
-}
-get_comp <- function(
-  pred = pred_number,
-  type = "pred_hft93_t0",
-  resp = NULL,
-  lvl_comp = NULL
-  ) {
-  pred[[type]][[resp]][["mean"]][lvl_comp]
-}
-```
+
 ```{r}
 tar_load(c(gaussian_inla_std_effects, gaussian_inla_exo_std_effects))
 tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects)
@@ -182,10 +169,12 @@ site_year <- filtered_dataset_modelling$site_quanti %>%
     completeness = n / (span)
     )
 
-fnsite <- nrow(site_year)
-fnmeas <- nrow(filtered_dataset_modelling$measurement)
+fnsite <- format(nrow(site_year), big.mark = ",")
+fnmeas <- format(nrow(filtered_dataset_modelling$measurement), big.mark = ",")
 fnsp <- length(unique(filtered_dataset_modelling$measurement$species))
-fnop <- length(unique(filtered_dataset_modelling$measurement$op_id))
+fnop <- format(length(unique(filtered_dataset_modelling$measurement$op_id)),
+  big.mark = ",")
+#, big.mark=","
 
 mspan <- median(site_year$span)
 mcpl <- scales::percent(median(site_year$completeness))
@@ -542,8 +531,8 @@ evidence for an average increase over time in total community abundance (average
 Credible Interval 95%: `r abun_trends` per decade, Fig. S1) and in species
 richness (CI 95%: `r rich_trends` per decade). By contrast, we found an average
 decline in the proportion of non-native species abundance (CI 90%:
-`r exo_trends[["perc_exo_abun"]]` per decade), and no evidence for a trend in
-the proportion of non-native species richness (CI 80%: `r exo_trends[["perc_exo_sp"]]`
+`r exo_trends90[["perc_exo_abun"]]` per decade), and no evidence for a trend in
+the proportion of non-native species richness (CI 80%: `r exo_trends80[["perc_exo_sp"]]`
 per decade). We also
 found strong evidence for rapid community reorganisation, with an average
 decline in community similarity of about 30% per decade when considering either
@@ -648,6 +637,29 @@ knitr::include_graphics(here("paper", "fig_paper", "fig3_alt2.pdf"))
 
 ```{r}
 tar_load(c(r2, gaussian_inla_rand))
+tar_load(gaussian_inla_rand_no_drivers)
+gaussian_inla_rand_no_drivers %>%
+  filter(
+    term %in% paste0("Precision for ", c("main_bas1", "siteid1")),
+    ci_level == "level:0.95",
+    response %in% c(restricted_dimension, exo_resp_var)
+    ) %>%
+select(-ci_level) %>%
+mutate(across(c(mean, low, high), ~round(., 3))) %>%
+mutate(
+  response = get_var_replacement_vulgarisation()[response],
+  term = str_remove(term, "Precision for the |Precision for |"),
+  term = replacement_random_term_table()[term],
+  ci = paste0(mean, " [", high,",", low,"]")
+  ) %>%
+arrange(response, desc(term)) %>%
+select(
+  `Response variable` = response,
+  `Spatial scale` = term,
+  `Temporal trends s.d.` = ci
+  ) %>%
+  mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
+  arrange(`Response variable`)
 
 ti <- r2 %>%
   filter(response %in% c(clust_var, exo_resp_var))
@@ -676,11 +688,12 @@ select(
       mutate(response = get_var_replacement_vulgarisation()[response]) %>%
       select(
         `Response variable` = response,
+        `Marg. R2` = r2_mvp_marg95hpdci,
         `Cond. R2` = r2_mvp_cond95hpdci
         ),
       by = "Response variable"
       ) %>%
-select(1, 4, 2, 3) %>%
+select(`Response variable`, `Marg. R2`, `Cond. R2`, `Temporal trends s.d.`) %>%
 mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
 arrange(`Response variable`)
 
@@ -871,7 +884,7 @@ on temporal trends, (b) interacting effects among anthropogenic pressures and st
 temporal trends (c) single effects. Community metrics include total
 community abundance, species richness, proportion of non-native species and
 proportional abundance of non-native species, Simpson dissimilarity, and
-turnover. Points depict the average of posterior distribution. Large, medium
+turnover. Points depict the average of the posterior distributions. Large, medium
 and thin bars depict the Bayesian credible intervals at 80, 90 and 95\\%,
 respectively. Please note the broken abscissa scale in the framed panels. N =
 ", fnop," sampling events over ", fnsite," sites.") %>%

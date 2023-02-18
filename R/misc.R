@@ -40,3 +40,13 @@ get_tol_palettes <- function() {
 table_to_vec <- function(x) {
   setNames(as.numeric(x), names(x))
 }
+
+get_comp <- function(
+  pred = pred_number,
+  type = "pred_hft93_t0",
+  resp = NULL,
+  lvl_comp = NULL
+  ) {
+  pred[[type]][[resp]][["mean"]][lvl_comp]
+}
+

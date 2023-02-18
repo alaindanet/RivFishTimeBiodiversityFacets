@@ -46,8 +46,11 @@ library(kableExtra)
 
 ```{r}
 # control also the order of the legend
-restricted_dimension <- c("log_total_abundance", "log_chao_richness",
-  "perc_exo_sp", "perc_exo_abun", "hillebrand_dis_scaled", "turnover_scaled")
+restricted_dimension <- c(
+  "log_total_abundance", "log_chao_richness",
+   "perc_exo_abun", "perc_exo_sp",
+  "hillebrand_dis_scaled", "turnover_scaled"
+  )
 ```
 
 
@@ -73,6 +76,189 @@ tar_load(c(clust_var, exo_resp_var))
 
 # Figures
 
+## Distibution of trends
+
+
+
+```{r}
+trends_cap <- "Distribution of temporal trends by decade of community metrics
+across sites. Total abundance and species richness are expressed in percentage change by decade."
+```
+
+```{r}
+tar_load(c(trends, trends90, trends80))
+trends_10y <- map2_dfr(
+  list(trends, trends90, trends80),
+  c("95%", "90%", "80%"),
+  function(data, ci) {
+    enframe(data, name = "response") %>%
+      mutate(
+        ci_level = ci,
+        # Transform log variable
+        value = map2(response, value,
+          function (resp, val) {
+            if (resp %in% c("log_total_abundance", "log_chao_richness")) {
+              out = log_beta_to_perc_rate(val) * log(10 + 1)
+            } else {
+              out = val * log(10 + 1)
+            }
+            out
+          }),
+        value = map(value, ~enframe(.x, name = "type"))
+        ) %>%
+      unnest(value) %>%
+      pivot_wider(names_from = "type", values_from = "value")
+
+  }
+)
+
+trends_10y %<>%
+  group_by(response) %>%
+  # Get relevant CI by response
+  filter(
+    (
+      response %in% c(
+        "log_chao_richness",
+        "log_total_abundance",
+        "hillebrand_dis_scaled",
+        "jaccard_dis_scaled",
+        "nestedness_scaled",
+        "turnover_scaled"
+        ) & ci_level == "95%"
+    ) |
+  (response == "perc_exo_sp" &  ci_level == "80%") |
+  (response == "perc_exo_abun" &  ci_level == "90%")
+  ) %>%
+  # Format CI
+  mutate(
+    ci_label = pmap_chr(list(response, ci_level, low, high, mean),
+      function(response, ci_level, low, high, mean) {
+        if (response %in% c("log_total_abundance", "log_chao_richness")) {
+        ci <- p_ci(
+          c(mean = mean, low = low, high = high),
+          r = 1, p = TRUE
+        )
+        ci <- str_replace(ci, "\\[ ", "\\[")
+        } else if (response %in% c(
+            "hillebrand_dis_scaled",
+            "jaccard_dis_scaled",
+            "nestedness_scaled",
+            "turnover_scaled")) {
+          ci <- p_ci(
+            c(mean = mean, low = low, high = high),
+            r = 2, p = FALSE
+          )
+        } else if (response == "perc_exo_sp") {
+          ci <- p_ci(
+            c(mean = mean, low = low, high = high),
+            r = 3, p = FALSE
+          )
+        } else if (response == "perc_exo_abun") {
+          ci <- p_ci(
+            c(mean = mean, low = low, high = high),
+            r = 4, p = FALSE
+          )
+        }
+        paste0("CI", ci_level, ": ", ci)
+      }
+    )
+  )
+
+```
+
+
+
+
+```{r}
+perc_pal_variable <- setNames(pal_variable,
+      c("Abundance (total, %)", "Richness (%)",
+        names(pal_variable)[3:6]
+      ))
+tps_trends_10y <- site_no_drivers_inla_tot %>%
+  pivot_longer(everything(), names_to = "response", values_to = "value") %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    value = ifelse(response %in% c("Abundance (total)", "Richness"),
+      log_beta_to_perc_rate(value), value),
+    response = str_replace_all(response,
+      c(
+        "Abundance \\(total\\)" = "Abundance (total, %)",
+        "Richness" = "Richness (%)"
+      )
+      ),
+    response_f = factor(response, levels = names(perc_pal_variable)),
+    value = value * log(10 + 1)
+  ) %>%
+  group_by(response_f) %>%
+  mutate(
+    med = median(value),
+    avg = mean(value)
+  )
+ci_label_data <- trends_10y %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    response = str_replace_all(response,
+      c("Abundance \\(total\\)" = "Abundance (total, %)",
+        "Richness" = "Richness (%)"
+      )
+      ),
+    response_f = factor(response, levels = names(perc_pal_variable)),
+    )
+```
+
+
+```{r, fig.width = 12, fig.asp = 1, fig.cap=trends_cap}
+p_trends_site <- tps_trends_10y %>%
+  arrange(response_f) %>%
+  ggplot(aes(x = value, fill = response_f)) +
+  geom_histogram(bins = 60) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_vline(aes(xintercept = avg)) +
+  labs(x = "Temporal trends by decade", y = "Number of sites") +
+  scale_x_continuous(n.breaks = 10) +
+  scale_fill_manual(
+    values = perc_pal_variable,
+    breaks = names(perc_pal_variable),
+    name = "Community metrics"
+    ) +
+  facet_wrap(~response_f, scales = "free", ncol = 2, strip.position = "top") +
+  theme_cowplot(8) +
+  theme(
+    strip.text = element_text(size = 8),
+    strip.background = element_blank(),
+    legend.position = "none"
+  )
+```
+
+```{r}
+p_trends_site2 <- p_trends_site +
+  geom_text(
+    data = ci_label_data,
+    aes(label = ci_label),
+    size = 2,
+    parse = FALSE,
+    y = Inf, x = Inf,
+    vjust = 1.5, hjust = 1
+    )
+ggsave(
+  filename = "p_trends.pdf",
+  plot = p_trends_site2,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 88,
+  height = 88 * 1,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r}
+TODO: Jaccard and nestedness in supplementary
+```
+
+##
 
 ```{r}
 tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
@@ -141,28 +327,6 @@ p2
 ```
 
 ```{r, fig.show = "hide"}
-r2 <- gaussian_inla_var_fitted %>%
-  filter(response %in% c(clust_var, exo_resp_var)) %>%
-  left_join(
-    get_std_inla_from_rand(inla_rand_tab = gaussian_inla_rand),
-    by = "response") %>%
-  mutate(
-    response = get_var_replacement_vulgarisation()[response],
-    r2_mvp_marg = pmap(
-      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
-      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "marginal")
-      ),
-    r2_mvp_cond = pmap(
-      list(var_pred, intercept_main_bas, intercept_main_bassiteid, epsilon),
-      ~r2_mvp(var_pred = ..1, std_intercept = c(..2, ..3), epsilon = ..4, type = "conditional")
-      ),
-    r2_mvp_marg_mean = map_dbl(r2_mvp_marg, mean),
-    r2_mvp_marg_med = map_dbl(r2_mvp_marg, median),
-    r2_mvp_cond_mean = map_dbl(r2_mvp_cond, mean),
-    r2_mvp_cond_med = map_dbl(r2_mvp_cond, median),
-    lab_r2_marg = paste0("~~~~R^2 == ", round(r2_mvp_marg_med, 2)),
-    lab_r2_cond = paste0("~~~~R^2 == ", round(r2_mvp_cond_med, 2))
-  )
 
 var_labels <- map_chr(names(pal_variable),
   ~paste0(
@@ -190,7 +354,6 @@ fig1 <- plot_grid(
   print(p2),
   ggdraw(p3 + theme(legend.position = "none"), xlim = c(-.02, 1.015), ylim = c(-.01, 1.01)),
   print(p1),
-
   leg_dis,
   rel_heights = c(1, 1, 1, .2),
   labels = c(letters[1:3], NULL),

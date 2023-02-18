@@ -1,16 +1,122 @@
 ---
-title: "Cover letter"
-author: "Alain Danet, Xingli Giam, Julian Olden, Lise Comte"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+author:
+- On behalf of all the authors, Dr. Alain Danet
+opening: Dear Chief editor Patrick Goymer, dear Senior Editors,
+closing: Sincerely yours,
+fontsize: 11pt
+return-address:
+- Dr. Alain Danet
+- School of Biological Sciences
+- Illinois State University
+- Campus Box 4120 Normal, IL 61790
 output:
-  bookdown::word_document2:
-  bookdown::pdf_document2:
+  linl::linl:
     keep_tex: true
+
+letterhead: misc/letterhead.pdf
+signature: /home/alain/Documents/Administration/signature.pdf
 ---
 
-```{r}
-library(linl)
-library(rmarkdown)
-draft("myletter.Rmd", template="pdf", package="linl", edit=FALSE)
+```{r, results = "hide", include = FALSE}
+Sys.setlocale("LC_TIME", "C")
 ```
+
+
+Please find enclosed our manuscript entitled “Past and recent anthropogenic
+pressures drive community changes over space and time in riverine fish
+communities”, which we submit for consideration in Nature in Ecology &
+Evolution.
+
+In the midst of the current biodiversity crisis, it is now more important than
+ever to understand the dynamics and drivers of biodiversity changes in order to
+design and implement adapted countermeasures. Yet, despite broad scientific
+consensus on the global biodiversity decline, we still lack a clear
+understanding of the processes underlying local community changes in response to
+anthropogenic pressures. This is particularly true in freshwater systems, which
+are considered among the most threatened in the world, but for which recent
+studies reported increases in the number of individuals and species, thus
+suggesting recovery trajectories from past anthropogenic pressures. This
+apparent disagreement between community changes at global and local scale calls
+for detailed investigations addressing both the drivers and the multidimensional
+nature of community responses over large spatial and temporal scales.
+
+We addressed those research gaps by investigating the effects of both past and
+recent changes in anthropogenic pressures over space and time in riverine fish
+communities across the globe. Using a compilation of more than 4,000 fish
+community timeseries located in several biogeographic realms (i.e., Palearctic,
+Nearctic and Australasian), we related changes in community structure (species
+richness and total abundance) and composition (temporal dissimilarity,
+nestedness and turnover) to spatial and temporal patterns in human footprint, as
+well as estimated the contribution of nonnative species to these patterns.
+
+Our study provides a large-scale picture of the biodiversity trends in an
+important freshwater group, but also an improved understanding of the drivers
+underlying community reassembly in an era of environmental changes. Our results
+confirmed a global increase in fish species richness and total abundance over
+time, but revealed that those increases are associated with important species
+replacement and changes in dominance, together with an upsurge in the proportion
+of non-native species observed in historically degraded sites, reflecting a
+legacy of past anthropogenic pressures. We further uncovered an interacting
+effect with recent changes in anthropogenic pressures, such as sites that had
+been further degraded displayed slower increases in species richness and total
+abundance but faster species replacement, changes in dominance, and increases in
+the share of non-native species. Our results are coherent with the abundant
+literature reporting an ongoing biotic homogenization of riverine fish
+communities at the global scale, and suggest that recent increases in species
+richness and total abundance at the local scale are due to adaptation to highly
+degraded environments rather than recent improvements in water quality as
+suggested in previous studies. Finally, the weak covariation that we reported
+among the different biodiversity metrics together with the high spatial
+heterogeneity in community trajectories highlights the multidimensional nature
+of community changes and the need to account for the complex spatiotemporal
+patterns in the underlying drivers of change when assessing the status and
+trends in biodiversity.
+
+As Nature in Ecology & Evolution has been at the forefront of the research on
+large-scale patterns in biodiversity trends, we are confident that our study
+will interest the broad readership of the journal and will stimulate interesting
+new perspectives and research on local biodiversity changes at large scale. We
+think that the methods used to disentangle community variations in space from
+changes in time will be of interest for a large readerships. Lastly, this study
+will be of high interest for freshwater scientists and conservation
+practitioners as we provide the first comprehensive analysis of riverine fish
+community changes in space and time at this scale.
+
+The enclosed manuscript has been edited and approved by all the authors and has
+not been published or submitted to any other journal. We had no prior
+discussions with a Nature Ecology & Evolution editor about the work described in
+the manuscript.
+
+As we selected the double-blind peer-review process, we enlist below the ordered list
+of authors with their respective affiliation:
+
+- Alain Danet: School of Biological Sciences, Illinois State University, Normal,
+  Illinois, USA; Current address: School of Biosciences, University of Sheffield, Western Bank,
+  S10 2TN, Sheffield, UK
+- Xingli Giam: Department of Ecology and Evolutionary Biology, The University of
+  Tennessee, Knoxville, Tennessee, USA
+- Julian D. Olden: School of Aquatic and Fishery Sciences, University of
+  Washington, Seattle, Washington, USA
+- Lise Comte: School of Biological Sciences, Illinois State University, Normal,
+  Illinois, USA
+
+We suggest the following potential reviewers for their respective expertise regarding our
+study:
+
+- Charlotte Outhwaite, Centre for Biodiversity and Environment Research,
+  University College London, London, UK:
+  - relevant expertise: Effects of human pressures on biodiversity trends
+  - `charlotte.outhwaite.14@ucl.ac.uk`
+- Mark Vellend, Département de biologie, Université de Sherbrooke, Sherbrooke, QC, Canada:
+  - relevant expertise: biodiversity trends at local and regional scale
+  - `mark.vellend@usherbrooke.ca`
+- Sébastien Villéger: MARBEC, Univ Montpellier, CNRS, Ifremer, IRD, Montpellier, France:
+  - relevant expertise: Biotic homogeneization and non-native species introduction in riverine fish communities
+  - `sebastien.villeger@cnrs.fr`
+-  Roel van Klink: sDiv
+  - relevant expertise: local community changes notably in freshwater systems
+- Steve Osmerod: Univ Cardiff
+- Kirk Winemiller: Texas A & M
+- Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul
+- Fengzhi He: IGB
 
