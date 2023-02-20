@@ -70,6 +70,7 @@ names(pal_variable) <- get_var_replacement_vulgarisation()[restricted_dimension]
 ```{r loading-targets, include=FALSE}
 tar_load(c(gaussian_inla_exo_std_effects, gaussian_inla_std_effects,
     measurement_exo, gaussian_inla_var_fitted, gaussian_inla_rand))
+tar_load(site_no_drivers_inla_tot)
 tar_load(c(clust_var, exo_resp_var))
 ```
 
@@ -99,6 +100,13 @@ trends_10y <- map2_dfr(
           function (resp, val) {
             if (resp %in% c("log_total_abundance", "log_chao_richness")) {
               out = log_beta_to_perc_rate(val) * log(10 + 1)
+            } else if(resp %in% c(
+                "hillebrand_dis_scaled",
+                "jaccard_dis_scaled",
+                "nestedness_scaled",
+                "turnover_scaled")
+              ) {
+              out = val * log(10 + 1) * 100
             } else {
               out = val * log(10 + 1)
             }
@@ -146,7 +154,7 @@ trends_10y %<>%
             "turnover_scaled")) {
           ci <- p_ci(
             c(mean = mean, low = low, high = high),
-            r = 2, p = FALSE
+            r = 1, p = TRUE
           )
         } else if (response == "perc_exo_sp") {
           ci <- p_ci(
@@ -163,7 +171,6 @@ trends_10y %<>%
       }
     )
   )
-
 ```
 
 
@@ -171,8 +178,10 @@ trends_10y %<>%
 
 ```{r}
 perc_pal_variable <- setNames(pal_variable,
-      c("Abundance (total, %)", "Richness (%)",
-        names(pal_variable)[3:6]
+      c(
+        "Abundance (total, %)", "Richness (%)",
+        names(pal_variable)[3:4],
+        "Dissimilarity (%)", "Turnover (%)"
       ))
 tps_trends_10y <- site_no_drivers_inla_tot %>%
   pivot_longer(everything(), names_to = "response", values_to = "value") %>%
@@ -181,10 +190,14 @@ tps_trends_10y <- site_no_drivers_inla_tot %>%
     response = get_var_replacement_vulgarisation()[response],
     value = ifelse(response %in% c("Abundance (total)", "Richness"),
       log_beta_to_perc_rate(value), value),
+    value = ifelse(response %in% c("Dissimilarity", "Turnover"),
+      value * 100, value),
     response = str_replace_all(response,
       c(
         "Abundance \\(total\\)" = "Abundance (total, %)",
-        "Richness" = "Richness (%)"
+        "Richness" = "Richness (%)",
+        "Dissimilarity" = "Dissimilarity (%)",
+        "Turnover" = "Turnover (%)"
       )
       ),
     response_f = factor(response, levels = names(perc_pal_variable)),
@@ -201,7 +214,9 @@ ci_label_data <- trends_10y %>%
     response = get_var_replacement_vulgarisation()[response],
     response = str_replace_all(response,
       c("Abundance \\(total\\)" = "Abundance (total, %)",
-        "Richness" = "Richness (%)"
+        "Richness" = "Richness (%)",
+        "Dissimilarity" = "Dissimilarity (%)",
+        "Turnover" = "Turnover (%)"
       )
       ),
     response_f = factor(response, levels = names(perc_pal_variable)),
@@ -247,15 +262,15 @@ ggsave(
   plot = p_trends_site2,
   path = here("paper", "fig_paper"),
   scale = 2.0,
-  width = 88,
-  height = 88 * 1,
+  width = 90,
+  height = 90 * .90,
   units = "mm",
   dpi = "print"
 )
 ```
 
 ```{r}
-TODO: Jaccard and nestedness in supplementary
+paste0("TODO: Jaccard and nestedness in supplementary")
 ```
 
 ##
@@ -322,23 +337,60 @@ p3 <- tu %>%
     )  +
 theme(
   plot.margin = margin(5, 5, 5, 5, "pt"),
-  plot.background = element_rect(fill = NA, color = "black"))
-p2
+  plot.background = element_rect(fill = NA, color = "black")
+)
+
+```
+```{r}
+p_tps_effect <- tu %>%
+  filter(facet %in% c("interaction", "dbl_interaction")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(pal_variable),
+    term_level = term_level,
+    xaxis_title = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  scale_x_break(c(.15, .195)) +
+  theme(
+    axis.line.y.right = element_blank(),
+    axis.ticks.y.right = element_blank(),
+    axis.text.y.right = element_blank(),
+    #plot.margin = margin(5, 5, 5, 5, "pt"),
+    #plot.background = element_rect(fill = NA, color = "black"),
+    panel.border = element_rect(fill = "transparent")
+  )
+```
+
+```{r}
+p_space_effect <- tu %>%
+  filter(facet == "main") %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(pal_variable),
+    term_level = term_level,
+    xaxis_title = TRUE,
+    legend_present = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+  ) +
+  scale_x_break(c(.22, .55))
 ```
 
 ```{r, fig.show = "hide"}
-
-var_labels <- map_chr(names(pal_variable),
-  ~paste0(
-    "'", .x,"'",
-    "~(R^2 == ",
-    round(r2[r2$response == .x, ]$r2_mvp_cond_med, 2),
-    ")")
-)
 leg_dis <- get_legend(
-  p3 +
+  p_space_effect +
     guides(
-      colour = guide_legend(nrow = 2)) +
+      colour = guide_legend(ncol = 1, byrow = TRUE)) +
   theme(
     legend.position = "bottom",
     legend.text = element_text(size = 10),
@@ -346,35 +398,119 @@ leg_dis <- get_legend(
   ) +
 scale_color_manual(
   values = pal_variable,
-  labels = names(pal_variable)#map(var_labels, ~parse(text = .x))
+  labels = names(pal_variable)
 )
 )
 
-fig1 <- plot_grid(
-  print(p2),
-  ggdraw(p3 + theme(legend.position = "none"), xlim = c(-.02, 1.015), ylim = c(-.01, 1.01)),
-  print(p1),
+p_space_legend <- plot_grid(
+  ggdraw(
+    p_space_effect + theme(legend.position = "none"),
+    xlim = c(-.02, 1.015),
+    ylim = c(-.01, 1.01)
+  ),
   leg_dis,
-  rel_heights = c(1, 1, 1, .2),
-  labels = c(letters[1:3], NULL),
+  ncol = 1
+)
+
+fig1 <- plot_grid(
+  print(p_tps_effect),
+  p_space_legend,
+  rel_heights = c(1, .2),
+  labels = c(letters[1:2]),
   hjust = -1.25, vjust = 1.8,
-  ncol = 1)
+  ncol = 2)
 fig1
 ```
 
 ```{r save-fig1}
 #fig1
 ggsave(
-  filename = "fig1.pdf",
+  filename = "fig1_two_col.pdf",
   plot = fig1,
   path = here("paper", "fig_paper"),
-  scale = 1.75,
-  width = 88,
-  height = 88 * 2.5,
+  scale = 1.8,
+  width = 180,
+  height = 180 * .8,
   units = "mm",
   dpi = "print"
 )
 ```
+
+
+```{r}
+p_space_effect2 <- tu %>%
+  filter(!str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(pal_variable)[3:6],
+    term_level = term_level,
+    xaxis_title = TRUE,
+    legend = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )) +
+theme(legend.position = "bottom", legend.justification = "right") +
+guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
+ggsave(
+  filename = "p_space_effect2.pdf",
+  plot = p_space_effect2,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 88,
+  height = 88 * .5,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r}
+p_tps_effect2 <- tu %>%
+  filter(str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(pal_variable),
+    term_level = term_level,
+    xaxis_title = TRUE,
+    legend = FALSE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  scale_x_break(c(.15, .195), scales = .2, ticklabels=c(.20, .25)) +
+  scale_x_break(c(.29, .55),  scales = .2, , ticklabels=c(.55, .60, .65, .70)) +
+  theme(
+    axis.line.y.right = element_blank(),
+    axis.ticks.y.right = element_blank(),
+    axis.text.y.right = element_blank(),
+    #plot.margin = margin(5, 5, 5, 5, "pt"),
+    #plot.background = element_rect(fill = NA, color = "black"),
+    panel.border = element_rect(fill = "transparent")
+  )
+p_tps <- plot_grid(
+  print(p_tps_effect2),
+  get_legend(p_space_effect2),
+  nrow = 2,
+  rel_heights = c(.95, .05)
+
+)
+ggsave(
+  filename = "p_tps_effect2.pdf",
+  plot = p_tps,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 88,
+  height = 88 * 1.25,
+  units = "mm",
+  dpi = "print"
+)
+```
+
 
 
 ```{r}
@@ -407,8 +543,6 @@ fig1_cap <- paste0("**Response of riverine fish communities to time,
   str_replace_all("  ", " ")
 ```
 
-Do we need to name the legend?
-
 
 ```{r eff, fig.asp = 2.5, fig.width = 88* 0.0393701}
 #, fig.cap=fig1_cap
@@ -419,7 +553,7 @@ knitr::include_graphics(here("paper", "fig_paper", "fig1.pdf"))
 ## Typology of biodiversity trends
 
 ```{r}
-tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot))
+tar_load(c(pca_clust, site_cl_rm))
 tar_load(c(clust_var_alter, site_cl_rm_red, site_env))
 pca_data <- site_no_drivers_inla_tot[,
     colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
@@ -481,7 +615,7 @@ p_pca_cl_ell <- map(axis_l,
    ) +
  guides(
    colour = guide_legend(
-     override.aes = list(size = 10),
+     #override.aes = list(size = 20),
      #title.theme = element_blank(),
      title.position = "top",
      title.hjust = .5,
@@ -491,8 +625,8 @@ p_pca_cl_ell <- map(axis_l,
  theme(
    legend.position = "bottom",
    panel.background = element_blank(),
-   legend.text = element_text(size = 7),
-   legend.key = element_rect(fill = NA)) +
+   legend.text = element_text(size = 7)
+   ) +
  scale_color_viridis(
    discrete = TRUE,
    name = "Cluster assignment", labels = cluster_labels)
@@ -506,16 +640,18 @@ p_pca_cl_ell <- map(p_pca_cl_ell, ~.x + theme(legend.position = "none"))
 
 p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2, labels =
   letters[1:2])
-
 ```
 
 ```{r}
 tar_load(site_no_drivers_inla)
 site_trends_dec <- site_no_drivers_inla %>%
-  mutate(across(c(turnover_scaled, hillebrand_dis_scaled), ~.x * log(10 + 1) * 100)) %>%
+  mutate(
+    across(c(turnover_scaled, hillebrand_dis_scaled),
+      ~.x * log(10 + 1) * 100)
+    ) %>%
   mutate(across(
       c(log_chao_richness, log_total_abundance),
-      ~log_beta_to_perc_rate(.x * log(10 + 1))
+      ~log_beta_to_perc_rate(.x) * log(10 + 1)
       )) %>%
   select(turnover_scaled, hillebrand_dis_scaled,
     log_chao_richness, log_total_abundance) %>%
@@ -530,7 +666,7 @@ left_join(site_trends_dec, by = "siteid")
 
 p_pca_cl_bt <- target_bp_cl_dist(
   cl_obj = bp_data_dec_no_scaled_trends,
-  fct_var_lvl = names(pal_variable)[c(3:4, 1:2)],
+  fct_var_lvl = names(pal_variable)[c(1:2, 5:6)],
   dodge = .85
   ) +
   scale_color_viridis(discrete = TRUE) +
@@ -560,14 +696,11 @@ str_remove_all("\n|\r") %>%
 str_replace_all("  ", " ")
 ```
 
-For the figure 2, I see the main question of whether we need to give to the clusters
-or not. I would suggest to put them as medium change, high turnover, increase in
-species richness, decrease in total abundance and no change.
-
 ```{r}
 fig2 <- plot_grid(
   p_pca_cl_top,
-  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25), labels = c(letters[3], NULL)),
+  plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25),
+    labels = c(letters[3], NULL)),
   nrow = 2,
   rel_heights = c(1, .8)
 )
@@ -582,31 +715,22 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
-
 ```
+
 
 ```{r, fig.asp = .9, fig.width = 88 * 0.0393701}
 # , fig.cap=pca_clust_cap
 knitr::include_graphics(here("paper", "fig_paper", "fig2.pdf"))
 ```
 
-
 ```{r}
-tar_load(c(world_site_sf))
-```
-
-
-```{r}
+tar_load(c(site_cl_rm))
 loc <- filtered_dataset_modelling$location %>%
   mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
   left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
   st_as_sf(coords = c("longitude", "latitude"),
   crs = 4326)
-```
 
-
-```{r}
-tar_load(filtered_basinatlas_modelling)
 site_cl_rm_loc <- site_cl_rm %>%
   select(siteid, cl) %>%
   left_join(loc, by = "siteid") %>%
@@ -615,7 +739,81 @@ site_cl_rm_loc <- site_cl_rm %>%
     measurement_exo %>%
       distinct(siteid, basin_name),
     by = "siteid")
+```
 
+```{r}
+ecoregion_cl <- site_cl_rm_loc %>%
+  group_by(cl, ecoregion) %>%
+  summarise(freq = n()
+    ) %>%
+  group_by(ecoregion) %>%
+  mutate(
+    pc = prop.table(freq),
+    basin_name = toupper(ecoregion),
+    tot_n = sum(freq)
+    ) %>%
+  ungroup() %>%
+  mutate(
+    ecoregion_f = factor(ecoregion),
+    label = paste0(ecoregion, "\n(N = ",tot_n, ")")
+  )
+
+p_ecoregion_cl <- ecoregion_cl %>%
+  ggplot(
+    aes(
+      x = pc, y = label,
+      fill = factor(cl, levels = rev(unique(cl)))
+    )
+    ) +
+  geom_col() +
+  labs(x = "Percentage") +
+  scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
+  theme_cowplot(10) +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(size = 1, color = "black"),
+    strip.text = element_blank()
+    ) +
+#  facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
+  scale_fill_viridis(discrete = TRUE, name = "Cluster", direction = -1)
+```
+
+```{r}
+clust_figure <- plot_grid(
+  p_pca_cl_top,
+  p_pca_cl_bt,
+  plot_grid(
+    p_ecoregion_cl, leg_cl,
+    rel_widths = c(1, .27),
+    align = "v", axis = "b"
+    ),
+  labels = c("", "c", "d"),
+  nrow = 3,
+  rel_heights = c(1, .8, .57)
+)
+clust_figure
+#fig2
+ggsave(
+  filename = "clust_figure.pdf",
+  plot = clust_figure,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * 1.1,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
+
+```{r}
+tar_load(c(world_site_sf))
+```
+
+```{r}
 n_clust_basin <- site_cl_rm_loc %>%
   group_by(ecoregion, country, main_bas) %>%
   summarise(
@@ -710,7 +908,6 @@ basin_names_nea <- site_cl_rm_loc %>%
   filter(main_bas %in% basin_name_nearctic$main_bas[1:4]) %>%
   distinct(main_bas, basin_name) %>%
   filter(!is.na(basin_name) & basin_name != "Red")
-
 
 nea_basin <- deframe(basin_names_nea[, 2:1])
 
@@ -936,35 +1133,6 @@ save_plot(
   base_height = 3.71,
   base_asp = 2.618,
 )
-
-```
-```{r, eval=FALSE}
-p_zoom_map <- map2(zoom_map_coord, zoom_map_coord_df$label,
-  ~main_map4zoom +
-    coord_sf(
-      xlim = .x[c("xmin", "xmax")],
-      ylim = .x[c("ymin", "ymax")],
-      expand = FALSE) +
-    annotate("text", x = .x["xmin"], y = .x["ymax"],
-      label = .y, size = 7, vjust = 1.2, hjust = -.2) +
-    theme(
-      legend.position = "none",
-      panel.border = element_rect(size = 1, color = "black")
-    )
-)
-p_zoom_map_basin <- map2(zoom_map_basin_coord, zoom_map_basin_coord_df$label,
-  ~main_map4zoom +
-    coord_sf(
-      xlim = .x[c("xmin", "xmax")],
-      ylim = .x[c("ymin", "ymax")],
-      expand = FALSE) +
-    annotate("text", x = .x["xmin"], y = .x["ymax"],
-      label = .y, size = 7, vjust = 1.2, hjust = -.2) +
-    theme(
-      legend.position = "none",
-      panel.border = element_rect(size = 1, color = "black")
-    )
-)
 ```
 
 ```{r}
@@ -1075,50 +1243,6 @@ fig3_inset_country <-
 ```
 
 
-```{r, eval = FALSE}
-leg_cl_right <- get_legend(
-  p_pca_cl_ell[[1]] +
-    theme(
-      legend.position = "bottom",
-      legend.text = element_text(size = 12),
-      legend.title = element_text(size = 12)
-      ) +
-    guides(col = guide_legend(
-        nrow = 1, override.aes = list(size = 10)
-        ))
-    )
-bottom <- plot_grid(p_tot_tab, leg_cl_right, ncol = 1, rel_heights = c(1, .11),
-  labels = c("iv)", ""))
-#fig3_alt <- plot_grid(top, bottom, nrow = 2, rel_heights = c(1, .40))
-
-inset_tot <- plot_grid(plotlist = append(
-    inset_country[1], append(inset_basin[1:3],
-    append(inset_country[2], append(inset_basin[4:6],
-    append(inset_country[3], inset_basin[7:9]))))
-    ),
-  ncol = 4,
-  rel_widths = c(1, .70, .7, .50),
-  rel_heights = c(1, 1.5, 1),
-  labels = c(
-    "i)", letters[1:3],
-    "ii)", letters[4:6],
-    "iii)", letters[7:9]
-    )
-  )
-fig3_alt <- plot_grid(
-  inset_tot,
-  bottom, nrow = 2, rel_heights = c(1, .70))
-ggsave(
-  filename = "fig3_alt.pdf",
-  plot = fig3_alt,
-  path = here("paper", "fig_paper"),
-  scale = 5.0,
-  width = 88,
-  height = 88 * .8,
-  units = "mm",
-  dpi = "print"
-)
-```
 
 ```{r}
 leg_cl_right <- get_legend(

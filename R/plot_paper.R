@@ -231,7 +231,9 @@ plot_pca_clust <- function(
       data = tibble(x = c(lim_x_y[1], 0), xend = c(lim_x_y[2], 0),
         y = c(0, lim_x_y[1]), yend = c(0, lim_x_y[2])),
       aes(x = x, y = y, xend = xend, yend = yend),
-      size = size_abscisse_segment) +
+      size = size_abscisse_segment,
+      key_glyph = ifelse(key_glyph_rect, "rect", "line")
+      ) +
     lims(x = lim_x_y, y = lim_x_y) +
     coord_cartesian(
       expand = FALSE
@@ -244,7 +246,8 @@ plot_pca_clust <- function(
     p <- p +
       geom_point(data = tt,
         aes_string(x = xaxis, y = yaxis, colour = "as.factor(cl)"),
-        alpha = alpha_point
+        alpha = alpha_point,
+        key_glyph = ifelse(key_glyph_rect, "rect", "point")
       )
   }
   if (add_ellipse) {
@@ -254,9 +257,9 @@ plot_pca_clust <- function(
         aes_string(
           x = xaxis,
           y = yaxis,
-          #key_glyph = ifelse(key_glyph_rect, "rect", "line"),
           colour = "as.factor(cl)"
           ),
+        key_glyph = ifelse(key_glyph_rect, "rect", "line"),
         segments = 100,
         level = .9
       )

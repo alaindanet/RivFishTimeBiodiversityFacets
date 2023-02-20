@@ -1,0 +1,660 @@
+---
+title: "Cluster spatial distribution"
+author: Danet, A., Giam, X., Olden, J. D. and Comte L.
+output:
+  bookdown::pdf_document2:
+    keep_tex: true
+  bookdown::word_document2:
+always_allow_html: true
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>",
+  fig.path = "fig_paper/knitr-",
+  fig.retina = 1, # Control using dpi
+  fig.width = 2.25,  # generated images
+  fig.pos = "htp",  # pdf mode
+  fig.align = "center",
+  dpi = 300,
+  dev = "png",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet"
+)
+
+options(kableExtra.latex.load_packages = TRUE)
+
+library(kableExtra)
+library(tidyverse)
+library(magrittr)
+library(sf)
+sf_use_s2(use_s2 = FALSE)
+library(cowplot)
+library(viridis)
+library(here)
+```
+
+```{r}
+get_rev_vec_name_val <- function(x = NULL) {
+  y <- names(x)
+  names(y) <- x
+  return(y)
+}
+```
+
+
+```{r}
+tar_load(c(world_site_sf, site_cl_rm, filtered_dataset_modelling,
+    measurement_exo))
+tar_load(filtered_basinatlas_modelling)
+tar_load(rivers10)
+```
+
+```{r}
+loc <- filtered_dataset_modelling$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+  left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+
+site_cl_rm_loc <- site_cl_rm %>%
+  select(siteid, cl) %>%
+  left_join(loc, by = "siteid") %>%
+  filter(ecoregion %in% c("Palearctic", "Nearctic", "Australasia")) %>%
+  left_join(
+    measurement_exo %>%
+      distinct(siteid, basin_name),
+    by = "siteid")
+```
+
+
+```{r}
+n_clust_basin <- site_cl_rm_loc %>%
+  group_by(ecoregion, country, main_bas) %>%
+  summarise(
+    n = n(),
+    div = length(unique(cl)),
+    evenness = ifelse(div == 1, 1, vegan::diversity(table(cl)) / log(div))
+  )
+
+# Take the most sampled basin by country
+fq_pal_bas <- site_cl_rm_loc %>%
+  filter(basin_name %in% c("Avon.Moors", "Loire", "Gota.alv")) %>%
+  group_by(basin_name, cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq)) %>%
+  ungroup()
+
+fq_pal <- site_cl_rm_loc %>%
+  filter(ecoregion == "Palearctic") %>%
+  group_by(cl) %>%
+  summarise(freq = n()) %>%
+  mutate(pc = prop.table(freq), basin_name = toupper("Palearctic")) %>%
+  ungroup()
+
+fq_tab <- rbind(
+  fq_pal, fq_pal_bas
+)
+
+get_fq_tab_from_basin <- function(
+  x = site_cl_rm_loc,
+  ecoregion = NULL,
+  basin_var = basin_name,
+  basins = NULL) {
+
+  if (is.null(names(basins))) {
+    names(basins) <- basins
+  }
+
+  fq_pal_bas <- x %>%
+    filter({{basin_var}} %in% basins) %>%
+    group_by({{basin_var}}, cl) %>%
+    summarise(freq = n()) %>%
+    mutate(
+      pc = prop.table(freq),
+      basin_name = str_replace_all(as.character({{basin_var}}), setNames(names(basins), as.character(basins)))
+      ) %>%
+    ungroup()
+
+  ecoregion2 <- ecoregion# to not mess up filter
+  fq_pal <- x %>%
+    filter(ecoregion == ecoregion2) %>%
+    group_by(cl) %>%
+    summarise(freq = n()) %>%
+    mutate(
+      pc = prop.table(freq),
+      basin_name = toupper(ecoregion)
+      ) %>%
+    ungroup()
+
+  fq_tab <- rbind(fq_pal, select(fq_pal_bas, cl, freq, pc, basin_name)) %>%
+    mutate(
+      basin_name = factor(
+        basin_name, levels = c(toupper(ecoregion), names(basins))),
+      ecoregion = ecoregion
+    )
+  return(fq_tab)
+
+}
+
+basin_name_palearctic <- n_clust_basin %>%
+  filter(ecoregion == "Palearctic", div == 6) %>%
+  arrange(desc(n))
+
+basin_names_pal <- site_cl_rm_loc %>%
+  filter(main_bas %in% c(2080021030, 2080053790, 2080033320)) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(basin_name != "Lagan.Swe")
+
+pal_basin <- deframe(basin_names_pal[, 2:1])
+
+tab_palearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Palearctic",
+  basin_var = main_bas,
+  basins = pal_basin
+)
+
+basin_name_nearctic <- n_clust_basin %>%
+  filter(ecoregion == "Nearctic", div >= 5) %>%
+  arrange(desc(n))
+
+basin_names_nea <- site_cl_rm_loc %>%
+  filter(main_bas %in% basin_name_nearctic$main_bas[1:4]) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(!is.na(basin_name) & basin_name != "Red")
+
+nea_basin <- deframe(basin_names_nea[, 2:1])
+
+tab_nearctic <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Nearctic",
+  basin_var = main_bas,
+  basins = nea_basin
+)
+
+basin_name_australasia <- n_clust_basin %>%
+  filter(ecoregion == "Australasia", div >= 5) %>%
+  arrange(desc(n))
+
+basin_names_aus <- site_cl_rm_loc %>%
+  filter(main_bas %in% basin_name_australasia$main_bas[1:3]) %>%
+  distinct(main_bas, basin_name) %>%
+  filter(!is.na(basin_name)) %>%
+  slice(-1,-3)
+aus_basin <- deframe(basin_names_aus[, 2:1])
+
+tab_australasia <- get_fq_tab_from_basin(
+  x = site_cl_rm_loc,
+  ecoregion = "Australasia",
+  basin_var = main_bas,
+  basins = aus_basin
+)
+
+
+all_basin <- c("NEARCTIC", "Mississippi", "Saint.Laurent", "Potomac", "PALEARCTIC", "Thames.UK", "Loire", "Gota.alv", "AUSTRALASIA", "Avoca", "Brisbane", "Logan")
+names(all_basin) <- letters[seq_along(all_basin)] #c("a", "b", "c", "d", "f", "g", "h", "j", "k", "l") #
+
+tot_tab <- rbind(
+  tab_nearctic,
+  tab_palearctic,
+  tab_australasia) %>%
+  left_join(
+    site_cl_rm_loc %>%
+      filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+      mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))))%>%
+      mutate(country = ifelse(basin_name == "Saint.Laurent", "CAN/USA", country)) %>%
+      distinct(basin_name, country),
+    by = "basin_name"
+  ) %>%
+  mutate(
+    label = map_chr(basin_name,
+      ~ifelse(
+        any(all_basin %in% .x),
+        names(all_basin)[all_basin == .x],
+        NA)
+      ),
+    basin_name = str_replace(basin_name, "\\.", " "),
+    basin_name = str_replace(basin_name, "UK|alv", "")
+    ) %>%
+  group_by(basin_name) %>%
+  mutate(
+    total_n = sum(freq)) %>%
+  ungroup() %>%
+  arrange(label) %>%
+  mutate(
+    country = ifelse(is.na(country), "", paste0(", ", country)),
+    basin_name_n = paste0(basin_name, " (", total_n, ")"),
+    basin_name_n = ifelse(
+      !is.na(label),
+      paste0("(", label,") ", basin_name_n),
+      basin_name_n
+      ),
+    basin_name_n = str_replace(basin_name_n, "\\s{2}", " "),
+    basin_name_f = factor(basin_name_n, levels = unique(basin_name_n))
+
+  )
+lvl_basin <- c(
+  "(l) Logan (32)",
+  "(k) Brisbane (89)",
+  "(j) Avoca (129)",
+  "(i) AUSTRALASIA (330)",
+  "(h) Gota (50)",
+  "(g) Loire (240)",
+  "(f) Thames (139)",
+  "(e) PALEARCTIC (3470)",
+  "(d) Potomac (66)",
+  "(c) Saint Laurent (164)",
+  "(b) Mississippi (574)",
+  "(a) NEARCTIC (1083)"
+)
+lvl_ecoregion <- c(Nearctic = "(a) Nearctic", Palearctic = "(b) Palearctic", Australasia = "(c) Australasia")
+```
+
+```{r}
+table_to_vec <- function(x) {
+  setNames(as.numeric(x), names(x))
+}
+fnsite <- filtered_dataset_modelling$site_quanti %>%
+  filter(variable == "year") %>%
+  nrow()
+
+cluster_names <- c(
+  "Medium change", "High turnover",
+  "Increase in\nrichness", "Decrease in\nabundance (total)",
+  "Decrease in\nrichness", "Low change"
+)
+nb_clusters <- table_to_vec(table(site_cl_rm$cl))
+per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+na_cluster <- paste0("(N = ",
+  fnsite - sum(nb_clusters), ", ", scales::percent((fnsite - sum(nb_clusters)) / fnsite),")"
+)
+
+cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
+  ~paste0(.x, "\n(N = ", .y, ")"))
+cluster_labels2 <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
+  ~paste0(.x, "\n(N = ", .y, ")"))
+```
+
+```{r}
+p_tot_tab2 <- tot_tab %>%
+  mutate(
+     basin_name_f = factor(basin_name_n, levels = lvl_basin),
+     ecoregion2 = str_replace_all(ecoregion, lvl_ecoregion),
+     ecoregion_f = factor(ecoregion2)
+    ) %>%
+  ggplot(aes(x = pc, y = basin_name_f, fill = factor(cl, levels = rev(unique(cl))))) +
+  geom_col() +
+  labs(x = "Percentage") +
+  scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
+  theme_cowplot() +
+  theme(
+    axis.title.y = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(size = 1, color = "black"),
+    strip.text = element_blank()
+    ) +
+  facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
+  scale_fill_viridis(
+    discrete = TRUE,
+    direction = -1,
+    name = "Cluster assignment",
+    labels = cluster_labels)
+
+leg_cl_right <- get_legend(
+  p_tot_tab2 +
+    theme(legend.position = "right") +
+    guides(fill = guide_legend(
+        ncol = 2
+        )) +
+    scale_fill_viridis(discrete = TRUE, name = "Cluster assignement", labels = cluster_labels2)
+)
+leg_cl <- get_legend(
+  p_tot_tab2 +
+    guides(
+      fill = guide_legend(
+        title.position = "top",
+        title.hjust = .5,
+        label.position = "top",
+        ncol = 2)
+      ) +
+    theme(
+      legend.position = "bottom",
+      panel.background = element_blank(),
+      legend.text = element_text(size = 7)
+    ) +
+    scale_fill_viridis(discrete = TRUE, name = "Cluster assignement", labels = cluster_labels2)
+)
+
+p_tot_tab <- p_tot_tab2 +
+  theme(legend.position = "none")
+plot_grid(p_tot_tab, leg_cl, rel_widths = c(.8, .2))
+```
+
+
+```{r}
+world_site_sf$cl <- world_site_sf$site %>%
+    left_join(site_cl_rm_loc[, c("siteid", "cl", "basin_name")], by = "siteid") %>%
+    mutate(cl = relevel(as.factor(cl), ref = 1))
+
+zoom_map_world <- world_site_sf$cl %>%
+  st_buffer(dist = .2) %>%
+    st_bbox()
+unique(world_site_sf$world$continent)
+
+main_map <-
+  world_site_sf$world %>%
+  filter(continent != "Antarctica") %>%
+  ggplot() +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(fill = cl), pch = 21, color = "white", alpha = .3) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(legend.position = "none") +
+  coord_sf(
+    #xlim = zoom_map_world[c("xmin", "xmax")],
+    #ylim = zoom_map_world[c("ymin", "ymax")],
+    expand = FALSE)
+
+main_map4zoom <- ggplot(world_site_sf$world) +
+  geom_sf(color = NA) +
+  theme_void() +
+  geom_sf(data = rivers10, colour = "lightblue", alpha = .4) +
+  geom_sf(data = world_site_sf$cl %>%
+    filter(!is.na(cl)),
+  aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 4) +
+  scale_fill_viridis(discrete = TRUE) +
+  theme(legend.position = "none")
+
+zoom_map <- list(
+  north_am = "USA",
+  eng = "GBR",
+  south_eu = c("FRA", "ESP", "BEL"),
+  north_eu = c("FIN", "NOR", "SWE"),
+  aus = "AUS"
+)
+zoom_map_basin_coord <- map(all_basin,
+  ~world_site_sf$cl %>%
+    filter(basin_name %in% .x) %>%
+    st_bbox()
+)
+
+zoom_map_coord <- map(zoom_map,
+  ~world_site_sf$cl %>%
+    filter(country %in% .x) %>%
+    st_bbox()
+)
+
+zoom_map_coord_df <- map_dfr(zoom_map_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(
+  label = LETTERS[seq_len(length(zoom_map_coord))],
+  xmean = (xmax + xmin) / 2,
+  ymean = (ymax + ymin) / 2
+)
+zoom_map_basin_coord_df <- map_dfr(zoom_map_basin_coord,
+  ~setNames(as.numeric(.x), names(zoom_map_basin_coord[[1]])) %>%
+    enframe(.),
+  .id = "zoom") %>%
+pivot_wider(names_from = "name", values_from = "value") %>%
+mutate(
+  LABEL = LETTERS[seq_len(length(zoom_map_basin_coord))],
+  label = letters[seq_len(length(zoom_map_basin_coord))],
+  width_basin = xmax - xmin,
+  xmean = (xmax + xmin) / 2,
+  ymean = (ymax + ymin) / 2
+)
+```
+
+```{r}
+basin_map <- filtered_basinatlas_modelling %>%
+  filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
+  mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))),
+    label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
+    label2 = str_replace_all(label, c("l" = "\n  l", g = "g", d = " d")),
+  )
+
+main_map_rect_basin <- main_map +
+  geom_sf(data = basin_map, color = "black", fill = NA) +
+  geom_sf_text(data = basin_map, aes(label = label2), colour = "black", size = 7, vjust = -.3, hjust = 0) +
+theme(legend.position = "none")
+```
+
+```{r}
+p_main_map_rect <- main_map_rect_basin +
+  draw_plot(leg_cl, x = -100, y = zoom_map_world["ymin"] + 5, vjust = 0, hjust = 0)
+
+save_plot(
+  here("doc", "fig", "global_map.png"),
+  p_main_map_rect,
+  base_height = 3.71,
+  base_asp = 2.618,
+)
+```
+
+```{r}
+box_inset_country <- list(
+  usa_can = c(-126, 25, -65, 51),
+  eu = c(-15, 41, 30, 68),
+  aus = c(112, -39, 155, -10.5)
+)
+box_inset_country <- map(box_inset_country,
+  ~setNames(.x, c("xmin", "ymin", "xmax", "ymax")))
+usa_can <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-126, -65),
+    ylim = c(25, 51),
+    expand = FALSE)
+aus <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(112, 155),
+    ylim = c(-39, -10.5),
+    expand = FALSE)
+eu <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-13, 30),
+    ylim = c(41, 68),
+    expand = FALSE)
+```
+
+# Basin and Country insets
+
+```{r inset-basin}
+inset_basin <- map(sort(basin_map$label),
+  function(l) {
+    print(l)
+    x <- basin_map %>%
+    filter(label == l)
+   x %>%
+    ggplot() +
+    geom_sf(color = NA) +
+    #annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 7) +
+    theme_void() +
+    geom_sf(data = st_intersection(rivers10, x), colour = "lightblue", alpha = .4) +
+    geom_sf(data = st_intersection(world_site_sf$cl %>%
+        filter(!is.na(cl)), x),
+      aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 4) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position = "none") +
+    coord_sf(expand = FALSE)
+  }
+)
+names(inset_basin) <- sort(basin_map$label)
+box_basin <- map(setNames(basin_map$geometry, basin_map$label), ~st_bbox(.x))
+width_height_box <- map(box_basin,
+  ~setNames(
+    c(.x["xmax"] - .x["xmin"], .x["ymax"] - .x["ymin"]),
+    c("width", "height")
+  )
+)
+```
+
+
+```{r}
+inset_country <- list(usa_can = usa_can, eu = eu, aus = aus)
+width_height_box <- map(box_inset_country,
+  ~setNames(
+    c(.x["xmax"] - .x["xmin"], .x["ymax"] - .x["ymin"]),
+    c("width", "height")
+  )
+)
+refs <- width_height_box[["usa_can"]]
+ref_height_country <- .33
+ratio_width_to_a <- map_dbl(width_height_box, ~round(.x["width"] / refs["width"], 2))
+ratio_height_to_a <- map_dbl(width_height_box, ~round(.x["height"] / refs["height"], 2))
+
+fig3_inset_country <- ggdraw() +
+  draw_plot(
+    usa_can, x = 0, y = 1,
+    width = ref_height_country*width_height_box$usa_can["width"]/width_height_box$usa_can["height"],
+    height = .33,
+    vjust = 1, hjust = .2
+    ) +
+  draw_plot(
+    eu, x = 0, y = .66,
+    width = ref_height_country*width_height_box$eu["width"]/width_height_box$eu["height"],
+    height = .33,
+    vjust = 1, hjust = .2
+    ) +
+  draw_plot(
+    aus, x = 0, y = .33,
+    width = ref_height_country * width_height_box$aus["width"] / width_height_box$aus["height"],
+    height = .33,
+    vjust = 1, hjust = .3
+  )
+```
+
+```{r, fig.cap = "Inset country"}
+fig3_inset_country <-
+  plot_grid(plotlist = inset_country, ncol = 1)
+fig3_inset_country
+```
+
+```{r}
+leg_cl_right <- get_legend(
+ p_tot_tab2 +
+    theme(
+      legend.position = "bottom",
+      legend.text = element_text(size = 7),
+      legend.title = element_blank()
+      ) +
+    guides(fill = guide_legend(
+        nrow = 1, override.aes = list(size = 7)
+        )) +
+    scale_fill_viridis(discrete = TRUE, name = "Cluster assignement", labels = cluster_labels2)
+    )
+bottom <- plot_grid(
+  p_tot_tab + theme(
+    text = element_text(size = 7),
+    axis.text = element_text(size = 7)
+    ),
+  leg_cl_right, ncol = 1,
+  rel_heights = c(1, .11),
+  label_size = 7,
+  labels = c("iv)", ""))
+
+leg_cl2 <- get_legend(
+  p_tot_tab2 +
+    theme(
+      legend.position = "right",
+      legend.text = element_text(size = 7),
+      legend.title = element_text(size = 7)
+      ) +
+    guides(fill = guide_legend(
+        ncol = 1, override.aes = list(size = 7)
+        )) +
+    scale_fill_viridis(discrete = TRUE, name = "Cluster assignement", labels = cluster_labels2)
+
+    )
+bottom2 <- plot_grid(
+  p_tot_tab + theme(
+    text = element_text(size = 7),
+    axis.text = element_text(size = 7)
+    ),
+  leg_cl2, ncol = 2,
+  rel_widths = c(1, .2),
+  label_size = 7,
+  labels = c("m", ""))
+
+main_map_rect_basin <- main_map +
+  geom_sf(data = basin_map, color = "black", fill = NA) +
+  geom_sf_text(data = basin_map, aes(label = label2),
+    #fontface = "bold",
+    colour = "black",
+    size = 4,
+    vjust = -.2, hjust = 0) +
+theme(legend.position = "none")
+usa_can <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-126, -65),
+    ylim = c(25, 51),
+    expand = FALSE)
+aus <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(112, 155),
+    ylim = c(-39, -10.5),
+    expand = FALSE)
+eu <- main_map_rect_basin +
+  coord_sf(
+    xlim = c(-13, 30),
+    ylim = c(41, 68),
+    expand = FALSE)
+inset_country <- list(usa_can = usa_can, eu = eu, aus = aus)
+
+inset_basin <- map(sort(basin_map$label),
+  function(l) {
+    x <- basin_map %>%
+    filter(label == l)
+   x %>%
+    ggplot() +
+    geom_sf(color = NA) +
+    #annotate(geom = 'text', label = l, x = -Inf, y = Inf, hjust = 0, vjust = 1, size = 7) +
+    theme_void() +
+    geom_sf(data = st_intersection(rivers10, x), colour = "lightblue", alpha = .4) +
+    geom_sf(data = st_intersection(world_site_sf$cl %>%
+        filter(!is.na(cl)), x),
+      aes(fill = cl), pch = 21, color = "white", alpha = .3, size = 2) +
+    scale_fill_viridis(discrete = TRUE) +
+    theme(legend.position = "none") +
+    coord_sf(expand = FALSE)
+  }
+)
+names(inset_basin) <- sort(basin_map$label)
+
+inset_tot <- plot_grid(
+  plotlist = append(
+    inset_country[1], append(inset_basin[1:3],
+    append(inset_country[2], append(inset_basin[4:6],
+    append(inset_country[3], inset_basin[7:9]))))
+    ),
+  ncol = 4,
+  rel_widths = c(1, .70, .7, .50),
+  rel_heights = c(1, 1.5, 1),
+  label_size = 7,
+  labels = "auto"
+  )
+fig3_alt <- plot_grid(
+  inset_tot,
+  bottom2, nrow = 2, rel_heights = c(1, .80))
+ggsave(
+  filename = "fig3_alt2.pdf",
+  plot = fig3_alt,
+  path = here("paper", "fig_paper"),
+  scale = 1,
+  width = 180,
+  height = 180 * 1.0,
+  units = "mm",
+  dpi = "print"
+)
+```
