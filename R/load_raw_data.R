@@ -2,8 +2,8 @@
 #'
 load_time_series_data <- function(path) {
 
-  output <- read_csv(path) 
-  
+  output <- read_csv(path)
+
   if ("...1" %in% colnames(output)) {
     output <- output %>%
     select(-...1) #Remove dummy variables
@@ -51,12 +51,12 @@ download_chelsa <- function(
   year_selected <- year_selected[
     year_selected >= 1980 | year_selected <= 2019
     ]
-  
+
   file_names <- purrr::map(
     year_selected,
     ~paste0(file_radical, monthly, "_", .x, file_suffix)) %>%
     purrr::reduce(., c)
-  
+
 
   if (!overwrite) {
     mask_already_dl <- file_names %in% list.files(dl_dir)
@@ -69,7 +69,7 @@ download_chelsa <- function(
       destfile = paste0(dl_dir, "/", file_names[i])
     )
   }
-  
+
 }
 
 convert_chelsa_to_celcius <- function(x = NULL) {
@@ -88,7 +88,7 @@ get_additional_dataset_ref_rivfistime <- function(
     filter(SiteID %in% unique(site_paper$siteid)) %>%
     arrange(SiteID)
 
-  # Check that siteid match between published rivfishtime and updated version 
+  # Check that siteid match between published rivfishtime and updated version
   test_match <- updated %>%
     select(Glob_ID, SiteID, Origin) %>%
     filter(
@@ -124,7 +124,7 @@ get_additional_dataset_ref_rivfistime <- function(
     "Maryland"  = "Montgomery county monitoring program (2018). Available at https://www.montgomerycountymd.gov/water/streams/data.html",
     "Ohio"      = "Ohio statewide monitoring program (2018). Available at https://www.orsanco.org/programs/fish-population/",
     "RAMP"      = "Regional Aquatics Monitoring Program (2018). Available at http://www.ramp-alberta.org/RAMP.aspx",
-    "MARIS"     = "U.S. Geological Survey, Core Science Analytics and Synthesis Program, 20131201, Multistate Aquatic Resources Information System (MARIS): United States Geological Survey, http://dx.doi.org/10.5066/F7BZ641R."
+    "MARIS"     = "U.S. Geological Survey, Core Science Analytics and Synthesis Program, 20131201, Multistate Aquatic Resources Information System (MARIS): United States Geological Survey, https://doi.org/10.5066/F7988525."
   )
 
   out <- ti %>%

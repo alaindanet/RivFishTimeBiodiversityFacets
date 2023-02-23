@@ -21,7 +21,8 @@ tar_make_future(
 tar_meta()
 tar_visnetwork()
 
-tar_make(names = tab_rand)
+tar_make(names = add_dataset_ref)
+tar_load(riveratlas_shp_files)
 
 tar_make(names = filtered_basinatlas_modelling)
 tar_make(names = tab_waic)

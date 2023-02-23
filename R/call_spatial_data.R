@@ -53,7 +53,7 @@ get_shp_files <- function(dir = here("inst", "extdata", "RiverATLAS_v10_shp")) {
 
 get_full_file_name <- function(
   filename = NULL,
-  dir = here("inst", "extdata", "RiverATLAS_v10_shp")
+  dir = here("inst", "extdata", "RiverATLAS_Data_v10_shp", "RiverATLAS_v10_shp")
   ) {
   dir %>%
     R.utils::filePath(., expandLinks = "any") %>%
@@ -66,7 +66,7 @@ get_world_site_sf <- function(
   loc = filtered_dataset$location
   ){
   list(
-    site = loc %>% 
+    site = loc %>%
       st_as_sf(
         coords = c("longitude", "latitude"),
         crs = 4326

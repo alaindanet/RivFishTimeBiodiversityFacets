@@ -1,6 +1,8 @@
 # Borrow the source of iNEXT bc the default functions are too long run
-source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/master/R/invChat.R")
-source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/master/R/iNEXT.r")
+source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/38eb69f033655685a222bdcc8b60649c27d50b2a/R/invChat.R")
+source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/38eb69f033655685a222bdcc8b60649c27d50b2a/R/iNEXT.r")
+#source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/master/R/invChat.R")
+#source("https://raw.githubusercontent.com/JohnsonHsieh/iNEXT/master/R/iNEXT.r")
 invChat.Ind_c <- compiler::cmpfun(invChat.Ind)
 
 #' Compute chao hillnumber coverage style
@@ -87,7 +89,7 @@ get_chao_hillnb <- function(
   return(tibble::as_tibble(chao))
 }
 
-#' Ajust some abundance for chao computation 
+#' Ajust some abundance for chao computation
 adjust_abun_chao <- function(x = NULL) {
   m <- min(x)
   if (m < 1) {
@@ -167,7 +169,7 @@ get_hillnb <- function(x = NULL, dataset = NULL) {
       div[div$species_nb == 1, ][[i]] <- 0
     }
     div[div$species_nb == 1, ][["inv_simpson"]] <- 1
- 
+
 
     return(div)
 }

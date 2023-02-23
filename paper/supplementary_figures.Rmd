@@ -13,7 +13,7 @@ header-includes:
   \usepackage{float}
   \usepackage{booktabs}
   \usepackage{colortbl}
-  \renewcommand{\thetable}{S\arabic{table}}%
+  \renewcommand{\thetable}{S\arabic{table}}
   \renewcommand{\thefigure}{S\arabic{figure}}
 ---
 
@@ -26,7 +26,7 @@ knitr::opts_chunk$set(echo = FALSE,
   fig.path = "graphics/knitr-",
   fig.retina = 1.618, # Control using dpi
   fig.width = 6,  # generated images
-  fig.pos = "t",  # pdf mode
+  fig.pos = "H",  # pdf mode
   fig.align = "center",
   dpi = if (knitr::is_latex_output()) 72 else 300,
   out.width = "80%",
@@ -75,20 +75,22 @@ ecdf_fun <- function(x, perc) ecdf(x)(perc)
 
 ```{r}
 source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
-pal_variable <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
+pal_variable <- palette_coolors("https://coolors.co/588aee-68de9f-f4ec7b-feb35d-ed6e6e-b885ff")
+
+pal_variable2 <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
 
 legend_order <- c(
   "log_total_abundance", "log_chao_richness",
-  "hillebrand_dis_scaled", "turnover_scaled", "perc_exo_abun", "perc_exo_sp",
-  "jaccard_dis_scaled", "nestedness_scaled", "appearance_scaled",
-  "disappearance_scaled"
+  "perc_exo_abun", "perc_exo_sp",
+  "hillebrand_dis_scaled", "turnover_scaled"
 )
 
 names(pal_variable) <- get_var_replacement_vulgarisation()[legend_order]
 
 restricted_dimension <- c(
-  "log_total_abundance", "log_chao_richness", "hillebrand_dis_scaled",
-  "turnover_scaled", "perc_exo_abun", "perc_exo_sp"
+  "log_total_abundance", "log_chao_richness",
+  "perc_exo_abun", "perc_exo_sp",
+  "hillebrand_dis_scaled", "turnover_scaled"
 )
 ```
 
@@ -110,27 +112,43 @@ measurement_exo <- measurement_exo %>%
   filter(op_id %in% unique(modelling_data_exo$op_id))
 ```
 
-\newpage
-
+# Supplementary figures
 
 
 ```{r}
-tu_full <- rbind(gaussian_inla_std_effects,
-  gaussian_inla_exo_std_effects) %>%
+ti = tar_read(gaussian_inla_std, branches = which(facet_var == "log_species_nb"))
+log_species_richness_effect  <- format_inla_model_list(x = ti, response_to_skip = NULL)
+
+col <- c(
+  "darkgreen",
+  pal_variable[get_var_replacement_vulgarisation()[
+      c("log_chao_richness", "hillebrand_dis_scaled")
+      ]],
+  "darkred"
+  )
+names(col)[c(1,4)] <- get_var_replacement_vulgarisation()[c("log_species_nb", "jaccard_dis_scaled")]
+
+tu_full <- rbind(
+  log_species_richness_effect,
+  gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects
+  ) %>%
   filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% c("log_species_nb", "log_chao_richness", "hillebrand_dis_scaled", "jaccard_dis_scaled")) %>%
   mutate(
     term = str_replace_all(term, get_model_term_replacement_paper_figure()),
-    response = get_var_replacement_vulgarisation()[response]
+    response = get_var_replacement_vulgarisation()[response],
+    response_f = factor(response, levels = names(col)),
     )
 ```
 
 ```{r, fig.show = "hide"}
 p1_f <- tu_full %>%
   filter(facet == "main") %>%
-  arrange(desc(width_bar)) %>%
+  arrange(response, desc(width_bar)) %>%
   plot_inla_fixed_effect(
     term_level = get_term_level(),
-    scale_color = rev(pal_variable)
+    scale_color = rev(col)
     ) +
   scale_x_break(c(.21, .5))
 
@@ -139,7 +157,7 @@ p2_f <- tu_full %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(
     term_level = get_term_level(),
-    scale_color = rev(pal_variable)
+    scale_color = rev(col)
   )
 
 p3_f <- tu_full %>%
@@ -147,7 +165,7 @@ p3_f <- tu_full %>%
   arrange(desc(width_bar)) %>%
   plot_inla_fixed_effect(.,
     term_level = get_term_level(),
-    scale_color = rev(pal_variable),
+    scale_color = rev(col),
     legend_present = TRUE,
     xaxis_title = TRUE
     ) +
@@ -158,20 +176,15 @@ p3_f <- tu_full %>%
     )
   )
 
-
 leg_dis <- get_legend(
   p3_f +
     guides(
-      colour = guide_legend(nrow = 4)) +
+      colour = guide_legend(nrow = 4, reverse = TRUE)) +
   theme(
     legend.position = "bottom",
     legend.text = element_text(size = 10),
     legend.title = element_blank()
-  ) +
-scale_color_manual(
-  values = pal_variable,
-  labels = names(pal_variable)#map(var_labels, ~parse(text = .x))
-)
+  )
 )
 
 figS1 <- plot_grid(
@@ -183,130 +196,109 @@ figS1 <- plot_grid(
   ncol = 2)
 ```
 
-```{r}
-std_tot_cap <- "**Responses of  community metrics to time, local
-  anthropogenic pressures, stream gradient and their interaction**. See Fig. 3
-in the main text for details. To the difference with the Fig. 3, we
-added Jaccard dissimilarity index and its partitions in two sets of
-complementary indices, respectively nestedness/turnover, and
-appearance/disappearance."
-```
-
-
-```{r std-tot, fig.width = 10, fig.asp = 1.3, fig.cap=std_tot_cap}
-figS1
-```
-
-```{r}
-tar_load(c(pca_clust, site_cl_rm, site_no_drivers_inla_tot, site_cl_na))
-tar_load(c(clust_var_alter, site_cl_rm_red, site_env))
-pca_data <- site_no_drivers_inla_tot[,
-    colnames(site_no_drivers_inla_tot) %in% restricted_dimension &
-    !colnames(site_no_drivers_inla_tot) %in% c("perc_exo_sp", "perc_exo_abun")]
-pca_clust <- compute_rotated_pca(pca_data, naxis = 4)
-```
-
-```{r}
-axis_l <- list(
-  c("CS1", "CS2"),
-  c("CS3", "CS4")#,
-#  c("CS5", "CS6"),
-#  c("CS7", "CS8")
-)
-
-cluster_names <- c(
-  "Medium change", "High turnover",
-  "Increase in\n species richness", "Decrease in\n total abundance",
-  "Decrease in\n species richness", "Low change"
-)
-fnsite <- nrow(site_cl_na)
-nb_clusters <- table_to_vec(table(site_cl_rm$cl))
-per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
-na_cluster <- paste0("(N = ",
-  fnsite - sum(nb_clusters), ", ", scales::percent((fnsite - sum(nb_clusters)) / fnsite),")"
-)
-
-cluster_labels <- map2_chr(cluster_names, paste0(nb_clusters, ", ", per_cluster),
-  ~paste0(.x, "\n(N = ", .y, ")"))
-
-p_pca_cl_ell <- map(axis_l,
-  ~plot_pca_clust(
-     .data = pca_clust$normal,
-     site_cl = site_cl_rm,
-     add_point = TRUE,
-     add_ellipse = TRUE,
-     xaxis = .x[1], yaxis = .x[2],
-     ctb_thld = .25,
-     replace_var = get_var_replacement_vulgarisation(),
-     size_arrows_segment = 1,
-     label_size = 2.5,
-     alpha_point = .2,
-     lim_x_y = c(-3.5, 3.5),
-     force_pull = 1,
-     force = 1,
-     var_scaling_factor = 3.5
-   ) +
- guides(
-   colour = guide_legend(
-     override.aes = list(size = 8),
-     title.theme = element_blank(),
-     label.position = "top",
-     ncol = 2)
- ) +
- theme(
-   legend.position = "bottom",
-   panel.background = element_blank(),
-   legend.text = element_text(size = 8),
-   legend.key = element_rect(fill = NA)) +
- scale_color_viridis(
-   discrete = TRUE,
-   name = "Cluster", labels = cluster_labels)
-)
-leg_cl <- get_legend(
-  p_pca_cl_ell[[1]]
-)
-
-p_pca_cl_ell <- map(p_pca_cl_ell,
-  ~.x + theme(legend.position = "none"))
-```
-
-```{r}
-pca_total_cap <- "**PCA biplot on the temporal trends of the community metrics
- at each site, and their cluster assignment**. See legend of the Fig. 1 in main
- text for details. To the difference with the Fig. 1, we added Jaccard
- dissimilarity index and its partitions in two sets of complementary indices,
- respectively nestedness/turnover, and appearance/disappearance." %>%
-  str_remove_all("\n|\r") %>%
-  str_replace_all("  ", " ")
-```
-
-```{r}
-bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(legend_order[!str_detect(legend_order, "perc")], "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
-p_pca_cl_bt <- target_bp_cl_dist(
-  cl_obj = bp_data,
-  fct_var_lvl = names(pal_variable)[1:8],
-  dodge = .85
-  ) +
-  scale_color_viridis(discrete = TRUE) +
-  scale_fill_viridis(discrete = TRUE) +
-  scale_x_discrete(position = "bottom") +
-  labs(y = "Scaled temporal trends (SD units)") +
+```{r, fig.show = "hide"}
+p_tps_effect2 <- tu_full %>%
+  filter(str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(col),
+    term_level = get_term_level(),
+    xaxis_title = TRUE,
+    legend = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  scale_x_break(c(.105, .17), scales = .2, ticklabels = c(.20, .25)) +
+  scale_x_break(c(.28, .65),  scales = .2, ticklabels = c(.60, .70)) +
   theme(
-    axis.text.x = element_text(angle = 0, vjust = 0),
-    axis.title.y = element_text(angle = 90, vjust = 0),
-    legend.position = "none"
-  )
+    axis.line.y.right = element_blank(),
+    axis.ticks.y.right = element_blank(),
+    axis.text.y.right = element_blank(),
+    #plot.margin = margin(5, 5, 5, 5, "pt"),
+    #plot.background = element_rect(fill = NA, color = "black"),
+    panel.border = element_rect(fill = "transparent"),
+    text = element_text(size = 8)
+  ) +
+  theme(legend.position = "right", legend.justification = "left") +
+  guides(colour = guide_legend(ncol = 1, byrow = FALSE, reverse = TRUE))
+
+leg <- get_legend(p_tps_effect2)
+p_tps_effect <- plot_grid(
+  print(p_tps_effect2 + theme(legend.position = "none")), leg,
+  ncol = 1,
+  rel_heights = c(1, .1)
+)
+```
+
+```{r}
+p_space_effect2 <- tu_full %>%
+  filter(!str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(col),
+    term_level = get_term_level(),
+    xaxis_title = TRUE,
+    legend = TRUE
+    ) +
+  labs(
+    x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  theme(legend.position = "none",
+    legend.justification = "right",
+    text = element_text(size = 8)
+    ) +
+  guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
 ```
 
 
-```{r pca-tot, fig.width = 12, fig.asp = .8, fig.cap = pca_total_cap}
-p_pca_cl_top <- plot_grid( p_pca_cl_ell[[1]], p_pca_cl_ell[[2]], ncol = 2)
-bottom_cl <- plot_grid(p_pca_cl_bt, leg_cl, rel_widths = c(1, .25))
-plot_grid(p_pca_cl_top, bottom_cl,
-  nrow = 2,
-  rel_heights = c(1, 1))
+```{r, fig.show = "hide", results = "hide"}
+p_effect <- plot_grid(
+  print(p_tps_effect2 + theme(legend.position = "none")),
+  plot_grid(
+    print(p_space_effect2 + theme(legend.position = "none")),
+    leg,
+    ncol = 1, rel_heights = c(.5, .5)
+    ),
+  ncol = 2
+)
+ggsave(
+  filename = "p_effect.png",
+  plot = p_effect,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 90,
+  height = 90 * .8,
+  units = "mm",
+  dpi = "print"
+)
 ```
 
+
+```{r}
+std_tot_cap <- "Responses of community metrics to time, local
+anthropogenic pressures, stream gradient and their interactions using the
+hierarchical Bayesian model. See Methods Fig. 3 in the main text for details. We
+compare coverage corrected species richness
+(Richness) with raw species richness (Richness (raw)) and Simpson dissimilarity
+(Dissimilarity) with jaccard dissimilarity (Jaccard dissimilarity). We observe
+that using coverage based species richness or raw species richness does not
+affect the results. We observe similar effect sizes for Simpson and Jaccard
+dissimilarity indices, meaning that observed changes in community composition
+concerned abundant species and thus changes in the identity of dominant species."
+```
+
+
+```{r std-tot, fig.width = 8, fig.asp = .5, fig.cap=std_tot_cap}
+knitr::include_graphics(here("paper", "fig_paper", "p_effect.png"))
+```
 
 ```{r}
 tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo, pred_data_explanation))
@@ -356,17 +348,6 @@ tab_pred <- enframe(val_pred_selected) %>%
   )
 ```
 
-```{r, eval=FALSE}
-tab_pred_cap <- "Values and signification of predictor variables used in the
-main text."
-tab_pred %>%
-  kbl(booktabs = T,
-    label = "tab-pred",
-    caption = tab_pred_cap) %>%
-  column_spec(4, width = "5cm") %>%
-  collapse_rows(columns = c(1, 2), latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
 
 ```{r, fig.asp = 5, fig.width = 12, eval=FALSE}
 pred_list <- list()
@@ -375,117 +356,13 @@ for (i in seq_len(nrow(pred_gaussian_inla_tot))) {
     labels = get_var_replacement_vulgarisation()[pred_gaussian_inla_tot$response[i]], label_y = 1)
 }
 plot_grid(plotlist = pred_list, ncol = 1)
+#plot_grid(plotlist = pred_gaussian_inla_tot$pred_plot[[7]])
 ```
+
 
 \newpage
 
-```{r}
-tar_load(c(gaussian_inla_rand, r2))
-library(coda)
 
-tu <- r2 %>%
-  filter(response %in% c(clust_var, exo_resp_var))
-tab_rand <- gaussian_inla_rand %>%
-  filter(
-    ci_level == "level:0.95",
-    response %in% c(restricted_dimension, exo_resp_var)
-    ) %>%
-  select(-ci_level) %>%
-  mutate(across(c(mean, low, high), ~round(., 3))) %>%
-  mutate(
-    response = get_var_replacement_vulgarisation()[response],
-    term = str_remove(term, "Precision for the |Precision for |"),
-    term = replacement_random_term()[term],
-    ci = paste0(mean, " [", high,",", low,"]")
-  ) %>%
-  arrange(response, desc(term)) %>%
-  select(
-    `Response variable` = response,
-    `Term` = term,
-    `S.D. [CI 95%]` = ci
-  )
-
-tab_rand2 <- tab_rand %>%
-  left_join(
-    tu %>%
-      mutate(response = get_var_replacement_vulgarisation()[response]) %>%
-      select(
-        `Response variable` = response,
-        `Marg. R2` = r2_mvp_marg95hpdci,
-        `Cond. R2` = r2_mvp_cond95hpdci
-        ),
-    by = "Response variable"
-    ) %>%
-  select(1, 4, 5, 2, 3) %>%
-  mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
-  arrange(`Response variable`)
-```
-
-```{r}
-tab_rand_cap <- "Mean marginal and conditional R-squared of the models and the mean standard deviation estimated for the random effects and the error term. [95\\% CI]: Credible Interval computed using Highest Posterior Density method."
-tab_rand2 %>%
-  kbl(booktabs = T,
-    label = "tab-rand",
-    caption = tab_rand_cap) %>%
-  collapse_rows(columns = c(1, 2, 3), latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
-```
-
-
-```{r}
-add_dataset_ref %>%
-  select(-Program, -`Database source`) %>%
-  kbl(booktabs = T,
-    label = "tab-add-data",
-    caption = "Databases included in the current study that were not included in
-    RivFishTIME publication (Comte et al., 2021a). Apart from MARIS, these
-    databases have already been used in a previous study (Comte et al.,
-      2021b). N: number of sites.") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(4, width = "10cm")
-```
-
-```{r tab-pro-ch, results = "hide"}
-tab_protocol <- tabyl_df(filtered_dataset_modelling$site_quali, "protocol") %>%
-  mutate(
-    method = "Protocol",
-    protocol = str_replace_all(protocol, "_", " "),
-    # For rotenone:
-    protocol = str_replace_all(protocol, "([a-z])([A-Z])", "\\1 \\2")
-    ) %>%
-  rename_with(str_to_sentence)
-
-```
-```{r, eval=FALSE}
-tab_protocol %>%
-  kbl(booktabs = T,
-    label = "tab-pro",
-    caption = "Protocol occurrence across sites"
-    ) %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
-
-
-
-```{r tab-u-ch, results = "hide"}
-abun_unit <- tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
-  mutate(
-    method = "Abundance unit",
-    unitabundance = str_replace_all(unitabundance, "_", " "),
-    unitabundance = str_replace_all(unitabundance, get_unitabun_replacement())
-    ) %>%
-  rename_with(str_to_sentence) %>%
-  rename(`Abundance unit` = Unitabundance)
-```
-
-```{r, eval=FALSE}
-abun_unit %>%
-  kbl(booktabs = T,
-    label = "tab-u",
-    caption = "Abundance unit across sites"
-    ) %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
 
 
 ```{r tab-loc-u, results = "hide"}
@@ -504,70 +381,9 @@ location_summary <- location_site %>%
     rename(realm = ecoregion) %>%
     rename_with(str_to_sentence)
 ```
-```{r, eval=FALSE}
-location_summary %>%
-  kbl(booktabs = T,
-    label = "tab-loc",
-    caption = "Realm and country occurrence across sites"
-    ) %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
-
 
 ```{r}
-exotic_source_summary <- measurement_exo[, "native_exotic_origin"] %>%
-  group_by(native_exotic_origin) %>%
-  summarise(n = n(), .groups = "drop") %>%
-  mutate(
-    method = "Source for native species status",
-    percent = scales::percent(n / sum(n), accuracy = .01),
-    native_exotic_origin = get_nat_origin_replacement()[native_exotic_origin]
-    ) %>%
-  arrange(desc(n)) %>%
-  rename(`Source for native species status` = native_exotic_origin) %>%
-  rename_with(str_to_sentence)
-```
-
-```{r met-tab}
-method_lvl <- c("Site location (Country, Realm)", "Protocol", "Abundance unit",
-  "Source for native species status")
-tab_quali <- rbind(
-  location_summary %>%
-    select(Method, Value = Country_realm, N, Percent),
-  tab_protocol %>%
-    select(Method, Value = Protocol, N, Percent),
-  abun_unit %>%
-    select(Method, Value = `Abundance unit`, N, Percent),
-  exotic_source_summary %>%
-    select(Method, Value = `Source for native species status`, N, Percent)
-  ) %>%
-mutate(Method = factor(Method, levels = method_lvl)) %>%
-filter(Value != "Total") %>%
-arrange(Method, desc(N))
-```
-
-```{r, eval=TRUE}
-tab_quali %>%
-  kbl(booktabs = T,
-    label = "tab-met",
-    caption = "Site location, protocol and abundance unit occurrences across sites, and data source for native species status in term of species occurrence.") %>%
-  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
-
-
-
-```{r tab-exo-source-ck, eval=FALSE}
-exotic_source_summary %>%
-  kbl(booktabs = T,
-    label = "tab-exo-source",
-    caption = "Data source for native species status in term of species occurrence.") %>%
-  kable_styling(latex_options = c("striped", "hold_position"))
-```
-
-
-```{r}
-year_op_cap <- "Distribution of year of samplings. Years 1993 and 2009,
+year_op_cap <- "Distribution of sampling event years. Years 1993 and 2009,
 corresponding to the two human footprint measurements, are highlighted."
 ```
 
@@ -626,10 +442,11 @@ distr_protocol <- filtered_op_protocol_modelling %>%
     aes(x = x, y = y, xend = xend, yend = yend),
     lwd = 1, color = "gray80", linetype = "dashed"
     ) +
-  labs(x = "Year", y = "Number of samplings") +
+  labs(x = "Year", y = "Number of sampling events") +
   geom_label(data = txt,
-    aes(x = x, y = y, label = label)
-  )
+    aes(x = x, y = y, label = label), size = 2
+  ) +
+theme(text = element_text(size = 8))
 ```
 
 ```{r}
@@ -681,14 +498,15 @@ p_baseline_year <- site_year %>%
   scale_x_continuous(breaks = c(1960, 1980, 1993, 2000, 2009, 2020),
   limits = c(1960, 2020)
     ) +
-  labs(x = "Baseline year", y = "Number of sites") +
+  labs(x = "First sampling year", y = "Number of sites") +
   geom_segment(data = seg_bl,
     aes(x = x, y = y, xend = xend, yend = yend),
     lwd = 1, color = "gray80", linetype = "dashed"
     ) +
   geom_label(data = txt_bl,
-    aes(x = x, y = y, label = label)
-  )
+    aes(x = x, y = y, label = label), size = 2
+  )+
+theme(text = element_text(size = 8))
 ```
 
 
@@ -696,7 +514,8 @@ p_baseline_year <- site_year %>%
 p_span <- site_year %>%
   ggplot(aes(x = cat_span, fill = ecoregion)) +
   geom_bar() +
-  labs(x = "Year span (year)", y = "Number of sites")
+  labs(x = "Time span (year)", y = "Number of sites") +
+  theme(text = element_text(size = 8))
 #+
 #  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
@@ -704,49 +523,477 @@ p_completness <- site_year %>%
   ggplot(aes(x = cat_completeness, fill = ecoregion)) +
   geom_bar() +
   labs(
-    x = "Completeness of sampling (nb sampling / year span )",
+    x = "Completeness of time series (nb samplings / time span)",
     y = "Number of sites"
-  )
+  ) +
+  theme(text = element_text(size = 8))
+
 ```
 
 ```{r}
-cap <- "Distribution of (A) sampling years (B) baseline year, (C) year span and
-(D) completeness of sampling by site."
+cap <- "Distribution of (a) year of sampling events (b) first year of sampling, (c) time span and
+(d) completeness of time series by site."
 ```
 
-```{r base-span-cpl, fig.cap=cap, fig.width = 13, fig.asp = 1}
+```{r base-span-cpl, fig.cap=cap, fig.width = 8, fig.asp = 1}
 leg_ecoregion <- get_legend(
-  p_span + guides(fill = guide_legend(title = NULL)))
-plot_grid(
-  plot_grid(distr_protocol, p_baseline_year, ncol = 2, labels = c("A", "B")),
-  plot_grid(
-    p_span + theme(legend.position = "none"),
-    p_completness + theme(legend.position = "none"),
-    leg_ecoregion,
-    ncol = 3,
-    rel_widths = c(1, .8, .3),
-    labels = c("C", "D")
-    ),
-  nrow = 2
+  p_span +
+    theme(legend.position = "bottom", legend.justification = "center") +
+    guides(fill = guide_legend(""))
+
 )
+top <- plot_grid(distr_protocol, p_baseline_year, ncol = 2, labels = c("a", "b"))
+mid <- plot_grid(
+  p_span + theme(legend.position = "none"),
+  p_completness + theme(legend.position = "none"),
+  ncol = 2,
+  labels = c("c", "d")
+  )
+
+timeseries_dist <- plot_grid(top, mid, leg_ecoregion,
+  ncol = 1, rel_heights = c(1, 1, .1)
+  )
+
+ggsave(
+  filename = "timeseries_dist.pdf",
+  plot = timeseries_dist,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 90,
+  height = 90 * .9,
+  units = "mm",
+  dpi = "print"
+)
+knitr::include_graphics(here("paper", "fig_paper", "timeseries_dist.pdf"))
 ```
 \newpage
 
 
-```{r tab-resp-ck}
-tmp <- modelling_data %>%
+```{r}
+tar_load(pca_riv_str)
+```
+
+
+```{r}
+cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
+streams. The first axis is related the average discharge, the Strahler order and the
+distance from source. This first axis was used in the statistical modelling as a
+composite variable to summarise the stream gradient from upstream to downstream."
+```
+
+```{r pca-riv-str, fig.cap=cap_pca_riv}
+p_pca_riv_str <- plot_pca_clust(
+  .data = pca_riv_str$rotated,
+  site_cl = NULL,
+  xaxis = "RC1", yaxis = "RC2",
+  ctb_thld = .4, label_size = 2,
+  size_abscisse_segment = .25,
+  size_arrows_segment = .25,
+  force = 10, force_pull = 1,
+  var_scaling_factor = NULL,
+  seed = NA,
+  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
+  add_variable = TRUE,
+  add_point = FALSE,
+  add_ellipse = FALSE
+)
+p_pca_riv_str
+```
+
+```{r}
+lc_hft <- riveratlas_site %>%
+  st_drop_geometry() %>%
+  select(any_of(c("siteid",
+        get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")]
+  ))) %>%
   left_join(
-    modelling_data_exo %>%
-      select(siteid, year, perc_exo_sp, perc_exo_abun),
-    by = c("siteid", "year")
+    modelling_data %>%
+    distinct(siteid, hft_ix_c93, hft_ix_c9309_log2_ratio, riv_str_rc1) %>%
+    select(any_of(c("siteid",
+          get_rev_vec_name_val(get_model_term_replacement_paper_figure()[c("riv_str_rc1", "hft_ix_c93",
+            "hft_ix_c9309_log2_ratio")])
+  )
+  )
+      ),
+    by = "siteid"
   ) %>%
-  select(all_of(c("chao_richness", "species_nb",
-        clust_var, exo_resp_var)))
-resp_summary <- tmp %>%
-  pivot_longer(everything(),
-    names_to = "Community metric",
-    values_to = "values") %>%
-  group_by(`Community metric`) %>%
+  select(-siteid)
+
+alter_cor_data <-
+    modelling_data %>%
+    distinct(siteid, riv_str_rc1, hft_ix_c93, hft_ix_c9309_log2_ratio) %>%
+    select(riv_str_rc1, hft_ix_c93, hft_ix_c9309_log2_ratio)
+```
+
+```{r}
+cor_lc_hft <- cor(lc_hft,
+  method = "spearman"
+)
+#corrplot::corrplot(cor_clust, type = "upper", diag = FALSE, tl.srt = 15)
+p_cor_lc_hft <- ggcorrplot::ggcorrplot(
+  cor_lc_hft, hc.order = FALSE, type = "lower",
+  lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
+theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
+guides(colour = guide_legend(title.position = "top"))
+```
+
+```{r}
+cor_cap <- "Spearman correlation among land uses and the ecological drivers used
+in the hierarchical Bayesian model. We observe very low correlation among the
+ecological drivers (Stream gradient, Past pressures and recent pressures). Past
+pressures are positively correlated to population density, urban extent and
+cropland extent, but are negatively correlated with Forest extent."
+
+```
+
+
+```{r cor-lc-hft, fig.width = 12, fig.cap=cor_cap}
+p_cor_lc_hft
+```
+
+
+
+
+```{r}
+tar_load(c(obs_fit, r2_obs_fit))
+tar_load(gaussian_inla_exo_std)
+cpo <- gaussian_inla_exo_std %>%
+  mutate(
+    cpo_pit = map(mod, ~inla.cpo(.x)),
+    cpo = map(cpo_pit, ~.x$cpo$cpo),
+    pit = map(cpo_pit, ~.x$cpo$pit)
+    ) %>%
+  select(-mod)
+
+r2_obs_fit <- obs_fit %>%
+  filter(response %in% legend_order) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    response = factor(response, levels = get_var_replacement_vulgarisation()[legend_order])
+    ) %>%
+  group_by(response) %>%
+  summarise(
+    cor = round(cor(y = fit, x = obs), 2),
+    r2 = round((cor(y = fit, x = obs))^2, 2),
+    gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
+    lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
+    lab = paste0("\n~~~~rho == ", cor),
+    obs = -Inf,#(max(obs) - min(obs)) * .10,
+    fit = Inf#(max(fit) - min(fit)) * .90
+  )
+```
+
+```{r}
+obs_fit_cap <- "Fitted values of the models vs observed values. The black line
+displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
+Sticks located at the abscissa and ordinate axis display the density of values.
+The Pearson's correlation coefficient is displayed in each panel."
+```
+
+
+```{r fit-obs, fig.width = 10, fig.asp = 1, fig.cap = obs_fit_cap}
+tar_load(obs_fit)
+
+p_obs_fit <- obs_fit %>%
+  filter(response %in% legend_order) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    response = factor(response, levels = get_var_replacement_vulgarisation()[legend_order])
+    ) %>%
+  ggplot(aes(x = obs, y = fit)) +
+  geom_point(alpha = .3, color = "gray70") +
+  geom_abline(slope = 1, intercept = 0, size = 1) +
+  geom_text(data = r2_obs_fit,
+    aes(label = lab), parse = TRUE,
+    vjust = 1, hjust = 0
+    ) +
+  facet_wrap(vars(response), scales = "free", ncol = 2) +
+  labs(x = "Observed values", y = "Fitted values") +
+  geom_rug(alpha = .05) +
+  theme(strip.background = element_blank())
+ggsave(
+  filename = "obsfit.jpg",
+  plot = p_obs_fit,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 90,
+  height = 90 * 1,
+  units = "mm",
+  dpi = "screen"
+)
+knitr::include_graphics(here("paper", "fig_paper", "obsfit.jpg"))
+```
+
+
+```{r}
+tar_load(c(clust_curv_site, clust_curv_site_fac_50))
+tar_load(c(k6_fac_1, sup_clust_size_fac1))
+```
+
+```{r}
+cap_clust_curv <- "Objective function quantifying the goodness of k-means
+clustering according the percentage of removed data (most outliers data in the
+  multidimentional space) removed. In the results presented in the main text, we
+removed 5% of the data."
+```
+
+```{r, fig.show = "hide"}
+library(tclust)
+p1 <- ~{plot(clust_curv_site)}
+p2 <- ~{plot(clust_curv_site_fac_50)}
+p <- plot_grid(
+  ggdraw(p1),
+  ggdraw(p2),
+  ncol = 2
+)
+```
+
+
+```{r, fig.width = 12, fig.asp = .5, fig.cap=cap_clust_curv}
+plot(clust_curv_site)
+```
+
+```{r}
+k4_cap <- "Display of the sites in the multidimentional space, colored by their cluster belonging. Number of clusters = 4"
+```
+
+
+```{r k4, fig.cap = k4_cap, results = "hide"}
+k4_fac_1_cl <- tclust(
+  x = site_no_drivers_inla_tot[, c("log_total_abundance", "log_chao_richness",
+    "hillebrand_dis_scaled", "turnover_scaled")] %>% mutate(across(everything(), ~scale(., center =
+      FALSE)[,1])),
+  iter.max = 150,
+  k = 4,
+  alpha = 0.05,
+  restr.fact = 1,
+  warnings = 2
+)
+```
+
+```{r}
+bp_cl_dist_cap <- "Distribution of scaled temporal trends by variable and
+cluster, with four clusters. With four clusters instead of six in the main text,
+we observe the disappearance of the clustering groups related to independent
+temporal trends of species richness and of total abundance and the cluster
+characterising low change (Fig. 2, main text)."
+```
+
+
+```{r bp-k4, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
+site_k4_fac_1_cl <- get_cluster_df(
+     tclust_obj = k4_fac_1_cl,
+     site_env = site_env,
+     assign_threshold = .5,
+     clean_method = "rm"
+     )
+bp_cl4 <- target_bp_cl_dist(cl_obj = site_k4_fac_1_cl,
+  fct_var_lvl = names(pal_variable)[c(1, 2, 5, 6)],
+  dodge = .85) +
+  theme(legend.position = "none") +
+  guides(colour = "none")
+bp_cl4
+```
+
+\newpage
+
+# Supplementary tables
+
+
+```{r, eval=FALSE}
+tab_pred_cap <- "Values and signification of predictor variables used in the
+main text."
+tab_pred %>%
+  kbl(booktabs = T,
+    label = "tab-pred",
+    caption = tab_pred_cap) %>%
+  column_spec(4, width = "5cm") %>%
+  collapse_rows(columns = c(1, 2), latex_hline = "major", valign = "middle") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r}
+tar_load(gaussian_inla_rand_no_drivers)
+library(coda)
+
+tab_rand <- gaussian_inla_rand_no_drivers %>%
+  filter(
+    term %in% paste0("Precision for ", c("main_bas1", "siteid1")),
+    ci_level == "level:0.95",
+    response %in% c(restricted_dimension, exo_resp_var)
+    ) %>%
+  select(-ci_level) %>%
+  mutate(across(c(mean, low, high), ~round(., 3))) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    term = str_remove(term, "Precision for the |Precision for |"),
+    term = replacement_random_term()[term],
+    ci = paste0(mean, " [", high,",", low,"]")
+  ) %>%
+  arrange(response, desc(term)) %>%
+  select(
+  `Response variable` = response,
+  `Spatial scale` = term,
+  `Temporal trends s.d.` = ci
+  )
+
+tab_rand2 <- tab_rand %>%
+  mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
+  arrange(`Response variable`)
+```
+
+```{r}
+tab_rand_cap <- "Random effects associated to the estimation of the temporal trends
+computed for the model containing only time as fixed predictors. The estimated
+values are very close than those obtained with the model including ecological
+drivers (Table 1, main text).
+
+[95\\% CI]: Credible Interval computed using Highest Posterior Density method."
+tab_rand2 %>%
+  pivot_wider(names_from = "Spatial scale", values_from = "Temporal trends s.d.") %>%
+  select(1, 3, 2) %>%
+  kbl(booktabs = T,
+    label = "tab-rand",
+    caption = tab_rand_cap) %>%
+  add_header_above(c(" " = 1, "Temporal trends s.d." = 2)) %>%
+  collapse_rows(columns = c(1, 2), valign = "middle", latex_hline = "major") %>%
+  kable_styling(latex_options = c("hold_position"))
+```
+
+
+```{r}
+add_dataset_ref %>%
+  select(Country, N, Reference) %>%
+  kbl(booktabs = T,
+    label = "tab-add-data",
+    caption = "Databases included in the current study that are not included in
+    RivFishTIME (Comte et al., 2021a). N: number of sites.") %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  column_spec(3, width = "10cm")
+```
+
+```{r tab-pro-ch, results = "hide"}
+unique(filtered_dataset_modelling$site_quali$protocol)
+site_quali <- filtered_dataset_modelling$site_quali %>%
+  mutate(
+    protocol = ifelse(
+      str_detect(protocol, "Electro"),
+      "Electrofishing",
+      protocol
+      ),
+    protocol = ifelse(
+      str_detect(protocol, "netting"), "Netting", protocol
+      ),
+    protocol = str_replace(protocol, "Netting|Seining", "Seining / Netting")
+    )
+tab_protocol <- tabyl_df(site_quali, "protocol") %>%
+  mutate(
+    method = "Protocol",
+    protocol = str_replace_all(protocol, "_", " "),
+    # For rotenone:
+    protocol = str_replace_all(protocol, "([a-z])([A-Z])", "\\1 \\2")
+    ) %>%
+  rename_with(str_to_sentence)
+
+```
+```{r, eval=FALSE}
+tab_protocol %>%
+  kbl(booktabs = T,
+    label = "tab-pro",
+    caption = "Protocol occurrence across sites"
+    ) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+
+
+```{r tab-u-ch, results = "hide"}
+abun_unit <- tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
+  mutate(
+    method = "Abundance unit",
+    unitabundance = str_replace_all(unitabundance, "_", " "),
+    unitabundance = str_replace_all(unitabundance, get_unitabun_replacement())
+    ) %>%
+  rename_with(str_to_sentence) %>%
+  rename(`Abundance unit` = Unitabundance)
+```
+
+```{r, eval=FALSE}
+abun_unit %>%
+  kbl(booktabs = T,
+    label = "tab-u",
+    caption = "Abundance unit across sites"
+    ) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r, eval=FALSE}
+location_summary %>%
+  kbl(booktabs = T,
+    label = "tab-loc",
+    caption = "Realm and country occurrence across sites"
+    ) %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+
+```{r}
+exotic_source_summary <- measurement_exo[, "native_exotic_origin"] %>%
+  group_by(native_exotic_origin) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  mutate(
+    method = "Source for native species status",
+    percent = scales::percent(n / sum(n), accuracy = .01),
+    native_exotic_origin = get_nat_origin_replacement()[native_exotic_origin]
+    ) %>%
+  arrange(desc(n)) %>%
+  rename(`Source for native species status` = native_exotic_origin) %>%
+  rename_with(str_to_sentence)
+```
+
+```{r tab-exo-source-ck, eval=FALSE}
+exotic_source_summary %>%
+  kbl(booktabs = T,
+    label = "tab-exo-source",
+    caption = "Data source for native species status in term of species occurrence.") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r met-tab}
+method_lvl <- c("Site location (Country, Realm)", "Protocol", "Abundance unit",
+  "Source for native species status")
+tab_quali <- rbind(
+  location_summary %>%
+    select(Method, Value = Country_realm, N, Percent),
+  tab_protocol %>%
+    select(Method, Value = Protocol, N, Percent),
+  abun_unit %>%
+    select(Method, Value = `Abundance unit`, N, Percent),
+  exotic_source_summary %>%
+    select(Method, Value = `Source for native species status`, N, Percent)
+  ) %>%
+mutate(Method = factor(Method, levels = method_lvl)) %>%
+filter(Value != "Total") %>%
+arrange(Method, desc(N))
+```
+
+```{r, eval=TRUE}
+tab_quali %>%
+  kbl(booktabs = T,
+    label = "tab-met",
+    caption = "Site location, protocol and abundance unit occurrences across sites, and data source for native species status in term of species occurrence.") %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
+  kable_styling(latex_options = c("striped", "hold_position"))
+```
+
+```{r}
+abun_tmp <- modelling_data %>%
+  select(all_of(c("total_abundance", "unitabundance")))
+abun_summary <- abun_tmp %>%
+  pivot_longer(-unitabundance,
+    names_to = "Community metric", values_to = "values") %>%
+  filter(`Community metric` == "total_abundance") %>%
+  group_by(`Community metric`, unitabundance) %>%
   summarise(summ = list(enframe(summary_distribution(values)))) %>%
   unnest(summ) %>%
   pivot_wider(names_from = "name", values_from = "value") %>%
@@ -762,9 +1009,57 @@ resp_summary <- tmp %>%
       format(round(max, 2), nsmall = 2),
       ")")
   ) %>%
-  select(`Community metric`, N = n, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
-  arrange(median) %>%
-  select(-median)
+  select(`Community metric`, unitabundance, N = n, `Median (Q1, Q3)`, `(Min, Max)`, median) %>%
+  mutate(
+    `Community metric` = get_var_replacement_vulgarisation()[`Community metric`],
+    `Community metric` = paste0(`Community metric`, " (", unitabundance, ")")
+    ) %>%
+  arrange(desc(N)) %>%
+  select(-median, -unitabundance)
+```
+
+
+```{r tab-resp-ck}
+order_resp_var <- c(
+        "chao_richness", "perc_exo_abun",
+        "perc_exo_sp", "hillebrand_dis_scaled", "turnover_scaled")
+tmp <- modelling_data %>%
+  left_join(
+    modelling_data_exo %>%
+      select(siteid, year, perc_exo_sp, perc_exo_abun),
+    by = c("siteid", "year")
+  ) %>%
+  select(all_of(c(order_resp_var)))
+
+resp_summary <- tmp %>%
+  pivot_longer(everything(),
+    names_to = "Community metric",
+    values_to = "values") %>%
+  mutate(
+    com_f = factor(`Community metric`, levels = order_resp_var)
+    ) %>%
+  group_by(`Community metric`, com_f) %>%
+  summarise(summ = list(enframe(summary_distribution(values)))) %>%
+  unnest(summ) %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  mutate(
+    median = format(round(median, 2), nsmall = 2),
+    `Median (Q1, Q3)` = paste0(median, " (",
+      format(round(`1st_quart`, 2), nsmall = 2), ",",
+      format(round(`2nd_quart`, 2), nsmall = 2),
+      ")"),
+    `(Min, Max)` = paste0("(",
+      format(round(min, 2), nsmall = 2),
+      ",",
+      format(round(max, 2), nsmall = 2),
+      ")")
+  ) %>%
+  arrange(com_f) %>%
+  select(`Community metric`, N = n, `Median (Q1, Q3)`, `(Min, Max)`) %>%
+  mutate(
+    `Community metric` = get_var_replacement_vulgarisation()[`Community metric`]
+  )
+resp_summary <- rbind(abun_summary, resp_summary)
 ```
 
 ```{r, tab_exo}
@@ -803,21 +1098,13 @@ exotic_compo_summary <- tmp %>%
 restricted_dimension <- c(
   "hillebrand_dis_scaled", "turnover_scaled", "log_total_abundance",
   "log_chao_richness", "perc_exo_abun", "perc_exo_sp")
-response_summary_tot <- rbind(resp_summary, exotic_compo_summary) %>%
-  mutate(
-    main_text = get_var_replacement_vulgarisation()[`Community metric`],
-    main_text = ifelse(`Community metric` %in% restricted_dimension, main_text, ""),
-    main_text = factor(main_text, levels = get_var_replacement_vulgarisation()[restricted_dimension]),
-    `Community metric` = get_var_replacement()[`Community metric`]
-  ) %>%
-arrange(main_text, `Community metric`) %>%
-select(1, `Main text name` = main_text, N, 3, 4)
+response_summary_tot <- resp_summary
 ```
 
 
 
 ```{r, eval=FALSE, results = "hide"}
-resp_summary %>%
+response_summary_tot %>%
   kbl(booktabs = T,
     label = "tab-resp",
     caption = "Summary descriptors of response variables distribution"
@@ -835,117 +1122,16 @@ exotic_compo_summary %>%
 ```
 
 ```{r}
-raw_chao_caption <- "Comparison of the model estimates between Chao-corrected
-species richness and raw measures of species richness. The results are highly
-similar."
-```
-
-```{r raw-chao, fig.cap =raw_chao_caption}
-ti = tar_read(gaussian_inla_std, branches = which(facet_var == "log_species_nb"))
-log_species_richness_effect  <- format_inla_model_list(x = ti, response_to_skip = NULL)
-
-col = c(pal_variable[names(pal_variable) == get_var_replacement_vulgarisation()["log_chao_richness"]], "red")
-names(col) <- get_var_replacement_vulgarisation()[c("log_chao_richness", "log_species_nb")]
-
-base_width <- .2
-increment <- .25
-
-tar_load(gaussian_inla_std_effects)
-rbind(
-  log_species_richness_effect,
-  gaussian_inla_std_effects
-  ) %>%
-  filter(!str_detect(term, "unitabundance|Intercept")) %>%
-  mutate(
-    term = str_replace_all(term,
-      get_model_term_replacement_paper_figure()),
-    response = get_var_replacement_vulgarisation()[response],
-    response = factor(response, levels = rev(names(col)))
-  ) %>%
-  filter(response %in% names(col)) %>%
-  arrange(response, desc(width_bar)) %>%
-  mutate(
-    width_bar = case_when(
-      width_bar == 1 ~ base_width,
-      width_bar == 2 ~ base_width + increment,
-      width_bar == 3 ~ base_width + increment * 2,
-      TRUE ~ width_bar
-    )
-    ) %>%
-  plot_inla_fixed_effect(
-    scale_color = col,
-    term_level = get_term_level(),
-    xaxis_title = TRUE,
-    legend_present = TRUE
-    ) +
-  labs(x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )
-    ) +
-  theme(legend.position = "bottom")
-```
-
-```{r}
-cor_chao_rich <- cor(
-  modelling_data$chao_richness,
-  modelling_data$species_nb,
-  method = "spearman") %>%
-round(., 2)
-chao_richness_cap <- paste0("Relationship between Chao-corrected species richness and
-raw species richness, added to their respective distribution. The black line
-displays the bissection, i.e. the intercept and slope are respectively 0 and 1.
-Spearman's correlation is equal to ", cor_chao_rich, ".")
-```
-
-
-```{r chao-nb, fig.cap = chao_richness_cap}
-p <- modelling_data %>%
-  ggplot(aes(x = species_nb, y = chao_richness)) +
-  geom_point(alpha = .3, color = "gray70") +
-  geom_abline(intercept = 0, slope = 1) +
-  labs(y = "Chao species richness", x = "Species richness")
-
-ggExtra::ggMarginal(p, type = "histogram")
-```
-
-
-
-
-```{r}
-tar_load(pca_riv_str)
-```
-
-
-```{r}
 col_pca_riv <- c(
-  "siteid", "dist_up_km", "ord_stra",
-  "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav",
-   "hft_ix_c93", "hft_ix_c09"
+  "dist_up_km", "ord_stra",
+  "dis_m3_pyr", "ele_mt_cav", "slp_dg_cav"
 )
-
-riveratlas_tmp <- riveratlas_site %>%
+pca_var_tmp <- riveratlas_site %>%
   select(all_of(col_pca_riv)) %>%
   st_drop_geometry() %>%
-  left_join(
-    modelling_data %>%
-      distinct(siteid, hft_ix_c9309_log2_ratio, riv_str_rc1),
-    by = "siteid") %>%
-  select(-siteid) %>%
-  mutate(hft_ix_c93  = hft_ix_c93 / 10,
-    hft_ix_c09 = hft_ix_c09 / 10,
-    hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93)
-
-evt_summary <- riveratlas_tmp %>%
   pivot_longer(everything(),
     names_to = "metrics",
     values_to = "values") %>%
-rbind(., modelling_data %>%
-  select(year_nb, log1_year_nb) %>%
-  pivot_longer(everything(),
-    names_to = "metrics",
-    values_to = "values")) %>%
   group_by(metrics) %>%
   summarise(summ = list(enframe(summary_distribution(values)))) %>%
   unnest(summ) %>%
@@ -970,11 +1156,62 @@ rbind(., modelling_data %>%
       ")"),
     main_text = get_model_term_replacement_paper_figure()[metrics],
   ) %>%
-  select(`Environmental variables` = name, `Main text name` = main_text,
-    N = n, `Median (Q1, Q3)`, `(Min, Max)`) %>%
-  arrange(`Main text name`, `Environmental variables`)
-
+  select(`Stream gradient variable` = name,
+    N = n, `Median (Q1, Q3)`, `(Min, Max)`)
 ```
+
+
+```{r}
+col_eco_drivers <- c("siteid", "hft_ix_c93", "hft_ix_c09")
+
+riveratlas_tmp <- riveratlas_site %>%
+  select(all_of(col_eco_drivers)) %>%
+  st_drop_geometry() %>%
+  left_join(
+    modelling_data %>%
+      distinct(siteid, year_nb),
+    by = "siteid") %>%
+  mutate(hft_ix_c93  = hft_ix_c93 / 10,
+    hft_ix_c09 = hft_ix_c09 / 10,
+    hft_ix_c9309_ratio = hft_ix_c09 / hft_ix_c93) %>%
+  select(-siteid, -hft_ix_c09)
+
+evt_summary <- riveratlas_tmp %>%
+  pivot_longer(everything(),
+    names_to = "metrics",
+    values_to = "values") %>%
+  group_by(metrics) %>%
+  summarise(summ = list(enframe(summary_distribution(values)))) %>%
+  unnest(summ) %>%
+  pivot_wider(names_from = "name", values_from = "value") %>%
+  mutate(
+    name = str_replace_all(metrics,
+      c(
+        hft_ix_c9309_ratio = "Recent pressures",
+        hft_ix_c93 = "Past pressures",
+        year_nb = "Time"
+      )
+    ),
+    median = format(round(median, 2), nsmall = 2),
+    `Median (Q1, Q3)` = paste0(median, " (",
+      format(round(`1st_quart`, 2), nsmall = 2), ",",
+      format(round(`2nd_quart`, 2), nsmall = 2),
+      ")"),
+    `(Min, Max)` = paste0("(",
+      format(round(min, 2), nsmall = 2),
+      ",",
+      format(round(max, 2), nsmall = 2),
+      ")")
+  ) %>%
+  select(`Ecological drivers` = name,
+    N = n, `Median (Q1, Q3)`, `(Min, Max)`) %>%
+  mutate(
+    eco_f = factor(`Ecological drivers`, levels = c("Time", "Past pressures", "Recent pressures"))
+  ) %>%
+  arrange(eco_f) %>%
+  select(-eco_f)
+```
+
 ```{r, eval=FALSE}
 evt_summary %>%
   kbl(booktabs = T,
@@ -995,9 +1232,11 @@ variable_tot <- rbind(
     select(Type, Variable = `Community metric`, everything()),
   evt_summary %>%
     mutate(Type = "Predictor") %>%
-    select(Type, Variable = `Environmental variables`, everything())
-
-) %>%
+    select(Type, Variable = `Ecological drivers`, everything()),
+  pca_var_tmp %>%
+    mutate(Type = "Stream gradient") %>%
+    select(Type, Variable = `Stream gradient variable`, everything())
+  ) %>%
 mutate(
   Variable = str_replace(Variable, "\n", ""),
   `(Min, Max)` = str_replace(`(Min, Max)`, " ", "")
@@ -1006,70 +1245,14 @@ mutate(
 variable_tot %>%
   kbl(booktabs = T,
     label = "tab-resp",
-    caption = "Summary descriptors of response and environmental
-      variables. Main text names display the name used in the legend of the
-      figures in main text. The community metrics that do not have main text
-      name were not used in the analysis reported in main text."
-    ) %>%
+    caption = "Summary descriptors of response and predictor variables used in
+    the full hierarchical Bayesian model (Fig. 3, main text). For the stream
+    gradient variable, we display the summary descriptors of the variables used
+    to contruct the composite variable (See Methods, main text).") %>%
   collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   column_spec(column = 2, width="6cm") %>%
   kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
 ```
-
-```{r}
-cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
-streams. The first axis is related the average discharge, the Strahler order and the
-distance from source. This first axis was used in the statistical modelling as a
-composite variable to summarise the stream gradient from upstream to downstream."
-```
-
-```{r pca-riv-str, fig.cap=cap_pca_riv}
-p_pca_riv_str <- plot_pca_clust(
-  .data = pca_riv_str$rotated,
-  site_cl = NULL,
-  xaxis = "RC1", yaxis = "RC2",
-  ctb_thld = .4, label_size = 2,
-  size_abscisse_segment = .25,
-  size_arrows_segment = .25,
-  force = 10, force_pull = 1,
-  var_scaling_factor = NULL,
-  seed = NA,
-  replace_var = get_rev_vec_name_val(get_river_atlas_significant_var()),
-  add_variable = TRUE,
-  add_point = FALSE,
-  add_ellipse = FALSE
-)
-p_pca_riv_str
-```
-
-```{r}
-lc_hft <- riveratlas_site %>%
-  st_drop_geometry() %>%
-  select(any_of(c(
-        get_land_class_var()[str_detect(names(get_land_class_var()), "catchment")],
-        get_river_atlas_significant_var()[
-          str_detect(get_river_atlas_significant_var(), "hft_")
-          ]
-        )))
-```
-
-```{r}
-cor_lc_hft <- cor(lc_hft,
-  method = "spearman"
-)
-#corrplot::corrplot(cor_clust, type = "upper", diag = FALSE, tl.srt = 15)
-p_cor_lc_hft <- ggcorrplot::ggcorrplot(
-  cor_lc_hft, hc.order = TRUE, type = "lower",
-  lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
-theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
-guides(colour = guide_legend(title.position = "top"))
-```
-
-```{r cor-lc-hft, fig.width = 12, fig.cap="Spearman correlation between land uses and human footprint indexes"}
-p_cor_lc_hft
-```
-
-\newpage
 
 ```{r, eval = FALSE}
 variable_stat <- tibble(
@@ -1129,10 +1312,11 @@ variable_stat %>%
 
 
 ```{r}
-vif_caption <- "Variance inflation factors on the variables included in the
-model. SE factor: inflation of the standard error of slope coefficients
-predicted by the multicollinearity of the variables. The VIF values were all
-close to 1, indicating absence of multicollinearity."
+vif_caption <- "Variance inflation factors (VIF) of the ecological drivers
+included in the hierarchical Bayesian model (Fig. 3, main text). SE factor: inflation of the
+standard error of the slope coefficients predicted by the multicollinearity of the
+variables. The VIF values were all close to 1, indicating absence of
+multicollinearity."
 ```
 
 
@@ -1143,7 +1327,7 @@ dummy_vif <- lm(log_species_nb ~
     hft_ix_c93, modelling_data)
 ck_col_data <- check_collinearity(dummy_vif) %>%
   as_tibble() %>%
-  mutate(Term = str_replace(get_model_term_replacement()[Term], "\n", " ")) %>%
+  mutate(Term = str_replace(get_model_term_replacement_paper_figure()[Term], "\n", " ")) %>%
   rename(`SE factor` = "SE_factor", "Predictive variables" = "Term")
 ```
 
@@ -1151,17 +1335,18 @@ ck_col_data <- check_collinearity(dummy_vif) %>%
 ck_col_data %>%
   kbl(booktabs = T,
     label = "tab-vif",
-    caption = vif_caption
+    caption = vif_caption,
+    digits = 2
     ) %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
-cap_aic_table <- "Watanabe-Akaike
-information criterion (WAIC) of the statistical models fitting temporal trends with
-either the number of year since the start of sampling or the log of the former
-variable added to one." %>%
+cap_aic_table <- "Watanabe-Akaike information criterion (WAIC) of the
+statistical models fitting temporal trends with either the number of year since
+the start of sampling or the log of the former variable added to one. Most
+community metrics are best modelled with the log of time variable" %>%
 str_remove_all("\n")
 ```
 
@@ -1176,121 +1361,3 @@ tab_waic %>%
   kable_styling(latex_options = c("striped", "hold_position")) %>%
   add_header_above(c(" " = 1, "WAIC" = 2, " " = 2))
 ```
-
-
-```{r}
-tar_load(c(obs_fit, r2_obs_fit))
-tar_load(gaussian_inla_exo_std)
-cpo <- gaussian_inla_exo_std %>%
-  mutate(
-    cpo_pit = map(mod, ~inla.cpo(.x)),
-    cpo = map(cpo_pit, ~.x$cpo$cpo),
-    pit = map(cpo_pit, ~.x$cpo$pit)
-    ) %>%
-  select(-mod)
-
-r2_obs_fit <- obs_fit %>%
-  filter(response %in% c(clust_var, exo_resp_var)) %>%
-  mutate(response = get_var_replacement_vulgarisation()[response]) %>%
-  group_by(response) %>%
-  summarise(
-    cor = round(cor(y = fit, x = obs), 2),
-    r2 = round((cor(y = fit, x = obs))^2, 2),
-    gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
-    lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
-    lab = paste0("\n~~~~rho == ", cor),
-    obs = -Inf,#(max(obs) - min(obs)) * .10,
-    fit = Inf#(max(fit) - min(fit)) * .90
-  )
-```
-
-```{r}
-obs_fit_cap <- "Fitted values by the models vs observed values. The black line
-displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
-Sticks located at the abscissa and ordinate axis display value concentration.
-The Pearson's correlation coefficient is displayed in each panel."
-```
-
-
-```{r fit-obs, fig.width = 10, fig.asp = 1, fig.cap = obs_fit_cap}
-tar_load(p_obs_fit)
-p_obs_fit
-```
-
-
-
-
-
-```{r}
-tar_load(c(clust_curv_site, clust_curv_site_fac_50))
-tar_load(c(k6_fac_1, sup_clust_size_fac1))
-```
-
-```{r}
-cap_clust_curv <- "Objective function quantifying the goodness of k-means
-clustering according the percentage of removed data (most outliers data in the
-  multidimentional space) removed. In the results presented in the main text, we
-removed 5% of the data. Left and right panels displayed results for restricting
-factors of 1 and 50 respectively. Restricted factor of 1 was used for the main
-text"
-```
-
-```{r, fig.show = "hide"}
-library(tclust)
-p1 <- ~{plot(clust_curv_site)}
-p2 <- ~{plot(clust_curv_site_fac_50)}
-p <- plot_grid(
-  ggdraw(p1),
-  ggdraw(p2),
-  ncol = 2
-)
-```
-
-
-```{r, fig.width = 12, fig.asp = .5, fig.cap=cap_clust_curv}
-p
-```
-
-```{r}
-k4_cap <- "Display of the sites in the multidimentional space, colored by their cluster belonging. Number of clusters = 4"
-```
-
-
-```{r k4, fig.cap = k4_cap, results = "hide"}
-k4_fac_1_cl <- tclust(
-  x = site_no_drivers_inla_tot[, clust_var] %>%
-  mutate(across(everything(), ~scale(., center = FALSE)[,1])),
-  iter.max = 150,
-  k = 4,
-  alpha = 0.05,
-  restr.fact = 1,
-  warnings = 2
-)
-```
-
-```{r}
-bp_cl_dist_cap <- "Distribution of scaled temporal trends by variable and
-cluster, for four clusters. With four cluster instead of six in the main text,
-the clustering groups temporal trends of species richness and of total
-abundance and the cluster characterising low change (Fig. 2, main text) is not
-present."
-```
-
-
-```{r bp-k4, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
-site_k4_fac_1_cl <- get_cluster_df(
-     tclust_obj = k4_fac_1_cl,
-     site_env = site_env,
-     assign_threshold = .5,
-     clean_method = "rm"
-     )
-bp_cl4 <- target_bp_cl_dist(cl_obj = site_k4_fac_1_cl,
-  fct_var_lvl = names(pal_variable)[1:8],
-  dodge = .85) +
-  theme(legend.position = "bottom") +
-  guides(colour = "none")
-bp_cl4
-```
-
-
-

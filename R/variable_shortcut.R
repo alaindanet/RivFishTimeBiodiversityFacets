@@ -58,8 +58,8 @@ get_var_replacement_vulgarisation <- function() {
     log_species_nb = "Species richness (raw)",
     species_nb = "Species richness",
     log_total_abundance = "Abundance (total)",
-    total_abundance = "Total abundance",
-    chao_richness = "Chao species richness",
+    total_abundance = "Abundance (total)",
+    chao_richness = "Richness",
     log_chao_richness = "Richness",
     chao_shannon = "Chao shannon",
     chao_simpson = "Chao simpson",
@@ -214,7 +214,7 @@ get_unitabun_replacement <- function() {
 
 get_nat_origin_replacement <- function() {
   c(
-    "tedesco" = "Tedesco database (basin scale)",
+    "tedesco" = "Tedesco et al. (2017) (basin scale)",
     "autofishbase" = "Fishbase (country scale)",
     "handmade" = "Atlas, fishbase (country scale)",
     "usgs" = "NAS database (state scale, USA)"

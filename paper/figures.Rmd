@@ -269,9 +269,6 @@ ggsave(
 )
 ```
 
-```{r}
-paste0("TODO: Jaccard and nestedness in supplementary")
-```
 
 ##
 
@@ -474,7 +471,7 @@ p_tps_effect2 <- tu %>%
     scale_color = rev(pal_variable),
     term_level = term_level,
     xaxis_title = TRUE,
-    legend = FALSE
+    legend = TRUE
     ) +
   labs(x = expression(
       paste("Standardized slope coefficients ",
@@ -491,13 +488,15 @@ p_tps_effect2 <- tu %>%
     #plot.margin = margin(5, 5, 5, 5, "pt"),
     #plot.background = element_rect(fill = NA, color = "black"),
     panel.border = element_rect(fill = "transparent")
-  )
+  ) +
+theme(legend.position = "bottom", legend.justification = "right") +
+guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
+
 p_tps <- plot_grid(
-  print(p_tps_effect2),
+  print(p_tps_effect2 + theme(legend.position = "none")),
   get_legend(p_space_effect2),
   nrow = 2,
   rel_heights = c(.95, .05)
-
 )
 ggsave(
   filename = "p_tps_effect2.pdf",

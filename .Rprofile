@@ -21,3 +21,8 @@ conflict_prefer("lag", "dplyr")
 #conflict_prefer("src", "dplyr")
 #conflict_prefer("stamp", "lubridate")
 
+options(
+    clustermq.scheduler = "ssh",
+    clustermq.ssh.host = "bi1ahd@sharc", # use your user and host, obviously
+    clustermq.ssh.log = "~/cmq_ssh.log" # log for easier debugging
+)
