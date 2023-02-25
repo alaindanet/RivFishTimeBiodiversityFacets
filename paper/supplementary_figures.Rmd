@@ -28,9 +28,9 @@ knitr::opts_chunk$set(echo = FALSE,
   fig.width = 6,  # generated images
   fig.pos = "H",  # pdf mode
   fig.align = "center",
-  dpi = if (knitr::is_latex_output()) 72 else 300,
+  dpi = 72,#if (knitr::is_latex_output()) 72 else 300,
   out.width = "80%",
-  dev = "svg",
+  dev = "png",
   dev.args = list(png = list(type = "cairo-png")),
   optipng = "-o1 -quiet")
 options(kableExtra.latex.load_packages = TRUE)
@@ -113,6 +113,34 @@ measurement_exo <- measurement_exo %>%
 ```
 
 # Supplementary figures
+
+```{r}
+fnsite <- filtered_dataset_modelling$site_quanti %>%
+  filter(variable == "year") %>%
+  nrow()
+tar_load(site_cl_rm)
+nb_clusters <- table_to_vec(table(site_cl_rm$cl))
+per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+na_cluster <- paste0("(N = ",
+  fnsite - sum(nb_clusters), ", ", round((fnsite - sum(nb_clusters)) / fnsite * 100),"\\%)"
+)
+```
+
+```{r}
+map_cl_cap <- paste0("**Distribution of community trajectories**.
+Insets of the most sampled realms, namely  Palearctic (a), Nearctic (e) and
+Australasia (i) displaying the location of their three most sampled basins (b,
+c, d, f, g, h, j, k, l). (m) Cluster frequency distribution in the three most
+represented realms (in capital letters) and hydrographic basins, corresponding
+to the insets. The numbers of sites are displayed in parentheses. Sites not
+assigned to a cluster are not displayed (See supplementary map).", na_cluster, ".") %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
+```
+
+```{r cl-map, fig.cap=map_cl_cap, fig.asp = 1.1, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "fig3_alt2.pdf"))
+```
 
 
 ```{r}
@@ -301,68 +329,25 @@ knitr::include_graphics(here("paper", "fig_paper", "p_effect.png"))
 ```
 
 ```{r}
-tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo, pred_data_explanation))
-
-pred_gaussian_inla_tot <- rbind(
-  pred_gaussian_inla %>%
-    filter(response %in% clust_var),
-  pred_gaussian_inla_exo
-  )
-# exclude riv
-pred_to_keep <- names(pred_gaussian_inla_tot$pred_plot[[1]])[!str_detect(names(pred_gaussian_inla_tot$pred_plot[[1]]), "riv")]
-pred_gaussian_inla_tot <-
-  pred_gaussian_inla_tot %>%
-  mutate(
-    pred_plot = map(pred_plot, ~map(.x[pred_to_keep], ~.x +
-        theme(legend.position = "bottom")))
-  )
+pred_hft_cap <- "Predictions of average community metric values and changes over
+time according to past human pressures and recent changes in human pressures
+using a hierarchical Bayesian model. Total abundance is expressed in count,
+while non-native abundance, non-native abundance, dissimilarity and turnover are
+expressed in proportion. No pressure, medium pressures, and highly degraded past
+pressure levels correspond respectively to values of Human footprint index at
+year 1993 of 2.5 (intact ecosystem), 16.8 (median value in our dataset), 45.6
+(maximum value in the dataset). Recent pressure levels represent change in Human
+footprint index between years 1993 and 2009 (see Methods for details). The
+central lines display the mean, while the lower and upper lines display
+the credible intervals at 95% of the posterior distribution."
 ```
 
 
-
-```{r}
-selected_pred <- list(
-  "log1_year_nb" = c("0", "10"),
-  "riv_str_rc1" = c("median"),
-  "hft_ix_c93" = c("intact", "max"),
-  "hft_ix_c9309_log2_ratio" = c("div/2", "inc/2")
-)
-val_pred_selected <- map2(
-  pred_data_explanation, names(pred_data_explanation),
-  ~(.x[selected_pred[[.y]]])
-)
-
-tab_pred <- enframe(val_pred_selected) %>%
-  unnest(value) %>%
-  mutate(
-    signif = unlist(map(names(pred_data_explanation), ~selected_pred[[.x]])),
-    Signification = get_pred_signification()[signif],
-    driver_name =  get_model_term_replacement_paper_figure()[name],
-    name = str_replace(get_model_term_replacement()[name], "\n", " "),
-    value = round(value, 1)
-  ) %>%
-  select(
-    Driver = driver_name,
-    `Predictor variable` = name,
-    Value = value, Signification
-  )
+```{r, out.width = "70%", out.height = "85%", fig.cap = pred_hft_cap}
+knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
 ```
-
-
-```{r, fig.asp = 5, fig.width = 12, eval=FALSE}
-pred_list <- list()
-for (i in seq_len(nrow(pred_gaussian_inla_tot))) {
-  pred_list[[i]] <- plot_grid(plotlist = pred_gaussian_inla_tot$pred_plot[[i]], ncol = 3,
-    labels = get_var_replacement_vulgarisation()[pred_gaussian_inla_tot$response[i]], label_y = 1)
-}
-plot_grid(plotlist = pred_list, ncol = 1)
-#plot_grid(plotlist = pred_gaussian_inla_tot$pred_plot[[7]])
-```
-
 
 \newpage
-
-
 
 
 ```{r tab-loc-u, results = "hide"}
@@ -532,7 +517,8 @@ p_completness <- site_year %>%
 
 ```{r}
 cap <- "Distribution of (a) year of sampling events (b) first year of sampling, (c) time span and
-(d) completeness of time series by site."
+(d) completeness of time series by site. In (a) and (b), the lines display the
+year 1993 and 2009."
 ```
 
 ```{r base-span-cpl, fig.cap=cap, fig.width = 8, fig.asp = 1}
@@ -558,9 +544,9 @@ ggsave(
   filename = "timeseries_dist.pdf",
   plot = timeseries_dist,
   path = here("paper", "fig_paper"),
-  scale = 2.0,
-  width = 90,
-  height = 90 * .9,
+  scale = 2.4,
+  width = 80,
+  height = 80 * 1,
   units = "mm",
   dpi = "print"
 )
@@ -581,7 +567,7 @@ distance from source. This first axis was used in the statistical modelling as a
 composite variable to summarise the stream gradient from upstream to downstream."
 ```
 
-```{r pca-riv-str, fig.cap=cap_pca_riv}
+```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv}
 p_pca_riv_str <- plot_pca_clust(
   .data = pca_riv_str$rotated,
   site_cl = NULL,
@@ -635,20 +621,32 @@ p_cor_lc_hft <- ggcorrplot::ggcorrplot(
   lab = TRUE, tl.srt = 15, legend.title = "Spearman Corr") +
 theme(legend.position = c(.45, .95), legend.direction = "horizontal") +
 guides(colour = guide_legend(title.position = "top"))
+
+ggsave(
+  filename = "p_cor_lc_hft.pdf",
+  plot = p_cor_lc_hft,
+  path = here("paper", "fig_paper"),
+  scale = 2.6,
+  width = 80,
+  height = 80 * 1,
+  units = "mm",
+  dpi = "screen"
+)
 ```
 
 ```{r}
 cor_cap <- "Spearman correlation among land uses and the ecological drivers used
 in the hierarchical Bayesian model. We observe very low correlation among the
-ecological drivers (Stream gradient, Past pressures and recent pressures). Past
+ecological drivers (Stream gradient, past pressures and recent pressures). Past
 pressures are positively correlated to population density, urban extent and
 cropland extent, but are negatively correlated with Forest extent."
 
 ```
 
 
-```{r cor-lc-hft, fig.width = 12, fig.cap=cor_cap}
-p_cor_lc_hft
+```{r cor-lc-hft, fig.width = 14, fig.cap=cor_cap}
+knitr::include_graphics(here("paper", "fig_paper", "p_cor_lc_hft.pdf"))
+
 ```
 
 
@@ -684,14 +682,6 @@ r2_obs_fit <- obs_fit %>%
 ```
 
 ```{r}
-obs_fit_cap <- "Fitted values of the models vs observed values. The black line
-displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
-Sticks located at the abscissa and ordinate axis display the density of values.
-The Pearson's correlation coefficient is displayed in each panel."
-```
-
-
-```{r fit-obs, fig.width = 10, fig.asp = 1, fig.cap = obs_fit_cap}
 tar_load(obs_fit)
 
 p_obs_fit <- obs_fit %>%
@@ -701,7 +691,7 @@ p_obs_fit <- obs_fit %>%
     response = factor(response, levels = get_var_replacement_vulgarisation()[legend_order])
     ) %>%
   ggplot(aes(x = obs, y = fit)) +
-  geom_point(alpha = .3, color = "gray70") +
+  geom_point(alpha = .3, color = "gray70", pch = 20) +
   geom_abline(slope = 1, intercept = 0, size = 1) +
   geom_text(data = r2_obs_fit,
     aes(label = lab), parse = TRUE,
@@ -721,6 +711,16 @@ ggsave(
   units = "mm",
   dpi = "screen"
 )
+```
+
+```{r}
+obs_fit_cap <- "Fitted values of the models vs observed values. The black line
+displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
+Sticks located at the abscissa and ordinate axis display the density of values.
+The Pearson's correlation coefficient is displayed in each panel."
+```
+
+```{r fit-obs, fig.width = 10, fig.asp = 1, fig.cap = obs_fit_cap}
 knitr::include_graphics(here("paper", "fig_paper", "obsfit.jpg"))
 ```
 
@@ -1266,7 +1266,7 @@ variable_stat <- tibble(
     "Continuous", "Continuous", "Proportion", "Factor", "Character",
     "Character"),
   unit = c("cf Abundance unit", rep("", 8), "",
-  "Number of year", "", "", "", "Factor with 4 levels: Count (reference), Number of individuals by 100 sq meters,
+  "Number of years", "", "", "", "Factor with 4 levels: Count (reference), Number of individuals by 100 sq meters,
     Catch per Unit Effort (CPUE), Leslie index", "", ""),
 
   signification = c(
@@ -1344,7 +1344,7 @@ ck_col_data %>%
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
 cap_aic_table <- "Watanabe-Akaike information criterion (WAIC) of the
-statistical models fitting temporal trends with either the number of year since
+statistical models fitting temporal trends with either the number of years since
 the start of sampling or the log of the former variable added to one. Most
 community metrics are best modelled with the log of time variable" %>%
 str_remove_all("\n")

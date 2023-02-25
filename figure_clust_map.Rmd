@@ -48,12 +48,22 @@ get_rev_vec_name_val <- function(x = NULL) {
 ```
 
 
-```{r}
+```{r, eval = FALSE}
 tar_load(c(world_site_sf, site_cl_rm, filtered_dataset_modelling,
     measurement_exo))
 tar_load(filtered_basinatlas_modelling)
 tar_load(rivers10)
+save(world_site_sf, site_cl_rm, filtered_dataset_modelling,
+    measurement_exo,
+    filtered_basinatlas_modelling,
+    rivers10,
+    file = here("paper", "misc", "basin_cluster.RData"))
 ```
+
+```{r}
+load(here("paper", "misc", "basin_cluster.RData"))
+```
+
 
 ```{r}
 loc <- filtered_dataset_modelling$location %>%

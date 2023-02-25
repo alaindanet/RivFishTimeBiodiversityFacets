@@ -1,0 +1,293 @@
+---
+title: "HTML maps for trends and cluster"
+author: Danet, A., Giam, X., Olden, J. and Comte L.
+output:
+  bookdown::pdf_document2:
+    keep_tex: true
+  bookdown::word_document2:
+always_allow_html: true
+---
+
+
+```{r setup, include=FALSE}
+source(here::here("start_rmd.R"))
+#knitr::opts_chunk$set(cache = TRUE)
+library(ade4)
+library(factoextra)
+library(patchwork)
+
+knitr::opts_chunk$set(
+  echo = FALSE,
+  collapse = TRUE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>",
+  fig.path = "fig_paper/knitr-",
+  fig.retina = 1, # Control using dpi
+  fig.width = 2.25,  # generated images
+  fig.pos = "htp",  # pdf mode
+  fig.align = "center",
+  dpi = 300,
+  dev = "png",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet"
+)
+
+options(kableExtra.latex.load_packages = TRUE)
+library(kableExtra)
+```
+
+```{r}
+# control also the order of the legend
+restricted_dimension <- c(
+  "log_total_abundance", "log_chao_richness",
+   "perc_exo_abun", "perc_exo_sp",
+  "hillebrand_dis_scaled", "turnover_scaled"
+  )
+names(restricted_dimension) <- get_var_replacement_vulgarisation()[restricted_dimension]
+names(restricted_dimension) <- c(
+        "Abundance (total, %)", "Richness (%)",
+        names(restricted_dimension)[3:4],
+        "Dissimilarity (%)", "Turnover (%)"
+)
+```
+
+```{r}
+tar_load(c(site_cl_rm, site_cl_na, filtered_dataset_modelling))
+tar_load(c(site_no_drivers_inla_tot))
+```
+
+```{r}
+tar_load(c(gaussian_inla_exo_no_drivers_adj_re, gaussian_inla_no_drivers_adj_re))
+```
+
+
+
+```{r}
+loc <- filtered_dataset_modelling$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+  left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+  crs = 4326)
+
+cluster_names <- c(
+  "1" = "Medium change",
+  "2" = "High turnover",
+  "3" = "Increase in\nrichness",
+  "4" = "Decrease in\nabundance (total)",
+  "5" = "Decrease in\nrichness",
+  "6" = "Low change"
+)
+site_cl_na_loc <- loc %>%
+  select(siteid) %>%
+  left_join(site_cl_na %>%
+  select(siteid, cl) %>%
+  mutate(cl = cluster_names[as.character(cl)]),
+by = "siteid"
+  )
+
+tps_trends_10y <- site_no_drivers_inla_tot %>%
+  rownames_to_column(var = "siteid") %>%
+  pivot_longer(-siteid, names_to = "response", values_to = "value") %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    value = ifelse(response %in% c("Abundance (total)", "Richness"),
+      log_beta_to_perc_rate(value), value),
+    value = ifelse(response %in% c("Dissimilarity", "Turnover"),
+      value * 100, value),
+    response = str_replace_all(response,
+      c(
+        "Abundance \\(total\\)" = "Abundance (total, %)",
+        "Richness" = "Richness (%)",
+        "Dissimilarity" = "Dissimilarity (%)",
+        "Turnover" = "Turnover (%)"
+      )
+      ),
+    response_f = factor(response, levels = names(restricted_dimension)),
+    value = round(value * log(10 + 1), 3)
+  ) %>%
+  select(siteid, response, value) %>%
+  pivot_wider(names_from = "response", values_from = "value")
+
+trends_cl_loc <- site_cl_na_loc %>%
+  left_join(tps_trends_10y) %>%
+  mutate(cl_f = factor(cl, levels = cluster_names)) %>%
+  rename(`Cluster assignement` = cl_f, `Site id` = siteid) %>%
+  select(all_of(c("Cluster assignement", names(restricted_dimension), "Site id")))
+
+```
+
+```{r}
+ci95 <- rbind(
+  gaussian_inla_exo_no_drivers_adj_re,
+  gaussian_inla_no_drivers_adj_re
+  ) %>%
+  filter(response %in% restricted_dimension) %>%
+  select(response, siteid,  low = quant0.025, mean, high = quant0.975) %>%
+  pivot_longer(-c(siteid, response),names_to = "ci", values_to = "value") %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    value = ifelse(response %in% c("Abundance (total)", "Richness"),
+      log_beta_to_perc_rate(value), value),
+    value = ifelse(response %in% c("Dissimilarity", "Turnover"),
+      value * 100, value),
+    response = str_replace_all(response,
+      c(
+        "Abundance \\(total\\)" = "Abundance (total, %)",
+        "Richness" = "Richness (%)",
+        "Dissimilarity" = "Dissimilarity (%)",
+        "Turnover" = "Turnover (%)"
+      )
+      ),
+    response_f = factor(response, levels = names(restricted_dimension)),
+    value = round(value * log(10 + 1), 3)
+  ) %>%
+  pivot_wider(names_from = "ci", values_from = "value") %>%
+  mutate(mean_ci = paste0(mean, " [", low, ", ", high, "]")) %>%
+  select(siteid, response, mean_ci) %>%
+  pivot_wider(names_from = "response", values_from = "mean_ci")
+ci_cl_loc <- site_cl_na_loc %>%
+  left_join(ci95) %>%
+  rename(`Cluster assignement` = cl, `Site id` = siteid) %>%
+  select(all_of(c("Cluster assignement", names(restricted_dimension), "Site id")))
+
+ti <- ci95 %>%
+  rename(`Site id` = siteid)
+colnames(ti)[colnames(ti) != "Site id"] <- paste0(
+  colnames(ti)[colnames(ti) != "Site id"], " [CI 95%]"
+)
+restricted_dimension95 <- restricted_dimension
+names(restricted_dimension95) <- paste0(
+ names(restricted_dimension95), " [CI 95%]"
+)
+ti %>%
+  select(matches(paste0("Site id|abundance")))
+```
+
+```{r}
+library(mapview)
+library(leaflet)
+library(leafpop)
+```
+
+
+```{r, eval=FALSE}
+data(breweries)
+mapview(breweries,
+  popup =
+)
+mapview(
+  trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(c("Cluster assignement", names(restricted_dimension95), "Site id"))),
+  zcol = c("Cluster assignement"),
+  layer.name = "Cluster assignement",
+  label = names(restricted_dimension95)[1],
+  col.regions = viridis::viridis_pal(direction = -1)(6)
+  )
+
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(c(
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c("Cluster assignement"),
+  layer.name = "Cluster assignement",
+  col.regions = viridis::viridis_pal()(6)
+)
+
+show_col(viridis::viridis_pal()(6))
+viridis::viridis_pal()
+```
+
+
+```{r}
+mapviewOptions(fgb = FALSE)
+m <- mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(c("Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c("Cluster assignement"),
+  layer.name = "Cluster assignement",
+  col.regions = viridis::viridis_pal()(6)
+) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(c(names(restricted_dimension)[1],
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c(names(restricted_dimension)[1]),
+  layer.name = names(restricted_dimension)[1],
+  label = names(restricted_dimension95)[1],
+  homebutton = FALSE,
+  at = c(-100, -50, -25, 0, 25, 50, 100)
+) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(c(names(restricted_dimension)[2], "Cluster assignement", names(restricted_dimension95), "Site id"))),
+  zcol = c(names(restricted_dimension)[2]),
+  layer.name = names(restricted_dimension)[2],
+  label = names(restricted_dimension95)[2],
+  homebutton = FALSE,
+  at = c(-100, -50, -25, 0, 25, 50, 100)) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(
+        c(names(restricted_dimension)[3],
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c(names(restricted_dimension)[3]),
+  layer.name = names(restricted_dimension)[3],
+  label = names(restricted_dimension95)[3],
+  homebutton = FALSE,
+  at = c(-.5, -.25, -0.10, -0.01, 0, 0.01, 0.1, .25, .5)) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(
+        c(names(restricted_dimension)[4],
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c(names(restricted_dimension)[4]),
+  layer.name = names(restricted_dimension)[4],
+  label = names(restricted_dimension95)[4],
+  homebutton = FALSE,
+  at = c(-.5, -.25, -0.10, -0.01, 0, 0.01, 0.1, .25, .5)) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(
+        c(names(restricted_dimension)[5],
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c(names(restricted_dimension)[5]),
+  layer.name = names(restricted_dimension)[5],
+  label = names(restricted_dimension95)[5],
+  homebutton = FALSE,
+  at = c(-10, 0, 10, 25, 50, 75, 100)) +
+mapview(trends_cl_loc %>%
+    left_join(ti) %>%
+    select(any_of(
+        c(names(restricted_dimension)[6],
+          "Cluster assignement",
+          names(restricted_dimension95),
+          "Site id"))),
+  zcol = c(names(restricted_dimension)[6]),
+  layer.name = names(restricted_dimension)[6],
+  label = names(restricted_dimension95)[6],
+  homebutton = FALSE,
+  at = c(-10, 0, 10, 25, 50, 75, 100))
+```
+```{r}
+mapshot(m,
+  url = here("paper", "fig_paper", "cluster_trends10y_map.html"),
+  selfcontained = FALSE
+)
+```
+
+

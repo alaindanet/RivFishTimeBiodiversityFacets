@@ -387,15 +387,15 @@ p_space_effect <- tu %>%
 leg_dis <- get_legend(
   p_space_effect +
     guides(
-      colour = guide_legend(ncol = 1, byrow = TRUE)) +
+      colour = guide_legend(ncol = 1, byrow = TRUE, title.position = "top",
+        reverse = TRUE)) +
   theme(
     legend.position = "bottom",
-    legend.text = element_text(size = 10),
-    legend.title = element_blank()
-  ) +
+    legend.text = element_text(size = 10)) +
 scale_color_manual(
   values = pal_variable,
-  labels = names(pal_variable)
+  labels = names(rev(pal_variable)),
+  name = "Community metrics"
 )
 )
 
@@ -449,18 +449,20 @@ p_space_effect2 <- tu %>%
         beta, "' (", "s.d. unit)",
         sep = "")
     )) +
-theme(legend.position = "bottom", legend.justification = "right") +
-guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
+guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE)) +
+theme(legend.position = "bottom", legend.justification = "right", text =
+  element_text(size = 8))
 ggsave(
   filename = "p_space_effect2.pdf",
   plot = p_space_effect2,
   path = here("paper", "fig_paper"),
-  scale = 2.2,
+  scale = 1.5,
   width = 88,
-  height = 88 * .5,
+  height = 88 * .8,
   units = "mm",
   dpi = "print"
 )
+
 ```
 
 ```{r}
@@ -490,11 +492,12 @@ p_tps_effect2 <- tu %>%
     panel.border = element_rect(fill = "transparent")
   ) +
 theme(legend.position = "bottom", legend.justification = "right") +
-guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
+guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE,
+    title.position = "top"))
 
 p_tps <- plot_grid(
   print(p_tps_effect2 + theme(legend.position = "none")),
-  get_legend(p_space_effect2),
+  get_legend(p_tps_effect2),
   nrow = 2,
   rel_heights = c(.95, .05)
 )

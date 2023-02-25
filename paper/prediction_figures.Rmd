@@ -1,0 +1,323 @@
+
+---
+title: "Model predictions"
+author: "Danet, A, Giam, X, Olden, J D, Comte, L"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
+output:
+  bookdown::pdf_document2:
+    keep_tex: true
+    df_print: paged
+    toc: false
+bibliography: "bibliography.bib"
+always_allow_html: true
+header-includes:
+  \usepackage{float}
+  \usepackage{booktabs}
+  \usepackage{colortbl}
+  \renewcommand{\thetable}{S\arabic{table}}
+  \renewcommand{\thefigure}{S\arabic{figure}}
+---
+
+```{r options, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "graphics/knitr-",
+  fig.retina = 1.618, # Control using dpi
+  fig.width = 6,  # generated images
+  fig.pos = "H",  # pdf mode
+  fig.align = "center",
+  dpi = if (knitr::is_latex_output()) 72 else 300,
+  out.width = "80%",
+  dev = "svg",
+  dev.args = list(png = list(type = "cairo-png")),
+  optipng = "-o1 -quiet")
+options(kableExtra.latex.load_packages = TRUE)
+library(kableExtra)
+library(gridExtra)
+```
+
+```{r library, include = FALSE}
+source(here::here("start_rmd.R"))
+theme_set(
+  theme_half_open(8) +
+    theme(panel.grid.major.y = element_line(                                        size = 0.25, color = "grey"))
+)
+theme_update(text = element_text(size = 8), legend.position = "bottom")
+```
+
+```{r}
+restricted_dimension <- c(
+  "log_total_abundance", "log_chao_richness",
+  "perc_exo_abun", "perc_exo_sp",
+  "hillebrand_dis_scaled", "turnover_scaled"
+)
+
+tar_load(c(pred_gaussian_inla, pred_gaussian_inla_exo, pred_data_explanation))
+
+pred_term_vulgarisation <- pred_data_explanation
+names(pred_term_vulgarisation$hft_ix_c93) <-
+  c("Minimum",
+    "No pressure",
+    "Low pressure",
+    "Medium pressure",
+    "High pressure",
+    "Highly degraded")
+
+names(pred_term_vulgarisation$hft_ix_c9309_log2_ratio) <-
+  c("Four fold decrease",
+    "Two fold decrease",
+    "No changes",
+    "Two fold increase",
+    "Four fold increase",
+    "Sixteen fold increase")
+
+pred_gaussian_inla_tot <- rbind(
+  pred_gaussian_inla,
+  pred_gaussian_inla_exo
+  ) %>%
+    filter(response %in% restricted_dimension)
+
+pred_gaussian_inla_tot$pred[[4]] %>%
+  mutate(
+    year_nb = exp(log1_year_nb) - 1,
+    hft_ix_c93 = get_rev_vec_name_val(pred_term_vulgarisation$hft_ix_c93)[as.character(hft_ix_c93)],
+    hft_ix_c93_f = factor(hft_ix_c93, levels = names(pred_term_vulgarisation$hft_ix_c93)),
+    hft_ix_c9309_log2_ratio = get_rev_vec_name_val(pred_term_vulgarisation$hft_ix_c9309_log2_ratio)[as.character(hft_ix_c9309_log2_ratio)],
+    hft_ix_c9309_log2_ratio_f = factor(hft_ix_c9309_log2_ratio,
+      levels = names(pred_term_vulgarisation$hft_ix_c9309_log2_ratio))
+  ) %>%
+  filter(
+    riv_str_rc1 == pred_data_explanation$riv_str_rc1["median"],
+    hft_ix_c93 %in% c("No pressure", "Medium pressure", "Highly degraded"),
+    hft_ix_c9309_log2_ratio %in% c(
+      "Four fold decrease",
+      "Two fold decrease",
+      "No changes",
+      "Two fold increase",
+      "Four fold increase")
+    )
+pred_gaussian_inla_tot$pred <-
+  map(pred_gaussian_inla_tot$pred,
+    function(x) {
+      x %>%
+        mutate(
+          year_nb = exp(log1_year_nb) - 1,
+          hft_ix_c93 = get_rev_vec_name_val(pred_term_vulgarisation$hft_ix_c93)[as.character(hft_ix_c93)],
+          hft_ix_c93_f = factor(hft_ix_c93, levels = names(pred_term_vulgarisation$hft_ix_c93)),
+          hft_ix_c9309_log2_ratio = get_rev_vec_name_val(pred_term_vulgarisation$hft_ix_c9309_log2_ratio)[as.character(hft_ix_c9309_log2_ratio)],
+          hft_ix_c9309_log2_ratio_f = factor(hft_ix_c9309_log2_ratio,
+            levels = names(pred_term_vulgarisation$hft_ix_c9309_log2_ratio))
+          ) %>%
+      filter(
+        riv_str_rc1 == pred_data_explanation$riv_str_rc1["median"],
+        hft_ix_c93 %in% c("No pressure", "Medium pressure", "Highly degraded"),
+        hft_ix_c9309_log2_ratio %in% c(
+          "Two fold decrease",
+          "No changes",
+          "Two fold increase")
+      ) %>%
+      select(mean, quant0.025, quant0.975, year_nb, hft_ix_c93_f,
+        hft_ix_c9309_log2_ratio_f)
+    }
+  )
+```
+
+```{r}
+pred_data <- pred_gaussian_inla_tot %>%
+  select(-pred_plot) %>%
+  unnest(pred) %>%
+  mutate(
+    mean = ifelse(
+      response %in% c("log_total_abundance", "log_chao_richness"),
+      exp(mean), mean),
+    quant0.025 = ifelse(
+      response %in% c("log_total_abundance", "log_chao_richness"),
+      exp(quant0.025), quant0.025),
+    quant0.975 = ifelse(
+      response %in% c("log_total_abundance", "log_chao_richness"),
+      exp(quant0.975), quant0.975),
+    response = get_var_replacement_vulgarisation()[response],
+    response_f = factor(response, levels = get_var_replacement_vulgarisation()[restricted_dimension])
+  )
+```
+
+```{r}
+p_pred_hft <- pred_data %>%
+ggplot(
+  aes(
+    ymin = quant0.025, ymax = quant0.975,
+    y = mean, x = year_nb,
+    color = as.factor(hft_ix_c93_f)
+  )
+  ) +
+geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+geom_line() +
+facet_grid(
+  cols = vars(hft_ix_c9309_log2_ratio_f),
+  rows = vars(response_f),
+  scales = "free_y"
+  ) +
+labs(
+  color = "Past pressures",
+  y = "Community metrics",
+  x = "Number of years") +
+guides(fill = "none")
+```
+
+```{r, fig.width = 6, fig.asp = 1.2}
+ggsave(
+  filename = "p_pred_hft.pdf",
+  plot = grid.arrange(p_pred_hft, top = 'Recent pressures'),
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.5,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
+```{r}
+knitr::opts_chunk$set(
+  echo = FALSE,
+  eval = FALSE
+  )
+```
+
+
+```{r}
+p_abundance <-
+  pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "log_total_abundance"][[1]] %>%
+  mutate(across(c(quant0.025, quant0.975, mean),
+      )) %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  labs(
+    color = "Past pressures",
+    y = "Abundance (total)",
+    x = "Number of years") +
+  guides(fill = "none")
+grid.arrange(p_abundance, top = 'Recent pressures')
+```
+
+
+
+```{r}
+p_richness <-
+  pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "log_chao_richness"][[1]] %>%
+  mutate(across(c(quant0.025, quant0.975, mean), exp)) %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  scale_y_log10() +
+  labs(
+    color = "Past pressures",
+    y = "Richness",
+    x = "Number of years") +
+  guides(fill = "none")
+```
+
+```{r}
+p_exo_abun <- pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "perc_exo_abun"][[1]] %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  labs(
+    color = "Past pressures",
+    y = "Non-native abundance",
+    x = "Number of years") +
+  guides(fill = "none")
+```
+
+```{r}
+p_exo_rich <-
+  pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "perc_exo_sp"][[1]] %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  labs(
+    color = "Past pressures",
+    y = "Non-native richness",
+    x = "Number of years") +
+  guides(fill = "none")
+```
+
+```{r}
+p_dis <-
+  pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "hillebrand_dis_scaled"][[1]] %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  labs(
+    color = "Past pressures",
+    y = "Dissimilarity",
+    x = "Number of years") +
+  guides(fill = "none")
+```
+
+```{r}
+p_turn <-
+  pred_gaussian_inla_tot$pred[pred_gaussian_inla_tot$response ==
+  "turnover_scaled"][[1]] %>%
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
+  geom_line() +
+  facet_wrap(~hft_ix_c9309_log2_ratio_f) +
+  labs(
+    color = "Past pressures",
+    y = "Turnover",
+    x = "Number of years") +
+  guides(fill = "none")
+```
+
