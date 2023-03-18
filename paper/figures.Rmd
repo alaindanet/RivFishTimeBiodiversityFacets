@@ -83,12 +83,13 @@ tar_load(c(clust_var, exo_resp_var))
 
 ```{r}
 trends_cap <- "Distribution of temporal trends by decade of community metrics
-across sites. Total abundance and species richness are expressed in percentage change by decade."
+across sites. Total abundance and species richness are expressed in percentage change per year."
 ```
 
 ```{r}
+# Get average trends with credible intervals
 tar_load(c(trends, trends90, trends80))
-trends_10y <- map2_dfr(
+trends_y <- map2_dfr(
   list(trends, trends90, trends80),
   c("95%", "90%", "80%"),
   function(data, ci) {
@@ -99,16 +100,16 @@ trends_10y <- map2_dfr(
         value = map2(response, value,
           function (resp, val) {
             if (resp %in% c("log_total_abundance", "log_chao_richness")) {
-              out = log_beta_to_perc_rate(val) * log(10 + 1)
+              out = log_beta_to_perc_rate(val)
             } else if(resp %in% c(
                 "hillebrand_dis_scaled",
                 "jaccard_dis_scaled",
                 "nestedness_scaled",
                 "turnover_scaled")
               ) {
-              out = val * log(10 + 1) * 100
+              out = val * 100
             } else {
-              out = val * log(10 + 1)
+              out = val
             }
             out
           }),
@@ -120,58 +121,19 @@ trends_10y <- map2_dfr(
   }
 )
 
-trends_10y %<>%
-  group_by(response) %>%
-  # Get relevant CI by response
-  filter(
-    (
-      response %in% c(
-        "log_chao_richness",
-        "log_total_abundance",
-        "hillebrand_dis_scaled",
-        "jaccard_dis_scaled",
-        "nestedness_scaled",
-        "turnover_scaled"
-        ) & ci_level == "95%"
-    ) |
-  (response == "perc_exo_sp" &  ci_level == "80%") |
-  (response == "perc_exo_abun" &  ci_level == "90%")
-  ) %>%
-  # Format CI
+trends_y %<>%
   mutate(
-    ci_label = pmap_chr(list(response, ci_level, low, high, mean),
-      function(response, ci_level, low, high, mean) {
-        if (response %in% c("log_total_abundance", "log_chao_richness")) {
-        ci <- p_ci(
-          c(mean = mean, low = low, high = high),
-          r = 1, p = TRUE
-        )
-        ci <- str_replace(ci, "\\[ ", "\\[")
-        } else if (response %in% c(
-            "hillebrand_dis_scaled",
-            "jaccard_dis_scaled",
-            "nestedness_scaled",
-            "turnover_scaled")) {
-          ci <- p_ci(
-            c(mean = mean, low = low, high = high),
-            r = 1, p = TRUE
-          )
-        } else if (response == "perc_exo_sp") {
-          ci <- p_ci(
-            c(mean = mean, low = low, high = high),
-            r = 3, p = FALSE
-          )
-        } else if (response == "perc_exo_abun") {
-          ci <- p_ci(
-            c(mean = mean, low = low, high = high),
-            r = 4, p = FALSE
-          )
-        }
-        paste0("CI", ci_level, ": ", ci)
-      }
+    width_bar = 0,
+    width_bar = case_when(
+      ci_level == "95%" ~ .1,
+      ci_level == "90%" ~ 1,
+      ci_level == "80%" ~ 5,
+      TRUE ~ width_bar
+
     )
   )
 ```
+
 
 
 
@@ -180,10 +142,10 @@ trends_10y %<>%
 perc_pal_variable <- setNames(pal_variable,
       c(
         "Abundance (total, %)", "Richness (%)",
-        names(pal_variable)[3:4],
+        "Non-native abundance (proportion)", "Non-native richness (proportion)",
         "Dissimilarity (%)", "Turnover (%)"
       ))
-tps_trends_10y <- site_no_drivers_inla_tot %>%
+tps_trends_y <- site_no_drivers_inla_tot %>%
   pivot_longer(everything(), names_to = "response", values_to = "value") %>%
   filter(response %in% restricted_dimension) %>%
   mutate(
@@ -196,25 +158,30 @@ tps_trends_10y <- site_no_drivers_inla_tot %>%
       c(
         "Abundance \\(total\\)" = "Abundance (total, %)",
         "Richness" = "Richness (%)",
+        "Non-native abundance" = "Non-native abundance (proportion)",
+        "Non-native richness" = "Non-native richness (proportion)",
         "Dissimilarity" = "Dissimilarity (%)",
         "Turnover" = "Turnover (%)"
       )
       ),
     response_f = factor(response, levels = names(perc_pal_variable)),
-    value = value * log(10 + 1)
+    value = value
   ) %>%
   group_by(response_f) %>%
   mutate(
     med = median(value),
     avg = mean(value)
   )
-ci_label_data <- trends_10y %>%
+ci_label_data <- trends_y %>%
   filter(response %in% restricted_dimension) %>%
   mutate(
     response = get_var_replacement_vulgarisation()[response],
     response = str_replace_all(response,
-      c("Abundance \\(total\\)" = "Abundance (total, %)",
+      c(
+        "Abundance \\(total\\)" = "Abundance (total, %)",
         "Richness" = "Richness (%)",
+        "Non-native abundance" = "Non-native abundance (proportion)",
+        "Non-native richness" = "Non-native richness (proportion)",
         "Dissimilarity" = "Dissimilarity (%)",
         "Turnover" = "Turnover (%)"
       )
@@ -223,40 +190,86 @@ ci_label_data <- trends_10y %>%
     )
 ```
 
+```{r}
+abc_label <- setNames(
+  map2_chr(letters[1:6], levels(ci_label_data$response_f),
+    ~paste0("(", .x, ") ", .y)
+    ),
+  levels(ci_label_data$response_f)
+)
+```
+
+
 
 ```{r, fig.width = 12, fig.asp = 1, fig.cap=trends_cap}
-p_trends_site <- tps_trends_10y %>%
+p_trends_site <- tps_trends_y %>%
   arrange(response_f) %>%
   ggplot(aes(x = value, fill = response_f)) +
   geom_histogram(bins = 60) +
   geom_vline(xintercept = 0, linetype = "dashed") +
-  geom_vline(aes(xintercept = avg)) +
-  labs(x = "Temporal trends by decade", y = "Number of sites") +
+  #geom_vline(aes(xintercept = avg)) +
+  labs(x = "Temporal trends per year", y = "Number of sites") +
   scale_x_continuous(n.breaks = 10) +
   scale_fill_manual(
     values = perc_pal_variable,
     breaks = names(perc_pal_variable),
     name = "Community metrics"
     ) +
-  facet_wrap(~response_f, scales = "free", ncol = 2, strip.position = "top") +
-  theme_cowplot(8) +
+  facet_wrap(~response_f, scales = "free", ncol = 2,
+    strip.position = "top",
+    labeller = as_labeller(abc_label)
+    ) +
+  theme_cowplot(10) +
   theme(
-    strip.text = element_text(size = 8),
+    strip.text = element_text(size = 10),
     strip.background = element_blank(),
     legend.position = "none"
   )
 ```
+```{r}
+myrel_y = -8/100
+ci_label_data %<>%
+  mutate(
+    error_bar_pos = case_when(
+      response == "Abundance (total, %)" ~ 600 * myrel_y,
+      response == "Richness (%)" ~ 600 * myrel_y,
+      response == "Non-native abundance (proportion)" ~ 2000 * myrel_y,
+      response == "Non-native richness (proportion)" ~ 2000 * myrel_y,
+      response == "Turnover (%)" ~ 400 * myrel_y,
+      response == "Dissimilarity (%)" ~ 160 * myrel_y,
+      TRUE ~ 1000 * .10
+    )
+  )
+p_trends_site2 <-
+  p_trends_site +
+  geom_errorbar(
+    data = ci_label_data %>%
+      arrange(desc(width_bar)),
+    aes(y = error_bar_pos, x = mean,
+      xmin = low, xmax = high,
+      color = response_f,
+      size = width_bar, width = 0),
+    alpha = 0.5,
+    position = position_dodge2(width = 1, padding = 0.5),
+    show.legend = FALSE
+    ) +
+  geom_point(
+    data = ci_label_data %>%
+      arrange(desc(width_bar)),
+    aes(y = error_bar_pos, x = mean,
+      color = response_f,
+      size = .1, width = 0),
+    alpha = 0.5,
+    show.legend = FALSE
+    ) +
+  scale_color_manual(
+    values = perc_pal_variable,
+    breaks = names(perc_pal_variable),
+    name = "Community metrics"
+  )
+```
 
 ```{r}
-p_trends_site2 <- p_trends_site +
-  geom_text(
-    data = ci_label_data,
-    aes(label = ci_label),
-    size = 2,
-    parse = FALSE,
-    y = Inf, x = Inf,
-    vjust = 1.5, hjust = 1
-    )
 ggsave(
   filename = "p_trends.pdf",
   plot = p_trends_site2,
@@ -482,7 +495,7 @@ p_tps_effect2 <- tu %>%
     )
     ) +
   scale_x_break(c(.15, .195), scales = .2, ticklabels=c(.20, .25)) +
-  scale_x_break(c(.29, .55),  scales = .2, , ticklabels=c(.55, .60, .65, .70)) +
+  scale_x_break(c(.29, .55),  scales = .2, , ticklabels=c(.55, .70)) +
   theme(
     axis.line.y.right = element_blank(),
     axis.ticks.y.right = element_blank(),
@@ -508,6 +521,53 @@ ggsave(
   scale = 2.2,
   width = 88,
   height = 88 * 1.25,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r}
+p_effect <- plot_grid(
+  print(p_tps_effect2 +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(5, 5, 5, 5, "pt"),
+      )
+    ),
+  plot_grid(
+    NULL,
+    p_space_effect2 +
+      theme(
+        text = element_text(size = 11),
+        legend.position = "none",
+        plot.margin = margin(5, 5, 5, 5, "pt"),
+        plot.background = element_rect(fill = NA, color = "black")
+      ),
+    get_legend(p_space_effect2 +
+      theme(legend.position = "right", legend.justification = "center",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        ) +
+      guides(colour = guide_legend(ncol = 1, byrow = FALSE, reverse = TRUE,
+          title.position = "top"))
+      ),
+    ncol = 1,
+    rel_heights = c(.015, 1, 1)
+    ),
+  ncol = 2,
+  labels = "auto",
+  #hjust = -1.5
+  label_x = c(.025, 0),
+  label_y = c(.995, .995),
+  rel_widths = c(1,.65)
+  )
+ggsave(
+  filename = "p_effect.pdf",
+  plot = p_effect,
+  path = here("paper", "fig_paper"),
+  scale = 3,
+  width = 88,
+  height = 88 * .9,
   units = "mm",
   dpi = "print"
 )
@@ -631,7 +691,9 @@ p_pca_cl_ell <- map(axis_l,
    ) +
  scale_color_viridis(
    discrete = TRUE,
-   name = "Cluster assignment", labels = cluster_labels)
+   name = "Cluster assignment",
+   labels = cluster_labels
+ )
 )
 p_cl <- p_pca_cl_ell[[1]]
 leg_cl <- get_legend(
@@ -673,8 +735,8 @@ p_pca_cl_bt <- target_bp_cl_dist(
   ) +
   scale_color_viridis(discrete = TRUE) +
   scale_fill_viridis(discrete = TRUE) +
-  scale_x_discrete(position = "bottom") +
-  ylim(-75, 125) +
+  scale_x_discrete(position = "top") +
+  ylim(-75, 110) +
   labs(y = "Temporal trends per decade (%)") +
   theme(
     axis.text.x = element_text(angle = 0, vjust = 0),
@@ -726,7 +788,7 @@ knitr::include_graphics(here("paper", "fig_paper", "fig2.pdf"))
 ```
 
 ```{r}
-tar_load(c(site_cl_rm))
+tar_load(c(site_cl_rm, filtered_dataset_modelling))
 loc <- filtered_dataset_modelling$location %>%
   mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
   left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
@@ -760,7 +822,8 @@ ecoregion_cl <- site_cl_rm_loc %>%
     label = paste0(ecoregion, "\n(N = ",tot_n, ")")
   )
 
-p_ecoregion_cl <- ecoregion_cl %>%
+p_ecoregion_cl <-
+  ecoregion_cl %>%
   ggplot(
     aes(
       x = pc, y = label,
@@ -768,6 +831,11 @@ p_ecoregion_cl <- ecoregion_cl %>%
     )
     ) +
   geom_col() +
+  geom_text(
+    aes(label = paste0(round(pc*100), "%")),
+    size = 3,
+    colour = "white",
+    position = position_fill(vjust = 0.5)) +
   labs(x = "Percentage") +
   scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
   theme_cowplot(10) +
@@ -788,7 +856,7 @@ clust_figure <- plot_grid(
   p_pca_cl_bt,
   plot_grid(
     p_ecoregion_cl, leg_cl,
-    rel_widths = c(1, .27),
+    rel_widths = c(1, .40),
     align = "v", axis = "b"
     ),
   labels = c("", "c", "d"),
