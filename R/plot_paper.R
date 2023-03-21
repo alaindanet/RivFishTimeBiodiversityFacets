@@ -186,7 +186,8 @@ plot_pca_clust <- function(
   add_ellipse = TRUE,
   alpha_point = 1,
   lim_x_y = c(-1, 1),
-  key_glyph_rect = TRUE
+  key_glyph_rect = TRUE,
+  omit_na_site = FALSE
   ) {
 
   if ("psych" %in% class(.data)) {
@@ -210,8 +211,10 @@ plot_pca_clust <- function(
         as.data.frame() %>%
         rownames_to_column("siteid") %>%
         as_tibble() %>%
-        left_join(site_cl[, c("siteid", "cl")], by = "siteid") %>%
-        na.omit()
+        left_join(site_cl[, c("siteid", "cl")], by = "siteid")
+      if (omit_na_site) {
+        tt %<>% na.omit()
+      }
   }
 
   if (!is.null(replace_var)) {

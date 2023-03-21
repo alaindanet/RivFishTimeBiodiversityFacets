@@ -65,6 +65,8 @@ pal_variable <- palette_coolors("https://coolors.co/588aee-68de9f-f4ec7b-feb35d-
 names(pal_variable) <- get_var_replacement_vulgarisation()[restricted_dimension]
 #scale_color_brewer(palette = "RdYlBu") +
 #scale_color_viridis(discrete=TRUE) +
+
+pal_variable2 <- palette_coolors("https://coolors.co/palette/ff0000-ff8700-ffd300-deff0a-a1ff0a-0aff99-0aefff-147df5-580aff-be0aff")
 ```
 
 ```{r loading-targets, include=FALSE}
@@ -133,10 +135,6 @@ trends_y %<>%
     )
   )
 ```
-
-
-
-
 
 ```{r}
 perc_pal_variable <- setNames(pal_variable,
@@ -282,6 +280,95 @@ ggsave(
 )
 ```
 
+```{r}
+supp_var_dist_trend <- c("jaccard_dis_scaled", "nestedness_scaled")
+tps_trends_y_supp <- site_no_drivers_inla_tot %>%
+  pivot_longer(everything(), names_to = "response", values_to = "value") %>%
+  filter(response %in% supp_var_dist_trend) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    value = value * 100,
+    response_f = factor(response, levels = get_var_replacement_vulgarisation()[supp_var_dist_trend])
+  ) %>%
+  group_by(response_f) %>%
+  mutate(
+    med = median(value),
+    avg = mean(value)
+  )
+ci_label_data_supp <- trends_y %>%
+  filter(response %in% supp_var_dist_trend) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    response_f = factor(response, levels = get_var_replacement_vulgarisation()[supp_var_dist_trend])
+    )
+```
+
+```{r, fig.width = 12, fig.asp = 1, fig.cap=trends_cap}
+p_trends_site_supp <- tps_trends_y_supp %>%
+  arrange(response_f) %>%
+  ggplot(aes(x = value, fill = response_f)) +
+  geom_histogram(bins = 60) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  #geom_vline(aes(xintercept = avg)) +
+  labs(x = "Temporal trends per year (%)", y = "Number of sites") +
+  scale_x_continuous(n.breaks = 10) +
+  facet_wrap(~response_f, scales = "free", ncol = 2,
+    strip.position = "top"
+    ) +
+  theme_cowplot(10) +
+  theme(
+    strip.text = element_text(size = 10),
+    strip.background = element_blank(),
+    legend.position = "none"
+  ) +
+scale_fill_brewer(palette="Set2")
+```
+```{r}
+myrel_y = -6 / 100
+ci_label_data_supp %<>%
+  mutate(
+    error_bar_pos = case_when(
+      response == "Jaccard dissimilarity" ~ 250 * myrel_y,
+      response == "Nestedness" ~ 330 * myrel_y,
+      TRUE ~ 1000 * .10
+    )
+  )
+p_trends_site_supp2 <-
+  p_trends_site_supp +
+  geom_errorbar(
+    data = ci_label_data_supp %>%
+      arrange(desc(width_bar)),
+    aes(y = error_bar_pos, x = mean,
+      xmin = low, xmax = high,
+      color = response_f,
+      size = width_bar, width = 0),
+    alpha = 0.5,
+    show.legend = FALSE
+    ) +
+  geom_point(
+    data = ci_label_data_supp %>%
+      arrange(desc(width_bar)),
+    aes(y = error_bar_pos, x = mean,
+      color = response_f,
+      size = .1),
+    alpha = 0.5,
+    show.legend = FALSE
+    ) +
+  scale_fill_brewer(palette="Set2", direction = -1)
+```
+
+```{r}
+ggsave(
+  filename = "p_trends_supp.pdf",
+  plot = p_trends_site_supp2,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 90,
+  height = 90 * .40,
+  units = "mm",
+  dpi = "print"
+)
+```
 
 ##
 
@@ -781,6 +868,115 @@ ggsave(
 )
 ```
 
+### Plot NA cluster
+
+```{r}
+tar_load(c(site_cl_na))
+axis_l <- list(
+  c("CS1", "CS2"),
+  c("CS3", "CS4")
+)
+table_to_vec(table(site_cl_na$cl))
+sum(is.na(site_cl_na$cl))
+
+p_pca_cl_ell_na <- map(axis_l,
+  ~plot_pca_clust(
+     .data = pca_clust$normal,
+     site_cl = site_cl_rm,
+     add_point = TRUE,
+     add_ellipse = TRUE,
+     xaxis = .x[1], yaxis = .x[2],
+     ctb_thld = .4,
+     replace_var = get_var_replacement_vulgarisation(),
+     size_arrows_segment = 1,
+     label_size = 2.5,
+     alpha_point = .2,
+     lim_x_y = c(-3.5, 3.5),
+     force_pull = 1,
+     force = 1,
+     var_scaling_factor = 3.5,
+     omit_na_site = FALSE
+   ) +
+ guides(
+   colour = guide_legend(
+     #override.aes = list(size = 20),
+     #title.theme = element_blank(),
+     title.position = "top",
+     title.hjust = .5,
+     label.position = "top",
+     ncol = 3)
+ ) +
+ theme(
+   legend.position = "bottom",
+   panel.background = element_blank(),
+   legend.text = element_text(size = 7)
+   ) +
+ scale_color_viridis(
+   discrete = TRUE,
+   name = "Cluster assignment",
+   labels = cluster_labels,
+   na.value="black"
+ )
+)
+p_cl_na <- p_pca_cl_ell_na[[1]]
+leg_cl_na <- get_legend(
+  p_pca_cl_ell_na[[1]]
+)
+
+p_pca_cl_ell_na <- map(p_pca_cl_ell_na, ~.x + theme(legend.position = "none"))
+
+p_pca_cl_na_top <- plot_grid(plotlist = p_pca_cl_ell_na, ncol = 2, labels =
+  letters[1:2])
+```
+
+```{r}
+bp_data_na <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
+bp_data_na_dec_no_scaled_trends <- bp_data_na[, !colnames(bp_data_na) %in% c("turnover_scaled", "hillebrand_dis_scaled",
+    "log_chao_richness", "log_total_abundance")]
+
+bp_data_na_dec_no_scaled_trends <- site_trends_dec %>%
+left_join(bp_data_na_dec_no_scaled_trends, by = "siteid")
+
+p_pca_cl_bt_na <- target_bp_cl_dist(
+  cl_obj = bp_data_na_dec_no_scaled_trends,
+  fct_var_lvl = names(pal_variable)[c(1:2, 5:6)],
+  dodge = .85
+  ) +
+  scale_color_viridis(discrete = TRUE, na.value = "black") +
+  scale_fill_viridis(discrete = TRUE, na.value = "black") +
+  scale_x_discrete(position = "top") +
+  ylim(-75, 110) +
+  labs(y = "Temporal trends per decade (%)") +
+  theme(
+    axis.text.x = element_text(angle = 0, vjust = 0),
+    axis.title.y = element_text(angle = 90, vjust = 0),
+    legend.position = "none"
+  )
+```
+
+```{r}
+fig_clust_na <- plot_grid(
+  p_pca_cl_na_top,
+  plot_grid(p_pca_cl_bt_na, leg_cl_na, rel_widths = c(1, .25),
+    labels = c(letters[3], NULL)),
+  nrow = 2,
+  rel_heights = c(1, .8)
+)
+#fig2
+ggsave(
+  filename = "clust_fig_na.pdf",
+  plot = fig_clust_na,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * .9,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
+
 
 ```{r, fig.asp = .9, fig.width = 88 * 0.0393701}
 # , fig.cap=pca_clust_cap
@@ -868,6 +1064,100 @@ clust_figure
 ggsave(
   filename = "clust_figure.pdf",
   plot = clust_figure,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * 1.1,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+### Cluster figure NA
+
+```{r}
+tar_load(c(site_cl_na, filtered_dataset_modelling))
+loc <- filtered_dataset_modelling$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+  left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%
+  st_as_sf(coords = c("longitude", "latitude"),
+    crs = 4326)
+
+site_cl_rm_loc <- loc %>%
+  left_join(site_cl_rm %>%
+    select(siteid, cl),
+  by = "siteid") %>%
+  filter(ecoregion %in% c("Palearctic", "Nearctic", "Australasia"))
+```
+
+```{r}
+ecoregion_cl_na <- site_cl_rm_loc %>%
+  group_by(cl, ecoregion) %>%
+  summarise(freq = n()
+    ) %>%
+  group_by(ecoregion) %>%
+  mutate(
+    pc = prop.table(freq),
+    basin_name = toupper(ecoregion),
+    tot_n = sum(freq)
+    ) %>%
+  ungroup() %>%
+  mutate(
+    ecoregion_f = factor(ecoregion),
+    label = paste0(ecoregion, "\n(N = ",tot_n, ")")
+  )
+
+p_ecoregion_cl_na <-
+  ecoregion_cl_na %>%
+  ggplot(
+    aes(
+      x = pc, y = label,
+      fill = factor(cl, levels = rev(unique(cl)))
+    )
+    ) +
+  geom_col() +
+  geom_text(
+    aes(label = paste0(round(pc*100), "%")),
+    size = 3,
+    colour = "white",
+    position = position_fill(vjust = 0.5)) +
+  labs(x = "Percentage") +
+  scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
+  theme_cowplot(10) +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_blank(),
+    strip.background = element_blank(),
+    panel.border = element_rect(size = 1, color = "black"),
+    strip.text = element_blank()
+    ) +
+#  facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
+  scale_fill_viridis(
+    discrete = TRUE,
+    name = "Cluster",
+    direction = -1,
+    na.value = "black"
+  )
+```
+
+```{r}
+clust_figure_na <- plot_grid(
+  p_pca_cl_na_top,
+  p_pca_cl_bt_na,
+  plot_grid(
+    p_ecoregion_cl_na, leg_cl_na,
+    rel_widths = c(1, .40),
+    align = "v", axis = "b"
+    ),
+  labels = c("", "c", "d"),
+  nrow = 3,
+  rel_heights = c(1, .8, .57)
+)
+clust_figure_na
+#fig2
+ggsave(
+  filename = "clust_figure_na.pdf",
+  plot = clust_figure_na,
   path = here("paper", "fig_paper"),
   scale = 2.5,
   width = 88,

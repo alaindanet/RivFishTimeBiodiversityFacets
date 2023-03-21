@@ -1,7 +1,8 @@
 ---
 title: "Supplementary Figures and Tables"
-author: "Danet, A, Giam, X, Olden, J, Comte, L"
-date: "`r format(Sys.time(), '%d %B, %Y')`"
+subtitle: "Past and recent anthropogenic pressures drives rapid changes in riverine fish communities"
+author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
+date: ""
 output:
   bookdown::pdf_document2:
     keep_tex: true
@@ -29,18 +30,16 @@ knitr::opts_chunk$set(echo = FALSE,
   fig.pos = "H",  # pdf mode
   fig.align = "center",
   dpi = 72,#if (knitr::is_latex_output()) 72 else 300,
-  out.width = "80%",
-  dev = "png",
-  dev.args = list(png = list(type = "cairo-png")),
-  optipng = "-o1 -quiet")
+  out.width = "80%"
+  )
 options(kableExtra.latex.load_packages = TRUE)
 library(kableExtra)
 ```
 
 ```{r library, include = FALSE}
 source(here::here("start_rmd.R"))
-theme_set(theme_cowplot())
-theme_update(axis.text = element_text(size = 8))
+#theme_set(theme_cowplot())
+#theme_update(axis.text = element_text(size = 8))
 library(gt)
 library(gtsummary)
 library(ggbreak)
@@ -114,242 +113,6 @@ measurement_exo <- measurement_exo %>%
 
 # Supplementary figures
 
-```{r}
-fnsite <- filtered_dataset_modelling$site_quanti %>%
-  filter(variable == "year") %>%
-  nrow()
-tar_load(site_cl_rm)
-nb_clusters <- table_to_vec(table(site_cl_rm$cl))
-per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
-na_cluster <- paste0("(N = ",
-  fnsite - sum(nb_clusters), ", ", round((fnsite - sum(nb_clusters)) / fnsite * 100),"\\%)"
-)
-```
-
-```{r}
-map_cl_cap <- paste0("**Distribution of community trajectories**.
-Insets of the most sampled realms, namely  Palearctic (a), Nearctic (e) and
-Australasia (i) displaying the location of their three most sampled basins (b,
-c, d, f, g, h, j, k, l). (m) Cluster frequency distribution in the three most
-represented realms (in capital letters) and hydrographic basins, corresponding
-to the insets. The numbers of sites are displayed in parentheses. Sites not
-assigned to a cluster are not displayed (See supplementary map).", na_cluster, ".") %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
-```
-
-```{r cl-map, fig.cap=map_cl_cap, fig.asp = 1.1, out.width = "80%"}
-knitr::include_graphics(here("paper", "fig_paper", "fig3_alt2.pdf"))
-```
-
-
-```{r}
-ti = tar_read(gaussian_inla_std, branches = which(facet_var == "log_species_nb"))
-log_species_richness_effect  <- format_inla_model_list(x = ti, response_to_skip = NULL)
-
-col <- c(
-  "darkgreen",
-  pal_variable[get_var_replacement_vulgarisation()[
-      c("log_chao_richness", "hillebrand_dis_scaled")
-      ]],
-  "darkred"
-  )
-names(col)[c(1,4)] <- get_var_replacement_vulgarisation()[c("log_species_nb", "jaccard_dis_scaled")]
-
-tu_full <- rbind(
-  log_species_richness_effect,
-  gaussian_inla_std_effects,
-  gaussian_inla_exo_std_effects
-  ) %>%
-  filter(!str_detect(term, "unitabundance|Intercept")) %>%
-  filter(response %in% c("log_species_nb", "log_chao_richness", "hillebrand_dis_scaled", "jaccard_dis_scaled")) %>%
-  mutate(
-    term = str_replace_all(term, get_model_term_replacement_paper_figure()),
-    response = get_var_replacement_vulgarisation()[response],
-    response_f = factor(response, levels = names(col)),
-    )
-```
-
-```{r, fig.show = "hide"}
-p1_f <- tu_full %>%
-  filter(facet == "main") %>%
-  arrange(response, desc(width_bar)) %>%
-  plot_inla_fixed_effect(
-    term_level = get_term_level(),
-    scale_color = rev(col)
-    ) +
-  scale_x_break(c(.21, .5))
-
-p2_f <- tu_full %>%
-  filter(facet == "interaction") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(
-    term_level = get_term_level(),
-    scale_color = rev(col)
-  )
-
-p3_f <- tu_full %>%
-  filter(facet == "dbl_interaction") %>%
-  arrange(desc(width_bar)) %>%
-  plot_inla_fixed_effect(.,
-    term_level = get_term_level(),
-    scale_color = rev(col),
-    legend_present = TRUE,
-    xaxis_title = TRUE
-    ) +
-  labs(x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )
-  )
-
-leg_dis <- get_legend(
-  p3_f +
-    guides(
-      colour = guide_legend(nrow = 4, reverse = TRUE)) +
-  theme(
-    legend.position = "bottom",
-    legend.text = element_text(size = 10),
-    legend.title = element_blank()
-  )
-)
-
-figS1 <- plot_grid(
-  print(p1_f),
-  print(p2_f),
-  p3_f + theme(legend.position = "none"),
-  leg_dis,
-  rel_heights = c(1, 1, 1, .2),
-  ncol = 2)
-```
-
-```{r, fig.show = "hide"}
-p_tps_effect2 <- tu_full %>%
-  filter(str_detect(term, "Time")) %>%
-  arrange(response, desc(width_bar)) %>%
-  plot_inla_fixed_effect(
-    scale_color = rev(col),
-    term_level = get_term_level(),
-    xaxis_title = TRUE,
-    legend = TRUE
-    ) +
-  labs(x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )
-    ) +
-  scale_x_break(c(.105, .17), scales = .2, ticklabels = c(.20, .25)) +
-  scale_x_break(c(.28, .65),  scales = .2, ticklabels = c(.60, .70)) +
-  theme(
-    axis.line.y.right = element_blank(),
-    axis.ticks.y.right = element_blank(),
-    axis.text.y.right = element_blank(),
-    #plot.margin = margin(5, 5, 5, 5, "pt"),
-    #plot.background = element_rect(fill = NA, color = "black"),
-    panel.border = element_rect(fill = "transparent"),
-    text = element_text(size = 8)
-  ) +
-  theme(legend.position = "right", legend.justification = "left") +
-  guides(colour = guide_legend(ncol = 1, byrow = FALSE, reverse = TRUE))
-
-leg <- get_legend(p_tps_effect2)
-p_tps_effect <- plot_grid(
-  print(p_tps_effect2 + theme(legend.position = "none")), leg,
-  ncol = 1,
-  rel_heights = c(1, .1)
-)
-```
-
-```{r}
-p_space_effect2 <- tu_full %>%
-  filter(!str_detect(term, "Time")) %>%
-  arrange(response, desc(width_bar)) %>%
-  plot_inla_fixed_effect(
-    scale_color = rev(col),
-    term_level = get_term_level(),
-    xaxis_title = TRUE,
-    legend = TRUE
-    ) +
-  labs(
-    x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )
-    ) +
-  theme(legend.position = "none",
-    legend.justification = "right",
-    text = element_text(size = 8)
-    ) +
-  guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
-```
-
-
-```{r, fig.show = "hide", results = "hide"}
-p_effect <- plot_grid(
-  print(p_tps_effect2 + theme(legend.position = "none")),
-  plot_grid(
-    print(p_space_effect2 + theme(legend.position = "none")),
-    leg,
-    ncol = 1, rel_heights = c(.5, .5)
-    ),
-  ncol = 2
-)
-ggsave(
-  filename = "p_effect.png",
-  plot = p_effect,
-  path = here("paper", "fig_paper"),
-  scale = 2.0,
-  width = 90,
-  height = 90 * .8,
-  units = "mm",
-  dpi = "print"
-)
-```
-
-
-```{r}
-std_tot_cap <- "Responses of community metrics to time, local
-anthropogenic pressures, stream gradient and their interactions using the
-hierarchical Bayesian model. See Methods Fig. 3 in the main text for details. We
-compare coverage corrected species richness
-(Richness) with raw species richness (Richness (raw)) and Simpson dissimilarity
-(Dissimilarity) with jaccard dissimilarity (Jaccard dissimilarity). We observe
-that using coverage based species richness or raw species richness does not
-affect the results. We observe similar effect sizes for Simpson and Jaccard
-dissimilarity indices, meaning that observed changes in community composition
-concerned abundant species and thus changes in the identity of dominant species."
-```
-
-
-```{r std-tot, fig.width = 8, fig.asp = .5, fig.cap=std_tot_cap}
-knitr::include_graphics(here("paper", "fig_paper", "p_effect.png"))
-```
-
-```{r}
-pred_hft_cap <- "Predictions of average community metric values and changes over
-time according to past human pressures and recent changes in human pressures
-using a hierarchical Bayesian model. Total abundance is expressed in count,
-while non-native abundance, non-native abundance, dissimilarity and turnover are
-expressed in proportion. No pressure, medium pressures, and highly degraded past
-pressure levels correspond respectively to values of Human footprint index at
-year 1993 of 2.5 (intact ecosystem), 16.8 (median value in our dataset), 45.6
-(maximum value in the dataset). Recent pressure levels represent change in Human
-footprint index between years 1993 and 2009 (see Methods for details). The
-central lines display the mean, while the lower and upper lines display
-the credible intervals at 95% of the posterior distribution."
-```
-
-
-```{r, out.width = "70%", out.height = "85%", fig.cap = pred_hft_cap}
-knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
-```
-
-\newpage
-
-
 ```{r tab-loc-u, results = "hide"}
 location_site <- filtered_dataset_modelling$location %>%
   mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
@@ -368,8 +131,9 @@ location_summary <- location_site %>%
 ```
 
 ```{r}
-year_op_cap <- "Distribution of sampling event years. Years 1993 and 2009,
-corresponding to the two human footprint measurements, are highlighted."
+year_op_cap <- "Distribution of sampling event years. The years 1993 and 2009
+are highlighted, corresponding to the years of the Human Footprint Index
+assessments, which were used to quantify past and recent pressures (See Methods)."
 ```
 
 ```{r y-op, fig.cap=year_op_cap}
@@ -436,6 +200,8 @@ theme(text = element_text(size = 8))
 
 ```{r}
 tar_load(site_year)
+site_year %<>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic"))
 ```
 
 ```{r}
@@ -494,15 +260,12 @@ p_baseline_year <- site_year %>%
 theme(text = element_text(size = 8))
 ```
 
-
 ```{r}
 p_span <- site_year %>%
   ggplot(aes(x = cat_span, fill = ecoregion)) +
   geom_bar() +
   labs(x = "Time span (year)", y = "Number of sites") +
   theme(text = element_text(size = 8))
-#+
-#  theme(axis.text.x = element_text(angle = 30, hjust = 1))
 
 p_completness <- site_year %>%
   ggplot(aes(x = cat_completeness, fill = ecoregion)) +
@@ -512,13 +275,16 @@ p_completness <- site_year %>%
     y = "Number of sites"
   ) +
   theme(text = element_text(size = 8))
-
 ```
 
 ```{r}
-cap <- "Distribution of (a) year of sampling events (b) first year of sampling, (c) time span and
-(d) completeness of time series by site. In (a) and (b), the lines display the
-year 1993 and 2009."
+cap <- "Distribution of (a) year of sampling events (b) first year of sampling,
+(c) time span and (d) completeness of time series by site. In (a) and (b), the
+lines display the year 1993 and 2009. The years 1993 and 2009 correspond to the
+years of the Human Footprint Index assessments, which were used to quantify past
+and recent pressures (See Methods)." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 ```
 
 ```{r base-span-cpl, fig.cap=cap, fig.width = 8, fig.asp = 1}
@@ -546,13 +312,237 @@ ggsave(
   path = here("paper", "fig_paper"),
   scale = 2.4,
   width = 80,
-  height = 80 * 1,
+  height = 80 * 1.0,
   units = "mm",
   dpi = "print"
 )
 knitr::include_graphics(here("paper", "fig_paper", "timeseries_dist.pdf"))
 ```
-\newpage
+
+```{r}
+trends_cap <- "Distribution of site temporal trends per year estimated from a
+hierarchical Bayesian model including time as sole predictor (See Methods, main
+text). Temporal trends were estimated with the Best Linear Unbiased Predictor
+(BLUP). Dashed lines display null trends. Below the histograms, points depict
+the average of the posterior distribution. Large, medium and thin bars depict
+the Bayesian credible intervals at 80, 90 and 95\\%, respectively." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
+```
+```{r trends-dist, fig.cap=trends_cap, fig.asp = 1.1, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "p_trends_supp.pdf"))
+```
+
+
+
+```{r}
+fnsite <- filtered_dataset_modelling$site_quanti %>%
+  filter(variable == "year") %>%
+  nrow()
+tar_load(site_cl_rm)
+nb_clusters <- table_to_vec(table(site_cl_rm$cl))
+per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
+na_cluster <- paste0("(N = ",
+  fnsite - sum(nb_clusters), ", ", round((fnsite - sum(nb_clusters)) / fnsite * 100),"\\%)"
+)
+```
+
+```{r}
+pca_clust_cap <- paste0("Covariation among the temporal trends in community
+metrics and characterization of community trajectories. (a, b) PCA biplot of
+the community temporal trends and their cluster assignment (upper panel). (c)
+boxplots displaying the distribution of the temporal trends by cluster. The
+sites are coloured by their cluster belongings. The ellipses in (a-b) are 95\\%
+intervals around the clusters assuming a Student’s t distribution. (d)
+Cluster frequencies across the three main realms. The
+clusters were named according to their main characteristics.",
+" Contrary to the Fig. 2 (Main text), we included the NA (black color) clusters",
+na_cluster, ".",
+" NA clusters are well distributed over the PCA (a-b), which is confirmed by the
+distribution of community metric temporal trends (c). We observe a few more NAs
+in Nearctic realms (+5\\%, i.e. around 40 clusters over 897).") %>%
+str_replace_all("\n|\r", " ") %>%
+str_replace_all("  ", " ")
+```
+
+```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "clust_figure_na.pdf"))
+```
+
+
+```{r}
+ti = tar_read(gaussian_inla_std, branches = which(facet_var == "log_species_nb"))
+log_species_richness_effect  <- format_inla_model_list(x = ti, response_to_skip = NULL)
+
+col <- c(
+  "darkgreen",
+  pal_variable[get_var_replacement_vulgarisation()[
+      c("log_chao_richness", "hillebrand_dis_scaled")
+      ]],
+  "darkred"
+  )
+names(col)[c(1,4)] <- get_var_replacement_vulgarisation()[c("log_species_nb", "jaccard_dis_scaled")]
+
+tu_full <- rbind(
+  log_species_richness_effect,
+  gaussian_inla_std_effects,
+  gaussian_inla_exo_std_effects
+  ) %>%
+  filter(!str_detect(term, "unitabundance|Intercept")) %>%
+  filter(response %in% c("log_species_nb", "log_chao_richness", "hillebrand_dis_scaled", "jaccard_dis_scaled")) %>%
+  mutate(
+    term = str_replace_all(term, get_model_term_replacement_paper_figure()),
+    response = get_var_replacement_vulgarisation()[response],
+    response_f = factor(response, levels = names(col)),
+    )
+```
+
+
+```{r, fig.show = "hide"}
+p_tps_effect2 <- tu_full %>%
+  filter(str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(col),
+    term_level = get_term_level(),
+    xaxis_title = TRUE,
+    legend = TRUE
+    ) +
+  labs(x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  scale_x_break(c(.105, .17), scales = .2, ticklabels = c(.20, .25)) +
+  scale_x_break(c(.28, .65),  scales = .2, ticklabels = c(.60, .70)) +
+  theme(
+    axis.line.y.right = element_blank(),
+    axis.ticks.y.right = element_blank(),
+    axis.text.y.right = element_blank(),
+    #plot.margin = margin(5, 5, 5, 5, "pt"),
+    #plot.background = element_rect(fill = NA, color = "black"),
+    panel.border = element_rect(fill = "transparent")
+  ) +
+  theme(legend.position = "right", legend.justification = "left") +
+  guides(colour = guide_legend(ncol = 1, byrow = FALSE, reverse = TRUE))
+
+leg <- get_legend(p_tps_effect2)
+p_tps_effect <- plot_grid(
+  print(p_tps_effect2 + theme(legend.position = "none")), leg,
+  ncol = 1,
+  rel_heights = c(1, .1)
+)
+```
+
+```{r, fig.show = "hide", results = "hide"}
+p_space_effect2 <- tu_full %>%
+  filter(!str_detect(term, "Time")) %>%
+  arrange(response, desc(width_bar)) %>%
+  plot_inla_fixed_effect(
+    scale_color = rev(col),
+    term_level = get_term_level(),
+    xaxis_title = TRUE,
+    legend = TRUE
+    ) +
+  labs(
+    x = expression(
+      paste("Standardized slope coefficients ",
+        beta, "' (", "s.d. unit)",
+        sep = "")
+    )
+    ) +
+  theme(legend.position = "none",
+    legend.justification = "right"
+    ) +
+  guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE))
+```
+```{r, fig.show = "hide", results = "hide"}
+p_effect <- plot_grid(
+  print(p_tps_effect2 +
+    theme(
+      legend.position = "none",
+      plot.margin = margin(5, 5, 5, 5, "pt"),
+      )
+    ),
+  plot_grid(
+    NULL,
+    p_space_effect2 +
+      theme(
+        text = element_text(size = 11),
+        legend.position = "none",
+        plot.margin = margin(5, 5, 5, 5, "pt"),
+        plot.background = element_rect(fill = NA, color = "black")
+      ),
+    get_legend(p_tps_effect2 +
+      theme(legend.position = "right", legend.justification = "center",
+        legend.text = element_text(size = 12),
+        legend.title = element_text(size = 12),
+        ) +
+      guides(colour = guide_legend(ncol = 1, byrow = FALSE, reverse = TRUE,
+          title.position = "top"))
+      ),
+    ncol = 1,
+    rel_heights = c(.015, 1, 1)
+    ),
+  ncol = 2,
+  labels = "auto",
+  #hjust = -1.5
+  label_x = c(.02, 0),
+  label_y = c(.995, .995),
+  rel_widths = c(1,.65)
+  )
+
+ggsave(
+  filename = "p_effect_supp.pdf",
+  plot = p_effect,
+  path = here("paper", "fig_paper"),
+  scale = 3,
+  width = 88,
+  height = 88 * .9,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
+```{r}
+pred_hft_cap <- "Predictions of average community metric values and changes over
+time according to past human pressures and recent changes in human pressures
+using a hierarchical Bayesian model. Total abundance is expressed in count,
+species richness in raw number, while non-native abundance, non-native
+abundance, dissimilarity and turnover are expressed in proportion. No pressure,
+medium pressures, and highly degraded past pressure levels correspond
+respectively to values of Human footprint index at year 1993 of 2.5 (intact
+ecosystem), 16.8 (median value in our dataset), 45.6 (maximum value in the
+dataset). Recent pressure levels represent change in Human footprint index
+between years 1993 and 2009 (see Methods for details). The central lines display
+the mean, while the lower and upper lines display the credible intervals at
+95\\% of the posterior distribution."
+```
+
+
+```{r, out.width = "70%", out.height = "85%", fig.cap = pred_hft_cap}
+knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
+```
+
+```{r}
+std_tot_cap <- "Responses of community metrics to time, local
+anthropogenic pressures, stream gradient and their interactions using the
+hierarchical Bayesian model. See Methods Fig. 3 in the main text for details. We
+compare coverage corrected species richness
+(Richness) with raw species richness (Richness (raw)) and Simpson dissimilarity
+(Dissimilarity) with jaccard dissimilarity (Jaccard dissimilarity). We observe
+that using coverage based species richness or raw species richness does not
+affect the results. We observe similar effect sizes for Simpson and Jaccard
+dissimilarity indices, meaning that observed changes in community composition
+concerned abundant species and thus changes in the identity of dominant species (Hillebrand et .al. 2018, see Methods)."
+```
+
+
+```{r std-tot, fig.width = 8, fig.asp = .5, fig.cap=std_tot_cap}
+knitr::include_graphics(here("paper", "fig_paper", "p_effect_supp.png"))
+```
 
 
 ```{r}
@@ -562,9 +552,13 @@ tar_load(pca_riv_str)
 
 ```{r}
 cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
-streams. The first axis is related the average discharge, the Strahler order and the
-distance from source. This first axis was used in the statistical modelling as a
-composite variable to summarise the stream gradient from upstream to downstream."
+streams. PCA axis (Rotated Component, RC) were rotated using Varimax algorithm
+(See Methods). The first axis is related the average discharge, the Strahler
+order and the distance from source. This first axis was used in the statistical
+modelling as a composite variable to summarise the stream gradient from upstream
+to downstream." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 ```
 
 ```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv}
@@ -636,11 +630,17 @@ ggsave(
 
 ```{r}
 cor_cap <- "Spearman correlation among land uses and the ecological drivers used
-in the hierarchical Bayesian model. We observe very low correlation among the
-ecological drivers (Stream gradient, past pressures and recent pressures). Past
-pressures are positively correlated to population density, urban extent and
-cropland extent, but are negatively correlated with Forest extent."
-
+in the hierarchical Bayesian model. Land-use data and population density were
+extracted from HydroAtlas, which uses different data than the Human Footprint
+Index (See Methods). The extents of forest, pasture, and cropland at year 2000,
+urban extent at year 2015 and population density was provided for
+year 2010 (See Linke et al., 2019 for details). We observe very low correlation
+among the ecological drivers (Stream gradient, past pressures and recent
+pressures). Past pressures (human footprint index at year 1993) are positively
+correlated to population density, urban extent and cropland extent, but are
+negatively correlated with Forest extent." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 ```
 
 
@@ -652,8 +652,8 @@ knitr::include_graphics(here("paper", "fig_paper", "p_cor_lc_hft.pdf"))
 
 
 
-```{r}
-tar_load(c(obs_fit, r2_obs_fit))
+```{r, results = "hide", fig.show = "hide"}
+tar_load(obs_fit)
 tar_load(gaussian_inla_exo_std)
 cpo <- gaussian_inla_exo_std %>%
   mutate(
@@ -676,13 +676,13 @@ r2_obs_fit <- obs_fit %>%
     gelman_r2 = round(var(fit) / (var(fit) + var(obs - fit)), 2),
     lab_r2 = paste0("~~~~R^2 == ", gelman_r2),
     lab = paste0("\n~~~~rho == ", cor),
+    n = n(),
     obs = -Inf,#(max(obs) - min(obs)) * .10,
-    fit = Inf#(max(fit) - min(fit)) * .90
+    fit = Inf#(max(fit) - min(fit)) * .90,
   )
 ```
 
-```{r}
-tar_load(obs_fit)
+```{r, results = "hide", fig.show = "hide"}
 
 p_obs_fit <- obs_fit %>%
   filter(response %in% legend_order) %>%
@@ -709,19 +709,27 @@ ggsave(
   width = 90,
   height = 90 * 1,
   units = "mm",
-  dpi = "screen"
+  dpi = "retina"
 )
 ```
 
 ```{r}
-obs_fit_cap <- "Fitted values of the models vs observed values. The black line
+N <- unique(r2_obs_fit$n)
+obs_fit_cap <- paste0("Fitted values of the models vs observed values (N = ",N,"). The black line
 displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
 Sticks located at the abscissa and ordinate axis display the density of values.
-The Pearson's correlation coefficient is displayed in each panel."
+The Pearson's correlation coefficient is displayed in each panel. We see that
+the model predicted the data reasonnably well, but it tends
+to overestimate low values and underestimate really high values especially for very high proportion of non-native species and very high dissimilarity.") %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 ```
 
-```{r fit-obs, fig.width = 10, fig.asp = 1, fig.cap = obs_fit_cap}
-knitr::include_graphics(here("paper", "fig_paper", "obsfit.jpg"))
+```{r fit-obs, fig.cap = obs_fit_cap, out.width="80%"}
+knitr::include_graphics(
+  path =here("paper", "fig_paper", "obsfit.jpg"),
+  auto_pdf = FALSE
+)
 ```
 
 
@@ -733,8 +741,11 @@ tar_load(c(k6_fac_1, sup_clust_size_fac1))
 ```{r}
 cap_clust_curv <- "Objective function quantifying the goodness of k-means
 clustering according the percentage of removed data (most outliers data in the
-  multidimentional space) removed. In the results presented in the main text, we
-removed 5% of the data."
+multidimentional space). In the results presented in the main text, we
+removed 5\\% of the data. We see that the goodness of fit of the clustering does not
+increase a lot from 4 clusters and does not increase from 7 clusters." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 ```
 
 ```{r, fig.show = "hide"}
@@ -749,16 +760,28 @@ p <- plot_grid(
 ```
 
 
-```{r, fig.width = 12, fig.asp = .5, fig.cap=cap_clust_curv}
+```{r, fig.width = 12, fig.asp = .8, fig.cap=cap_clust_curv}
 plot(clust_curv_site)
 ```
 
+
 ```{r}
-k4_cap <- "Display of the sites in the multidimentional space, colored by their cluster belonging. Number of clusters = 4"
+tar_load(site_no_drivers_inla)
+site_trends_dec <- site_no_drivers_inla %>%
+  mutate(
+    across(c(turnover_scaled, hillebrand_dis_scaled),
+      ~.x * log(10 + 1) * 100)
+    ) %>%
+  mutate(across(
+      c(log_chao_richness, log_total_abundance),
+      ~log_beta_to_perc_rate(.x) * log(10 + 1)
+      )) %>%
+  select(turnover_scaled, hillebrand_dis_scaled,
+    log_chao_richness, log_total_abundance) %>%
+  rownames_to_column(var = "siteid")
 ```
 
-
-```{r k4, fig.cap = k4_cap, results = "hide"}
+```{r k4, results = "hide"}
 k4_fac_1_cl <- tclust(
   x = site_no_drivers_inla_tot[, c("log_total_abundance", "log_chao_richness",
     "hillebrand_dis_scaled", "turnover_scaled")] %>% mutate(across(everything(), ~scale(., center =
@@ -769,31 +792,60 @@ k4_fac_1_cl <- tclust(
   restr.fact = 1,
   warnings = 2
 )
-```
-
-```{r}
-bp_cl_dist_cap <- "Distribution of scaled temporal trends by variable and
-cluster, with four clusters. With four clusters instead of six in the main text,
-we observe the disappearance of the clustering groups related to independent
-temporal trends of species richness and of total abundance and the cluster
-characterising low change (Fig. 2, main text)."
-```
-
-
-```{r bp-k4, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
 site_k4_fac_1_cl <- get_cluster_df(
      tclust_obj = k4_fac_1_cl,
      site_env = site_env,
      assign_threshold = .5,
      clean_method = "rm"
      )
-bp_cl4 <- target_bp_cl_dist(cl_obj = site_k4_fac_1_cl,
-  fct_var_lvl = names(pal_variable)[c(1, 2, 5, 6)],
-  dodge = .85) +
-  theme(legend.position = "none") +
-  guides(colour = "none")
-bp_cl4
 ```
+
+```{r}
+bp_cl_dist_cap <- "Distribution of scaled temporal trends by variable and
+cluster, with four clusters. With four clusters instead of six in the main text,
+we observe the disappearance of the clusters related to changes in community
+composition (Fig. 2, main text)."
+```
+
+```{r, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
+bp_data <- site_cl_rm[, colnames(site_cl_rm) %in% c(restricted_dimension, "siteid", "cl", "riv_str_rc1", "hft_c9309_scaled_no_center")]
+bp_data_dec_trends_10y <- site_k4_fac_1_cl[, !colnames(site_k4_fac_1_cl) %in% c("turnover_scaled", "hillebrand_dis_scaled",
+    "log_chao_richness", "log_total_abundance")] %>%
+left_join(site_trends_dec, by = "siteid")
+
+p_pca_cl_bt <- target_bp_cl_dist(
+  cl_obj = bp_data_dec_trends_10y,
+  fct_var_lvl = names(pal_variable)[c(1:2, 5:6)],
+  dodge = .85
+  ) +
+  scale_color_brewer(palette = "Set2") +
+  scale_fill_brewer(palette = "Set2") +
+  scale_x_discrete(position = "top") +
+  ylim(-75, 150) +
+  labs(y = "Temporal trends per decade (%)") +
+  theme(
+    axis.text.x = element_text(angle = 0, vjust = 0),
+    axis.title.y = element_text(angle = 90, vjust = 0),
+    legend.position = "bottom"
+  ) +
+guides(color = FALSE)
+
+ggsave(
+  filename = "cl_bt_supp.pdf",
+  plot = p_pca_cl_bt,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * .5,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r bp-k4, fig.cap=bp_cl_dist_cap, fig.asp = .5, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "cl_bt_supp.pdf"))
+```
+
 
 \newpage
 
@@ -847,7 +899,6 @@ tab_rand_cap <- "Random effects associated to the estimation of the temporal tre
 computed for the model containing only time as fixed predictors. The estimated
 values are very close than those obtained with the model including ecological
 drivers (Table 1, main text).
-
 [95\\% CI]: Credible Interval computed using Highest Posterior Density method."
 tab_rand2 %>%
   pivot_wider(names_from = "Spatial scale", values_from = "Temporal trends s.d.") %>%
@@ -1310,6 +1361,55 @@ variable_stat %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
 
+```{r}
+tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
+cap_aic_table <- "Watanabe-Akaike Information Criterion (WAIC) of the
+statistical models fitting temporal trends with either the number of years since
+the start of sampling or the log of the former variable added to one (See
+Methods). Most community metrics are best modelled with the log of time
+variable." %>%
+str_replace_all("\n|\r", " ")
+```
+
+```{r}
+tab_waic <- dic_waic_comp_time %>%
+  filter(response %in% c(restricted_dimension, "jaccard_dis_scaled",
+      "nestedness_scaled")) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    response_f = factor(response, levels = c(
+        names(pal_variable),
+        "Jaccard dissimilarity", "Nestedness"
+        )),
+    waic = round(waic)
+    ) %>%
+  select(-dic) %>%
+  pivot_wider(names_from = "time", values_from = "waic") %>%
+  mutate(
+    `Min WAIC` = map2_chr(year_nb, log1_year_nb,
+      function(x, y) {
+        tmp <- c("year_nb", "log1_year_nb")[which.min(c(x, y))]
+        get_model_term_replacement()[tmp]
+      }),
+    `WAIC difference (to Year nb)` = scales::percent(
+      (log1_year_nb - year_nb) / year_nb,
+      accuracy = .1
+    )
+    ) %>%
+  rename_with(~str_replace_all(., get_model_term_replacement())) %>%
+  rename(Response = response)
+
+tab_waic %>%
+  arrange(response_f) %>%
+  select(-response_f) %>%
+  kbl(booktabs = T,
+    label = "tab-aic",
+    caption = cap_aic_table
+    ) %>%
+  column_spec(5, width = "4cm") %>%
+  kable_styling(latex_options = c("striped", "hold_position")) %>%
+  add_header_above(c(" " = 1, "WAIC" = 2, " " = 2))
+```
 
 ```{r}
 vif_caption <- "Variance inflation factors (VIF) of the ecological drivers
@@ -1339,25 +1439,4 @@ ck_col_data %>%
     digits = 2
     ) %>%
   kable_styling(latex_options = c("striped", "hold_position"))
-```
-
-```{r}
-tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
-cap_aic_table <- "Watanabe-Akaike information criterion (WAIC) of the
-statistical models fitting temporal trends with either the number of years since
-the start of sampling or the log of the former variable added to one. Most
-community metrics are best modelled with the log of time variable" %>%
-str_remove_all("\n")
-```
-
-```{r}
-tar_load(tab_waic)
-tab_waic %>%
-  kbl(booktabs = T,
-    label = "tab-aic",
-    caption = cap_aic_table
-    ) %>%
-  column_spec(5, width = "4cm") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  add_header_above(c(" " = 1, "WAIC" = 2, " " = 2))
 ```
