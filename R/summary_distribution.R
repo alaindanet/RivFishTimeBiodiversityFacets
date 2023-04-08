@@ -1,4 +1,4 @@
-#' Get mode of a distribution 
+#' Get mode of a distribution
 #'
 #' @examples
 #' getmode(c(1,1, 2, 3))
@@ -65,7 +65,7 @@ summary_distribution <-
 }
 
 #' Wrapper over tabyl()
-tabyl_df <- function(x = NULL, group = NULL) {
+tabyl_df <- function(x = NULL, group = NULL, digits = 1) {
 
   gr_sym <- rlang::sym(group)
 
@@ -73,6 +73,6 @@ tabyl_df <- function(x = NULL, group = NULL) {
     tabyl(!!gr_sym) %>%
     arrange(desc(n)) %>%
     adorn_totals("row") %>%
-    adorn_pct_formatting(digits = 1)
+    adorn_pct_formatting(digits = digits)
 
 }

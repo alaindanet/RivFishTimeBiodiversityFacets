@@ -102,16 +102,16 @@ trends_y <- map2_dfr(
         value = map2(response, value,
           function (resp, val) {
             if (resp %in% c("log_total_abundance", "log_chao_richness")) {
-              out = log_beta_to_perc_rate(val)
+              out = log_beta_to_perc_rate(val) * log(10 + 1)
             } else if(resp %in% c(
                 "hillebrand_dis_scaled",
                 "jaccard_dis_scaled",
                 "nestedness_scaled",
                 "turnover_scaled")
               ) {
-              out = val * 100
+              out = val * log(10 + 1) * 100
             } else {
-              out = val
+              out = val * log(10 + 1)
             }
             out
           }),
@@ -149,9 +149,12 @@ tps_trends_y <- site_no_drivers_inla_tot %>%
   mutate(
     response = get_var_replacement_vulgarisation()[response],
     value = ifelse(response %in% c("Abundance (total)", "Richness"),
-      log_beta_to_perc_rate(value), value),
+      log_beta_to_perc_rate(value) * log(10 + 1),
+      value),
     value = ifelse(response %in% c("Dissimilarity", "Turnover"),
-      value * 100, value),
+      value * log(10 + 1) * 100, value),
+    value = ifelse(response %in% c("Non-native abundance", "Non-native richness"),
+      value * log(10 + 1), value),
     response = str_replace_all(response,
       c(
         "Abundance \\(total\\)" = "Abundance (total, %)",
@@ -206,7 +209,7 @@ p_trends_site <- tps_trends_y %>%
   geom_histogram(bins = 60) +
   geom_vline(xintercept = 0, linetype = "dashed") +
   #geom_vline(aes(xintercept = avg)) +
-  labs(x = "Temporal trends per year", y = "Number of sites") +
+  labs(x = "Temporal trends per decade", y = "Number of sites") +
   scale_x_continuous(n.breaks = 10) +
   scale_fill_manual(
     values = perc_pal_variable,
@@ -242,22 +245,28 @@ p_trends_site2 <-
   p_trends_site +
   geom_errorbar(
     data = ci_label_data %>%
+      filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
       xmin = low, xmax = high,
       color = response_f,
-      size = width_bar, width = 0),
-    alpha = 0.5,
+      #size = width_bar,
+      width = 0),
+    size = 1,
+    alpha = .8,
     position = position_dodge2(width = 1, padding = 0.5),
     show.legend = FALSE
     ) +
   geom_point(
     data = ci_label_data %>%
+      filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
       color = response_f,
-      size = .1, width = 0),
-    alpha = 0.5,
+      width = 0),
+    size = 1.5,
+    alpha = 1,
+    shape = 20,
     show.legend = FALSE
     ) +
   scale_color_manual(
@@ -287,7 +296,7 @@ tps_trends_y_supp <- site_no_drivers_inla_tot %>%
   filter(response %in% supp_var_dist_trend) %>%
   mutate(
     response = get_var_replacement_vulgarisation()[response],
-    value = value * 100,
+    value = value * log(10 + 1) * 100,
     response_f = factor(response, levels = get_var_replacement_vulgarisation()[supp_var_dist_trend])
   ) %>%
   group_by(response_f) %>%
@@ -310,7 +319,7 @@ p_trends_site_supp <- tps_trends_y_supp %>%
   geom_histogram(bins = 60) +
   geom_vline(xintercept = 0, linetype = "dashed") +
   #geom_vline(aes(xintercept = avg)) +
-  labs(x = "Temporal trends per year (%)", y = "Number of sites") +
+  labs(x = "Temporal trends per decade (%)", y = "Number of sites") +
   scale_x_continuous(n.breaks = 10) +
   facet_wrap(~response_f, scales = "free", ncol = 2,
     strip.position = "top"
@@ -337,21 +346,26 @@ p_trends_site_supp2 <-
   p_trends_site_supp +
   geom_errorbar(
     data = ci_label_data_supp %>%
+      filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
       xmin = low, xmax = high,
       color = response_f,
-      size = width_bar, width = 0),
-    alpha = 0.5,
+      #size = width_bar,
+      width = 0),
+    size = 1,
+    alpha = 0.8,
     show.legend = FALSE
     ) +
   geom_point(
     data = ci_label_data_supp %>%
+      filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
-      color = response_f,
-      size = .1),
-    alpha = 0.5,
+      color = response_f),
+    size = 1.5,
+    alpha = 1,
+    shape = 20,
     show.legend = FALSE
     ) +
   scale_fill_brewer(palette="Set2", direction = -1)
@@ -630,7 +644,7 @@ p_effect <- plot_grid(
         plot.margin = margin(5, 5, 5, 5, "pt"),
         plot.background = element_rect(fill = NA, color = "black")
       ),
-    get_legend(p_space_effect2 +
+    get_legend(p_tps_effect2 +
       theme(legend.position = "right", legend.justification = "center",
         legend.text = element_text(size = 12),
         legend.title = element_text(size = 12),
@@ -659,8 +673,6 @@ ggsave(
   dpi = "print"
 )
 ```
-
-
 
 ```{r}
 tar_load(filtered_dataset_modelling)

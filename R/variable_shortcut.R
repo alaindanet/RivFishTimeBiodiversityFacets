@@ -152,11 +152,11 @@ get_river_atlas_significant_var <- function() {
     "Strahler order" = "ord_stra",
     #"Order flow" = "ord_flow",
     "Average elevation (m)" = "ele_mt_cav",
-    "Annual average of temperature (°C)" = "tmp_dc_cyr",
+    "Annual average temperature (°C)" = "tmp_dc_cyr",
     #"Annual maximum of temperature (°C)" = "tmp_dc_cmx",
     #"Annual minimum of temperature (°C)" = "tmp_dc_cmn",
     "Average slope (degree)" = "slp_dg_cav",
-    "Annual average of discharge (m3/s)" = "dis_m3_pyr",
+    "Annual average discharge (m3/s)" = "dis_m3_pyr",
     #"Annual maximum of discharge (m3/s)" = "dis_m3_pmx",
     #"Annual minimum of discharge (m3/s)" = "dis_m3_pmn",
     #"River area (reach segment, in ha)" = "ria_ha_csu",
@@ -200,7 +200,7 @@ get_land_class_var <- function() {
     "Pasture Extent (%, watershed)" = "pst_pc_use",
     "Urban Extent (%, catchment)" = "urb_pc_cse",
     "Urban Extent (%, watershed)" = "urb_pc_use",
-    "Population Density (people per km2, catchment)" = "ppd_pk_cav",
+    "Population Density (inhabitants per km2, catchment)" = "ppd_pk_cav",
     "Population Density (watershed)" = "ppd_pk_uav"
   )
 }
@@ -216,7 +216,7 @@ get_nat_origin_replacement <- function() {
   c(
     "tedesco" = "Tedesco et al. (2017) (basin scale)",
     "autofishbase" = "Fishbase (country scale)",
-    "handmade" = "Atlas, fishbase (country scale)",
+    "handmade" = "Atlas, fishbase (country and regional scale)",
     "usgs" = "NAS database (state scale, USA)"
   )
 }

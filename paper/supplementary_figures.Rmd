@@ -133,7 +133,8 @@ location_summary <- location_site %>%
 ```{r}
 year_op_cap <- "Distribution of sampling event years. The years 1993 and 2009
 are highlighted, corresponding to the years of the Human Footprint Index
-assessments, which were used to quantify past and recent pressures (See Methods)."
+assessments, which were used to quantify past and recent pressures (See Methods)." %>%
+str_replace_all("\\s+", " ")
 ```
 
 ```{r y-op, fig.cap=year_op_cap}
@@ -320,14 +321,18 @@ knitr::include_graphics(here("paper", "fig_paper", "timeseries_dist.pdf"))
 ```
 
 ```{r}
-trends_cap <- "Distribution of site temporal trends per year estimated from a
-hierarchical Bayesian model including time as sole predictor (See Methods, main
-text). Temporal trends were estimated with the Best Linear Unbiased Predictor
-(BLUP). Dashed lines display null trends. Below the histograms, points depict
-the average of the posterior distribution. Large, medium and thin bars depict
-the Bayesian credible intervals at 80, 90 and 95\\%, respectively." %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
+fnsite <- format(nrow(filtered_dataset_modelling$location), big.mark = ",")
+fnop <- format(length(unique(filtered_dataset_modelling$measurement$op_id)),
+  big.mark = ",")
+trends_cap <- paste0("**Distribution of community temporal trends across sites**
+  for Jaccard dissimilarity and Jaccard Nestedness. Temporal trends per year
+were estimated from a hierarchical Bayesian model including time as sole
+predictor (See Methods). The histograms show the Best Linear Unbiased Predictor
+(BLUP) estimated at each site and the dots the average posterior distribution
+with bars depicting the Bayesian credible intervals at
+95\\%. The dashed lines refer to no temporal trend.", "
+N = ", fnop, " sampling events across over ", fnsite, " sites.") %>%
+  str_replace_all("\\s+", " ")
 ```
 ```{r trends-dist, fig.cap=trends_cap, fig.asp = 1.1, out.width = "80%"}
 knitr::include_graphics(here("paper", "fig_paper", "p_trends_supp.pdf"))
@@ -336,14 +341,12 @@ knitr::include_graphics(here("paper", "fig_paper", "p_trends_supp.pdf"))
 
 
 ```{r}
-fnsite <- filtered_dataset_modelling$site_quanti %>%
-  filter(variable == "year") %>%
-  nrow()
 tar_load(site_cl_rm)
+fnsite_brut <- nrow(filtered_dataset_modelling$location)
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
 per_cluster <- scales::percent(nb_clusters / sum(nb_clusters))
 na_cluster <- paste0("(N = ",
-  fnsite - sum(nb_clusters), ", ", round((fnsite - sum(nb_clusters)) / fnsite * 100),"\\%)"
+  fnsite_brut - sum(nb_clusters), ", ", round((fnsite_brut - sum(nb_clusters)) / fnsite_brut * 100),"\\%)"
 )
 ```
 
@@ -356,13 +359,12 @@ sites are coloured by their cluster belongings. The ellipses in (a-b) are 95\\%
 intervals around the clusters assuming a Student’s t distribution. (d)
 Cluster frequencies across the three main realms. The
 clusters were named according to their main characteristics.",
-" Contrary to the Fig. 2 (Main text), we included the NA (black color) clusters",
-na_cluster, ".",
+" Contrary to Fig. 2 (Main text), we included the sites whose cluster
+affiliation was uncertain ('NA', black color) clusters", na_cluster, ".",
 " NA clusters are well distributed over the PCA (a-b), which is confirmed by the
 distribution of community metric temporal trends (c). We observe a few more NAs
 in Nearctic realms (+5\\%, i.e. around 40 clusters over 897).") %>%
-str_replace_all("\n|\r", " ") %>%
-str_replace_all("  ", " ")
+  str_replace_all("\\s+", " ")
 ```
 
 ```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%"}
@@ -512,13 +514,15 @@ time according to past human pressures and recent changes in human pressures
 using a hierarchical Bayesian model. Total abundance is expressed in count,
 species richness in raw number, while non-native abundance, non-native
 abundance, dissimilarity and turnover are expressed in proportion. No pressure,
-medium pressures, and highly degraded past pressure levels correspond
-respectively to values of Human footprint index at year 1993 of 2.5 (intact
-ecosystem), 16.8 (median value in our dataset), 45.6 (maximum value in the
+medium pressure, and highly degraded past pressure levels correspond
+respectively to values of Human footprint index for year 1993 of 2.5 (intact
+ecosystem), 16.8 (median value in our dataset), and 45.6 (maximum value in the
 dataset). Recent pressure levels represent change in Human footprint index
-between years 1993 and 2009 (see Methods for details). The central lines display
+between years the 1993 and 2009 (see Methods for details). The central lines display
 the mean, while the lower and upper lines display the credible intervals at
-95\\% of the posterior distribution."
+95\\% of the average posterior distribution." %>%
+  str_replace_all("\\s+", " ")
+
 ```
 
 
@@ -527,16 +531,18 @@ knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
 ```
 
 ```{r}
-std_tot_cap <- "Responses of community metrics to time, local
-anthropogenic pressures, stream gradient and their interactions using the
-hierarchical Bayesian model. See Methods Fig. 3 in the main text for details. We
-compare coverage corrected species richness
-(Richness) with raw species richness (Richness (raw)) and Simpson dissimilarity
-(Dissimilarity) with jaccard dissimilarity (Jaccard dissimilarity). We observe
-that using coverage based species richness or raw species richness does not
-affect the results. We observe similar effect sizes for Simpson and Jaccard
-dissimilarity indices, meaning that observed changes in community composition
-concerned abundant species and thus changes in the identity of dominant species (Hillebrand et .al. 2018, see Methods)."
+std_tot_cap <- "Effects of anthropogenic pressures and stream gradient on (a)
+community temporal changes and (b) community spatial variations. See Methods
+Fig. 3 in the main text for details. We compare coverage corrected species
+richness (Richness) with raw species richness (Richness (raw)) and Simpson
+dissimilarity (Dissimilarity) with jaccard dissimilarity (Jaccard
+  dissimilarity). We observe that using coverage based species richness or raw
+species richness does not affect the results. Similarly, we observe consistent
+effect sizes for Simpson and Jaccard dissimilarity indices, meaning that
+observed changes in community composition concerned abundant species and thus
+changes in the identity of dominant species (Hillebrand et .al. 2018, see
+  Methods)." %>%
+  str_replace_all("\\s+", " ")
 ```
 
 
@@ -552,13 +558,12 @@ tar_load(pca_riv_str)
 
 ```{r}
 cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
-streams. PCA axis (Rotated Component, RC) were rotated using Varimax algorithm
-(See Methods). The first axis is related the average discharge, the Strahler
-order and the distance from source. This first axis was used in the statistical
+streams. PCA axes (Rotated Component, RC) were rotated using Varimax algorithm
+(See Methods). The first axis is related to the average discharge, Strahler
+order and the distance from source, and was subsequently used in the statistical
 modelling as a composite variable to summarise the stream gradient from upstream
 to downstream." %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
+  str_replace_all("\\s+", " ")
 ```
 
 ```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv}
@@ -629,18 +634,19 @@ ggsave(
 ```
 
 ```{r}
-cor_cap <- "Spearman correlation among land uses and the ecological drivers used
-in the hierarchical Bayesian model. Land-use data and population density were
-extracted from HydroAtlas, which uses different data than the Human Footprint
-Index (See Methods). The extents of forest, pasture, and cropland at year 2000,
-urban extent at year 2015 and population density was provided for
-year 2010 (See Linke et al., 2019 for details). We observe very low correlation
-among the ecological drivers (Stream gradient, past pressures and recent
-pressures). Past pressures (human footprint index at year 1993) are positively
-correlated to population density, urban extent and cropland extent, but are
-negatively correlated with Forest extent." %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
+cor_cap <- "Spearman correlations among the ecological drivers used in the
+hierarchical Bayesian model as well as with additional population density land
+use variables. Land use data and population density were extracted from
+HydroAtlas, which uses different data than the Human Footprint
+Index (See Methods) and are meant to illustrate the covariations of various
+human pressures with the human footprint index. We show the correlation with the
+extents of forest, pasture, and cropland at year 2000, urban extent at year 2015
+and population density for year 2010 (See Linke et al., 2019 for details). We
+observe very low correlations among the ecological drivers (Stream gradient, past
+  pressures and recent pressures). Past pressures (human footprint index at year
+  1993) are positively correlated with population density, urban extent and
+cropland extent, but are negatively correlated with forest extent." %>%
+  str_replace_all("\\s+", " ")
 ```
 
 
@@ -715,14 +721,15 @@ ggsave(
 
 ```{r}
 N <- unique(r2_obs_fit$n)
-obs_fit_cap <- paste0("Fitted values of the models vs observed values (N = ",N,"). The black line
-displays the bisection, i.e. the intercept and slope are respectively 0 and 1.
-Sticks located at the abscissa and ordinate axis display the density of values.
-The Pearson's correlation coefficient is displayed in each panel. We see that
-the model predicted the data reasonnably well, but it tends
-to overestimate low values and underestimate really high values especially for very high proportion of non-native species and very high dissimilarity.") %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
+obs_fit_cap <- paste0("Fitted values of the models vs observed values (N = ",N,"
+  sampling events). The black line displays the bisection, i.e. the intercept
+and slope are respectively 0 and 1. Sticks located at the abscissa and ordinate
+axis represent the density of values. The Pearson's correlation coefficient is
+displayed in each panel. Total abundance and species richness values are logged.
+We see that the model predicted the data reasonnably well, but it tended to
+overestimate low values and underestimate high values especially for the
+proportion of non-native species and dissimilarity.") %>%
+str_replace_all("\\s+", " ")
 ```
 
 ```{r fit-obs, fig.cap = obs_fit_cap, out.width="80%"}
@@ -740,12 +747,16 @@ tar_load(c(k6_fac_1, sup_clust_size_fac1))
 
 ```{r}
 cap_clust_curv <- "Objective function quantifying the goodness of k-means
-clustering according the percentage of removed data (most outliers data in the
-multidimentional space). In the results presented in the main text, we
-removed 5\\% of the data. We see that the goodness of fit of the clustering does not
-increase a lot from 4 clusters and does not increase from 7 clusters." %>%
-str_replace_all("  ", " ") %>%
-str_replace_all("\n|\r", " ")
+clustering according to the percentage of data being removed (the most outliers
+  data in the multidimentional space). The different lines indicate differences
+in the goodness of fit for different number of clusters, as indicated by the
+numbers. In the results presented in the main text, we removed 5\\% of the data
+($\alpha$ = 5\\%). We chose six clusters for our analyses as the goodness of fit
+increased only marginally from 6 to 7 clusters (and beyond). However, because of
+the small increases in goodness of fit observed from 4 to 5 clusters, we also
+tested the sensitivity of our conclusions regarding the community trajectories
+using 4 clusters  (see Fig. S10)." %>%
+  str_replace_all("\\s+", " ")
 ```
 
 ```{r, fig.show = "hide"}
@@ -801,10 +812,11 @@ site_k4_fac_1_cl <- get_cluster_df(
 ```
 
 ```{r}
-bp_cl_dist_cap <- "Distribution of scaled temporal trends by variable and
-cluster, with four clusters. With four clusters instead of six in the main text,
-we observe the disappearance of the clusters related to changes in community
-composition (Fig. 2, main text)."
+bp_cl_dist_cap <- "Distribution of temporal trends per decade by variable and
+cluster, with four clusters. With four clusters instead of six,
+we observe the loose of the clusters related to changes in community
+composition (Fig. 2, main text)." %>%
+  str_replace_all("\\s+", " ")
 ```
 
 ```{r, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
@@ -895,11 +907,10 @@ tab_rand2 <- tab_rand %>%
 ```
 
 ```{r}
-tab_rand_cap <- "Random effects associated to the estimation of the temporal trends
-computed for the model containing only time as fixed predictors. The estimated
-values are very close than those obtained with the model including ecological
-drivers (Table 1, main text).
-[95\\% CI]: Credible Interval computed using Highest Posterior Density method."
+tab_rand_cap <- "Random effects associated with the estimation of the temporal trends
+computed from the model containing only time as fixed predictor. [95\\% CI]: Credible Interval computed using
+Highest Posterior Density method." %>%
+  str_replace_all("\\s+", " ")
 tab_rand2 %>%
   pivot_wider(names_from = "Spatial scale", values_from = "Temporal trends s.d.") %>%
   select(1, 3, 2) %>%
@@ -923,6 +934,32 @@ add_dataset_ref %>%
   column_spec(3, width = "10cm")
 ```
 
+```{r, eval = FALSE}
+# SourceID of the dataset from RivFishTime used in the study as Lise would like
+# to thank them individually:
+tar_load(
+  c(
+    published_rivfishtime_characteristic,
+    updated_rivfishtime_characteristic
+  )
+)
+
+filtered_published_rivfishtime_characteristic <-
+  published_rivfishtime_characteristic %>%
+  filter(SiteID %in% unique(filtered_dataset_modelling$location$siteid)) %>%
+  arrange(SiteID)
+
+source_rivfishtime_modelling <-
+  filtered_published_rivfishtime_characteristic %>%
+  group_by(SourceID) %>%
+  summarise(n = n(), .groups = "drop")
+write_csv(
+  source_rivfishtime_modelling,
+  file = here::here("paper", "sourceid_rivfishtime_modelling.csv")
+)
+```
+
+
 ```{r tab-pro-ch, results = "hide"}
 unique(filtered_dataset_modelling$site_quali$protocol)
 site_quali <- filtered_dataset_modelling$site_quali %>%
@@ -937,7 +974,7 @@ site_quali <- filtered_dataset_modelling$site_quali %>%
       ),
     protocol = str_replace(protocol, "Netting|Seining", "Seining / Netting")
     )
-tab_protocol <- tabyl_df(site_quali, "protocol") %>%
+tab_protocol <- tabyl_df(site_quali, "protocol", digits = 2) %>%
   mutate(
     method = "Protocol",
     protocol = str_replace_all(protocol, "_", " "),
@@ -959,7 +996,10 @@ tab_protocol %>%
 
 
 ```{r tab-u-ch, results = "hide"}
-abun_unit <- tabyl_df(filtered_dataset_modelling$site_quali, "unitabundance") %>%
+abun_unit <- tabyl_df(
+  filtered_dataset_modelling$site_quali,
+  "unitabundance",
+  digits = 2) %>%
   mutate(
     method = "Abundance unit",
     unitabundance = str_replace_all(unitabundance, "_", " "),
@@ -1240,7 +1280,7 @@ evt_summary <- riveratlas_tmp %>%
       c(
         hft_ix_c9309_ratio = "Recent pressures",
         hft_ix_c93 = "Past pressures",
-        year_nb = "Time"
+        year_nb = "Time (year nb since first sampling)"
       )
     ),
     median = format(round(median, 2), nsmall = 2),
@@ -1257,7 +1297,9 @@ evt_summary <- riveratlas_tmp %>%
   select(`Ecological drivers` = name,
     N = n, `Median (Q1, Q3)`, `(Min, Max)`) %>%
   mutate(
-    eco_f = factor(`Ecological drivers`, levels = c("Time", "Past pressures", "Recent pressures"))
+    eco_f = factor(
+      `Ecological drivers`,
+      levels = c("Time (year nb since first sampling)", "Past pressures", "Recent pressures"))
   ) %>%
   arrange(eco_f) %>%
   select(-eco_f)
@@ -1365,9 +1407,8 @@ variable_stat %>%
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
 cap_aic_table <- "Watanabe-Akaike Information Criterion (WAIC) of the
 statistical models fitting temporal trends with either the number of years since
-the start of sampling or the log of the former variable added to one (See
-Methods). Most community metrics are best modelled with the log of time
-variable." %>%
+the start of sampling or log-transformed number of years plus one (See Methods).
+Most community metrics are best modelled with the log-transformed values." %>%
 str_replace_all("\n|\r", " ")
 ```
 
@@ -1416,7 +1457,8 @@ vif_caption <- "Variance inflation factors (VIF) of the ecological drivers
 included in the hierarchical Bayesian model (Fig. 3, main text). SE factor: inflation of the
 standard error of the slope coefficients predicted by the multicollinearity of the
 variables. The VIF values were all close to 1, indicating absence of
-multicollinearity."
+multicollinearity." %>%
+str_replace_all("\\s+", " ")
 ```
 
 
