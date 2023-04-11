@@ -210,7 +210,7 @@ p_trends_site <- tps_trends_y %>%
   geom_vline(xintercept = 0, linetype = "dashed") +
   #geom_vline(aes(xintercept = avg)) +
   labs(x = "Temporal trends per decade", y = "Number of sites") +
-  scale_x_continuous(n.breaks = 10) +
+  scale_x_continuous(n.breaks = 8) +
   scale_fill_manual(
     values = perc_pal_variable,
     breaks = names(perc_pal_variable),

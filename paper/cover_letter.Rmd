@@ -85,19 +85,6 @@ approved by all the authors and has not been published or submitted to any other
 journal. We had no prior discussions with a Nature Ecology & Evolution editor
 about the work described in the manuscript.
 
-As we selected the double-blind peer-review process, we enlist below the ordered
-list of authors with their respective affiliation:
-
-- Alain Danet: School of Biological Sciences, Illinois State University, Normal,
-  Illinois, USA; Current address: School of Biosciences, University of Sheffield, Western Bank,
-  S10 2TN, Sheffield, UK
-- Xingli Giam: Department of Ecology and Evolutionary Biology, The University of
-  Tennessee, Knoxville, Tennessee, USA
-- Julian D. Olden: School of Aquatic and Fishery Sciences, University of
-  Washington, Seattle, Washington, USA
-- Lise Comte: School of Biological Sciences, Illinois State University, Normal,
-  Illinois, USA
-
 We suggest the following potential reviewers for their respective expertise regarding our
 study:
 
@@ -108,12 +95,22 @@ study:
 - Fengzhi He: Aarhus University and Geography Department, Humboldt-Universität zu Berlin, Berlin, Germany
   - Relevant expertise: Biodiversity patterns of riverine species
   - `fengzhi.he@igb-berlin.de`
-- Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul, Brazil
-  - Relevant expertise: Human impacts on riverine communities
-  - `asm.adrimelo@gmail.com`
-- Roel van Klink: German Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig, 04103 Leipzig, Germany
-  - Relevant expertise: Long-term community dynamics in freshwater systems
-  - `roel.klink@idiv.de`
+- Renato Bolson Dala Corte: PPG-Ecologia & Evolução of the Universidade Federal de Goiás (UFG), Brazil
+  - Relevant expertise: Effects of human pressures on riverine fish communities
+  - `renatocorte@gmail.com`
+- Jani Heino: University of Oulu, Oulu, Finland
+  - Relevant expertise: Biodiversity patterns and impacts of dispersal in
+    riverine systems
+  - `jani.heino@oulu.fi`
 - Kirk Winemiller: Texas A & M University, USA
   - Relevant expertise: Fish community ecology and global changes
   - `kirk.winemiller@ag.tamu.edu`
+
+---
+#- Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul, Brazil
+#  - Relevant expertise: Human impacts on riverine communities
+#  - `asm.adrimelo@gmail.com`
+#- Roel van Klink: German Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig, 04103 Leipzig, Germany
+#  - Relevant expertise: Long-term community dynamics in freshwater systems
+#  - `roel.klink@idiv.de`
+---

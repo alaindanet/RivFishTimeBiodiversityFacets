@@ -1482,7 +1482,7 @@ other factors than time.
 
 \begin{equation}
 \begin{aligned}
-    Y_{i|n, t} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=1, k}\beta_{0k}Time_tX_k + \sum_{k=1, k \neq l}\beta_{0kl}Time_tX_kX_l + \epsilon_{i|n, t}
+    Y_{i|n, t} &= \alpha + \beta_0Time_t + \sum_{k=1}\beta_kX_k + \sum_{k=1}\beta_{0k}Time_tX_k + \sum_{k=1, k \neq l}\beta_{0kl}Time_tX_kX_l + \epsilon_{i|n, t}
   (\#eq:drivers)
 \end{aligned}
 \end{equation}
@@ -1639,11 +1639,12 @@ to date.
 
 ## Acknowledgements
 
-We thank Joacim Näslund  for his assistance accessing the data from the
+We thank Joacim Näslund for his assistance accessing the data from the
 long-term Swedish liming program. We also thank all the monitoring programs and
 researchers for their continuous efforts of data collection and for making these
-data publicly available;  this study would not be possible without their efforts
-and generosity. In particular, we would like to acknowledge We further thank
+data publicly available; this study would not be possible without their efforts
+and generosity. In particular, we would like to acknowledge the authors who
+made their data available for this study (Table S2). We further thank
 Suzanne Bonnamour, Colin Fontaine, Grégoire Loïs, Maud Mouchet, and Emmanuelle
 Porcher at the Centre d’Écologie et des Sciences de la Conservation as well as
 Andrew P Beckerman and Thomas F Johnson at the University of Sheffield for their

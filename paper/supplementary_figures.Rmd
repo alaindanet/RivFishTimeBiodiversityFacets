@@ -5,6 +5,7 @@ author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
 date: ""
 output:
   bookdown::pdf_document2:
+    latex_engine: xelatex
     keep_tex: true
     df_print: paged
     toc: false
@@ -751,7 +752,7 @@ clustering according to the percentage of data being removed (the most outliers
   data in the multidimentional space). The different lines indicate differences
 in the goodness of fit for different number of clusters, as indicated by the
 numbers. In the results presented in the main text, we removed 5\\% of the data
-($\alpha$ = 5\\%). We chose six clusters for our analyses as the goodness of fit
+($\\alpha$ = 5\\%). We chose six clusters for our analyses as the goodness of fit
 increased only marginally from 6 to 7 clusters (and beyond). However, because of
 the small increases in goodness of fit observed from 4 to 5 clusters, we also
 tested the sensitivity of our conclusions regarding the community trajectories
@@ -924,14 +925,75 @@ tab_rand2 %>%
 
 
 ```{r}
+source_table <- read_csv(
+  here::here("inst", "extdata", "RivFishTIME_SourceTable.csv"),
+  locale = locale(encoding = "UTF-8")
+)
+tar_load(published_rivfishtime_characteristic)
+
+url_pattern <- "http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\(\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+"
+
+reference <- source_table %>%
+  filter(str_detect(SourceID, "\\[")) %>%
+  mutate(
+    source_id = str_extract(SourceID, "\\[([0-9]*)\\]"),
+    source_id = str_replace(source_id, "\\[([0-9]*)\\]", "\\1"),
+    source_id = as.integer(source_id)
+  ) %>%
+  separate(SourceID, c(NA, "Reference"), sep = "\\[([0-9]*)\\]\\s") %>%
+  select(SourceID = source_id, Reference) %>%
+  mutate(link = str_extract(Reference, url_pattern))
+
+# Change bad url formatting + update
+reference <- reference %>%
+  mutate(
+    Reference = str_replace_all(
+      Reference,
+      c(
+        "https://wwwp2\\.ymparisto\\.fi/koekalastus_sahko/yhteinen/Login\\.aspx\\?ReturnUrl=%2fkoekalastus_sahko \\[Accessed on 04/09/2019\\]" = "https://wwwp2.ymparisto.fi/koekalastus_sahko/ [Accessed on 04/11/2023]",
+        "https://cf\\.pca\\.state\\.mn\\.us/water/watershedweb/wdip/search_more\\.cfm\\?datatype=assessments \\[Accessed on 04/03/2019\\]" = "https://webapp.pca.state.mn.us/surface-water [Accessed on 04/11/2023]"
+      )
+    )
+  )
+
+ref <- reference %>%
+  group_by(SourceID) %>%
+  summarise(Reference = paste0(Reference, sep = ";\n", collapse = ""))
+
+ti <- published_rivfishtime_characteristic %>%
+    filter(
+      SiteID %in% unique(filtered_dataset_modelling$location$siteid)
+      ) %>%
+    group_by(SourceID, Country) %>%
+    summarise(N = n(), .groups = "drop") %>%
+    arrange(desc(N))
+ti_ref <- ti %>%
+  left_join(ref) %>%
+  rename(`Source id` = SourceID)
+
+country_lvl <- location_summary %>%
+  arrange(desc(N)) %>%
+  .$Country
+
 add_dataset_ref %>%
-  select(Country, N, Reference) %>%
-  kbl(booktabs = T,
+  select(1, 2, 3, Reference) %>%
+  mutate(
+    Country = str_replace(Country, "Canada", "CAN"),
+    Country = factor(Country, levels = country_lvl)
+    ) %>%
+  rbind(ti_ref) %>%
+  arrange(Country, desc(N)) %>%
+  kbl(
+    longtable = T,
+    booktabs = T,
     label = "tab-add-data",
-    caption = "Databases included in the current study that are not included in
-    RivFishTIME (Comte et al., 2021a). N: number of sites.") %>%
-  kable_styling(latex_options = c("striped", "hold_position")) %>%
-  column_spec(3, width = "10cm")
+    caption = "References of the dataset included in the study, arranged by countries which have the more sites in our study. Numeric Source id correspond to the id of RivFishTIME database (Comte et al.,
+    2021a). N: number of sites.") %>%
+  kable_styling(
+    repeat_header_continued = "\\textit{(Continued on Next Page...)}",
+    latex_options = c("striped", "hold_position", "repeat_header")
+    ) %>%
+  column_spec(4, width = "12cm")
 ```
 
 ```{r, eval = FALSE}
