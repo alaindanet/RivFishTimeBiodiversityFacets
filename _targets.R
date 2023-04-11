@@ -29,7 +29,8 @@ list(
     error = "continue"
     ),
   tar_target(basinatlas_shp_folder,
-    here("inst", "extdata", "RivFishTIME", "HYDROBASINS_v1c") %>%
+    #here("inst", "extdata", "RivFishTIME", "HYDROBASINS_v1c") %>%
+    here("inst", "extdata", "HYDROBASINS_v1c") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath(),
     format = "file"),
@@ -123,12 +124,12 @@ list(
       st_zm(drop = TRUE, what = "ZM")
     ),
 
-  tar_target(water_temperature_file,
-    here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
-      R.utils::filePath(., expandLinks = "any"),
-    format = "file",
-    error = "continue"
-    ),
+  #tar_target(water_temperature_file,
+    #here("inst", "extdata", "waterTemperature_Global_monthly_1979-2014.nc") %>%
+      #R.utils::filePath(., expandLinks = "any"),
+    #format = "file",
+    #error = "continue"
+    #),
 
   # Non-native species dataset
   tar_target(basin_tedesco_shp,
@@ -541,60 +542,61 @@ list(
       variable = c(setNames(get_river_atlas_significant_var(), NULL),
         "hft_ix_c9309_diff", "hft_ix_c9309_log2_ratio")
     )),
-  tar_target(water_temperature,
-    extract_water_temperature_values(
-      raster_path = water_temperature_file,
-      site = filtered_dataset$location %>%
-        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
-      )),
-  tar_target(formated_wt,
-    format_water_temperature(
-      wt = water_temperature,
-      siteid = filtered_dataset$location$siteid,
-      raster_path = water_temperature_file)
-    ),
-  tar_target(wt,
-    filter_water_temperature(
-      wt = formated_wt,
-      raw_tmp_threshold = 40,
-      nb_sd_threshold = 5
-    )
-    ),
-  tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
-  tar_target(wt_mv_avg_roll, get_mv_avg_rollapplyr(wt = wt)),
-  tar_target(write_temperature_mv_avg,
-    write_csv(full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year")),
-      file = here("data", "awt.csv")),
-    error = "continue"
-    ),
 
-  tar_target(mod_wt,
-    glmmTMB(
-      tmp_w_ama ~ year * ecoregion +
-        (1 + year | main_bas / siteid),
-      data = mod_wt_data)),
-  tar_target(spde, make_spde(loc = filtered_dataset$location)),
+  #tar_target(water_temperature,
+    #extract_water_temperature_values(
+      #raster_path = water_temperature_file,
+      #site = filtered_dataset$location %>%
+        #st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+      #)),
+  #tar_target(formated_wt,
+    #format_water_temperature(
+      #wt = water_temperature,
+      #siteid = filtered_dataset$location$siteid,
+      #raster_path = water_temperature_file)
+    #),
+  #tar_target(wt,
+    #filter_water_temperature(
+      #wt = formated_wt,
+      #raw_tmp_threshold = 40,
+      #nb_sd_threshold = 5
+    #)
+    #),
+  #tar_target(wt_mv_avg, get_moving_average_tmp(wt = wt)),
+  #tar_target(wt_mv_avg_roll, get_mv_avg_rollapplyr(wt = wt)),
+  #tar_target(write_temperature_mv_avg,
+    #write_csv(full_join(at_mv_avg, wt_mv_avg, by = c("siteid", "year")),
+      #file = here("data", "awt.csv")),
+    #error = "continue"
+    #),
 
-  tar_target(air_temperature,
-    target_extract_chelsa_data(
-      chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA", full.names = TRUE),
-      site = filtered_dataset$location %>%
-        st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
-      )),
-  tar_target(formated_air_temperature,
-    format_air_temperature(air_temperature)
-    ),
-  tar_target(at_mv_avg,
-    get_moving_average_tmp(
-      wt = formated_air_temperature,
-      var_y = "tmp_c",
-      output_tmp_var = "tmp_a_ana")
-    ),
-  tar_target(at_mv_avg_roll,
-    get_mv_avg_rollapplyr(
-      wt = formated_air_temperature,
-      var_y = "tmp_c")
-    ),
+  #tar_target(mod_wt,
+    #glmmTMB(
+      #tmp_w_ama ~ year * ecoregion +
+        #(1 + year | main_bas / siteid),
+      #data = mod_wt_data)),
+  #tar_target(spde, make_spde(loc = filtered_dataset$location)),
+
+  #tar_target(air_temperature,
+    #target_extract_chelsa_data(
+      #chelsa_shp_files = list.files("L://ENV_LAYERS/CHELSA", full.names = TRUE),
+      #site = filtered_dataset$location %>%
+        #st_as_sf(coords = c("longitude", "latitude"), crs = 4326)
+      #)),
+  #tar_target(formated_air_temperature,
+    #format_air_temperature(air_temperature)
+    #),
+  #tar_target(at_mv_avg,
+    #get_moving_average_tmp(
+      #wt = formated_air_temperature,
+      #var_y = "tmp_c",
+      #output_tmp_var = "tmp_a_ana")
+    #),
+  #tar_target(at_mv_avg_roll,
+    #get_mv_avg_rollapplyr(
+      #wt = formated_air_temperature,
+      #var_y = "tmp_c")
+    #),
   tar_target(pca_riv_str,
     compute_riv_str_pca(riv = riveratlas_site, ncomp = 2)
     ),
@@ -1677,11 +1679,6 @@ list(
       )),
   tar_target(bp_cl_dist,
     target_bp_cl_dist(cl_obj = site_cl_rm)
-    ),
-  tar_target(bp_random_effect,
-    gaussian_re_sd %>%
-      ggplot(aes(y = estimate, x = group, fill = group)) %>%
-      make_custom_boxplot(., aes_col = group)
     ),
   tar_target(country_to_plot, c("USA", "FRA", "GRB", "SWE")),
   tar_target(p_cluster_country,

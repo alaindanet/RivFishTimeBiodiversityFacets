@@ -20,25 +20,3 @@ tar_make_future(
 
 tar_meta()
 tar_visnetwork()
-
-tar_make(names = add_dataset_ref)
-tar_load(riveratlas_shp_files)
-
-tar_make(names = filtered_basinatlas_modelling)
-tar_make(names = tab_waic)
-tar_make(names = hft_total_summary)
-tar_make(names = starts_with("pred_data"))
-tar_make_future(names = at_mv_avg_roll, workers = future::availableCores() - 1)
-
-source(file = "start_rmd.R")
-tar_load(tar_rand)
-
-tar_load(inla_rich)
-dist_check <- inlatools::fast_distribution_check(inla_rich)
-plot(dist_check)
-summary(inla_rich)
-
-tar_load(inla_abun)
-dist_check <- inlatools::distribution_check(inla_rich)
-plot(dist_check)
-summary(inla_rich)

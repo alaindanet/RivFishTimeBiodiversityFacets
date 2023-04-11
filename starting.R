@@ -21,6 +21,18 @@ use_mit_license()
 attachment::att_amend_desc()
 devtools::check(vignettes = FALSE)
 
+# Package installation
+pck <- c("conflicted", "targets", "tarchetypes", "tidyverse", "magrittr",
+  "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
+  "rnaturalearth", "rnaturalearthdata", "terra", "cowplot", "viridis",
+  "janitor", "codyn", "vegan", "slider", "rmarkdown", "future", "INLA",
+  "inlatools", "glmmTMB", "easystats", "ggeffects", "tclust")
+
+install.packages(
+  pck,
+  repos=c(getOption("repos"), INLA="https://inla.r-inla-download.org/R/stable"),
+  dep=TRUE
+)
 
 
 ######################
