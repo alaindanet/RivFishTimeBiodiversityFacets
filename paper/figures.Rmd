@@ -15,6 +15,7 @@ source(here::here("start_rmd.R"))
 library(ade4)
 library(factoextra)
 library(patchwork)
+library(ggbreak)
 
 knitr::opts_chunk$set(
   echo = FALSE,
@@ -243,42 +244,42 @@ ci_label_data %<>%
   )
 p_trends_site2 <-
   p_trends_site +
-  geom_errorbar(
+  geom_pointrange(
     data = ci_label_data %>%
       filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
       xmin = low, xmax = high,
-      color = response_f,
-      #size = width_bar,
-      width = 0),
-    size = 1,
+      color = response_f),
+    size = .08,
+    linewidth = .8,
     alpha = .8,
     position = position_dodge2(width = 1, padding = 0.5),
-    show.legend = FALSE
-    ) +
-  geom_point(
-    data = ci_label_data %>%
-      filter(ci_level == "95%") %>%
-      arrange(desc(width_bar)),
-    aes(y = error_bar_pos, x = mean,
-      color = response_f,
-      width = 0),
-    size = 1.5,
-    alpha = 1,
-    shape = 20,
     show.legend = FALSE
     ) +
   scale_color_manual(
     values = perc_pal_variable,
     breaks = names(perc_pal_variable),
     name = "Community metrics"
-  )
+  ) +
+theme(
+  strip.text = element_text(hjust = 0, margin = margin(0, 0, 0, 0, "pt"))
+)
 ```
 
 ```{r}
 ggsave(
   filename = "p_trends.pdf",
+  plot = p_trends_site2,
+  path = here("paper", "fig_paper"),
+  scale = 2.0,
+  width = 90,
+  height = 90 * .90,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = "p_trends.png",
   plot = p_trends_site2,
   path = here("paper", "fig_paper"),
   scale = 2.0,
@@ -344,31 +345,22 @@ ci_label_data_supp %<>%
   )
 p_trends_site_supp2 <-
   p_trends_site_supp +
-  geom_errorbar(
+  geom_pointrange(
     data = ci_label_data_supp %>%
       filter(ci_level == "95%") %>%
       arrange(desc(width_bar)),
     aes(y = error_bar_pos, x = mean,
       xmin = low, xmax = high,
-      color = response_f,
-      #size = width_bar,
-      width = 0),
-    size = 1,
-    alpha = 0.8,
-    show.legend = FALSE
-    ) +
-  geom_point(
-    data = ci_label_data_supp %>%
-      filter(ci_level == "95%") %>%
-      arrange(desc(width_bar)),
-    aes(y = error_bar_pos, x = mean,
       color = response_f),
-    size = 1.5,
-    alpha = 1,
-    shape = 20,
+    size = .08,
+    linewidth = .8,
+    alpha = .8,
     show.legend = FALSE
     ) +
-  scale_fill_brewer(palette="Set2", direction = -1)
+  scale_fill_brewer(palette="Set2", direction = -1) +
+  theme(
+    strip.text = element_text(hjust = 0, margin = margin(0, 0, 0, 0, "pt"))
+  )
 ```
 
 ```{r}
@@ -387,6 +379,7 @@ ggsave(
 ##
 
 ```{r}
+theme_set(theme_grey())
 tu <- rbind(gaussian_inla_std_effects, gaussian_inla_exo_std_effects) %>%
   filter(!str_detect(term, "unitabundance|Intercept")) %>%
   filter(response %in% restricted_dimension) %>%
@@ -414,7 +407,6 @@ tu %<>%
 ```
 
 ```{r, fig.show="hide"}
-library(ggbreak)
 p1 <- tu %>%
   filter(facet == "main") %>%
   arrange(response, desc(width_bar)) %>%
@@ -468,6 +460,7 @@ p_tps_effect <- tu %>%
     )
     ) +
   scale_x_break(c(.15, .195)) +
+  theme_bw() +
   theme(
     axis.line.y.right = element_blank(),
     axis.ticks.y.right = element_blank(),
@@ -494,6 +487,7 @@ p_space_effect <- tu %>%
         sep = "")
     )
   ) +
+  theme_bw() +
   scale_x_break(c(.22, .55))
 ```
 
@@ -545,6 +539,16 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+ggsave(
+  filename = "fig1_two_col.png",
+  plot = fig1,
+  path = here("paper", "fig_paper"),
+  scale = 1.8,
+  width = 180,
+  height = 180 * .8,
+  units = "mm",
+  dpi = "print"
+)
 ```
 
 
@@ -558,12 +562,10 @@ p_space_effect2 <- tu %>%
     xaxis_title = TRUE,
     legend = TRUE
     ) +
-  labs(x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )) +
+  labs(x = expression(atop(paste("Standardized slope coefficients ",
+        beta, "'",sep = ""), "(s.d. unit)"))) +
 guides(colour = guide_legend(nrow = 1, byrow = FALSE, reverse = TRUE)) +
+theme_bw() +
 theme(legend.position = "bottom", legend.justification = "right", text =
   element_text(size = 8))
 ggsave(
@@ -597,6 +599,7 @@ p_tps_effect2 <- tu %>%
     ) +
   scale_x_break(c(.15, .195), scales = .2, ticklabels=c(.20, .25)) +
   scale_x_break(c(.29, .55),  scales = .2, , ticklabels=c(.55, .70)) +
+  theme_bw() +
   theme(
     axis.line.y.right = element_blank(),
     axis.ticks.y.right = element_blank(),
@@ -632,7 +635,8 @@ p_effect <- plot_grid(
   print(p_tps_effect2 +
     theme(
       legend.position = "none",
-      plot.margin = margin(5, 5, 5, 5, "pt"),
+      axis.title.y = element_blank(),
+      plot.margin = margin(0, 0, 0, 0, "pt"),
       )
     ),
   plot_grid(
@@ -640,9 +644,8 @@ p_effect <- plot_grid(
     p_space_effect2 +
       theme(
         text = element_text(size = 11),
-        legend.position = "none",
-        plot.margin = margin(5, 5, 5, 5, "pt"),
-        plot.background = element_rect(fill = NA, color = "black")
+        axis.title.y = element_blank(),
+        legend.position = "none"
       ),
     get_legend(p_tps_effect2 +
       theme(legend.position = "right", legend.justification = "center",
@@ -666,7 +669,17 @@ ggsave(
   filename = "p_effect.pdf",
   plot = p_effect,
   path = here("paper", "fig_paper"),
-  scale = 3,
+  scale = 2.9,
+  width = 88,
+  height = 88 * .9,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = "p_effect.png",
+  plot = p_effect,
+  path = here("paper", "fig_paper"),
+  scale = 2.9,
   width = 88,
   height = 88 * .9,
   units = "mm",
@@ -763,6 +776,7 @@ p_pca_cl_ell <- map(axis_l,
      site_cl = site_cl_rm,
      add_point = TRUE,
      add_ellipse = TRUE,
+     omit_na_site = TRUE,
      xaxis = .x[1], yaxis = .x[2],
      ctb_thld = .4,
      replace_var = get_var_replacement_vulgarisation(),
@@ -878,6 +892,16 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+ggsave(
+  filename = "fig2.png",
+  plot = fig2,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * .9,
+  units = "mm",
+  dpi = "print"
+)
 ```
 
 ### Plot NA cluster
@@ -897,6 +921,7 @@ p_pca_cl_ell_na <- map(axis_l,
      site_cl = site_cl_rm,
      add_point = TRUE,
      add_ellipse = TRUE,
+     omit_na_site = FALSE,
      xaxis = .x[1], yaxis = .x[2],
      ctb_thld = .4,
      replace_var = get_var_replacement_vulgarisation(),
@@ -906,8 +931,7 @@ p_pca_cl_ell_na <- map(axis_l,
      lim_x_y = c(-3.5, 3.5),
      force_pull = 1,
      force = 1,
-     var_scaling_factor = 3.5,
-     omit_na_site = FALSE
+     var_scaling_factor = 3.5
    ) +
  guides(
    colour = guide_legend(
@@ -977,6 +1001,16 @@ fig_clust_na <- plot_grid(
 #fig2
 ggsave(
   filename = "clust_fig_na.pdf",
+  plot = fig_clust_na,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * .9,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = "clust_fig_na.png",
   plot = fig_clust_na,
   path = here("paper", "fig_paper"),
   scale = 2.5,
@@ -1075,6 +1109,16 @@ clust_figure
 #fig2
 ggsave(
   filename = "clust_figure.pdf",
+  plot = clust_figure,
+  path = here("paper", "fig_paper"),
+  scale = 2.5,
+  width = 88,
+  height = 88 * 1.1,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = "clust_figure.png",
   plot = clust_figure,
   path = here("paper", "fig_paper"),
   scale = 2.5,
@@ -1182,7 +1226,16 @@ ggsave(
 
 
 ```{r}
-tar_load(c(world_site_sf))
+tar_load(c(world_site_sf,filtered_basinatlas_modelling))
+
+site_cl_rm_loc <- site_cl_rm %>%
+  select(siteid, cl) %>%
+  left_join(loc, by = "siteid") %>%
+  filter(ecoregion %in% c("Palearctic", "Nearctic", "Australasia")) %>%
+  left_join(
+    measurement_exo %>%
+      distinct(siteid, basin_name),
+    by = "siteid")
 ```
 
 ```{r}
@@ -1664,9 +1717,9 @@ basin_map <- filtered_basinatlas_modelling %>%
   filter(main_bas %in% c(pal_basin, nea_basin, aus_basin)) %>%
   mutate(basin_name = str_replace_all(main_bas, get_rev_vec_name_val(c(pal_basin, nea_basin, aus_basin))),
     label = str_replace_all(basin_name, get_rev_vec_name_val(all_basin)),
-    label2 = str_replace_all(label, c("l" = "l     ", g = "   g", d = " d", "k" = "k   ")),
+    label2 = str_replace_all(label, c("l" = "", g = "   g", d = " d", "k" = "kl")),
   )
-
+basin_map$label2
 main_map_rect_basin <- main_map +
   geom_sf(data = basin_map, color = "black", fill = NA) +
   geom_sf_text(data = basin_map, aes(label = label2),
@@ -1729,6 +1782,16 @@ fig3_alt <- plot_grid(
   bottom2, nrow = 2, rel_heights = c(1, .80))
 ggsave(
   filename = "fig3_alt2.pdf",
+  plot = fig3_alt,
+  path = here("paper", "fig_paper"),
+  scale = 1,
+  width = 180,
+  height = 180 * 1.0,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = "fig3_alt2.png",
   plot = fig3_alt,
   path = here("paper", "fig_paper"),
   scale = 1,

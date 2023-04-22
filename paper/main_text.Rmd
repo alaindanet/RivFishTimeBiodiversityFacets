@@ -3,12 +3,12 @@ title: "Past and recent anthropogenic pressures drives rapid changes in riverine
 author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
 date: ""
 output:
+  officedown::rdocx_document:
   bookdown::pdf_document2:
     latex_engine: xelatex
     keep_tex: true
     spacing: double
     number_sections: false
-  officedown::rdocx_document:
 bibliography: "bibliography.bib"
 csl: "nature.csl"
 link-citations: true
@@ -545,7 +545,7 @@ trends_cap <- paste0("**Distribution of community temporal trends across sites**
   site and the dots the average posterior distribution with
   the bars depicting the Bayesian credible intervals at 95\\%.
   The dashed lines refer to no temporal trend.", " N = ", fnop, " sampling
-  events across over ", fnsite, " sites.") %>%
+  events over ", fnsite, " sites.") %>%
   str_replace_all("\\s+", " ")
 if (knitr::is_latex_output()){
  trends_cap <- str_replace(trends_cap, bold_pattern, "\\\\textbf{\\2}")
@@ -640,7 +640,7 @@ pca_clust_cap <- paste0("**Covariation among the temporal trends in community me
   the clusters assuming a Student’s t distribution. The clusters were named
   according to their main characteristics. Sites not assigned to a cluster because
   of affiliation uncertainty ", na_cluster, " are displayed in Fig. S3.", " N = ",
-  fnop, " sampling events across over ", fnsite, " sites.") %>%
+  fnop, " sampling events over ", fnsite, " sites.") %>%
 str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){

@@ -128,10 +128,10 @@ get_model_term_replacement_vulgarisation <- function() {
   )
 }
 
-get_model_term_replacement_paper_figure <- function() {
+get_model_term_replacement_paper_figure <- function(longitude = TRUE) {
   c(
     log1_year_nb = "Time",
-    riv_str_rc1 = "Stream gradient",
+    riv_str_rc1 = ifelse(longitude, "Stream long. position", "Stream gradient"),
     hft_c9309_scaled_no_center = "Recent pressures",
     hft_ix_c9309_diff_scaled = "Recent pressures",
     hft_ix_c9309_log2_ratio = "Recent pressures",
@@ -260,18 +260,20 @@ get_pred_signification <- function() {
   )
 }
 
-get_term_level <- function() {
+get_term_level <- function(longitude = TRUE) {
+  stream <- ifelse(longitude,
+    "Stream long. position",
+    "Stream gradient")
   c(
     "Time",
     "Past pressures",
     "Recent pressures",
-    "Stream gradient",
+    stream,
     "Time x\nPast pressures",
     "Time x\nRecent pressures",
-    "Time x\nStream gradient",
+    paste0("Time x\n", stream),
     "Time x\nPast pressures x\nRecent pressures",
-    "Time x\nStream gradient x\nPast pressures",
-    "Time x\nStream gradient x\nRecent pressures"
+    paste0("Time x\n", stream, " x\nPast pressures"),
+    paste0("Time x\n", stream, " x\nRecent pressures")
   )
-
 }
