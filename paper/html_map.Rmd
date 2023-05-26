@@ -53,12 +53,16 @@ names(restricted_dimension) <- c(
 ```
 
 ```{r}
-tar_load(c(site_cl_rm, site_cl_na, filtered_dataset_modelling))
+tar_load(c(site_cl_rm, filtered_dataset_modelling))
 tar_load(c(site_no_drivers_inla_tot))
+site_cl_rm %>%
+  select(siteid, turnover_scaled,  log_chao_richness, log_total_abundance, cl)
 ```
 
 ```{r}
 tar_load(c(gaussian_inla_exo_no_drivers_adj_re, gaussian_inla_no_drivers_adj_re))
+# plot basin
+tar_load(c(filtered_basinatlas_modelling, world_site_sf, measurement_exo))
 ```
 
 
@@ -80,7 +84,7 @@ cluster_names <- c(
 )
 site_cl_na_loc <- loc %>%
   select(siteid) %>%
-  left_join(site_cl_na %>%
+  left_join(site_cl_rm %>%
   select(siteid, cl) %>%
   mutate(cl = cluster_names[as.character(cl)]),
 by = "siteid"
@@ -117,6 +121,10 @@ trends_cl_loc <- site_cl_na_loc %>%
   select(all_of(c("Cluster assignement", names(restricted_dimension), "Site id")))
 
 ```
+
+```{r}
+```
+
 
 ```{r}
 ci95 <- rbind(
@@ -202,10 +210,44 @@ show_col(viridis::viridis_pal()(6))
 viridis::viridis_pal()
 ```
 
+```{r}
+basin_name_id <- loc %>%
+  left_join(
+    measurement_exo %>%
+      distinct(siteid, basin_name),
+    by = "siteid") %>%
+filter(!is.na(basin_name)) %>%
+distinct(main_bas, basin_name) %>%
+st_drop_geometry() %>%
+  group_by(main_bas) %>%
+  nest() %>%
+  mutate(basin_name2 = map_chr(data, ~paste(.x$basin_name, collapse = ", "))) %>%
+  select(-data)
+
+basin_name_id %>%
+  filter(main_bas == 2080021820)
+
+
+basin_name_shape <- filtered_basinatlas_modelling %>%
+  left_join(basin_name_id, by = "main_bas") %>%
+  select(`Basin id` = main_bas, `Basin name` = basin_name2)
+```
+
+```{r}
+```
+
+
 
 ```{r}
 mapviewOptions(fgb = FALSE)
-m <- mapview(trends_cl_loc %>%
+m <- mapview(basin_name_shape,
+  zcol = c("Basin name"),
+  layer.name = "River basin",
+  alpha.regions = 0,
+  col.regions = "grey",
+  legend = FALSE
+  ) +
+  mapview(trends_cl_loc %>%
     left_join(ti) %>%
     select(any_of(c("Cluster assignement",
           names(restricted_dimension95),
@@ -285,7 +327,7 @@ mapview(trends_cl_loc %>%
 ```
 ```{r}
 mapshot(m,
-  url = here("paper", "fig_paper", "SupplementaryMapS1.html"),
+  url = here("paper", "fig_paper", "SupplementaryMap","SupplementaryMapS1.html"),
   selfcontained = FALSE
 )
 ```

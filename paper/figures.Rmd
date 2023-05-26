@@ -193,12 +193,50 @@ ci_label_data <- trends_y %>%
 ```
 
 ```{r}
+#expression(
+#      paste("Standardized slope coefficients ",
+#        beta, "' (", "s.d. unit)",
+#        sep = "")
+#)
 abc_label <- setNames(
   map2_chr(letters[1:6], levels(ci_label_data$response_f),
-    ~paste0("(", .x, ") ", .y)
+    function(label, v) {
+    x <- paste0(" bold(", label, ") ", v, "") %>%
+      str_replace_all("\\s", "~") %>%
+      str_replace_all(",", "','")  %>%
+      str_replace_all("%", "")  %>%
+      str_replace_all("\\~\\(", "~'('*") %>%
+      str_replace("n\\)", "n')'") %>%
+      str_replace("~\\)", "~')'") %>%
+      str_replace("~'\\('\\)", "~'('')'")
+
+
+#    if (!str_ends(x, "'")) {
+#      x <- paste0(x, "'")
+#    }
+    x
+    }
+
+    #%>%
+    #  str_replace_all("\\~\\(.*\\)", "") #"\'%\'*"
+
     ),
   levels(ci_label_data$response_f)
 )
+
+abc_label <- setNames(
+  map2_chr(letters[1:6], levels(ci_label_data$response_f),
+    function(label, v) {
+    paste0(" ", label, " ", v, "")
+    }
+
+    #%>%
+    #  str_replace_all("\\~\\(.*\\)", "") #"\'%\'*"
+
+    ),
+  levels(ci_label_data$response_f)
+)
+
 ```
 
 
@@ -223,7 +261,7 @@ p_trends_site <- tps_trends_y %>%
     ) +
   theme_cowplot(10) +
   theme(
-    strip.text = element_text(size = 10),
+    strip.text = element_text(size = 10, face = "bold"),
     strip.background = element_blank(),
     legend.position = "none"
   )
@@ -314,6 +352,12 @@ ci_label_data_supp <- trends_y %>%
 ```
 
 ```{r, fig.width = 12, fig.asp = 1, fig.cap=trends_cap}
+abc_label_supp <- setNames(
+  map2_chr(letters[1:2], levels(ci_label_data_supp$response_f),
+    ~paste0(" ", .x, " ", .y)
+    ),
+  levels(ci_label_data_supp$response_f)
+)
 p_trends_site_supp <- tps_trends_y_supp %>%
   arrange(response_f) %>%
   ggplot(aes(x = value, fill = response_f)) +
@@ -323,11 +367,12 @@ p_trends_site_supp <- tps_trends_y_supp %>%
   labs(x = "Temporal trends per decade (%)", y = "Number of sites") +
   scale_x_continuous(n.breaks = 10) +
   facet_wrap(~response_f, scales = "free", ncol = 2,
-    strip.position = "top"
+    strip.position = "top",
+    labeller = as_labeller(abc_label_supp)
     ) +
   theme_cowplot(10) +
   theme(
-    strip.text = element_text(size = 10),
+    strip.text = element_text(size = 10, face = "bold"),
     strip.background = element_blank(),
     legend.position = "none"
   ) +
@@ -444,6 +489,7 @@ theme(
 )
 
 ```
+
 ```{r}
 p_tps_effect <- tu %>%
   filter(facet %in% c("interaction", "dbl_interaction")) %>%
@@ -635,6 +681,8 @@ p_effect <- plot_grid(
   print(p_tps_effect2 +
     theme(
       legend.position = "none",
+      text = element_text(size = 11),
+      axis.title.x = element_text(hjust = .75),
       axis.title.y = element_blank(),
       plot.margin = margin(0, 0, 0, 0, "pt"),
       )
@@ -685,6 +733,7 @@ ggsave(
   units = "mm",
   dpi = "print"
 )
+
 ```
 
 ```{r}
@@ -907,13 +956,13 @@ ggsave(
 ### Plot NA cluster
 
 ```{r}
-tar_load(c(site_cl_na))
+tar_load(c(site_cl_rm))
 axis_l <- list(
   c("CS1", "CS2"),
   c("CS3", "CS4")
 )
-table_to_vec(table(site_cl_na$cl))
-sum(is.na(site_cl_na$cl))
+table_to_vec(table(site_cl_rm$cl))
+nrow(filtered_dataset_modelling$location) - length(site_cl_rm$cl)
 
 p_pca_cl_ell_na <- map(axis_l,
   ~plot_pca_clust(
@@ -1132,7 +1181,7 @@ ggsave(
 ### Cluster figure NA
 
 ```{r}
-tar_load(c(site_cl_na, filtered_dataset_modelling))
+tar_load(c(filtered_dataset_modelling))
 loc <- filtered_dataset_modelling$location %>%
   mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
   left_join(filtered_dataset_modelling$site_quali, by = "siteid") %>%

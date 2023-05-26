@@ -92,6 +92,8 @@ restricted_dimension <- c(
   "perc_exo_abun", "perc_exo_sp",
   "hillebrand_dis_scaled", "turnover_scaled"
 )
+
+bold_pattern <- "(\\*\\*(.*)\\*\\*)"
 ```
 
 ```{r}
@@ -132,10 +134,14 @@ location_summary <- location_site %>%
 ```
 
 ```{r}
-year_op_cap <- "Distribution of sampling event years. The years 1993 and 2009
+year_op_cap <- "**Distribution of sampling event years**. The years 1993 and 2009
 are highlighted, corresponding to the years of the Human Footprint Index
 assessments, which were used to quantify past and recent pressures (See Methods)." %>%
 str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ year_op_cap <- str_replace(year_op_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r y-op, fig.cap=year_op_cap}
@@ -280,13 +286,18 @@ p_completness <- site_year %>%
 ```
 
 ```{r}
-cap <- "Distribution of (a) year of sampling events (b) first year of sampling,
-(c) time span and (d) completeness of time series by site. In (a) and (b), the
+cap <- "**Distribution of (a) year of sampling events (b) first year of sampling,
+(c) time span and (d) completeness of time series by site**. In (a) and (b), the
 lines display the year 1993 and 2009. The years 1993 and 2009 correspond to the
-years of the Human Footprint Index assessments, which were used to quantify past
+years of the human footprint index assessments, which were used to quantify past
 and recent pressures (See Methods)." %>%
 str_replace_all("  ", " ") %>%
 str_replace_all("\n|\r", " ")
+
+if (knitr::is_latex_output()){
+ cap <- str_replace(cap, bold_pattern, "\\\\textbf{\\2}")
+}
+
 ```
 
 ```{r base-span-cpl, fig.cap=cap, fig.width = 8, fig.asp = 1}
@@ -334,6 +345,9 @@ with bars depicting the Bayesian credible intervals at
 95\\%. The dashed lines refer to no temporal trend.", "
 N = ", fnop, " sampling events across over ", fnsite, " sites.") %>%
   str_replace_all("\\s+", " ")
+if (knitr::is_latex_output()){
+ trends_cap <- str_replace(trends_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 ```{r trends-dist, fig.cap=trends_cap, fig.asp = 1.1, out.width = "80%"}
 knitr::include_graphics(here("paper", "fig_paper", "p_trends_supp.pdf"))
@@ -352,8 +366,8 @@ na_cluster <- paste0("(N = ",
 ```
 
 ```{r}
-pca_clust_cap <- paste0("Covariation among the temporal trends in community
-metrics and characterization of community trajectories. (a, b) PCA biplot of
+pca_clust_cap <- paste0("**Covariation among the temporal trends in community
+metrics and characterization of community trajectories**. (a, b) PCA biplot of
 the community temporal trends and their cluster assignment (upper panel). (c)
 boxplots displaying the distribution of the temporal trends by cluster. The
 sites are coloured by their cluster belongings. The ellipses in (a-b) are 95\\%
@@ -361,11 +375,14 @@ intervals around the clusters assuming a Student’s t distribution. (d)
 Cluster frequencies across the three main realms. The
 clusters were named according to their main characteristics.",
 " Contrary to Fig. 2 (Main text), we included the sites whose cluster
-affiliation was uncertain ('NA', black color) clusters", na_cluster, ".",
+affiliation was uncertain ('NA', black color) clusters ", na_cluster, ".",
 " NA clusters are well distributed over the PCA (a-b), which is confirmed by the
 distribution of community metric temporal trends (c). We observe a few more NAs
-in Nearctic realms (+5\\%, i.e. around 40 clusters over 897).") %>%
+in the Nearctic realm (+5\\%, i.e. around 40 clusters over 897).") %>%
   str_replace_all("\\s+", " ")
+if (knitr::is_latex_output()){
+ pca_clust_cap <- str_replace(pca_clust_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%"}
@@ -402,6 +419,7 @@ tu_full <- rbind(
 
 
 ```{r, fig.show = "hide"}
+theme_set(theme_grey())
 p_tps_effect2 <- tu_full %>%
   filter(str_detect(term, "Time")) %>%
   arrange(response, desc(width_bar)) %>%
@@ -419,6 +437,7 @@ p_tps_effect2 <- tu_full %>%
     ) +
   scale_x_break(c(.105, .17), scales = .2, ticklabels = c(.20, .25)) +
   scale_x_break(c(.28, .65),  scales = .2, ticklabels = c(.60, .70)) +
+  theme_bw() +
   theme(
     axis.line.y.right = element_blank(),
     axis.ticks.y.right = element_blank(),
@@ -448,13 +467,9 @@ p_space_effect2 <- tu_full %>%
     xaxis_title = TRUE,
     legend = TRUE
     ) +
-  labs(
-    x = expression(
-      paste("Standardized slope coefficients ",
-        beta, "' (", "s.d. unit)",
-        sep = "")
-    )
-    ) +
+  theme_bw() +
+  labs(x = expression(atop(paste("Standardized slope coefficients ",
+        beta, "'",sep = ""), "(s.d. unit)"))) +
   theme(legend.position = "none",
     legend.justification = "right"
     ) +
@@ -465,7 +480,10 @@ p_effect <- plot_grid(
   print(p_tps_effect2 +
     theme(
       legend.position = "none",
-      plot.margin = margin(5, 5, 5, 5, "pt"),
+      text = element_text(size = 11),
+      axis.title.x = element_text(hjust = .75),
+      axis.title.y = element_blank(),
+      plot.margin = margin(0, 0, 0, 0, "pt"),
       )
     ),
   plot_grid(
@@ -473,9 +491,8 @@ p_effect <- plot_grid(
     p_space_effect2 +
       theme(
         text = element_text(size = 11),
-        legend.position = "none",
-        plot.margin = margin(5, 5, 5, 5, "pt"),
-        plot.background = element_rect(fill = NA, color = "black")
+        axis.title.y = element_blank(),
+        legend.position = "none"
       ),
     get_legend(p_tps_effect2 +
       theme(legend.position = "right", legend.justification = "center",
@@ -507,23 +524,29 @@ ggsave(
   dpi = "print"
 )
 ```
+```{r}
+theme_set(theme_bw())
+```
+
 
 
 ```{r}
-pred_hft_cap <- "Predictions of average community metric values and changes over
+pred_hft_cap <- "**Predictions of average community metric values and changes over
 time according to past human pressures and recent changes in human pressures
-using a hierarchical Bayesian model. Total abundance is expressed in count,
+using a hierarchical Bayesian model**. Total abundance is expressed in count,
 species richness in raw number, while non-native abundance, non-native
 abundance, dissimilarity and turnover are expressed in proportion. No pressure,
 medium pressure, and highly degraded past pressure levels correspond
-respectively to values of Human footprint index for year 1993 of 2.5 (intact
+respectively to values of Human footprint index for the year 1993 of 2.5 (intact
 ecosystem), 16.8 (median value in our dataset), and 45.6 (maximum value in the
 dataset). Recent pressure levels represent change in Human footprint index
-between years the 1993 and 2009 (see Methods for details). The central lines display
+between the years 1993 and 2009 (see Methods for details). The central lines display
 the mean, while the lower and upper lines display the credible intervals at
 95\\% of the average posterior distribution." %>%
   str_replace_all("\\s+", " ")
-
+if (knitr::is_latex_output()){
+ pred_hft_cap <- str_replace(pred_hft_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 
@@ -532,8 +555,8 @@ knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
 ```
 
 ```{r}
-std_tot_cap <- "Effects of anthropogenic pressures and stream gradient on (a)
-community temporal changes and (b) community spatial variations. See Methods
+std_tot_cap <- "**Effects of anthropogenic pressures and stream longitudinal position on (a)
+community temporal changes and (b) community spatial variations**. See Methods
 Fig. 3 in the main text for details. We compare coverage corrected species
 richness (Richness) with raw species richness (Richness (raw)) and Simpson
 dissimilarity (Dissimilarity) with jaccard dissimilarity (Jaccard
@@ -541,9 +564,13 @@ dissimilarity (Dissimilarity) with jaccard dissimilarity (Jaccard
 species richness does not affect the results. Similarly, we observe consistent
 effect sizes for Simpson and Jaccard dissimilarity indices, meaning that
 observed changes in community composition concerned abundant species and thus
-changes in the identity of dominant species (Hillebrand et .al. 2018, see
+changes in the identity of dominant species (see
   Methods)." %>%
   str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ std_tot_cap <- str_replace(std_tot_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 
@@ -558,13 +585,17 @@ tar_load(pca_riv_str)
 
 
 ```{r}
-cap_pca_riv <- "Rotated PCA over the physical and hydrological structure of
-streams. PCA axes (Rotated Component, RC) were rotated using Varimax algorithm
+cap_pca_riv <- "**Rotated PCA over the physical and hydrological structure of
+streams**. PCA axes (Rotated Component, RC) were rotated using the Varimax algorithm
 (See Methods). The first axis is related to the average discharge, Strahler
 order and the distance from source, and was subsequently used in the statistical
-modelling as a composite variable to summarise the stream gradient from upstream
+modelling as a composite variable intended to summarise the stream longitudinal position from upstream
 to downstream." %>%
   str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ cap_pca_riv <- str_replace(cap_pca_riv, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv}
@@ -635,19 +666,23 @@ ggsave(
 ```
 
 ```{r}
-cor_cap <- "Spearman correlations among the ecological drivers used in the
+cor_cap <- "**Spearman correlations among the ecological drivers** used in the
 hierarchical Bayesian model as well as with additional population density land
 use variables. Land use data and population density were extracted from
-HydroAtlas, which uses different data than the Human Footprint
-Index (See Methods) and are meant to illustrate the covariations of various
+HydroAtlas and are meant to illustrate the covariations of various
 human pressures with the human footprint index. We show the correlation with the
-extents of forest, pasture, and cropland at year 2000, urban extent at year 2015
+extents of forest, pasture, and cropland for year 2000, urban extent for year 2015
 and population density for year 2010 (See Linke et al., 2019 for details). We
-observe very low correlations among the ecological drivers (Stream gradient, past
-  pressures and recent pressures). Past pressures (human footprint index at year
+observe very low correlations among the ecological drivers (stream longitudinal
+  position, past
+  pressures and recent pressures). Past pressures (human footprint index for year
   1993) are positively correlated with population density, urban extent and
 cropland extent, but are negatively correlated with forest extent." %>%
   str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ cor_cap <- str_replace(cor_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 
@@ -722,15 +757,19 @@ ggsave(
 
 ```{r}
 N <- unique(r2_obs_fit$n)
-obs_fit_cap <- paste0("Fitted values of the models vs observed values (N = ",N,"
+obs_fit_cap <- paste0("**Fitted values of the models vs observed values** (N = ",N,"
   sampling events). The black line displays the bisection, i.e. the intercept
 and slope are respectively 0 and 1. Sticks located at the abscissa and ordinate
 axis represent the density of values. The Pearson's correlation coefficient is
-displayed in each panel. Total abundance and species richness values are logged.
-We see that the model predicted the data reasonnably well, but it tended to
+displayed in each panel. Total abundance and species richness values are log-transformed.
+The model predicted the data reasonnably well, but it tended to
 overestimate low values and underestimate high values especially for the
 proportion of non-native species and dissimilarity.") %>%
 str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ obs_fit_cap <- str_replace(obs_fit_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r fit-obs, fig.cap = obs_fit_cap, out.width="80%"}
@@ -747,8 +786,8 @@ tar_load(c(k6_fac_1, sup_clust_size_fac1))
 ```
 
 ```{r}
-cap_clust_curv <- "Objective function quantifying the goodness of k-means
-clustering according to the percentage of data being removed (the most outliers
+cap_clust_curv <- "**Objective function quantifying the goodness of k-means
+clustering** according to the percentage of data being removed (the most outliers
   data in the multidimentional space). The different lines indicate differences
 in the goodness of fit for different number of clusters, as indicated by the
 numbers. In the results presented in the main text, we removed 5\\% of the data
@@ -758,6 +797,10 @@ the small increases in goodness of fit observed from 4 to 5 clusters, we also
 tested the sensitivity of our conclusions regarding the community trajectories
 using 4 clusters  (see Fig. S10)." %>%
   str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ cap_clust_curv <- str_replace(cap_clust_curv, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r, fig.show = "hide"}
@@ -813,11 +856,15 @@ site_k4_fac_1_cl <- get_cluster_df(
 ```
 
 ```{r}
-bp_cl_dist_cap <- "Distribution of temporal trends per decade by variable and
-cluster, with four clusters. With four clusters instead of six,
-we observe the loose of the clusters related to changes in community
+bp_cl_dist_cap <- "**Distribution of temporal trends per decade by variable and
+cluster, with four clusters**. With four clusters instead of six,
+we do not observe the clusters related to changes in community
 composition (Fig. 2, main text)." %>%
   str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ bp_cl_dist_cap <- str_replace(bp_cl_dist_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r, fig.width = 10, fig.asp = .6, fig.cap=bp_cl_dist_cap}
@@ -866,8 +913,11 @@ knitr::include_graphics(here("paper", "fig_paper", "cl_bt_supp.pdf"))
 
 
 ```{r, eval=FALSE}
-tab_pred_cap <- "Values and signification of predictor variables used in the
-main text."
+tab_pred_cap <- "**Values and signification of predictor variables used in the
+main text**."
+if (knitr::is_latex_output()){
+ tab_pred_cap <- str_replace(tab_pred_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 tab_pred %>%
   kbl(booktabs = T,
     label = "tab-pred",
@@ -908,10 +958,14 @@ tab_rand2 <- tab_rand %>%
 ```
 
 ```{r}
-tab_rand_cap <- "Random effects associated with the estimation of the temporal trends
-computed from the model containing only time as fixed predictor. [95\\% CI]: Credible Interval computed using
+tab_rand_cap <- "**Random effects associated with the estimation of the temporal trends
+computed from the model containing only time as fixed predictor**. [95\\% CI]: Credible Interval computed using
 Highest Posterior Density method." %>%
   str_replace_all("\\s+", " ")
+if (knitr::is_latex_output()) {
+  tab_rand_cap <- str_replace(tab_rand_cap, bold_pattern, "\\\\textbf{\\2}")
+}
+
 tab_rand2 %>%
   pivot_wider(names_from = "Spatial scale", values_from = "Temporal trends s.d.") %>%
   select(1, 3, 2) %>%
@@ -951,7 +1005,10 @@ reference <- reference %>%
       Reference,
       c(
         "https://wwwp2\\.ymparisto\\.fi/koekalastus_sahko/yhteinen/Login\\.aspx\\?ReturnUrl=%2fkoekalastus_sahko \\[Accessed on 04/09/2019\\]" = "https://wwwp2.ymparisto.fi/koekalastus_sahko/ [Accessed on 04/11/2023]",
-        "https://cf\\.pca\\.state\\.mn\\.us/water/watershedweb/wdip/search_more\\.cfm\\?datatype=assessments \\[Accessed on 04/03/2019\\]" = "https://webapp.pca.state.mn.us/surface-water [Accessed on 04/11/2023]"
+        "https://cf\\.pca\\.state\\.mn\\.us/water/watershedweb/wdip/search_more\\.cfm\\?datatype=assessments \\[Accessed on 04/03/2019\\]" = "https://webapp.pca.state.mn.us/surface-water [Accessed on 04/11/2023]",
+         "https://aquatic\\.biodata\\.usgs\\.gov/clearCriteria\\.action \\[Accessed on 10/15/2019\\]"= "https://apps.usgs.gov/biodata/ [Accessed on 25/05/2023]",
+        "Data are available by contacting: https://www\\.fws\\.gov/southwest/sjrip/" = "Data are available at https://streamsystem\\.org/ [Accessed on 25/05/2023]"
+
       )
     )
   )
@@ -969,26 +1026,34 @@ ti <- published_rivfishtime_characteristic %>%
     arrange(desc(N))
 ti_ref <- ti %>%
   left_join(ref) %>%
-  rename(`Source id` = SourceID)
+  rename(`Source ID` = SourceID)
 
 country_lvl <- location_summary %>%
   arrange(desc(N)) %>%
   .$Country
 
+data_ref_cap <- "**References of the dataset included in the study**, arranged by numeric sampling size. Numeric Source ID correspond to the ID of the RivFishTIME database (Comte et al.,
+    2021a). N: number of sites." %>%
+str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+  data_ref_cap <- str_replace(data_ref_cap, bold_pattern, "\\\\textbf{\\2}")
+}
+
 add_dataset_ref %>%
-  select(1, 2, 3, Reference) %>%
+  select(`Source ID` = `Source id`, 2, 3, Reference) %>%
   mutate(
     Country = str_replace(Country, "Canada", "CAN"),
-    Country = factor(Country, levels = country_lvl)
+    Country = factor(Country, levels = country_lvl),
     ) %>%
   rbind(ti_ref) %>%
+  mutate(Reference = str_replace(Reference, "\\.;", ".")) %>%
   arrange(Country, desc(N)) %>%
   kbl(
     longtable = T,
     booktabs = T,
     label = "tab-add-data",
-    caption = "References of the dataset included in the study, arranged by countries which have the more sites in our study. Numeric Source id correspond to the id of RivFishTIME database (Comte et al.,
-    2021a). N: number of sites.") %>%
+    caption = data_ref_cap) %>%
   kable_styling(
     repeat_header_continued = "\\textit{(Continued on Next Page...)}",
     latex_options = c("striped", "hold_position", "repeat_header")
@@ -1131,10 +1196,18 @@ arrange(Method, desc(N))
 ```
 
 ```{r, eval=TRUE}
+tab_quali_cap <- "**Site location, protocol and abundance unit occurrences
+across sites, and data source for native species status** in term of species
+occurrence." %>%
+str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ tab_quali_cap <- str_replace(tab_quali_cap, bold_pattern, "\\\\textbf{\\2}")
+}
 tab_quali %>%
   kbl(booktabs = T,
     label = "tab-met",
-    caption = "Site location, protocol and abundance unit occurrences across sites, and data source for native species status in term of species occurrence.") %>%
+    caption = tab_quali_cap) %>%
   collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   kable_styling(latex_options = c("striped", "hold_position"))
 ```
@@ -1389,7 +1462,7 @@ variable_tot <- rbind(
     mutate(Type = "Predictor") %>%
     select(Type, Variable = `Ecological drivers`, everything()),
   pca_var_tmp %>%
-    mutate(Type = "Stream gradient") %>%
+    mutate(Type = "Stream long. position") %>%
     select(Type, Variable = `Stream gradient variable`, everything())
   ) %>%
 mutate(
@@ -1397,13 +1470,29 @@ mutate(
   `(Min, Max)` = str_replace(`(Min, Max)`, " ", "")
 )
 
+var_tot_cap <- "**Summary descriptors of response and predictor variables used in
+    the full hierarchical Bayesian model** (Fig. 3, main text). For the stream
+    longitudinal position, we display the summary descriptors of the variables used
+    to contruct the composite variable (See Methods, main text)." %>%
+    str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ var_tot_cap <- str_replace(var_tot_cap, bold_pattern, "\\\\textbf{\\2}")
+}
+
 variable_tot %>%
+  mutate(
+    across(c(`Median (Q1, Q3)`, `(Min, Max)`),
+      ~str_replace_all(.x,
+      c(
+        "\\(\\s" = "(",
+        "\\s+" = " ",
+        "\\s(\\d)" = "\\1"
+      )
+      ))) %>%
   kbl(booktabs = T,
     label = "tab-resp",
-    caption = "Summary descriptors of response and predictor variables used in
-    the full hierarchical Bayesian model (Fig. 3, main text). For the stream
-    gradient variable, we display the summary descriptors of the variables used
-    to contruct the composite variable (See Methods, main text).") %>%
+    caption = var_tot_cap) %>%
   collapse_rows(columns = 1, latex_hline = "major", valign = "middle") %>%
   column_spec(column = 2, width="6cm") %>%
   kable_styling(latex_options = c("striped", "hold_position", "scale_down"))
@@ -1467,11 +1556,15 @@ variable_stat %>%
 
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
-cap_aic_table <- "Watanabe-Akaike Information Criterion (WAIC) of the
-statistical models fitting temporal trends with either the number of years since
+cap_aic_table <- "**Watanabe-Akaike Information Criterion (WAIC) of the
+statistical models fitting temporal trends** with either the number of years since
 the start of sampling or log-transformed number of years plus one (See Methods).
 Most community metrics are best modelled with the log-transformed values." %>%
 str_replace_all("\n|\r", " ")
+
+if (knitr::is_latex_output()){
+ cap_aic_table <- str_replace(cap_aic_table, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 ```{r}
@@ -1515,12 +1608,16 @@ tab_waic %>%
 ```
 
 ```{r}
-vif_caption <- "Variance inflation factors (VIF) of the ecological drivers
-included in the hierarchical Bayesian model (Fig. 3, main text). SE factor: inflation of the
+vif_caption <- "**Variance inflation factors (VIF) of the ecological drivers
+included in the hierarchical Bayesian model** (Fig. 3, main text). SE factor: inflation of the
 standard error of the slope coefficients predicted by the multicollinearity of the
 variables. The VIF values were all close to 1, indicating absence of
 multicollinearity." %>%
 str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()){
+ vif_caption <- str_replace(vif_caption, bold_pattern, "\\\\textbf{\\2}")
+}
 ```
 
 

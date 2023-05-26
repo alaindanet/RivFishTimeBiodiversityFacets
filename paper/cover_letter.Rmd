@@ -21,8 +21,6 @@ signature: /home/alain/Documents/Administration/signature.pdf
 Sys.setlocale("LC_TIME", "C")
 ```
 
-Dear Chief editor Patrick Goymer, dear Senior Editors,
-
 Please find enclosed our manuscript entitled "Past and recent anthropogenic
 pressures drive rapid changes in riverine fish communities", which we submit for
 consideration in Nature in Ecology & Evolution.
@@ -48,10 +46,10 @@ located in several biogeographic realms (mainly Palearctic, Nearctic and
 Australasian), we related changes in community structure (total abundance and
 species richness), composition (temporal dissimilarity and turnover), and
 non-native species contribution to past and recent anthropogenic pressures. Our
-results confirmed a global increase in fish species richness and total abundance
+results show a global increase in fish species richness and total abundance
 over time, but revealed that those increases are associated with important
 species replacement and changes in dominance, together with an upsurge in the
-proportion of non-native species observed in historically degraded sites,
+proportion of non-native species in historically degraded sites,
 reflecting a legacy of past anthropogenic pressures. We further uncovered an
 interacting effect with recent changes in anthropogenic pressures, such as sites
 that had been further degraded do not display increases in total abundance and

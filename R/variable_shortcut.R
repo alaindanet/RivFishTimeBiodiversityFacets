@@ -207,7 +207,7 @@ get_land_class_var <- function() {
 
 get_unitabun_replacement <- function() {
   c(
-    "Ind.100m2" = "Individual number per 100m2",
+    "Ind.100m2" = "Individual numbers per 100m2",
     "CPUE" = "Catch Per Unit Effort (CPUE)"
   )
 }
