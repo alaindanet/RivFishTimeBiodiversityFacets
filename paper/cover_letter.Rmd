@@ -9,6 +9,10 @@ return-address:
 - School of Biological Sciences
 - Illinois State University
 - Campus Box 4120 Normal, IL 61790
+- "Current address:"
+- School of Biosciences
+- University of Sheffield, Western Bank
+- S10 2TN, Sheffield, UK
 output:
   linl::linl:
     keep_tex: true
@@ -58,7 +62,7 @@ increases in the share of non-native species.
 
 Our study provides a large-scale picture of the biodiversity trends in an
 important freshwater group, but also a better understanding of the drivers
-underlying community changes in an era of dramatic environmental pressures. Our
+underlying community changes in an era of dramatic environmental changes. Our
 results are coherent with the abundant literature reporting an ongoing biotic
 homogenization of riverine fish communities at the global scale, and suggest
 that recent increases in species richness and total abundance at the local scale

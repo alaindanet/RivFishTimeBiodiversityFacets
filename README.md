@@ -8,7 +8,7 @@
 <!-- badges: end -->
 
 Research project conducted by Alain Danet at the Comte Lab (Illinois
-State University). The project is supervised by Lise Comte, Xingli Giam
+State University). The project was supervised by Lise Comte, Xingli Giam
 and Julian D. Olden.
 
 ## Organisation
@@ -25,6 +25,8 @@ necessary packages.
 
 ## Data:
 
-  - All data are publicly available and cited in the manuscript
+  - All data are publicly available and cited in the manuscript, we
+    provide the raw data used in the analysis as a [Zenodo
+    repository](https://doi.org/10.5281/zenodo.7817360)
   - RiverAtlas data can be downloaded here:
-    `https://figshare.com/ndownloader/files/20087486`
+    [figshare](https://figshare.com/ndownloader/files/20087486)

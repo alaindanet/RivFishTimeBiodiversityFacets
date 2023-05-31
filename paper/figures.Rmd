@@ -1477,7 +1477,6 @@ lvl_basin <- c(
 lvl_ecoregion <- c(Nearctic = "(a) Nearctic", Palearctic = "(b) Palearctic", Australasia = "(c) Australasia")
 ```
 ```{r}
-unique(tot_tab$basin_name_n)
 p_tot_tab <- tot_tab %>%
   mutate(
      basin_name_f = factor(basin_name_n, levels = lvl_basin),
@@ -1499,6 +1498,12 @@ p_tot_tab <- tot_tab %>%
   facet_grid(rows = vars(ecoregion_f), scale = "free_y") +
   scale_fill_viridis(discrete = TRUE, name = "Cluster", direction = -1)
 ```
+```{r}
+unique(tot_tab$basin_name)
+tot_tab %>%
+  filter(basin_name == "Thames ")
+```
+
 
 
 ```{r}

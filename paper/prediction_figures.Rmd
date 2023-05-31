@@ -67,12 +67,12 @@ names(pred_term_vulgarisation$hft_ix_c93) <-
     "Highly degraded")
 
 names(pred_term_vulgarisation$hft_ix_c9309_log2_ratio) <-
-  c("Four fold decrease",
-    "Two fold decrease",
-    "No changes",
-    "Two fold increase",
-    "Four fold increase",
-    "Sixteen fold increase")
+  c("Four-fold decrease",
+    "Two-fold decrease",
+    "No change",
+    "Two-fold increase",
+    "Four-fold increase",
+    "Sixteen-fold increase")
 
 pred_gaussian_inla_tot <- rbind(
   pred_gaussian_inla,
@@ -93,11 +93,10 @@ pred_gaussian_inla_tot$pred[[4]] %>%
     riv_str_rc1 == pred_data_explanation$riv_str_rc1["median"],
     hft_ix_c93 %in% c("No pressure", "Medium pressure", "Highly degraded"),
     hft_ix_c9309_log2_ratio %in% c(
-      "Four fold decrease",
-      "Two fold decrease",
-      "No changes",
-      "Two fold increase",
-      "Four fold increase")
+      "Four-fold decrease",
+      "No change",
+      "Two-fold increase",
+      "Four-fold increase")
     )
 pred_gaussian_inla_tot$pred <-
   map(pred_gaussian_inla_tot$pred,
@@ -115,9 +114,9 @@ pred_gaussian_inla_tot$pred <-
         riv_str_rc1 == pred_data_explanation$riv_str_rc1["median"],
         hft_ix_c93 %in% c("No pressure", "Medium pressure", "Highly degraded"),
         hft_ix_c9309_log2_ratio %in% c(
-          "Two fold decrease",
-          "No changes",
-          "Two fold increase")
+          "Two-fold decrease",
+          "No change",
+          "Two-fold increase")
       ) %>%
       select(mean, quant0.025, quant0.975, year_nb, hft_ix_c93_f,
         hft_ix_c9309_log2_ratio_f)

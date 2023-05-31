@@ -1,5 +1,5 @@
 ---
-title: "Past and recent anthropogenic pressures drives rapid changes in riverine fish communities"
+title: "Past and recent anthropogenic pressures drive rapid changes in riverine fish communities"
 author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
 date: ""
 output:
@@ -251,7 +251,7 @@ heterogeneity of human pressures. Using a compilation of riverine fish community
 timeseries across three biogeographic realms, we assessed how past and recent
 anthropogenic pressures drive community changes across both space and time. We
 found evidence of rapid changes in community composition of 30% per decade
-characterized by significant changes of the dominant species, together with a
+characterized by significant changes in the dominant species, together with a
 13% increase in total abundance per decade, and a 7% increase in species
 richness per decade. The spatial heterogeneity in these trends could be traced
 back to the strength and timing of anthropogenic pressures and was mediated by
@@ -314,18 +314,18 @@ habitats[@altermatt_river_2013]. Accounting for past and recent anthropogenic
 pressures as well as spatial distribution of habitats may therefore improve our
 understanding of community changes.
 
-This study investigates how, and the potential mechanisms of why riverine fish
-communities change spatially and temporally from local to continental extents.
+This study investigates the spatio-temporal changes of riverine fish communities
+in response to human pressures from local to continental extents.
 To do so, we leveraged a compilation of 4,476 riverine fish community
 time series[@comte_rivfishtime_2021] that had been repeatedly sampled over the last three decades in
 various river basins across three biogeographic realms. We quantified temporal
 changes in total abundance, species richness, and community composition across
 local communities, including in the share of non-native species. We next
 characterised the typology of community temporal trends by examining the
-covariation among different community metrics, and trajectories of community
+covariations among different community metrics, and identifying trajectories of community
 change across spatial scales. We finally assessed how fish community changes
 could be traced back to the spatio-temporal changes in anthropogenic pressures
-and stream longitudinal position. Outcomes of this study further our
+and longitudinal stream position. Outcomes of this study further our
 understanding of the complexity of local community changes by addressing the
 effects of global change and advancing new knowledge that can inform actions
 seeking to curb the current freshwater biodiversity crisis.
@@ -536,12 +536,12 @@ bold_pattern <- "(\\*\\*(.*)\\*\\*)"
 
 ```{r}
 trends_cap <- paste0("**Distribution of community temporal trends across sites**: (a) total
-  abundance, (b) species richness, (c) proportion of non-native abundance, (d)
-  proportion of non-native richness, (e) Simpson temporal dissimilarity, and (f)
+  abundance, (b) species richness, (c) proportion of non-native total abundance, (d)
+  proportion of non-native species richness, (e) Simpson temporal dissimilarity, and (f)
   Jaccard turnover. Temporal trends per decade were estimated from a
   hierarchical Bayesian model including time as sole predictor (See Methods). The
   histograms show the Best Linear Unbiased Predictor (BLUP) estimated at each
-  site and the dots below the histograms represent the average of the posterior distribution with
+  site and the dots below the histograms represent the average posterior distribution with
   bars depicting the Bayesian credible intervals at 95\\%.
   The dashed lines denote no temporal trend.", " N = ", fnop, " sampling
   events across ", fnsite, " sites.") %>%
@@ -572,8 +572,8 @@ decades (Fig. 1; range first survey year: `r tm$min["min"]` - `r tm$min["max"]`
 years [median = `r tm$span["median"]`]; see Fig. S1 for more details on the time
 series). By estimating temporal trends with a hierarchical Bayesian modeling
 approach that accounts for spatial variation at both hydrographic river basin
-and site levels (see Methods for a detailed description of the model), we found
-that communities have increased in both total community abundance and species
+and site levels (see Methods for a detailed description of the models), we found
+that communities have increased in both total abundance and species
 richness, but decreased in the proportional abundance of non-native species in
 recent decades. We found strong evidence for an average increase in total
 community abundance (average Credible Interval 95%: `r abun_trends` per decade,
@@ -599,20 +599,61 @@ over time (CI 95%: `r tu_trends` and `r ne_trends` per decade respectively; Fig.
 1f and S2b). This suggests that changes in community composition were driven by
 species replacement in the community, in addition to species losses or gains.
 
+```{r, eval=FALSE}
+tar_load(site_cl_rm_loc)
+site_thames <- site_cl_rm_loc %>%
+  filter(basin_name == "Thames.UK") %>%
+  .$siteid
+thames_trends <- site_no_drivers_inla_tot[rownames(site_no_drivers_inla_tot) %in% site_thames, ] %>%
+  pivot_longer(everything(), names_to = "response", values_to = "value") %>%
+  filter(response %in% restricted_dimension) %>%
+  mutate(
+    response = get_var_replacement_vulgarisation()[response],
+    value = ifelse(response %in% c("Abundance (total)", "Richness"),
+      log_beta_to_perc_rate(value) * log(10 + 1),
+      value),
+    value = ifelse(response %in% c("Dissimilarity", "Turnover"),
+      value * log(10 + 1) * 100, value),
+    value = ifelse(response %in% c("Non-native abundance", "Non-native richness"),
+      value * log(10 + 1), value),
+    response = str_replace_all(response,
+      c(
+        "Abundance \\(total\\)" = "Abundance (total, %)",
+        "Richness" = "Richness (%)",
+        "Non-native abundance" = "Non-native abundance (proportion)",
+        "Non-native richness" = "Non-native richness (proportion)",
+        "Dissimilarity" = "Dissimilarity (%)",
+        "Turnover" = "Turnover (%)"
+      )
+      ),
+    response_f = factor(response, levels = names(perc_pal_variable)),
+    value = value
+  ) %>%
+  group_by(response_f) %>%
+  mutate(
+    med = median(value),
+    avg = mean(value)
+  )
+tab_palearctic %>%
+  filter(basin_name == "Thames.UK")
+```
+
+
 Beyond overall temporal trends, considerable spatial heterogeneity exists across
-sites (Fig. 1) even within the same river basin (Supplementary Map S1). For
-example, the communities located along the Thames river displayed a variety of
-temporal trends
-including decreases in richness, decreases in abundance or high turnover
-(Supplementary Map S1). The (random) slope of time in our hierarchical model
-varied much more (i.e., up to more than twice as much) across sites within river
-basins than across different basins for all community metrics (Table S1). This
-indicated that relatively finer-scale environmental variation within river
-basins has a greater effect on temporal trends than do larger-scale
-environmental or biogeographical variation across river basins.
+sites, as illustrated by the spread of the histograms in Fig. 1. This
+heterogeneity is also apparent within the same river basin (Supplementary Map
+S1). For example, on average the Thames basin show the same patterns than at the
+global scale but that a variety of temporal trends were observed across the 139
+sites within the basin, including decrease in species richness (18 sites), decrease in
+abundance (20), and high turnover (17). The (random) slope of time in our
+hierarchical models varied much more (i.e., up to more than twice as much)
+across sites within river basins than across different basins for all community
+metrics (Table S1). This suggested that relatively finer-scale environmental
+variation within river basins has a greater effect on community changes than
+larger-scale environmental or biogeographical variation across river basins.
 
 
-## Typology of community temporal trends and their covariation
+## Typology of community temporal trends
 
 ```{r}
 tar_load(site_cl_rm)
@@ -633,12 +674,12 @@ names(var_exp) <- colnames(pca_clust$normal$c1)
 
 
 ```{r}
-pca_clust_cap <- paste0("**Covariation among the temporal trends in community metrics and
+pca_clust_cap <- paste0("**Covariation among the community temporal trends and
   characterization of community trajectories**. (a, b) PCA biplot of the community
-  temporal trends and their cluster assignment (upper panel). (c) boxplots
+  temporal trends and their cluster assignment where the sites are colored
+  according to their cluster assignment. (c) Boxplots
   displaying the distribution of the temporal trends by cluster. (d) Cluster
-  frequencies across the three main realms. The sites are coloured according to
-  their cluster assignment. The ellipses in (a-b) display the 95\\% intervals around
+  frequencies across the three main biogeographic realms. The ellipses in (a-b) display the 95\\% intervals around
   the clusters assuming a Student’s t distribution. The clusters were named
   according to their main characteristics. Sites not assigned to a cluster because
   of affiliation uncertainty ", na_cluster, " are displayed in Fig. S3.", " N = ",
@@ -656,12 +697,12 @@ knitr::include_graphics(here("paper", "fig_paper", "clust_figure.pdf"))
 ```
 
 There was a moderate level of association among the different community trajectory
-metrics; the first two principal components axes explained `r sum(var_exp[1:2])`%
-of the total variability among fish communities (Fig. 2). Temporal trends in
+metrics; the first two axes of the principal component analysis explained `r sum(var_exp[1:2])`%
+of the total variability among fish communities (Fig. 2a-b). Temporal trends in
 community composition (i.e. temporal dissimilarity and turnover) were positively
-associated as were temporal trends in total abundance and species richness;
+associated with each other as were temporal trends in total abundance and species richness;
 however these two sets of trajectories appeared orthogonal to each other (Fig.
-2a). Using a k-mean trimmed clustering method (see Methods), we further detected six distinct
+2b). Using a k-mean trimmed clustering method (see Methods), we further detected six distinct
 types of community trajectories (Fig. 2c). The largest cluster was
 characterised by moderate changes along all biodiversity dimensions: medium
 temporal increases in total abundance and species richness, temporal
@@ -677,7 +718,7 @@ decline in species richness (‘decrease in species richness’; `r per_cluster[
 of the sites), respectively. The last and smallest cluster was associated with
 communities that remained relatively stable over time (‘low change’;
 `r per_cluster[6]` of the sites). The relative frequency of the different
-community trajectories was similar across the three main biogeographic realms
+community trajectories was broadly similar across the three main biogeographic realms
 (Fig. 2d).
 
 
@@ -754,10 +795,9 @@ riv1turn <- get_effect_ci(resp = "turnover_scaled", ci_lvl = "level:0.95",
 ```
 
 We detected complex synergies between the legacy of past anthropogenic pressures
-and the effects of recent anthropogenic human pressures on community temporal
-trends mediated by non-native species and abiotic conditions, when we
-explored additional predictors associated with the human
-footprint index and stream longitudinal position (Fig. 3a, see model predictions
+and the effects of recent anthropogenic pressures on community temporal
+trends, by considering additional predictors associated with the human
+footprint index and longitudinal stream position (Fig. 3a, see model predictions
 in Fig. S4). Specifically, we found strong evidence that a higher degree of past
 anthropogenic pressures
 (i.e. human footprint index of 1993 corresponding to the beginning of the time
@@ -765,13 +805,13 @@ series) was associated with faster increases in total abundance and species
 richness (resp.
 CI 95%:$\beta\prime=$ `r hft93abun` in blue and `r hft93rich` in green, Fig.
 3a). We also uncovered evidence for an interaction with the
-stream longitudinal position (i.e. PCA axis with high values associated with a
+longitudinal stream position (i.e. PCA axis with high values associated with a
 higher Strahler order, a higher distance from source, and a higher annual
 discharge), such as the legacy effects of past anthropogenic pressures on total
 abundance (strong evidence) and species richness (weak evidence) were buffered
 in more downstream areas (resp. CI 95%:$\beta\prime =$ `r rivhftabun` and CI
 80%:$\beta\prime =$ `r rivhftrich`, Fig. 3a). Similar results were obtained using raw
-or coverage-based species richness (See methods, Fig. S5).
+or coverage-based species richness (See Methods, Fig. S5).
 
 Past anthropogenic pressures were also associated with changes in community
 composition. We found evidence (albeit weak) that a higher degree of past
@@ -787,15 +827,15 @@ in the most downstream areas (CI 90%: 0.033 [0.003,0.064], Fig. 3a). We also
 found that a higher degree of past anthropogenic pressures were associated with
 faster rates of increases in temporal dissimilarity and turnover (resp. CI
 95%:$\beta\prime =$ `r hft93hill` in red and `r hft93turn` in purple, Fig. 3a),
-irrespective of the stream longitudinal position
-(resp. CI 80%:$\beta\prime =$ `r rivhfthill` and `r rivhftturn`, Fig. 3a), a
+irrespective of the longitudinal stream position
+(resp. CI 80%:$\beta\prime =$ `r rivhfthill` and `r rivhftturn`, Fig. 3a) -- a
 result consistent between Jaccard and Simpson-based dissimilarity (Fig. S5).
 
 Recent increases in anthropogenic pressures (i.e. ratio of the human footprint
 index between 2009 and 1993) were found to have a context-specific effect on
 total abundance and species richness as well as to hasten community
 reorganisation through increases in the share of non-native species and faster
-rates of temporal dissimilarity and turnover (Fig. 3a, see model prediction in
+rates of temporal dissimilarity and turnover (Fig. 3a, see model predictions in
 Fig. S4). More specifically, we found strong evidence of an antagonistic effect
 between past and recent anthropogenic pressures on total abundance (CI 95%:$\beta\prime
 =$ `r hft2abun`, Fig. 3a), such as the rate of increase observed across
@@ -805,14 +845,14 @@ pressures per se had no effect on the temporal trends in total abundance (CI
 80%:$\beta\prime =$ `r hft09abun`, Fig. 3a). Similarly, recent changes in
 anthropogenic pressures did not have an overall effect on the temporal trends in
 species richness (CI 80%:$\beta\prime =$ `r hft09rich`, Fig. 3a) but
-we found moderate evidence for a positive interaction with the stream longitudinal
+we found moderate evidence for a positive interaction with the longitudinal stream
 position (CI 90%:$\beta\prime =$ `r rivhft09rich`, Fig. 3a), indicating that
 recent increases in anthropogenic pressures were associated with faster
 increases in species richness over time in more downstream areas.
 
 Recent increases in anthropogenic pressures were also associated with more
 rapid increases in the proportion of non-native species abundance in more
-downstream areas (CI 90%:$\beta\prime =$ `r rivhft09exoa`, Fig. 3a), but
+downstream areas (CI 90%:$\beta\prime =$ `r rivhft09exoa`, Fig. 3a), although
 recent changes in anthropogenic pressures had no overall effect (CI
 80%:$\beta\prime =$ `r hft09abun`, Fig. 3a). When considering the share of non-native species
 richness, we found moderate evidence that a recent increase in anthropogenic
@@ -823,24 +863,24 @@ areas (resp. CI 90%:$\beta\prime =$
 `r hft2exor` and `r rivhft09exor`, Fig. 3a). In
 addition, we found strong evidence that a recent increase in anthropogenic
 pressures resulted in stronger temporal dissimilarity and turnover (resp. CI 95%
-$\beta\prime =$ `r hft09hill` and `r hft09turn`, Fig. 3a). This effect
-was hastened in the most historically degraded sites (resp. CI 95%:$\beta\prime =$
+$\beta\prime =$ `r hft09hill` and `r hft09turn`, Fig. 3a). These effects
+were hastened in the most historically degraded sites (resp. CI 95%:$\beta\prime =$
 `r hft2hill` and `r hft2turn`, Fig. 3a), but not affected by the
-stream longitudinal position (resp. CI 80%:$\beta\prime =$
+longitudinal stream position (resp. CI 80%:$\beta\prime =$
 `r rivhft09hill` and `r rivhft09turn`). By
-contrast, our results indicate that higher recent anthropogenic pressures in the
-historically most degraded sites was associated with lower rates of increase in
-total abundance and species richness, but a higher rate of increase in
-non-native richness and higher rates of temporal dissimilarity and turnover (see
+contrast, our results indicated that an increase in recent anthropogenic pressures in the
+historically most degraded sites was associated with slower rates of increase in
+total abundance and species richness, but faster rates of increase in
+non-native richness, temporal dissimilarity and turnover (see
 model predictions in Fig. S4).
 
 ```{r}
 fig1_cap <- paste0("**Drivers of temporal changes and spatial
-  variation in fish community metrics**. Effects of anthropogenic pressures and stream longitudinal position on (a)
+  variation in fish community metrics**. Effects of anthropogenic pressures and longitudinal stream position on (a)
   temporal changes and (b) spatial variation in fish community metrics. Community
   metrics include total abundance, species richness, proportional abundance and
   richness of non-native species, Simpson temporal dissimilarity, and Jaccard
-  turnover. Points depict the average of the posterior distributions. Large,
+  turnover. Points depict the average posterior distributions. Large,
   medium and thin bars depict the Bayesian credible intervals at 80, 90 and
   95\\%, respectively. Please note the broken abscissa scale in (a). N = ",
   fnop," sampling events across ", fnsite," sites.") %>%
@@ -875,7 +915,7 @@ names(abun_rich_hft9309_0_inc_by2)
 
 
  Spatial variation in community structure was strongly associated with past and
- recent anthropogenic pressures and with stream longitudinal position
+ recent anthropogenic pressures and with longitudinal stream position
  (i.e. single model effects independent of time, Fig. 3b). We found that a
  higher degree of past anthropogenic pressures was associated with lower total
  abundance (strong evidence; Fig. 3b, blue), with the most ‘degraded’ sites
@@ -892,24 +932,23 @@ total abundance and species richness (Fig. 3b). More specifically, sites that
 experienced a two-fold increase in recent anthropogenic pressures had `r abun_rich_hft9309_0_inc_by2["log_total_abundance"]`
  lower
 total abundance and `r abun_rich_hft9309_0_inc_by2["log_chao_richness"]` lower species richness than sites that had not undergone
-such pressures. Stream longitudinal position was strongly associated with
+such pressures. Longitudinal stream position was strongly associated with
 species richness - the most downstream sites displayed three times more species
 than the most upstream sites (Fig. 3b).
 
-Anthropogenic pressures and stream longitudinal position were associated with
-spatial variation in the average proportion of non-native fish species.
+Anthropogenic pressures and longitudinal stream position were associated with
+spatial variation in the proportion of non-native fish species.
 Sites that had experienced a higher degree of past and recent anthropogenic
 pressures had a higher proportion of non-native individuals and species (strong
 evidence; Fig. 3b, orange and yellow). The proportion of non-native individuals
-was three times higher in the most degraded sites than the most intact sites (`r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])` versus
-`r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])`), and a proportion of non-native species in the former was more than
-double that of the latter sites (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])` versus
-`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`). Further, a two-fold increase in
-recent anthropogenic pressure increased the proportion of non-native individuals
+and species was three times (`r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])` versus
+`r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])`) and two times (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])` versus
+`r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`) higher in the most degraded sites than the most intact sites . Further, a two-fold increase in
+recent anthropogenic pressures were associated with an increase in the proportion of non-native individuals
 and species by `r other_hft9309_0_inc_by2["perc_exo_abun"]` and
 `r other_hft9309_0_inc_by2["perc_exo_sp"]`, respectively. The downstream-most sites had `r other_riv_int_max["perc_exo_abun"]`
-higher proportional non-native abundance and `r other_riv_int_max["perc_exo_sp"]` higher proportional non-native
-richness than the upstream-most sites (Fig. 3b). Finally, a larger
+higher proportion of non-native abundance and `r other_riv_int_max["perc_exo_sp"]` higher proportion of non-native
+richness than the upstream-most sites (Fig. 3b). Noteworthy, a larger
 share of the variance in the community metrics was explained by site and basin
 identity rather than by the fixed effects alone (R² conditional varying from
 0.15 for turnover to 0.80 for species richness vs. R² marginal varying from 0.02
@@ -956,7 +995,7 @@ select(`Response variable`, `Spatial scale`, `Marg. $R^2$`, `Cond. $R^2$`, `Temp
 mutate(`Response variable` = factor(`Response variable`, levels = names(pal_variable))) %>%
 arrange(`Response variable`)
 
-tab_rand_cap <- "**Marginal and Conditional $R^2$ of the hierarchical Bayesian model for each
+tab_rand_cap <- "**Marginal and conditional $R^2$ of the hierarchical Bayesian model for each
 community metric**. The models included several predictors (fixed effects
 illustrated in Fig. 3) and accounted for spatial variations at the
 hydrographic river basin and site levels (random effects). Marginal $R^2$
@@ -992,11 +1031,11 @@ knitr::include_graphics(here("paper", "fig_paper", "table.png"))
 Recent decades have witnessed substantial shifts in riverine fish communities
 characterised by marked increases in species richness and total abundance over
 time, accompanied by a strong pattern of species replacement. We found that fish
-species richness has increased at a rate of ~7% per decade although no net
+species richness has increased at a rate of ~7% per decade, although no net
 change in species richness had been previously reported in terrestrial and in
 marine systems[@vellend_global_2013; @dornelas_assemblage_2014;
-@blowes_geography_2019]. We also estimated an overall increase in total fish
-abundance of ~13% per decade estimated in this study, which matches the increase
+@blowes_geography_2019]. We also found an overall increase in total fish
+abundance of ~13% per decade, which is in line with the increase
 of 11% per decade reported for freshwater
 insects[@van_klink_meta-analysis_2020]. This is also consistent with several
 regional assessments of freshwater population trends in the Palearctic, such as
@@ -1009,12 +1048,12 @@ regional assessments of fish assemblages[@he_global_2019; @reid_emerging_2019].
 We further found a faster average temporal trend in Jaccard dissimilarity (31%
 vs. 10% per decade) but a slower average turnover (17% vs. 28% per decade) than
 previously reported across a diversity of marine, freshwater and terrestrial
-assemblages[@dornelas_assemblage_2014; @blowes_geography_2019]. This indicates
-that riverine fish communities are experiencing strong richness and
+assemblages[@dornelas_assemblage_2014; @blowes_geography_2019], indicating
+that riverine fish communities experienced both important richness and
 compositional changes in recent decades.
 
 These recent biotic changes are linked to complex spatio-temporal processes
-involving past and recent human impact on the environment and their interaction
+involving past and recent human impacts on the environment and their interaction
 with stream network position. Higher past anthropogenic pressures were
 associated with faster rates of species richness and total abundance increases
 over time, suggesting a recovery from the legacy of past disturbances. Previous
@@ -1028,13 +1067,14 @@ that most of the study sites (92%) were already highly degraded at the beginning
 of the study period, i.e. they had a human footprint index > 4 in 1993[@williams_change_2020], could
 lend support to the recovery hypothesis.
 
-A higher degree of past anthropogenic pressures was also associated with a
-higher share of non-native species; this effect increasing in downstream sites.
+However, a higher degree of past
+anthropogenic pressures was also associated with a higher share of non-native
+species; this effect increasing in downstream sites.
 This indicates that the introduction and establishment of non-native species
 contributed most substantively to the fish community changes through time in the
 sites that suffered the greatest past (pre-1993) degradation, and particularly
-the most downstream ones. Specifically, the increase in local species richness
-over time could result from introduction of non-native species from ongoing
+the most downstream ones. The increase in local species richness
+over time could thus result from introduction of non-native species from ongoing
 spatial homogenization[@villeger_homogenization_2011], a pattern well supported
 by metacommunity models[@mouquet_community_2003] and already documented across
 river basins in the Nearctic and Palearctic
@@ -1059,14 +1099,14 @@ This study uncovered important interaction effects between past and recent human
 pressures in driving the rate of change in several community metrics,
 highlighting the importance of considering both the degree and timing of
 anthropogenic pressures. For example, as discussed above, communities that
-experienced greater past degradation had actually seen an increase in richness
-in recent years, mediated in part by the establishment of non-native species.
-However, high rates of recent human impact in these sites were linked to an
-increased share of non-native species while reducing total richness,
-demonstrating that any recovery in the native fish community in previously
+experienced greater past degradation had actually experienced an increase in richness
+in recent years. But an increase in recent human pressures at these sites was associated with
+an
+increased increased of non-native species and lower species richness.
+This suggests that any recovery of the native fish communities in previously
 degraded sites would be severely compromised if human impacts were allowed to
 continue. Conversely, these findings clearly illustrate opportunities to reduce
-human impact in previously degraded lands to benefit freshwater biodiversity[@tickner_bending_2020].
+human impacts in previously degraded habitats to benefit freshwater biodiversity[@tickner_bending_2020].
 In turn, the fact that non-native species were more abundant in both
 historically or recently degraded sites but that no direct association was
 uncovered in terms of non-native temporal trends can be explained, at least in
@@ -1078,19 +1118,14 @@ and positive effects on native and non-native species, respectively[@mcgill_fift
 @dornelas_balance_2019], and
 highlights the conservation challenges associated with the identification and
 management of biodiversity changes in the context of transient community
-dynamics[@jackson_balancing_2010]. All together, our results show that past and
-recent anthropogenic pressures did and are persisting to drive rapid community
-changes across space and time, driven by non-native species and important
-species replacement, which contrasts with a hypothesis of a recovery
-in freshwater systems[@langford_long-term_2009; @van_klink_meta-analysis_2020;
-@outhwaite_agriculture_2022].
+dynamics[@jackson_balancing_2010].
 
 Longitudinal position along the river network was found to mediate temporal
 biodiversity trends, with the most downstream sites experiencing faster rates of
 community change over time. This finding may be explained by the higher
 connectivity of larger rivers with other tributaries, which in turn gives more
 opportunity for local colonization[@altermatt_river_2013] and the establishment
-of metacommunity dynamics[@tonkin_role_2018]. Likewise, it is not entirely
+of metacommunity dynamics[@tonkin_role_2018]. As such, it is not entirely
 surprising that community changes were found to be more heterogeneous at the
 local scale than at the basin or realm scales and that the spatial structure of
 the model explained much more of the variance in the community metrics than the
@@ -1104,9 +1139,8 @@ change such as climate change and more localized threats such as water
 withdrawals[@comte_climate_2021; @outhwaite_agriculture_2022].
 
 Our results further confirm that temporal changes in species composition can be
-decoupled from changes in species richness in freshwater systems. Previously,
-this has been shown in many marine and terrestrial systems, but across a smaller
-set of freshwater assemblages[@dornelas_assemblage_2014;
+decoupled from changes in species richness in freshwater systems, similarly to
+what has been observed in mostly marine and terrestrial assemblages[@dornelas_assemblage_2014;
 @blowes_geography_2019]. Various community trajectories can be linked to a
 complex mosaic of ecological drivers such as the degree and timing of
 anthropogenic pressures and position of the sites within watersheds. It follows
@@ -1122,15 +1156,15 @@ changes may not be universal phenomena, and more heterogeneous patterns of
 biotic change may manifest at the global scale once we consider tropical fish
 communities. Nonetheless, our analyses were conducted on the best available
 temporal riverine fish dataset at this time, and they provide evidence linking
-the multidimensionality of community changes past and present environmental
-challenges as well as habitat context. Our study also provides a framework for
+the multidimensionality of community changes to the interplay between past and present environmental
+challenges as well as habitat context. Our study also offers a framework for
 future research that merge multiple scales of both time and
-space[@mcgill_fifteen_2015; @primack_biodiversity_2018], as more tropical data
-are collected and become available.
+space[@mcgill_fifteen_2015; @primack_biodiversity_2018], that could be leveraged
+asmore tropical data are collected and become available.
 
 In conclusion, our study uncovered complex but consistent effects of past and present
 anthropogenic pressures and stream network position on riverine fish
-communities both in time and space. We showed that the timing of anthropogenic
+communities. We showed that the timing of anthropogenic
 pressures matters, because past and recent pressures can have contrasting and
 interactive effects on community trends, partly mediated by non-native species.
 Our study further shows that considering multiple biodiversity facets can shed
@@ -1138,11 +1172,10 @@ light on the complex mechanisms by which communities change over time. Looking
 forward, we emphasise the increasing need to investigate biotic changes across
 spatial scales to better reconcile reported local gains and global declines in
 biodiversity[@vellend_plant_2017; @primack_biodiversity_2018;
-@mcgill_fifteen_2015]. The increasing availability of community timeseries and
-environmental data across large areas is invaluable for understanding how past
-and present human pressures have impacted biodiversity across taxa and
-ecosystems, and for implementing conservation policies to mitigate these
-impacts.
+@mcgill_fifteen_2015]. The increasing availability of community time series and
+environmental data across large areas is invaluable for understanding how human
+pressures impact biodiversity across taxa and ecosystems, and for implementing
+conservation policies to mitigate these impacts.
 
 # Methods
 
@@ -1159,7 +1192,7 @@ electrofishing, seining, Table S3) and/or over different periods of the year, we
 selected for each site only the sampling events that were performed using the
 most frequent protocol (i.e. the mode) and within 1.5 month of the most
 frequently sampled month (i.e. 45 days before or after). When there were several
-sampling events in a given year, we selected the sampling that took place at the
+sampling events in a given year, we selected the one that took place at the
 closest date from the most frequently sampled date of the site. Finally, we
 excluded 1,340 sites that had been limed as part of the long-term Swedish liming
 program (available at https://kalkdatabasen.lansstyrelsen.se/)[@svenson_swedish_1995] to avoid
@@ -1167,8 +1200,8 @@ including sites whose environmental conditions had been experimentally
 manipulated. The data selection resulted in `r fnsite` fish community time series,
 totalling `r fnop` sampling events, `r fnmeas` species abundance records, and
 `r fnsp` freshwater fish species. The median time span of the time series was of
-`r tss$span` years ([25th quantile, 75th quantile]), their median completeness was
-of `r tss$completeness` (see Fig. S1 for the complete distribution), while the median
+`r tss$span` years ([25th quantile, 75th quantile]), the median completeness (i.e. number of annual samplings / time span) was
+of `r tss$completeness` (see Fig. S1), and the median
 first study year was `r tss$min`. The sites were mostly located in the
 Palearctic (`r per_eco["Palearctic"]`), Nearctic (`r per_eco["Nearctic"]`) and Australasia (`r per_eco["Australasia"]`). Four countries gathered
 85% of the sites, namely Great Britain (`r per_pays["GBR"]`), France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`), and
@@ -1263,7 +1296,7 @@ native or introduced to a given drainage basin was retrieved using a global
 database documenting species status across drainage basins of the
 world[@tedesco_global_2017] (`r nat_per["tedesco"]` of the species occurrences,
 Table S3). For the sites falling outside the river basins provided in the global
-database[@tedesco_global_2017], such as for the sites located close to the
+database, such as for the sites located close to the
 shore, we used the closest basin within the same country. For species not
 included in a given drainage basin, we determined the origin of the species at
 the country scale using Fishbase[@froese_fishbase_2021]
@@ -1298,12 +1331,12 @@ with $S_{gain}$, $S_{loss}$, $S_{tot}$ being the numbers of immigrant,
 extirpated and total species respectively.
 
 We further partitioned the Jaccard dissimilarity index into two
-complementary indices, Turnover ($J_t$) and Nestedness
+complementary indices, turnover ($J_t$) and nestedness
 ($J_n$), respectively $J_t = (2 * min(S_{loss}, S_{gain})) / (S_{common} + (2 *
 min(S_{loss}, S_{gain})))$ and $J_n = 1 - J_t$,
 $S_{common}$ being the number of species present in both communities[@baselga_betapart_2012]. High
-Turnover values indicate that the changes in community composition resulting
-from species replacement, whereas high values of Nestedness indicate species
+turnover values indicate that the changes in community composition result
+from species replacement, whereas high values of nestedness indicate species
 gains or losses from a nested community, i.e. that a community is a subset of
 the other[@baselga_temporal_2015].
 
@@ -1405,19 +1438,17 @@ rates and community composition[@altermatt_river_2013]. To capture this longitud
 first described stream characteristics at each site by the altitude (m), slope
 (deg.), average annual discharge ($m^3.s^{-1}$), distance from source (km), and Strahler
 order that we extracted from the HydroAtlas database at the reach
-scale[@linke_global_2019; @robinson_earthenv-dem90_2014]. We did so by snapping
-the sites to the closest stream segment using a one-kilometre
-buffer (99% of the sites). We next performed a Principal Component Analysis over
+scale[@linke_global_2019; @robinson_earthenv-dem90_2014]. We next performed a Principal Component Analysis over
 the site stream characteristics on the log-transformed (after adding absolute
-minimum values plus one to avoid few negative values in altitude: ) and
+minimum values plus one to avoid few negative values in altitude) and
 standardising all the variables, i.e. centring and scaling. We orthogonally
 rotated the two first principal components using the varimax criterion[@kaiser_varimax_1958], to
 increase the quality of the variable representation (i.e. their loadings) on the
 two first principal components. The first rotated component was positively
 related to average annual discharge, distance from source and Strahler order and
 captured `r perc_var_rc1` of the variance (Fig. S6), and was subsequently used as a composite
-variable describing the stream longitudinal position from upstream to
-downstream. The correlation coefficients indicate little covariations among the
+variable describing the longitudinal stream position from upstream to
+downstream. The correlation coefficients indicated little covariations among the
 predictors (maximum correlation of 0.09 found between past and recent pressures,
 Fig. S7).
 
@@ -1462,17 +1493,17 @@ variance ($\sigma^2$).
 
 
 To assess the drivers of community change, we then incorporated additional
-covariates into the models (eq. \@ref(eq:drivers)): the legacy of past
+covariates into the models (eq. \@ref(eq:drivers)): the degree of past
 anthropogenic pressures measured by the human footprint index of 1993, the
 recent changes in anthropogenic pressures measured by the ratio between the
-human footprint index of 2009 and 1993 ($X_k$), and the stream longitudinal
+human footprint index of 2009 and 1993 ($X_k$), and the longitudinal stream
 position estimated by the rotated PCA axis. We included two-way interactions between
 time and the ecological drivers ($\sum_{k = 1}\beta_{0k}Time_tX_k$) to test how
-stream longitudinal position and anthropogenic pressures affect the temporal trends in
+longitudinal stream position and anthropogenic pressures affect the temporal trends in
 community metrics. We further included the three-way interactions between time and
 the pairs of other ecological drivers ($\sum_{k = 1, k \neq
 l}\beta_{0kl}Time_tX_kX_l$) to examine the presence of synergistic or
-antagonistic effects between anthropogenic pressures and stream longitudinal
+antagonistic effects between anthropogenic pressures and longitudinal stream
 position on the temporal trends in community metrics (i.e., the results in Fig. 3a).
 We included all the predictors as main effects ($\sum_{k=1}\beta_kX_k$) to capture the effects of the
 ecological drivers on the spatial variation in average community composition
@@ -1480,7 +1511,7 @@ metrics through time, except when modelling the dissimilarity metrics (i.e. we
 only included the effects of ecological drivers on the temporal trends) (i.e.,
 the results in Fig. 3b). We did so because dissimilarity metrics quantify the
 community change at a given time point ($t = 0 \ldots N$) at a given site from the first
-time period ($t = 0$) and therefore bounded by 0 and 1 at each site; we thus did
+year ($t = 0$) and therefore bounded by 0 and 1 at each site; we thus did
 not expect average differences in dissimilarity related to any other factors
 than time.
 
@@ -1521,7 +1552,7 @@ of the model fitting to the data, decreasing the WAIC[@gelman_understanding_2014
 (`r perc_dec_waic`) across community metrics facets (Table S5). It suggested
 the presence of non-linearity in the temporal trends, which is particularly
 expected in the case of bounded variables such as the dissimilarity metrics. We
-log-transformed total abundance and species richness, then their temporal trends
+log-transformed total abundance and species richness, so that their temporal trends
 are multiplicative and can be expressed in percentage change by unit of time. We
 then derived the percentage of change by decade in species richness and total
 abundance by back transforming $\beta_0$ using a time value of $\log(10 + 1)$ as
@@ -1530,7 +1561,7 @@ follows: $(e^{\beta_0 \times \log(10 + 1)} - 1) \times 100$.
 
 In order to compare the strength of the effects among predictors across
 community metrics, we scaled both community metrics and the predictors by their
-standard deviation prior to model fit. As our models contain interactions,
+standard deviation prior to model fitting. As our models contain interactions,
 the individual slope coefficients could be difficult to interpret without
 centering the predictors around ecological relevant
 values[@gelman_scaling_2008]. As an example, the average temporal trends
@@ -1544,7 +1575,7 @@ in anthropogenic pressures).
 
 The models were evaluated in a Bayesian framework using Integrated Nested
 Laplacian Approximation[@rue_approximate_2009; @rue_bayesian_2017] (INLA), which
-approximates the posterior distribution of the parameters and then do not rely
+approximates the posterior distribution of the parameters and does not rely
 on Markov chains and Monte Carlo simulations, and thus is a computationally
 efficient method to evaluate Bayesian models. We computed the credible intervals
 at 80%, 90% and 95% using the Highest Posterior Density
@@ -1565,7 +1596,7 @@ similar than with an implementation in frequentist. Then, we concluded that the
 quality of parameter inference did not suffer from the uninformative priors.
 
 We checked the overall quality of the model fit to the data by plotting the
-fitted versus the observed values (Fig. S8). We visually inspected the PIT and
+fitted versus observed values (Fig. S8). We visually inspected the PIT and
 CPO (respectively Posterior Integral Transform and Conditional Predictive
 Ordinate) distribution to assess both the quality of data representation, and
 the frequency of outliers. There was very little multicollinearity in the model, as all
@@ -1580,7 +1611,7 @@ basin effect ($a_n$) and the site effect ($a_{i|n}$), as the inclusion of the
 variance attributed to random slopes is much more complex and was shown to not change
 the results[@nakagawa_general_2013; @lahuis_explained_2014]. We computed the
 variance associated with each predicted value from their posterior distribution,
-following recommendations to take in account the variability associated with
+following recommendations to take into account the variability associated with
 the priors[@gelman_r-squared_2019]. We then reported the mean marginal and
 conditional $R^2$ associated the 95% credible interval computed using the
 Highest Posterior Density method.
@@ -1594,10 +1625,10 @@ R^2_c = \dfrac{Var_{fit} + (a_n)^2 + (a_{i|n})^2}{Var_{fit}  + (a_n)^2 + (a_{i|n
 $$
 
 $y_i$ and $\hat{y_i}$ being respectively the observations and the predicted
-values, $Var_{fit}$ and $Var_{res}$ being respectively the variance of
+values, $Var_{fit}$ and $Var_{res}$ being respectively the variance of the
 predictive means and the variance of the residuals[@gelman_r-squared_2019].
 $a_n$ and $a_{i|n}$ are respectively the standard deviation on the random
-intercept associated to the hydrographic basin and the site.
+intercept associated with the hydrographic basin and the site within basin.
 
 
 ## Typology of temporal trends
@@ -1637,17 +1668,20 @@ combining code and text, and are available on github
 [(alaindanet/RivFishTimeBiodiversityFacets)](https://github.com/alaindanet/RivFishTimeBiodiversityFacets).
 We further implemented a code pipeline using the `targets` R package to ensure
 that the code, the data, the figures, the manuscript and the results are up
-to date.
+to date. The data used in the study are open access, although we provide the raw
+data to facilitate the reproduction of the analysis
+[(10.5281/zenodo.7817360)](https://doi.org/10.5281/zenodo.7817360).
 
 
 ## Acknowledgements
 
 We thank Joacim Näslund for his assistance accessing the data from the long-term
-Swedish liming program. We also thank all the monitoring programs and
+Swedish liming program. We also thank all the monitoring program crews and
 researchers for their continuous efforts of data collection and for making these
 data publicly available; this study would not be possible without their efforts
-and generosity. In particular, we would like to acknowledge the authors who made
-their data available for this study (Table S2). We further thank Suzanne
+and generosity. In particular, we would like to acknowledge the authors that
+gave us the permission to use the data or who made their data available for this
+study (Table S2). We further thank Suzanne
 Bonnamour, Colin Fontaine, Grégoire Loïs, Maud Mouchet, and Emmanuelle Porcher
 at the Centre d’Écologie et des Sciences de la Conservation as well as Andrew P
 Beckerman and Thomas F Johnson at the University of Sheffield for their very

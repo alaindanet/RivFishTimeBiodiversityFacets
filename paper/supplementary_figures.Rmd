@@ -1,6 +1,6 @@
 ---
 title: "Supplementary Figures and Tables"
-subtitle: "Past and recent anthropogenic pressures drives rapid changes in riverine fish communities"
+subtitle: "Past and recent anthropogenic pressures drive rapid changes in riverine fish communities"
 author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
 date: ""
 output:
@@ -15,6 +15,7 @@ header-includes:
   \usepackage{float}
   \usepackage{booktabs}
   \usepackage{colortbl}
+  \usepackage{caption}
   \renewcommand{\thetable}{S\arabic{table}}
   \renewcommand{\thefigure}{S\arabic{figure}}
 ---
@@ -286,11 +287,12 @@ p_completness <- site_year %>%
 ```
 
 ```{r}
-cap <- "**Distribution of (a) year of sampling events (b) first year of sampling,
-(c) time span and (d) completeness of time series by site**. In (a) and (b), the
+cap <- "**Distribution of (a) year of all sampling events (b) first year of the
+time series,
+(c) time span and (d) completeness of the time series**. In (a) and (b), the
 lines display the year 1993 and 2009. The years 1993 and 2009 correspond to the
 years of the human footprint index assessments, which were used to quantify past
-and recent pressures (See Methods)." %>%
+and recent anthropogenic pressures (See Methods)." %>%
 str_replace_all("  ", " ") %>%
 str_replace_all("\n|\r", " ")
 
@@ -337,13 +339,13 @@ fnsite <- format(nrow(filtered_dataset_modelling$location), big.mark = ",")
 fnop <- format(length(unique(filtered_dataset_modelling$measurement$op_id)),
   big.mark = ",")
 trends_cap <- paste0("**Distribution of community temporal trends across sites**
-  for Jaccard dissimilarity and Jaccard Nestedness. Temporal trends per year
+  for Jaccard dissimilarity and Jaccard Nestedness. Temporal trends per decade
 were estimated from a hierarchical Bayesian model including time as sole
 predictor (See Methods). The histograms show the Best Linear Unbiased Predictor
 (BLUP) estimated at each site and the dots the average posterior distribution
 with bars depicting the Bayesian credible intervals at
 95\\%. The dashed lines refer to no temporal trend.", "
-N = ", fnop, " sampling events across over ", fnsite, " sites.") %>%
+N = ", fnop, " sampling events across ", fnsite, " sites.") %>%
   str_replace_all("\\s+", " ")
 if (knitr::is_latex_output()){
  trends_cap <- str_replace(trends_cap, bold_pattern, "\\\\textbf{\\2}")
@@ -366,20 +368,20 @@ na_cluster <- paste0("(N = ",
 ```
 
 ```{r}
-pca_clust_cap <- paste0("**Covariation among the temporal trends in community
-metrics and characterization of community trajectories**. (a, b) PCA biplot of
-the community temporal trends and their cluster assignment (upper panel). (c)
-boxplots displaying the distribution of the temporal trends by cluster. The
-sites are coloured by their cluster belongings. The ellipses in (a-b) are 95\\%
-intervals around the clusters assuming a Student’s t distribution. (d)
-Cluster frequencies across the three main realms. The
-clusters were named according to their main characteristics.",
-" Contrary to Fig. 2 (Main text), we included the sites whose cluster
-affiliation was uncertain ('NA', black color) clusters ", na_cluster, ".",
+pca_clust_cap <- paste0("**Covariation among the community temporal trends and
+  characterization of community trajectories**. (a, b) PCA biplot of the community
+  temporal trends and their cluster assignment where the sites are colored
+  according to their cluster assignment. (c) Boxplots
+  displaying the distribution of the temporal trends by cluster. (d) Cluster
+  frequencies across the three main biogeographic realms. The ellipses in (a-b) display the 95\\% intervals around
+  the clusters assuming a Student’s t distribution. The clusters were named
+  according to their main characteristics. Contrary to Fig. 2 (Main text), we included the sites whose cluster
+affiliation was uncertain ('NA', black color, ", na_cluster, ".",
 " NA clusters are well distributed over the PCA (a-b), which is confirmed by the
 distribution of community metric temporal trends (c). We observe a few more NAs
-in the Nearctic realm (+5\\%, i.e. around 40 clusters over 897).") %>%
-  str_replace_all("\\s+", " ")
+in the Nearctic realm (+5\\%, i.e. around 40 sites over 897).") %>%
+str_replace_all("\\s+", " ")
+
 if (knitr::is_latex_output()){
  pca_clust_cap <- str_replace(pca_clust_cap, bold_pattern, "\\\\textbf{\\2}")
 }
@@ -531,15 +533,15 @@ theme_set(theme_bw())
 
 
 ```{r}
-pred_hft_cap <- "**Predictions of average community metric values and changes over
+pred_hft_cap <- "**Predictions of community metric changes over
 time according to past human pressures and recent changes in human pressures
 using a hierarchical Bayesian model**. Total abundance is expressed in count,
-species richness in raw number, while non-native abundance, non-native
+species richness in number of species (raw), while non-native abundance, non-native
 abundance, dissimilarity and turnover are expressed in proportion. No pressure,
 medium pressure, and highly degraded past pressure levels correspond
-respectively to values of Human footprint index for the year 1993 of 2.5 (intact
+respectively to values of human footprint index for the year 1993 of 2.5 (intact
 ecosystem), 16.8 (median value in our dataset), and 45.6 (maximum value in the
-dataset). Recent pressure levels represent change in Human footprint index
+dataset). Recent pressure levels represent change in human footprint index
 between the years 1993 and 2009 (see Methods for details). The central lines display
 the mean, while the lower and upper lines display the credible intervals at
 95\\% of the average posterior distribution." %>%
@@ -555,11 +557,11 @@ knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
 ```
 
 ```{r}
-std_tot_cap <- "**Effects of anthropogenic pressures and stream longitudinal position on (a)
-community temporal changes and (b) community spatial variations**. See Methods
+std_tot_cap <- "**Effects of anthropogenic pressures and longitudinal stream position on (a)
+community temporal changes and (b) community spatial variations**. See
 Fig. 3 in the main text for details. We compare coverage corrected species
 richness (Richness) with raw species richness (Richness (raw)) and Simpson
-dissimilarity (Dissimilarity) with jaccard dissimilarity (Jaccard
+dissimilarity (Dissimilarity) with Jaccard dissimilarity (Jaccard
   dissimilarity). We observe that using coverage based species richness or raw
 species richness does not affect the results. Similarly, we observe consistent
 effect sizes for Simpson and Jaccard dissimilarity indices, meaning that
@@ -585,11 +587,11 @@ tar_load(pca_riv_str)
 
 
 ```{r}
-cap_pca_riv <- "**Rotated PCA over the physical and hydrological structure of
-streams**. PCA axes (Rotated Component, RC) were rotated using the Varimax algorithm
+cap_pca_riv <- "**Rotated principal component analysis (PCA) over the physical and hydrological characteristics of
+the sites**. PCA axes (Rotated Component, RC) were rotated using the varimax algorithm
 (See Methods). The first axis is related to the average discharge, Strahler
 order and the distance from source, and was subsequently used in the statistical
-modelling as a composite variable intended to summarise the stream longitudinal position from upstream
+modelling as a composite variable intended to summarise the longitudinal stream position from upstream
 to downstream." %>%
   str_replace_all("\\s+", " ")
 
@@ -673,7 +675,7 @@ HydroAtlas and are meant to illustrate the covariations of various
 human pressures with the human footprint index. We show the correlation with the
 extents of forest, pasture, and cropland for year 2000, urban extent for year 2015
 and population density for year 2010 (See Linke et al., 2019 for details). We
-observe very low correlations among the ecological drivers (stream longitudinal
+observe very low correlations among the ecological drivers (longitudinal stream
   position, past
   pressures and recent pressures). Past pressures (human footprint index for year
   1993) are positively correlated with population density, urban extent and
@@ -763,7 +765,7 @@ and slope are respectively 0 and 1. Sticks located at the abscissa and ordinate
 axis represent the density of values. The Pearson's correlation coefficient is
 displayed in each panel. Total abundance and species richness values are log-transformed.
 The model predicted the data reasonnably well, but it tended to
-overestimate low values and underestimate high values especially for the
+overestimate low values and underestimate high values, especially for the
 proportion of non-native species and dissimilarity.") %>%
 str_replace_all("\\s+", " ")
 
@@ -786,7 +788,7 @@ tar_load(c(k6_fac_1, sup_clust_size_fac1))
 ```
 
 ```{r}
-cap_clust_curv <- "**Objective function quantifying the goodness of k-means
+cap_clust_curv <- "**Objective function quantifying the goodness of the k-means
 clustering** according to the percentage of data being removed (the most outliers
   data in the multidimentional space). The different lines indicate differences
 in the goodness of fit for different number of clusters, as indicated by the
@@ -960,7 +962,7 @@ tab_rand2 <- tab_rand %>%
 ```{r}
 tab_rand_cap <- "**Random effects associated with the estimation of the temporal trends
 computed from the model containing only time as fixed predictor**. [95\\% CI]: Credible Interval computed using
-Highest Posterior Density method." %>%
+the Highest Posterior Density method." %>%
   str_replace_all("\\s+", " ")
 if (knitr::is_latex_output()) {
   tab_rand_cap <- str_replace(tab_rand_cap, bold_pattern, "\\\\textbf{\\2}")
@@ -1032,7 +1034,7 @@ country_lvl <- location_summary %>%
   arrange(desc(N)) %>%
   .$Country
 
-data_ref_cap <- "**References of the dataset included in the study**, arranged by numeric sampling size. Numeric Source ID correspond to the ID of the RivFishTIME database (Comte et al.,
+data_ref_cap <- "**References of the dataset included in the study**, arranged by sampling size. Numeric Source ID corresponds to the ID from the RivFishTIME database (Comte et al.,
     2021a). N: number of sites." %>%
 str_replace_all("\\s+", " ")
 
@@ -1196,9 +1198,8 @@ arrange(Method, desc(N))
 ```
 
 ```{r, eval=TRUE}
-tab_quali_cap <- "**Site location, protocol and abundance unit occurrences
-across sites, and data source for native species status** in term of species
-occurrence." %>%
+tab_quali_cap <- "**Site location, protocol and abundance unit
+across sites, and data source for native species status**." %>%
 str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
@@ -1557,7 +1558,7 @@ variable_stat %>%
 ```{r}
 tar_load(c(dic_waic_comp_time, clust_var, exo_resp_var))
 cap_aic_table <- "**Watanabe-Akaike Information Criterion (WAIC) of the
-statistical models fitting temporal trends** with either the number of years since
+statistical models fitting temporal trends** with either the number of years (\\#) since
 the start of sampling or log-transformed number of years plus one (See Methods).
 Most community metrics are best modelled with the log-transformed values." %>%
 str_replace_all("\n|\r", " ")

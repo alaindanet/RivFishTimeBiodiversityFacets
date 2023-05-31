@@ -96,8 +96,8 @@ get_var_replacement_vulgarisation <- function() {
 
 get_model_term_replacement <- function() {
   c(
-    log1_year_nb = "Log (Year nb + 1)",
-    year_nb = "Year nb",
+    log1_year_nb = "Log (Year # + 1)",
+    year_nb = "Year #",
     `year` = "Year",
     riv_str_rc1 = "PCA1\nstream gradient",
     hft_c9309_scaled_no_center = "Human footprint\nchange (1993-2009)",
@@ -216,7 +216,7 @@ get_nat_origin_replacement <- function() {
   c(
     "tedesco" = "Tedesco et al. (2017) (basin scale)",
     "autofishbase" = "Fishbase (country scale)",
-    "handmade" = "Atlas, fishbase (country and regional scale)",
+    "handmade" = "National atlases, fishbase (country and regional scale)",
     "usgs" = "NAS database (state scale, USA)"
   )
 }
@@ -262,7 +262,7 @@ get_pred_signification <- function() {
 
 get_term_level <- function(longitude = TRUE) {
   stream <- ifelse(longitude,
-    "Stream long. position",
+    "Long. stream position",
     "Stream gradient")
   c(
     "Time",
