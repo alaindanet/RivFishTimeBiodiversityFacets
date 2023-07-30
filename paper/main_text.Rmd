@@ -678,7 +678,8 @@ pca_clust_cap <- paste0("**Covariation among the community temporal trends and
   characterization of community trajectories**. (a, b) PCA biplot of the community
   temporal trends and their cluster assignment where the sites are colored
   according to their cluster assignment. (c) Boxplots
-  displaying the distribution of the temporal trends by cluster. (d) Cluster
+  displaying the distribution of the temporal trends by cluster. The boxplot
+  limits display 1.5 interquartile range. (d) Cluster
   frequencies across the three main biogeographic realms. The ellipses in (a-b) display the 95\\% intervals around
   the clusters assuming a Student’s t distribution. The clusters were named
   according to their main characteristics. Sites not assigned to a cluster because

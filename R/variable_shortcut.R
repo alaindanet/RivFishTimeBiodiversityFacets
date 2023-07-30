@@ -131,7 +131,7 @@ get_model_term_replacement_vulgarisation <- function() {
 get_model_term_replacement_paper_figure <- function(longitude = TRUE) {
   c(
     log1_year_nb = "Time",
-    riv_str_rc1 = ifelse(longitude, "Stream long. position", "Stream gradient"),
+    riv_str_rc1 = ifelse(longitude, "Long. stream position", "Stream gradient"),
     hft_c9309_scaled_no_center = "Recent pressures",
     hft_ix_c9309_diff_scaled = "Recent pressures",
     hft_ix_c9309_log2_ratio = "Recent pressures",

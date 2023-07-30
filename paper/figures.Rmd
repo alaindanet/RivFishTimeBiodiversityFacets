@@ -713,6 +713,7 @@ p_effect <- plot_grid(
   label_y = c(.995, .995),
   rel_widths = c(1,.65)
   )
+
 ggsave(
   filename = "p_effect.pdf",
   plot = p_effect,
