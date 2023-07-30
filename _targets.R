@@ -2,12 +2,13 @@ library(targets)
 
 ## Load your R files
 lapply(list.files(here::here("R"), full.names = TRUE), source)
+source("https://raw.githubusercontent.com/EmilHvitfeldt/emilfun/master/R/palette_scrapers.R")
 tar_option_set(packages = c(
     "targets", "tarchetypes","tidyverse", "magrittr",
     "lubridate", "here", "kableExtra", "scales", "rmarkdown", "sf",
     "rnaturalearth", "rnaturalearthdata", "terra", "cowplot", "viridis",
     "janitor", "codyn", "vegan", "slider", "future", "INLA", "inlatools",
-    "glmmTMB", "easystats", "ggeffects", "tclust", "clValid"))
+    "glmmTMB", "easystats", "ggeffects", "tclust", "clValid", "rfishbase"))
 
 library(future.callr)
 plan(callr)
@@ -18,6 +19,17 @@ source("./packages.R")
 
 ## tar_plan supports drake-style targets and also tar_target()
 list(
+  tar_target(restricted_dimension, c(
+      "log_total_abundance", "log_chao_richness",
+      "perc_exo_abun", "perc_exo_sp",
+      "hillebrand_dis_scaled", "turnover_scaled"
+    )),
+  tar_target(pal_variable, 
+    setNames(
+      palette_coolors("https://coolors.co/588aee-68de9f-f4ec7b-feb35d-ed6e6e-b885ff"),
+      get_var_replacement_vulgarisation()[restricted_dimension]
+    )
+    ),
   tar_target(raw_data_file,
     get_raw_file_path(),
     format = "file",
@@ -25,7 +37,7 @@ list(
 
   # Basin / River Atlases
   tar_target(riveratlas_shp_files,
-    get_shp_files(dir = here("inst", "extdata", "RiverATLAS_v10_shp")),
+    get_shp_files(dir = here("inst", "extdata", "RiverATLAS_Data_v10_shp", "RiverATLAS_v10_shp")),
     error = "continue"
     ),
   tar_target(basinatlas_shp_folder,
@@ -41,7 +53,7 @@ list(
     format = "file"),
   tar_target(basinatlas,
     sf::read_sf(basinatlas_shp_file) %>%
-      clean_names()
+      janitor::clean_names()
     ),
 
   # RivFishTime
@@ -61,14 +73,13 @@ list(
     load_time_series_data(raw_data_file)
     ),
   tar_target(updated_rivfishtime_characteristic,
-    here("inst", "extdata", "RivFishTIME", "updatedVersion",
-      "Characteristics_time_series_updated_02120222.csv") %>%
+    here("inst", "extdata", "Characteristics_time_series_updated_02120222.csv")
+    %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath() %>%
       read_csv()),
   tar_target(published_rivfishtime_characteristic,
-    here("inst", "extdata", "RivFishTIME", "published_version",
-      "RivFishTIME_TimeseriesTable.csv") %>%
+    here("inst", "extdata", "RivFishTIME_TimeseriesTable.csv") %>%
       R.utils::filePath(., expandLinks = "any") %>%
       normalizePath() %>%
       read_csv()),
@@ -157,7 +168,7 @@ list(
     mutate(species = str_replace_all(fishbase_valid_species_name, "\\.", " "))),
   tar_target(occ_exotic_us,
     readr::read_tsv(occ_exotic_us_file) %>%
-      clean_names() %>%
+      janitor::clean_names() %>%
       # Keep fishes only (there are also plants, amphibian...)
       filter(order %in% na.omit(unique(rfishbase::load_taxa()$Order))) %>%
       distinct(scientific_name, state_province) %>%
@@ -172,7 +183,7 @@ list(
       )),
   tar_target(basin_tedesco,
     read_sf(basin_tedesco_shp) %>%
-      clean_names()
+      janitor::clean_names()
     ),
   tar_target(measurement_exo_tmp,
     get_measurement_exo(
@@ -252,24 +263,58 @@ list(
       category = "physical",
       returnclass = "sf")
     ),
+  #Mu HFP data
+  tar_target(muhft_dir,
+    here::here("inst", "extdata", "mu2022hfp") %>%
+      R.utils::filePath(., expandLinks = "any") %>%
+      normalizePath()
+    ),
+  tar_target(muhft_files,
+    map_chr(
+      list.files(muhft_dir)[str_detect(list.files(muhft_dir), ".tif")],
+      ~here::here("inst", "extdata", "mu2022hfp", .x) %>%
+        R.utils::filePath(., expandLinks = "any") %>%
+        normalizePath())
+    ),
+  tar_target(muhft_site_list,
+    map(muhft_files,
+      function(x) {
+        ra <- rast(x)
+        terra::extract(
+          ra,
+          vect(st_transform(world_site_sf$site, crs = crs(ra))),
+          fun = mean) %>%
+          as_tibble
+      }
+      ) 
+    ),
+  tar_target(muhft_site,
+    cbind(
+      list(siteid = world_site_sf$site$siteid),
+      purrr::reduce(muhft_site_list, dplyr::left_join, by = 'ID')
+      ) %>%
+    rename_with(~(str_remove(.x, "hfp"))) %>%
+    select(-ID) %>%
+    as_tibble
+    ),
 
   # Community structure
-  tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
-  tar_target(neutral_turnover,
-    neutral_com %>%
-      mutate(
-        jaccard = purrr::map(
-          sim,
-          ~get_vegdist_temporal_turnover_c(
-            mat = as.matrix(.x[250:500, ]),
-            method = "jaccard",
-            return_tibble = TRUE,
-            drop_first_year = FALSE
-          )
-        )
-        ) %>%
-    select(-sim)
-  ),
+  #tar_target(neutral_com, target_untb(filtered_dataset = filtered_dataset)),
+  #tar_target(neutral_turnover,
+    #neutral_com %>%
+      #mutate(
+        #jaccard = purrr::map(
+          #sim,
+          #~get_vegdist_temporal_turnover_c(
+            #mat = as.matrix(.x[250:500, ]),
+            #method = "jaccard",
+            #return_tibble = TRUE,
+            #drop_first_year = FALSE
+          #)
+        #)
+        #) %>%
+    #select(-sim)
+  #),
   tar_target(com_mat_site,
     get_site_community_matrix(
       x = filtered_dataset$measurement,
@@ -372,20 +417,20 @@ list(
       confidence_int = NULL,
       adjust_abun_density = TRUE)
     ),
-  tar_target(chao_hillnb_cov80,
-    get_chao_hillnb(
-      x = filtered_dataset$measurement,
-      coverage = .80,
-      confidence_int = NULL,
-      adjust_abun_density = TRUE)
-    ),
-  tar_target(chao_hillnb_cov99,
-    get_chao_hillnb(
-      x = filtered_dataset$measurement,
-      coverage = .99,
-      confidence_int = NULL,
-      adjust_abun_density = TRUE)
-    ),
+  #tar_target(chao_hillnb_cov80,
+    #get_chao_hillnb(
+      #x = filtered_dataset$measurement,
+      #coverage = .80,
+      #confidence_int = NULL,
+      #adjust_abun_density = TRUE)
+    #),
+  #tar_target(chao_hillnb_cov99,
+    #get_chao_hillnb(
+      #x = filtered_dataset$measurement,
+      #coverage = .99,
+      #confidence_int = NULL,
+      #adjust_abun_density = TRUE)
+    #),
   tar_target(hillnb,
     get_hillnb(
       x = filtered_dataset$measurement,
@@ -423,14 +468,14 @@ list(
           )) %>%
       na.omit()
     ),
-  tar_target(mod_wt_data,
-    wt_mv_avg  %>%
-      left_join(
-        filtered_dataset$location %>%
-          select(siteid, ecoregion, main_bas) %>%
-          mutate(main_bas = as.character(main_bas)),
-        by = "siteid"
-        )),
+  #tar_target(mod_wt_data,
+    #wt_mv_avg  %>%
+      #left_join(
+        #filtered_dataset$location %>%
+          #select(siteid, ecoregion, main_bas) %>%
+          #mutate(main_bas = as.character(main_bas)),
+        #by = "siteid"
+        #)),
     # statistic
     tar_target(biodiv_facets, c("total_abundance_int", "species_nb",
         "chao_richness", "chao_shannon", "chao_simpson")),
@@ -963,8 +1008,9 @@ list(
   tar_target(gaussian_inla,
     tibble(
       response = facet_var,
-      mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE, tau_prior = FALSE),
+      mod = list(inla(
+            formula = fun_int_env_formula_inla(x = facet_var, drivers = TRUE,
+					       tau_prior = FALSE),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
               return.marginals=TRUE, return.marginals.predictor=TRUE),
             control.predictor = list(link = 1, compute = T),
@@ -973,7 +1019,7 @@ list(
               modelling_data[,colnames(modelling_data) %in% colnames(pred_data)],
               pred_data
             )
-            )))),
+            ))),
     pattern = map(facet_var)
     ),
   tar_target(pred_gaussian_inla,
@@ -1015,7 +1061,7 @@ list(
   tar_target(gaussian_inla_no_drivers_year_nb,
     tibble(
       response = facet_var,
-      mod = list(try(inla(
+      mod = list(inla(
             formula = fun_int_env_formula_inla_year_nb(
               x = facet_var,
               drivers = FALSE,
@@ -1025,7 +1071,7 @@ list(
             control.predictor = list(link = 1, compute = T),
             verbose = F,
             data = modelling_data
-            )))),
+            ))),
     pattern = map(facet_var)
     ),
   tar_target(gaussian_inla_effects,
@@ -1137,32 +1183,6 @@ list(
       ),
     pattern = map(facet_var)
     ),
-  tar_target(gaussian_inla_std_wo_swe,
-    tibble(
-      response = facet_var,
-      mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var),
-            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-            control.predictor = list(link = 1, compute = T),
-            verbose = F,
-            data = modelling_data_wo_swe_scaled
-              )))
-      ),
-    pattern = map(facet_var)
-    ),
-  tar_target(gaussian_inla_std_wo_liming,
-    tibble(
-      response = facet_var,
-      mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = facet_var),
-            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-            control.predictor = list(link = 1, compute = T),
-            verbose = F,
-            data = modelling_data_wo_liming_scaled
-              )))
-      ),
-    pattern = map(facet_var)
-    ),
   tar_target(gaussian_inla_std_no_drivers,
     tibble(
       response = facet_var,
@@ -1177,10 +1197,6 @@ list(
     ),
   tar_target(gaussian_inla_std_effects,
     format_inla_model_list(x = gaussian_inla_std)),
-  tar_target(gaussian_inla_std_wo_swe_effects,
-    format_inla_model_list(x = gaussian_inla_std_wo_swe)),
-  tar_target(gaussian_inla_std_wo_liming_effects,
-    format_inla_model_list(x = gaussian_inla_std_wo_liming)),
   tar_target(gaussian_inla_std_no_drivers_effects,
     format_inla_model_list(x = gaussian_inla_std_no_drivers)),
   tar_target(gaussian_inla_std_re_pred,
@@ -1242,7 +1258,7 @@ list(
   tar_target(gaussian_inla_exo,
     tibble(
       response = exo_resp_var,
-      mod = list(try(inla(
+      mod = list(inla(
             formula = fun_int_env_formula_inla(x = exo_resp_var),
             control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE,
               return.marginals=TRUE, return.marginals.predictor=TRUE),
@@ -1252,7 +1268,7 @@ list(
               modelling_data_exo[,colnames(modelling_data_exo) %in% colnames(pred_data_exo)],
               pred_data_exo
             )
-            )))),
+            ))),
     pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_no_drivers,
@@ -1277,7 +1293,7 @@ list(
   tar_target(gaussian_inla_exo_no_drivers_year_nb,
     tibble(
       response = exo_resp_var,
-      mod = list(try(inla(
+      mod = list(inla(
             formula = fun_int_env_formula_inla_year_nb(
               x = exo_resp_var,
               drivers = FALSE,
@@ -1287,7 +1303,7 @@ list(
             control.predictor = list(link = 1, compute = T),
             verbose = F,
             data = modelling_data_exo
-            )))),
+            ))),
     pattern = map(exo_resp_var)
     ),
   tar_target(gaussian_inla_exo_no_drivers_effects,
@@ -1345,18 +1361,6 @@ list(
       ),
     pattern = map(exo_resp_var)
     ),
-  tar_target(gaussian_inla_exo_wo_liming_std,
-    tibble(
-      response = exo_resp_var,
-      mod = list(try(inla(
-            formula = fun_int_env_formula_inla(x = exo_resp_var, drivers = TRUE),
-            control.compute = list(dic = TRUE, waic = TRUE, cpo = TRUE),
-            control.predictor = list(link = 1, compute = T),
-            verbose = F,
-            data = modelling_data_exo_wo_liming_scaled)))
-      ),
-    pattern = map(exo_resp_var)
-    ),
   tar_target(gaussian_inla_exo_std_effects,
     format_inla_model_list(x = gaussian_inla_exo_std,
       response_to_skip = c(
@@ -1364,8 +1368,6 @@ list(
         "chao_richness_tps_scaled", "total_abundance",
         "total_abundance_scaled", "total_abundance_tps")
       )),
-  tar_target(gaussian_inla_exo_wo_liming_std_effects,
-    format_inla_model_list(x = gaussian_inla_exo_wo_liming_std)),
   tar_target(gaussian_inla_exo_prior_std,
     tibble(
       response = exo_resp_var,
@@ -1432,13 +1434,13 @@ list(
 
   # Clustering
   tar_target(clust_var,
-    c("log_total_abundance", "log_species_nb",
+    c("log_total_abundance", "log_chao_richness",
       "jaccard_dis_scaled", "hillebrand_dis_scaled",
       "appearance_scaled", "disappearance_scaled",
       "turnover_scaled", "nestedness_scaled")
     ),
   tar_target(clust_var_alter,
-    c("log_total_abundance", "log_species_nb",
+    c("log_total_abundance", "log_chao_richness",
       "hillebrand_dis_scaled", "turnover_scaled"
     )
     ),
@@ -1914,18 +1916,25 @@ list(
       mutate(var = mean^2) %>%
       rename(std = mean)
     ),
+  tar_target(gaussian_inla_total,
+    rbind(gaussian_inla, gaussian_inla_exo)),
+  tar_target(resp_gaussian_inla_total,
+    gaussian_inla_total$response),
   tar_target(gaussian_inla_var_fitted,
-    rbind(gaussian_inla_exo, gaussian_inla) %>%
-      mutate(
-        var_pred = furrr::future_map(mod, function(y) {
-          map_dbl(y$marginals.fitted.values,
+    tibble(
+      response = resp_gaussian_inla_total,
+      var_pred = map(
+	gaussian_inla_total[gaussian_inla_total$response ==
+			    resp_gaussian_inla_total, ]$mod,
+	function(y) {
+          map_dbl(y$marginals.fitted.values[1:nrow(modelling_data)],
             ~var(inla.rmarginal(1000, .x))
           )
         }
           )
-      ) %>%
-    select(-mod)
-    ),
+        ),
+    pattern = map(resp_gaussian_inla_total)
+      ),
   tar_target(r2,
     gaussian_inla_var_fitted %>%
       left_join(get_std_inla_from_rand(inla_rand_tab = gaussian_inla_rand), by = "response") %>%
@@ -2056,7 +2065,7 @@ list(
       filter(
         term %in% paste0("Precision for ", c("main_bas1", "siteid1")),
         ci_level == "level:0.95",
-        response %in% c(restricted_dimension, exo_resp_var)
+        response %in% restricted_dimension
         ) %>%
     select(-ci_level) %>%
     mutate(across(c(mean, low, high), ~round(., 3))) %>%
@@ -2096,41 +2105,41 @@ list(
       updated = updated_rivfishtime_characteristic,
       site_paper = filtered_dataset_modelling$location
     )
-  ),
+  )#,
 
   # Report
-  tar_render(intro, here("vignettes/intro.Rmd")),
-  tar_render(report, here("doc/aa-research-questions.Rmd")),
-  tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
-  tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
-  tar_render(community_structure, "doc/aca-community-structure.Rmd"),
-  tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
-  tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
-  tar_render(meeting_slides, here("talk/meeting.Rmd")),
-  tar_render(explain_high_turnover,
-    here("doc/af-explain-high-turnover.Rmd")),
-  tar_render(biodiversity_facets_support,
-    here("doc/ag-biodiversity-facets-support.Rmd")),
-  tar_render(ah_clust_tps,
-    here("doc/ah-clust-tps.Rmd")),
-  tar_render(ac_check_rivfishtime_update,
-    here("doc/ac-check-rivfishtime-update.Rmd")
-    ),
-  tar_target(bib, {RefManageR::BibOptions(
-      check.entries = FALSE,
-      bib.style = "authoryear",
-      max.names = 2,
-      style = "markdown",
-      dashed = TRUE)
-    bibtex::read.bib(bib_file)}),
-  tar_target(bib_file,
-    here("paper", "bibliography.bib"),
-    format = "file",
-    error = "continue"),
-  tar_render(coverage_rivfishtime, "doc/coverage_rivfishtime.Rmd"),
-  # Paper
-  tar_render(method, here("paper/methods.Rmd")),
-  tar_render(story_summary, here("paper/story_summary.Rmd")),
-  tar_render(outline_wordstack, here("paper/outline_wordstack.Rmd")),
-  tar_render(supp_fig, here("paper/supplementary_figures.Rmd"))
+  #tar_render(intro, here("vignettes/intro.Rmd")),
+  #tar_render(report, here("doc/aa-research-questions.Rmd")),
+  #tar_render(raw_data_watch, here("doc/ab-raw-data.Rmd")),
+  #tar_render(filtered_data_watch, here("doc/ac-data-filtering.Rmd")),
+  #tar_render(community_structure, "doc/aca-community-structure.Rmd"),
+  #tar_render(trends_report, here("doc/ad-temporal-trends.Rmd")),
+  #tar_render(meeting_report, "doc/xx-meeting-report.Rmd"),
+  #tar_render(meeting_slides, here("talk/meeting.Rmd")),
+  #tar_render(explain_high_turnover,
+    #here("doc/af-explain-high-turnover.Rmd")),
+  #tar_render(biodiversity_facets_support,
+    #here("doc/ag-biodiversity-facets-support.Rmd")),
+  #tar_render(ah_clust_tps,
+    #here("doc/ah-clust-tps.Rmd")),
+  #tar_render(ac_check_rivfishtime_update,
+    #here("doc/ac-check-rivfishtime-update.Rmd")
+    #),
+  #tar_target(bib, {RefManageR::BibOptions(
+      #check.entries = FALSE,
+      #bib.style = "authoryear",
+      #max.names = 2,
+      #style = "markdown",
+      #dashed = TRUE)
+    #bibtex::read.bib(bib_file)}),
+  #tar_target(bib_file,
+    #here("paper", "bibliography.bib"),
+    #format = "file",
+    #error = "continue"),
+  #tar_render(coverage_rivfishtime, "doc/coverage_rivfishtime.Rmd"),
+  ## Paper
+  #tar_render(method, here("paper/methods.Rmd")),
+  #tar_render(story_summary, here("paper/story_summary.Rmd")),
+  #tar_render(outline_wordstack, here("paper/outline_wordstack.Rmd")),
+  #tar_render(supp_fig, here("paper/supplementary_figures.Rmd"))
                 )

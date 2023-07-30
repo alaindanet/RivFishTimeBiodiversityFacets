@@ -18,5 +18,7 @@ tar_make_future(
   names = !c(starts_with("beta_"), !!exclusion_vector)
   )
 
+tar_make_future(workers = min(future::availableCores() - 1, 24))
+
 tar_meta()
 tar_visnetwork()

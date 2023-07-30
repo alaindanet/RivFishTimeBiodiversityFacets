@@ -398,6 +398,30 @@ complete_native_exotic_data <- function(
           "autofishbase")) %>%
       mutate(
         status = case_when(
+	  #https://www.fishbase.se/summary/Brycinus-longipinnis.html
+          country == "CIV" & fishbase_name == "Bryconalestes longipinnis" ~ "native",
+	  #https://www.fishbase.se/country/CountryList.php?ID=1390&GenusName=Coptodon&SpeciesName=zillii
+          country == "CIV" & fishbase_name == "Coptodon zillii" ~ "native",
+	  # Found in neighbor countries:
+	  #https://www.fishbase.se/country/CountryList.php?ID=11320&GenusName=Labeobarbus&SpeciesName=bynni
+          country == "CIV" & fishbase_name == "Labeobarbus bynni" ~ "native",
+	  # Native:
+	  # https://www.fishbase.se/country/CountryList.php?ID=2419&GenusName=Enteromius&SpeciesName=macrops
+          country == "CIV" & fishbase_name == "Enteromius macrops" ~ "native",
+	  #Native: https://www.fishbase.se/country/CountryList.php?ID=5298&GenusName=Labeobarbus&SpeciesName=wurtzi
+          country == "CIV" & fishbase_name == "Labeobarbus wurtzi" ~ "native",
+	  # native:
+	  # https://www.fishbase.se/country/CountryList.php?ID=5234&GenusName=Bryconalestes&SpeciesName=longipinnis
+          country == "CIV" & fishbase_name == "Bryconalestes longipinnis" ~ "native",
+	  #native:
+	  #https://www.fishbase.se/country/CountryList.php?ID=5202&GenusName=Hippopotamyrus&SpeciesName=pictus
+          country == "CIV" & fishbase_name == "Hippopotamyrus pictus" ~ "native",
+	  #native:
+	  # https://www.fishbase.se/country/CountryList.php?ID=5463&GenusName=Clarotes&SpeciesName=laticeps
+          country == "CIV" & fishbase_name == "Clarotes laticeps" ~ "native",
+	  #native:
+	  #https://www.fishbase.se/country/CountryList.php?ID=2458&GenusName=Synodontis&SpeciesName=schall
+          country == "CIV" & fishbase_name == "Synodontis schall" ~ "native",
           #https://www.gbif.org/species/5206976/metrics
           country == "CIV" & species == "Barbus chlorotaenia" ~ "introduced",
           # No mention found in the country, but in the neighbors country
