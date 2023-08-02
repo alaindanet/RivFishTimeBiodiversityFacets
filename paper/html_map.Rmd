@@ -113,16 +113,38 @@ tps_trends_10y <- site_no_drivers_inla_tot %>%
   ) %>%
   select(siteid, response, value) %>%
   pivot_wider(names_from = "response", values_from = "value")
-
-trends_cl_loc <- site_cl_na_loc %>%
-  left_join(tps_trends_10y) %>%
-  mutate(cl_f = factor(cl, levels = cluster_names)) %>%
-  rename(`Cluster assignement` = cl_f, `Site id` = siteid) %>%
-  select(all_of(c("Cluster assignement", names(restricted_dimension), "Site id")))
-
 ```
 
 ```{r}
+tar_load(riveratlas_site)
+tar_load(analysis_dataset)
+hft <- analysis_dataset %>%
+  st_drop_geometry() %>%
+  mutate(
+    hft_ix_c9309_perc_diff = 100 * (hft_ix_c09 - hft_ix_c93) / hft_ix_c93,
+    hft_ix_c9309_perc_diff = round(hft_ix_c9309_perc_diff)
+    ) %>%
+  select(siteid, hft_ix_c93, hft_ix_c9309_perc_diff) %>%
+  distinct(siteid, hft_ix_c93, hft_ix_c9309_perc_diff) %>%
+  na.omit
+
+trends_cl_loc <- site_cl_na_loc %>%
+  left_join(tps_trends_10y) %>%
+  left_join(hft) %>%
+  mutate(
+    cl_f = factor(cl, levels = cluster_names)
+    ) %>%
+  rename(
+    `Cluster assignement` = cl_f,
+    `Site id` = siteid,
+    `Past pressures` = hft_ix_c93,
+    `Recent pressures (changes in %)` = hft_ix_c9309_perc_diff
+    ) %>%
+  select(all_of(c(
+        "Cluster assignement", names(restricted_dimension),
+        "Site id", "Past pressures", "Recent pressures (changes in %)")
+    )
+  )
 ```
 
 
@@ -227,16 +249,10 @@ st_drop_geometry() %>%
 basin_name_id %>%
   filter(main_bas == 2080021820)
 
-
 basin_name_shape <- filtered_basinatlas_modelling %>%
   left_join(basin_name_id, by = "main_bas") %>%
   select(`Basin id` = main_bas, `Basin name` = basin_name2)
 ```
-
-```{r}
-```
-
-
 
 ```{r}
 mapviewOptions(fgb = FALSE)
@@ -323,7 +339,20 @@ mapview(trends_cl_loc %>%
   layer.name = names(restricted_dimension)[6],
   label = names(restricted_dimension95)[6],
   homebutton = FALSE,
-  at = c(-10, 0, 10, 25, 50, 75, 100))
+  at = c(-10, 0, 10, 25, 50, 75, 100)) +
+mapview(trends_cl_loc,
+  zcol = c("Past pressures"),
+  layer.name = c("Past pressures"),
+  label = c("Past pressures"),
+  homebutton = FALSE,
+  at = c(0, 4, 10, 25, 50)) +
+mapview(trends_cl_loc,
+  zcol = c("Recent pressures (changes in %)"),
+  layer.name = c("Recent pressures (changes in %)"),
+  label = c("Recent pressures (changes in %)"),
+  homebutton = FALSE,
+  at = c(-50, -25, 0, 25, 100, 200)
+)
 ```
 ```{r}
 mapshot(m,
@@ -331,5 +360,6 @@ mapshot(m,
   selfcontained = FALSE
 )
 ```
+
 
 

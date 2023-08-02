@@ -286,6 +286,21 @@ p_completness <- site_year %>%
   theme(text = element_text(size = 8))
 ```
 
+```{r, eval = FALSE}
+tar_load(p_timeseries)
+ggsave(
+  filename = "coverage_timeseries.png",
+  plot = p_timeseries,
+  path = here("paper", "fig_paper"),
+  scale = 2.4,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
 ```{r}
 cap <- "**Distribution of (a) year of all sampling events (b) first year of the
 time series,
@@ -333,6 +348,37 @@ ggsave(
 )
 knitr::include_graphics(here("paper", "fig_paper", "timeseries_dist.pdf"))
 ```
+
+```{r}
+tar_load(p_site_trends_ts_caracteristics)
+ggsave(
+  filename = here("paper", "fig_paper",
+    "p_site_trends_ts_caracteristics.png"),
+  plot = p_site_trends_ts_caracteristics,
+  scale = 3.2,
+  width = 80,
+  height = 80 * 1.2,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+```{r}
+tar_load(p_hft_mu_venter)
+
+ggsave(
+  filename = here("paper", "fig_paper",
+    "p_hft_mu_venter.png"),
+  plot = p_hft_mu_venter,
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "print"
+)
+```
+
+
 
 ```{r}
 fnsite <- format(nrow(filtered_dataset_modelling$location), big.mark = ",")
@@ -693,6 +739,30 @@ knitr::include_graphics(here("paper", "fig_paper", "p_cor_lc_hft.pdf"))
 
 ```
 
+
+```{r}
+tar_load(p_drivers_ts_caracteristic)
+ggsave(
+  filename = "p_drivers_ts_caracteristic.pdf",
+  plot = p_drivers_ts_caracteristic,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "screen"
+)
+ggsave(
+  filename = "p_drivers_ts_caracteristic.png",
+  plot = p_drivers_ts_caracteristic,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "screen"
+)
+```
 
 
 

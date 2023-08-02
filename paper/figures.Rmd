@@ -266,7 +266,74 @@ p_trends_site <- tps_trends_y %>%
     legend.position = "none"
   )
 ```
+
 ```{r}
+abun_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_total_abundance)
+  * log(10 + 1),
+  r = 1)
+abun_trends <- str_replace(abun_trends, "\\[ ", "\\[")
+rich_trends <- p_ci(
+  log_beta_to_perc_rate(trends$log_chao_richness)
+  * log(10 + 1),
+  r = 1
+)
+hill_trends <- p_ci(
+  trends$hillebrand_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+jac_trends <- p_ci(
+  trends$jaccard_dis_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+tu_trends <- p_ci(
+  trends$turnover_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+ne_trends <- p_ci(
+  trends$nestedness_scaled
+  * log(10 + 1),
+  r = 2, p = FALSE
+)
+
+exo_trends <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends90 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends90[[.x]] * log(10 + 1), r = 4, p = FALSE)
+)
+names(exo_trends90) <- c("perc_exo_sp", "perc_exo_abun")
+
+exo_trends80 <- map_chr(c("perc_exo_sp", "perc_exo_abun"),
+  ~p_ci(trends80[[.x]] * log(10 + 1), r = 3, p = FALSE)
+)
+names(exo_trends80) <- c("perc_exo_sp", "perc_exo_abun")
+```
+
+
+```{r}
+get_ci_fig <- function(response, mean, low, high, ...){
+  case_when(
+    response == "Abundance (total, %)" ~ p_ci(
+      x = c("mean" = mean, "low" = low, "high" = high), r = 1),
+    response == "Richness (%)" ~ p_ci(
+      c(mean = mean, low = low, high = high), r = 1),
+    response == "Non-native abundance (proportion)" ~ p_ci(
+      c(mean = mean, low = low, high = high), r = 4, p = FALSE),
+    response == "Non-native richness (proportion)" ~ p_ci(
+      c(mean = mean, low = low, high = high), r = 3, p = FALSE),
+    response == "Turnover (%)" ~ p_ci(
+      c(mean = mean, low = low, high = high), r = 1, p = TRUE),
+    response == "Dissimilarity (%)" ~ p_ci(
+      c(mean = mean, low = low, high = high), r = 1, p = TRUE),
+    TRUE ~ "null"
+  )
+}
 myrel_y = -8/100
 ci_label_data %<>%
   mutate(
@@ -278,8 +345,24 @@ ci_label_data %<>%
       response == "Turnover (%)" ~ 400 * myrel_y,
       response == "Dissimilarity (%)" ~ 160 * myrel_y,
       TRUE ~ 1000 * .10
+    ),
+  label = pmap_chr(list(response, mean, low, high), get_ci_fig) %>%
+    str_replace(., "\\[\\s", "[") %>%
+    str_trim(., side = "both"),
+  label_y_pos = error_bar_pos,
+  label_x_pos = case_when(
+      response == "Abundance (total, %)" ~  high + 2/100 * high,
+      response == "Richness (%)" ~ high + 5/100 * high,
+      response == "Non-native abundance (proportion)" ~ high + 8 * high,
+      response == "Non-native richness (proportion)" ~ high + .8 * high,
+      response == "Turnover (%)" ~ high + 1/100 * high,
+      response == "Dissimilarity (%)" ~ high + 1/100 * high,
+      TRUE ~ 1000 * .10
     )
   )
+```
+
+```{r}
 p_trends_site2 <-
   p_trends_site +
   geom_pointrange(
@@ -289,12 +372,22 @@ p_trends_site2 <-
     aes(y = error_bar_pos, x = mean,
       xmin = low, xmax = high,
       color = response_f),
-    size = .08,
-    linewidth = .8,
-    alpha = .8,
+    size = .6,
+    linewidth = 1,
+    alpha = 1,
     position = position_dodge2(width = 1, padding = 0.5),
     show.legend = FALSE
     ) +
+  geom_text(
+    data = ci_label_data %>%
+      filter(ci_level == "95%") %>%
+      arrange(desc(width_bar)),
+    aes(y = label_y_pos, x = label_x_pos,
+      label = label),
+    size = 3,
+    hjust = -.03, vjust = .4,
+    show.legend = FALSE
+  ) +
   scale_color_manual(
     values = perc_pal_variable,
     breaks = names(perc_pal_variable),
@@ -304,6 +397,7 @@ theme(
   strip.text = element_text(hjust = 0, margin = margin(0, 0, 0, 0, "pt"))
 )
 ```
+
 
 ```{r}
 ggsave(
@@ -870,19 +964,7 @@ p_pca_cl_top <- plot_grid(plotlist = p_pca_cl_ell[c(1, 6)], ncol = 2, labels =
 ```
 
 ```{r}
-tar_load(site_no_drivers_inla)
-site_trends_dec <- site_no_drivers_inla %>%
-  mutate(
-    across(c(turnover_scaled, hillebrand_dis_scaled),
-      ~.x * log(10 + 1) * 100)
-    ) %>%
-  mutate(across(
-      c(log_chao_richness, log_total_abundance),
-      ~log_beta_to_perc_rate(.x) * log(10 + 1)
-      )) %>%
-  select(turnover_scaled, hillebrand_dis_scaled,
-    log_chao_richness, log_total_abundance) %>%
-  rownames_to_column(var = "siteid")
+tar_load(c(site_no_drivers_inla, site_trends_dec))
 ```
 
 ```{r}

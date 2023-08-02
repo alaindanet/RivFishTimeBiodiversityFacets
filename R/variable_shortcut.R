@@ -277,3 +277,11 @@ get_term_level <- function(longitude = TRUE) {
     paste0("Time x\n", stream, " x\nRecent pressures")
   )
 }
+
+get_ts_var_replacement <- function() {
+  c(
+    min = "First year",
+    span = "# Year span",
+    completeness = "Completeness"
+  )
+}

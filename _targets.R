@@ -24,7 +24,7 @@ list(
       "perc_exo_abun", "perc_exo_sp",
       "hillebrand_dis_scaled", "turnover_scaled"
     )),
-  tar_target(pal_variable, 
+  tar_target(pal_variable,
     setNames(
       palette_coolors("https://coolors.co/588aee-68de9f-f4ec7b-feb35d-ed6e6e-b885ff"),
       get_var_replacement_vulgarisation()[restricted_dimension]
@@ -286,7 +286,7 @@ list(
           fun = mean) %>%
           as_tibble
       }
-      ) 
+      )
     ),
   tar_target(muhft_site,
     cbind(
@@ -507,19 +507,24 @@ list(
       janitor::clean_names()
     ),
   tar_target(hft_site_summary,
-    analysis_dataset %>%
-      distinct(
-        siteid,
-        hft_ix_c93,
-        hft_ix_c09,
-        hft_ix_c9309_log2_ratio
-        ) %>%
+    riveratlas_site %>%
+      sf::st_drop_geometry() %>%
+      select(siteid, hft_ix_c93, hft_ix_c09) %>%
+      mutate(across(c(hft_ix_c09, hft_ix_c93), ~.x /10)) %>%
+      mutate(
+        hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
+        hft_ix_c93 = ifelse(hft_ix_c93 == 0, 10^-6, hft_ix_c93),
+        hft_ix_c09 = ifelse(hft_ix_c09 == 0, 10^-6, hft_ix_c09),
+        hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93  < 1) / n(),
-        perc_intact = sum(hft_ix_c93 > 1 &
+        prop_degraded = sum(hft_ix_c93 >= 4) / n(),
+        prop_wilderness = sum(hft_ix_c93 < 1) / n(),
+        prop_intact = sum(hft_ix_c93 > 1 &
           hft_ix_c93 < 4) / n(),
+        hft_ix_c9309_diff_perc = mean(hft_ix_c9309_diff / hft_ix_c93),
+        hft_ix_c93 = mean(hft_ix_c93),
+        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
@@ -528,16 +533,23 @@ list(
     ),
   tar_target(hft_total_summary,
     riveratlas_total %>%
+      sf::st_drop_geometry() %>%
+      select(hft_ix_c93, hft_ix_c09) %>%
+      mutate(across(c(hft_ix_c09, hft_ix_c93), ~.x /10)) %>%
       mutate(
+        hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
         hft_ix_c93 = ifelse(hft_ix_c93 == 0, 10^-6, hft_ix_c93),
         hft_ix_c09 = ifelse(hft_ix_c09 == 0, 10^-6, hft_ix_c09),
         hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
-        perc_degraded = sum(hft_ix_c93 >= 4) / n(),
-        perc_wilderness = sum(hft_ix_c93 < 1) / n(),
-        perc_intact = sum(hft_ix_c93 > 1 &
+        prop_degraded = sum(hft_ix_c93 >= 4) / n(),
+        prop_wilderness = sum(hft_ix_c93 < 1) / n(),
+        prop_intact = sum(hft_ix_c93 > 1 &
           hft_ix_c93 < 4) / n(),
+        hft_ix_c9309_diff_perc = mean(hft_ix_c9309_diff / hft_ix_c93),
+        hft_ix_c93 = mean(hft_ix_c93),
+        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
         hft_ix_c9309_log2_ratio = list(
           summary_distribution(hft_ix_c9309_log2_ratio) %>%
             round(., 1)
@@ -1468,6 +1480,39 @@ list(
     pivot_wider(names_from = "response", values_from = "mean") %>%
     arrange(siteid) %>%
     column_to_rownames("siteid")),
+  tar_target(site_trends_dec,
+    site_no_drivers_inla %>%
+      mutate(
+        across(c(turnover_scaled, hillebrand_dis_scaled),
+          ~.x * log(10 + 1) * 100)
+        ) %>%
+    mutate(across(
+        c(log_chao_richness, log_total_abundance),
+        ~log_beta_to_perc_rate(.x) * log(10 + 1)
+        )) %>%
+    select(turnover_scaled, hillebrand_dis_scaled,
+      log_chao_richness, log_total_abundance) %>%
+    rownames_to_column(var = "siteid")
+    ),
+  tar_target(site_trends_tot_dec,
+    site_no_drivers_inla_tot %>%
+      mutate(
+        across(c(turnover_scaled, hillebrand_dis_scaled),
+          ~.x * log(10 + 1) * 100)
+        ) %>%
+    mutate(across(
+        c(log_chao_richness, log_total_abundance),
+        ~log_beta_to_perc_rate(.x) * log(10 + 1)
+        )) %>%
+    mutate(across(
+        c(perc_exo_sp, perc_exo_abun),
+        ~.x * log(10 + 1)
+        )) %>%
+    select(turnover_scaled, hillebrand_dis_scaled,
+      log_chao_richness, log_total_abundance,
+      perc_exo_sp, perc_exo_abun) %>%
+    rownames_to_column(var = "siteid")
+    ),
   tar_target(clust_curv_site,
     tclust::ctlcurves(
       x = scale(site_no_drivers_inla, center = FALSE),
@@ -2098,14 +2143,144 @@ list(
 
   }
     ),
-
   tar_target(add_dataset_ref,
     get_additional_dataset_ref_rivfistime(
       published = published_rivfishtime_characteristic,
       updated = updated_rivfishtime_characteristic,
       site_paper = filtered_dataset_modelling$location
     )
-  )#,
+  ),
+
+  # Trends/timeseries caracteristics
+  tar_target(site_trends_ts_caracteristics,
+    site_trends_tot_dec %>%
+      pivot_longer(-siteid, names_to = "response", values_to = "trends") %>%
+      filter(response %in% restricted_dimension) %>%
+      left_join(site_year %>%
+        select(siteid, min, completeness, span),
+      by = "siteid"
+      ) %>%
+      pivot_longer(c(min, completeness, span), names_to = "site_caract", values_to = "value")
+    ),
+  tar_target(p_site_trends_ts_caracteristics,
+    site_trends_ts_caracteristics %>%
+      mutate(
+        site_caract = get_ts_var_replacement()[site_caract],
+        response = get_var_replacement_vulgarisation()[response],
+        response = factor(response, levels = names(pal_variable))
+        ) %>%
+    ggplot(aes(x = value, y = trends, color = response)) +
+    geom_point(alpha = .3) +
+    geom_smooth(color = "black") +
+    facet_grid(
+      row = vars(response),
+      col = vars(site_caract),
+      scales = "free") +
+    scale_color_manual(
+      values = pal_variable,
+      labels = names(pal_variable),
+      name = "Community metrics"
+      ) +
+    labs(
+      x = "Time series caracteristics",
+      y = "Temporal trends by decade") +
+    theme(legend.position = "bottom") +
+    guides(colour = guide_legend(override.aes = list(alpha = 1)))),
+  tar_target(p_hft_mu_venter, {
+    hft_comp <- muhft_site %>%
+      select(siteid, mu2009 = `2009`) %>%
+      left_join(
+        select(riveratlas_site, siteid, hft_ix_c93, hft_ix_c09) %>%
+          st_drop_geometry() %>%
+          mutate(across(c(hft_ix_c93, hft_ix_c09), ~.x / 10)),
+        by = "siteid"
+      )
+      spear <- cor(hft_comp$mu2009, hft_comp$hft_ix_c09,
+        method = "spearman",
+        use = "pairwise.complete.obs"
+        ) %>% round(., 2)
+
+      hft_comp %>%
+        ggplot(aes(x = hft_ix_c09, y = mu2009)) +
+        geom_point(alpha = .3) +
+        geom_abline(intercept = 0, slope = 1) +
+        annotate(
+          "text", label = paste0("\n~rho ==", spear),
+          x = -Inf, y = Inf, size = 4,
+          parse = TRUE, vjust = 1, hjust = 0
+          ) +
+        labs(
+          y = "Human footprint index 2009 \n Mu et al (2022)",
+          x = "Human footprint index 2009 \n Venter et al (2009)"
+        )
+    }),
+  tar_target(drivers_ts_caracteristic,
+    modelling_data %>%
+      distinct(siteid, riv_str_rc1, hft_ix_c93, hft_ix_c9309_log2_ratio) %>%
+      select(siteid, riv_str_rc1, hft_ix_c93, hft_ix_c9309_log2_ratio) %>%
+      left_join(site_year %>%
+        select(siteid, min, span),
+      by = "siteid"
+      ) %>%
+      pivot_longer(
+        c(riv_str_rc1, hft_ix_c93, hft_ix_c9309_log2_ratio),
+        names_to = "evt", values_to = "evt_values"
+        ) %>%
+      pivot_longer(
+        c(min, span),
+        names_to = "ts", values_to = "ts_values"
+      )
+    ),
+  tar_target(p_drivers_ts_caracteristic,
+    drivers_ts_caracteristic  %>%
+      mutate(
+        evt = get_model_term_replacement_paper_figure()[evt],
+        ts = get_ts_var_replacement()[ts]
+        ) %>%
+    ggplot(aes(y = evt_values, x = ts_values)) +
+    geom_point(alpha = .3) +
+    geom_smooth() +
+    facet_grid(rows = vars(evt), cols = vars(ts), scale = "free") +
+    labs(x = "Time series caracteristics", y = "Ecological drivers") +
+    theme_bw()),
+  tar_target(ts_coverage, {
+    ordered_year <- filtered_dataset$site_quanti %>%
+      filter(variable == "year") %>%
+      select(siteid, min) %>%
+      arrange(min)
+    filtered_dataset$abun_rich_op %>%
+      select(siteid, year) %>%
+      #filter(siteid %in% sample(unique(siteid), 1000)) %>%
+      left_join(filtered_dataset$location %>% select(siteid, ecoregion), by = "siteid") %>%
+      left_join(
+        filtered_dataset$site_quanti %>%
+          filter(variable == "year") %>%
+          select(siteid, min),
+        by = "siteid"
+        ) %>%
+      mutate(
+        siteid = factor(siteid, levels = ordered_year$siteid),
+      )
+    }),
+  tar_target(p_timeseries,
+    ts_coverage %>%
+      mutate( ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+      rename_with(str_to_sentence) %>%
+      ggplot(aes(x = Year, y = Siteid, fill = Ecoregion)) +
+      geom_tile() +
+      scale_fill_discrete(na.value = "white") +
+      geom_vline(xintercept = c(1993, 2009)) +
+      scale_x_continuous(breaks = c(1960, 1980, 1993, 2000, 2009, 2020)) +
+      theme_bw() +
+      theme(
+        axis.title.y = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks.y = element_blank(),
+        legend.position = "bottom"
+      )
+  )
+
+
 
   # Report
   #tar_render(intro, here("vignettes/intro.Rmd")),

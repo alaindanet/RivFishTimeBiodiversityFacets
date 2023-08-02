@@ -191,7 +191,18 @@ eco <- table(filtered_dataset_modelling$location %>%
   pull(ecoregion)
 ) / nrow(filtered_dataset_modelling$location)
 
+eco_main <- filtered_dataset_modelling$location %>%
+  mutate(ecoregion = str_replace(ecoregion, "Neartic", "Nearctic")) %>%
+  filter(ecoregion %in% c("Nearctic", "Australasia", "Palearctic")) %>%
+  nrow()
+eco_not_main <- nrow(filtered_dataset_modelling$location) - eco_main
+eco_main_perc <- scales::percent(eco_main / nrow(filtered_dataset_modelling$location), accuracy = 0.1)
+
+site_kept_perc <- scales::percent(nrow(tar_read(site_year)) / nrow(tar_read(updated_rivfishtime_characteristic)))
+
 per_eco <- scales::percent(table_to_vec(eco), accuracy = 1)
+
+
 
 pays <- table(filtered_dataset_modelling$location$country
 ) / nrow(filtered_dataset_modelling$location)
@@ -539,7 +550,7 @@ trends_cap <- paste0("**Distribution of community temporal trends across sites**
   abundance, (b) species richness, (c) proportion of non-native total abundance, (d)
   proportion of non-native species richness, (e) Simpson temporal dissimilarity, and (f)
   Jaccard turnover. Temporal trends per decade were estimated from a
-  hierarchical Bayesian model including time as sole predictor (See Methods). The
+  hierarchical Bayesian model including time as sole fixed predictor (See Methods). The
   histograms show the Best Linear Unbiased Predictor (BLUP) estimated at each
   site and the dots below the histograms represent the average posterior distribution with
   bars depicting the Bayesian credible intervals at 95\\%.
@@ -817,14 +828,14 @@ or coverage-based species richness (See Methods, Fig. S5).
 Past anthropogenic pressures were also associated with changes in community
 composition. We found evidence (albeit weak) that a higher degree of past
 anthropogenic pressures was associated with an increase in the proportion of
-non-native richness over time (CI 80%:$\beta\prime =$ `r hft93exor`, yellow,
+non-native richness over time (CI 80%:$\beta\prime =$ `r hft93exor`, orange,
 Fig. 3a), and that this effect was enhanced in more downstream areas (CI
 90%:$\beta\prime =$ `r rivhftexor`, Fig. 3a). Although we found no overall
 associations between past anthropogenic pressures and temporal trends in
-non-native species abundance (CI 80%:$\beta\prime =$ `r hft93exoa` in orange,
+non-native species abundance (CI 80%:$\beta\prime =$ `r hft93exoa` in yellow,
 Fig. 3a), we found moderate evidence that a higher degree of past anthropogenic
 pressures resulted in a higher rate of increase in non-native species abundance
-in the most downstream areas (CI 90%: 0.033 [0.003,0.064], Fig. 3a). We also
+in the most downstream areas (CI 90%:$\beta\prime =$ `r rivhftexoa`, Fig. 3a). We also
 found that a higher degree of past anthropogenic pressures were associated with
 faster rates of increases in temporal dissimilarity and turnover (resp. CI
 95%:$\beta\prime =$ `r hft93hill` in red and `r hft93turn` in purple, Fig. 3a),
@@ -915,14 +926,14 @@ names(abun_rich_hft9309_0_inc_by2)
 ```
 
 
- Spatial variation in community structure was strongly associated with past and
- recent anthropogenic pressures and with longitudinal stream position
- (i.e. single model effects independent of time, Fig. 3b). We found that a
- higher degree of past anthropogenic pressures was associated with lower total
- abundance (strong evidence; Fig. 3b, blue), with the most ‘degraded’ sites
- (i.e. with a human footprint index =
+Spatial variation in community structure was strongly associated with past and
+recent anthropogenic pressures and with longitudinal stream position
+(i.e. single model effects independent of time, Fig. 3b). We found that a
+higher degree of past anthropogenic pressures was associated with lower total
+abundance (strong evidence; Fig. 3b, blue), with the most ‘degraded’ sites
+(i.e. with a human footprint index =
 `r round(pred_data_explanation$hft_ix_c93["max"],1)`) displaying a total abundance
- `r abun_rich_hft93_int_max["log_total_abundance"]` lower than the most ‘intact’ sites (i.e. with a human footprint index =
+`r abun_rich_hft93_int_max["log_total_abundance"]` lower than the most ‘intact’ sites (i.e. with a human footprint index =
 `r round(pred_data_explanation$hft_ix_c93["intact"],1)`). By
  contrast, a higher degree of past anthropogenic pressures was associated with
  higher species richness (strong evidence; Fig. 3b, green), with the most
@@ -941,7 +952,7 @@ Anthropogenic pressures and longitudinal stream position were associated with
 spatial variation in the proportion of non-native fish species.
 Sites that had experienced a higher degree of past and recent anthropogenic
 pressures had a higher proportion of non-native individuals and species (strong
-evidence; Fig. 3b, orange and yellow). The proportion of non-native individuals
+evidence; Fig. 3b, yellow and orange). The proportion of non-native individuals
 and species was three times (`r scales::percent(pred_hft93_t0$perc_exo_abun$val["max"])` versus
 `r scales::percent(pred_hft93_t0$perc_exo_abun$val["intact"])`) and two times (`r scales::percent(pred_hft93_t0$perc_exo_sp$val["max"])` versus
 `r scales::percent(pred_hft93_t0$perc_exo_sp$val["intact"])`) higher in the most degraded sites than the most intact sites . Further, a two-fold increase in
@@ -1026,6 +1037,14 @@ tab_rand %>%
 ```{r, eval=!knitr::is_latex_output(), fig.cap = tab_rand_cap, fig.asp = .65, out.width = "50%"}
 knitr::include_graphics(here("paper", "fig_paper", "table.png"))
 ```
+
+```{r}
+tar_load(hft_total_summary)
+tar_load(hft_site_summary)
+hft09_tot <- round(2^(hft_total_summary$hft_ix_c9309_log2_ratio[[1]]["mean"]), 1)
+hft09_site <- round(2^(hft_site_summary$hft_ix_c9309_log2_ratio[[1]]["mean"]), 1)
+```
+
 
 # Discussion
 
@@ -1149,7 +1168,7 @@ that the similar frequencies in community trajectories detected across realms
 together with the restricted number of sites displaying a low degree of change
 likely reflects the spatially and temporally heterogeneous patterns in human
 pressures. We recognize that recent increases in anthropogenic pressures are
-most prevalent in tropical biodiversity hotspots[@venter_global_2016], while our
+most prevalent in tropical biodiversity hotspots[@venter_global_2016; @mu__2022], while our
 study has a spatial coverage limited to historically industrialised countries
 and in mostly temperate biomes. Consequently, species richness and abundance
 increases as well as the decoupling of compositional changes from richness
@@ -1179,6 +1198,11 @@ pressures impact biodiversity across taxa and ecosystems, and for implementing
 conservation policies to mitigate these impacts.
 
 # Methods
+
+```{r}
+nbas <- length(unique(filtered_dataset_modelling$location$main_bas))
+```
+
 
 ## Fish community time series
 
@@ -1545,8 +1569,8 @@ that this choice is not likely to alter our conclusions.
 
 ```{r}
 tar_load(tab_waic)
-perc_dec_waic <- scales::percent(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]]) / tab_waic[["Year nb"]]))
-dec_waic <- round(mean((tab_waic[["Log (Year nb + 1)"]] - tab_waic[["Year nb"]])))
+perc_dec_waic <- scales::percent(mean((tab_waic[["Log (Year # + 1)"]] - tab_waic[["Year #"]]) / tab_waic[["Year #"]]))
+dec_waic <- round(mean((tab_waic[["Log (Year # + 1)"]] - tab_waic[["Year #"]])))
 ```
 We log-transformed the number of years as $\log(year + 1)$ as it improved the quality
 of the model fitting to the data, decreasing the WAIC[@gelman_understanding_2014; @vehtari_practical_2017] by `r dec_waic` on average
@@ -1604,7 +1628,7 @@ the frequency of outliers. There was very little multicollinearity in the model,
 Variance Inflation Factors were around 1 (Table S6).
 
 We computed $R^2$ to assess the quality of the fit of the Bayesian models. We
-then computed marginal ($R^2_m$) and conditional ($R^2_c$) R-squared,
+then computed marginal ($R^2_m$) and conditional ($R^2_c$) R-squared (Eq. \@ref(eq:r2)),
 respectively associated with the variance explained by the fixed effects and the variance
 explained by both the fixed and random effects[@nakagawa_general_2013]. We only
 included the random effects on the intercept in the $R^2$ computation, i.e. the
@@ -1617,13 +1641,13 @@ the priors[@gelman_r-squared_2019]. We then reported the mean marginal and
 conditional $R^2$ associated the 95% credible interval computed using the
 Highest Posterior Density method.
 
-$$
-R^2_m = \dfrac{Var_{fit}}{Var_{fit} + Var_{res}} = \dfrac{\sigma^2(\hat{y_i})}{\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i})}
-$$
-
-$$
-R^2_c = \dfrac{Var_{fit} + (a_n)^2 + (a_{i|n})^2}{Var_{fit}  + (a_n)^2 + (a_{i|n})^2 + Var_{res}}
-$$
+\begin{equation}
+\begin{aligned}
+    R^2_m &= \dfrac{Var_{fit}}{Var_{fit} + Var_{res}} = \dfrac{\sigma^2(\hat{y_i})}{\sigma^2(\hat{y_i}) + \sigma^2(y_i - \hat{y_i})} \\
+    R^2_c &= \dfrac{Var_{fit} + (a_n)^2 + (a_{i|n})^2}{Var_{fit}  + (a_n)^2 + (a_{i|n})^2 + Var_{res}}
+  (\#eq:r2)
+\end{aligned}
+\end{equation}
 
 $y_i$ and $\hat{y_i}$ being respectively the observations and the predicted
 values, $Var_{fit}$ and $Var_{res}$ being respectively the variance of the
@@ -1634,6 +1658,23 @@ intercept associated with the hydrographic basin and the site within basin.
 
 ## Typology of temporal trends
 
+```{r}
+d_t <- tar_read(site_trends_tot_dec) %>%
+  pivot_longer(-siteid, names_to = "response", values_to = "trends") %>%
+  group_by(response) %>%
+  summarise(
+    sd = sd(trends),
+    min = min(trends),
+    max = max(trends),
+    cv = sd((trends + abs(min))) / mean(trends + abs(min)),
+    kurt = moments::kurtosis(trends),
+    kurt_s = moments::kurtosis(scale(trends, center = FALSE)[,1]),
+  )
+st <- setNames(round(d_t$sd, digits = 2), d_t$response)
+k <- setNames(round(d_t$kurt, digits = 0), d_t$response)
+
+```
+
 To estimate the covariations among multiple dimensions of community change, we
 performed a PCA on the temporal trends in the community metrics estimated at
 each site (i.e. using the predictions of the models in percentage per decade
@@ -1642,15 +1683,18 @@ this analysis: temporal trends in total species richness, community abundance,
 temporal dissimilarity and turnover. We excluded the two variables describing
 the non-native species composition (proportion of non-native abundance and
 richness) because their predicted temporal trends at the site level displayed a
-very low variation compared to the other variables, which in turn exerted a
-disproportionate constraint on the analysis. In addition, we performed a
-clustering analysis to identify distinct types of community trajectories using
-the trimmed k-means method[@fritz_tclust_2012], a robust clustering method because it avoids the
-identification of spurious clusters. The method consists of trimming the  most
-outlying data in the multidimensional space, the number of dimensions being the
-number of community metrics. To choose a relevant number of clusters, we plotted
-the log-likelihood of the trimmed classification as a function of the proportion
-of the most outlying data trimmed ($\alpha$) and the number of clusters (Fig. S9). We
+heavy tailed distribution compared to the other variables (Fig. 1, Kurtosis of the distributions:
+`r k["perc_exo_abun"]`, `r k["perc_exo_sp"]`, and `r k["log_chao_richness"]`,
+for resp. non-native abundance, non-native richness, and species richness),
+which in turn exerted a disproportionate constraint on the analysis. In
+addition, we performed a clustering analysis to identify distinct types of
+community trajectories using the trimmed k-means method[@fritz_tclust_2012], a
+robust clustering method because it avoids the identification of spurious
+clusters. The method consists of trimming the  most outlying data in the
+multidimensional space, the number of dimensions being the number of community
+metrics. To choose a relevant number of clusters, we plotted the log-likelihood
+of the trimmed classification as a function of the proportion of the most
+outlying data trimmed ($\alpha$) and the number of clusters (Fig. S9). We
 thus selected a partition of temporal community changes in six clusters with
 $\alpha=5\%$ (see Fig. S10 with four clusters). We did not constrain the algorithm for the
 relative size or shape of the clusters, as we had no a priori expectation about

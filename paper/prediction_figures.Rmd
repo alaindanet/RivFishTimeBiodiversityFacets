@@ -145,25 +145,25 @@ pred_data <- pred_gaussian_inla_tot %>%
 
 ```{r}
 p_pred_hft <- pred_data %>%
-ggplot(
-  aes(
-    ymin = quant0.025, ymax = quant0.975,
-    y = mean, x = year_nb,
-    color = as.factor(hft_ix_c93_f)
-  )
-  ) +
-geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .05) +
-geom_line() +
-facet_grid(
-  cols = vars(hft_ix_c9309_log2_ratio_f),
-  rows = vars(response_f),
-  scales = "free_y"
-  ) +
-labs(
-  color = "Past pressures",
-  y = "Community metrics",
-  x = "Number of years") +
-guides(fill = "none")
+  ggplot(
+    aes(
+      ymin = quant0.025, ymax = quant0.975,
+      y = mean, x = year_nb,
+      color = as.factor(hft_ix_c93_f)
+    )
+    ) +
+  geom_ribbon(aes(fill = as.factor(hft_ix_c93_f)), alpha = .3, color = NA) +
+  geom_line(linewidth = .5) +
+  facet_grid(
+    cols = vars(hft_ix_c9309_log2_ratio_f),
+    rows = vars(response_f),
+    scales = "free_y"
+    ) +
+  labs(
+    color = "Past pressures",
+    y = "Community metrics",
+    x = "Number of years") +
+  guides(fill = "none")
 ```
 
 ```{r, fig.width = 6, fig.asp = 1.2}
