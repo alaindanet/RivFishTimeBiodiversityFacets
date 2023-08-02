@@ -513,47 +513,50 @@ list(
       mutate(across(c(hft_ix_c09, hft_ix_c93), ~.x /10)) %>%
       mutate(
         hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
-        hft_ix_c93 = ifelse(hft_ix_c93 == 0, 10^-6, hft_ix_c93),
-        hft_ix_c09 = ifelse(hft_ix_c09 == 0, 10^-6, hft_ix_c09),
+        hft_ix_c9309_diff_prop = hft_ix_c9309_diff / hft_ix_c93,
         hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
+        hft_ix_c9309_diff_prop_qut = list(
+          quantile(hft_ix_c9309_diff_prop[hft_ix_c9309_diff_prop != Inf], c(.25, .5, .75))
+        ),
+        hft_ix_c9309_diff_prop = mean(hft_ix_c9309_diff_prop[hft_ix_c9309_diff_prop != Inf]),
+        hft_ix_c93 = mean(hft_ix_c93),
+        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
+        hft_ix_c9309_log2_ratio = list(
+          summary_distribution(hft_ix_c9309_log2_ratio[hft_ix_c9309_log2_ratio != Inf]) %>%
+            round(., 1)
+          ),
         prop_degraded = sum(hft_ix_c93 >= 4) / n(),
         prop_wilderness = sum(hft_ix_c93 < 1) / n(),
         prop_intact = sum(hft_ix_c93 > 1 &
           hft_ix_c93 < 4) / n(),
-        hft_ix_c9309_diff_perc = mean(hft_ix_c9309_diff / hft_ix_c93),
-        hft_ix_c93 = mean(hft_ix_c93),
-        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
-        hft_ix_c9309_log2_ratio = list(
-          summary_distribution(hft_ix_c9309_log2_ratio) %>%
-            round(., 1)
-        )
       )
     ),
   tar_target(hft_total_summary,
     riveratlas_total %>%
-      sf::st_drop_geometry() %>%
       select(hft_ix_c93, hft_ix_c09) %>%
-      mutate(across(c(hft_ix_c09, hft_ix_c93), ~.x /10)) %>%
+      mutate(across(c(hft_ix_c09, hft_ix_c93), ~.x /10))  %>%
       mutate(
         hft_ix_c9309_diff = hft_ix_c09 - hft_ix_c93,
-        hft_ix_c93 = ifelse(hft_ix_c93 == 0, 10^-6, hft_ix_c93),
-        hft_ix_c09 = ifelse(hft_ix_c09 == 0, 10^-6, hft_ix_c09),
+        hft_ix_c9309_diff_prop = hft_ix_c9309_diff / hft_ix_c93,
         hft_ix_c9309_log2_ratio = ifelse(hft_ix_c09 == 0 & hft_ix_c93 == 0, 0,log2(hft_ix_c09 / hft_ix_c93))) %>%
       na.omit() %>%
       summarise(
+        hft_ix_c9309_diff_prop_qut = list(
+          quantile(hft_ix_c9309_diff_prop[hft_ix_c9309_diff_prop != Inf], c(.25, .5, .75))
+        ),
+        hft_ix_c9309_diff_prop = mean(hft_ix_c9309_diff_prop[hft_ix_c9309_diff_prop != Inf]),
+        hft_ix_c93 = mean(hft_ix_c93),
+        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
+        hft_ix_c9309_log2_ratio = list(
+          summary_distribution(hft_ix_c9309_log2_ratio[hft_ix_c9309_log2_ratio != Inf]) %>%
+            round(., 1)
+          ),
         prop_degraded = sum(hft_ix_c93 >= 4) / n(),
         prop_wilderness = sum(hft_ix_c93 < 1) / n(),
         prop_intact = sum(hft_ix_c93 > 1 &
           hft_ix_c93 < 4) / n(),
-        hft_ix_c9309_diff_perc = mean(hft_ix_c9309_diff / hft_ix_c93),
-        hft_ix_c93 = mean(hft_ix_c93),
-        hft_ix_c9309_diff = mean(hft_ix_c9309_diff),
-        hft_ix_c9309_log2_ratio = list(
-          summary_distribution(hft_ix_c9309_log2_ratio) %>%
-            round(., 1)
-        )
       )
   ),
   tar_target(map_modelling_site,
