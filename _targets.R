@@ -2165,7 +2165,7 @@ list(
       ) %>%
       pivot_longer(c(min, completeness, span), names_to = "site_caract", values_to = "value")
     ),
-  tar_target(p_site_trends_ts_caracteristics,
+  tar_target(p_site_trends_ts_caracteristics2,
     site_trends_ts_caracteristics %>%
       mutate(
         site_caract = get_ts_var_replacement()[site_caract],
@@ -2189,8 +2189,8 @@ list(
       y = "Temporal trends by decade") +
     theme(legend.position = "bottom") +
     guides(colour = guide_legend(override.aes = list(alpha = 1)))),
-  tar_target(p_hft_mu_venter, {
-    hft_comp <- muhft_site %>%
+  tar_target(hft_comp,
+    muhft_site %>%
       select(siteid, mu2009 = `2009`) %>%
       left_join(
         select(riveratlas_site, siteid, hft_ix_c93, hft_ix_c09) %>%
@@ -2198,6 +2198,8 @@ list(
           mutate(across(c(hft_ix_c93, hft_ix_c09), ~.x / 10)),
         by = "siteid"
       )
+    ),
+  tar_target(p_hft_mu_venter, {
       spear <- cor(hft_comp$mu2009, hft_comp$hft_ix_c09,
         method = "spearman",
         use = "pairwise.complete.obs"
@@ -2234,7 +2236,7 @@ list(
         names_to = "ts", values_to = "ts_values"
       )
     ),
-  tar_target(p_drivers_ts_caracteristic,
+  tar_target(p_drivers_ts_caracteristics,
     drivers_ts_caracteristic  %>%
       mutate(
         evt = get_model_term_replacement_paper_figure()[evt],
@@ -2275,8 +2277,9 @@ list(
       geom_vline(xintercept = c(1993, 2009)) +
       scale_x_continuous(breaks = c(1960, 1980, 1993, 2000, 2009, 2020)) +
       theme_bw() +
+      labs(y = "") +
       theme(
-        axis.title.y = element_blank(),
+        #axis.title.y = element_blank(),
         axis.text.y = element_blank(),
         axis.ticks.y = element_blank(),
         legend.position = "bottom"

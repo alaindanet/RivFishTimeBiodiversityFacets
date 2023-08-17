@@ -287,7 +287,7 @@ p_completness <- site_year %>%
 ```
 
 ```{r, eval = FALSE}
-tar_load(p_timeseries)
+tar_read(p_timeseries)
 ggsave(
   filename = "coverage_timeseries.png",
   plot = p_timeseries,
@@ -304,7 +304,7 @@ ggsave(
 ```{r}
 cap <- "**Distribution of (a) year of all sampling events (b) first year of the
 time series,
-(c) time span and (d) completeness of the time series**. In (a) and (b), the
+(c) time span, (d) completeness of the time series, (e) time series sampling year**. In (a), (b), and (e), the
 lines display the year 1993 and 2009. The years 1993 and 2009 correspond to the
 years of the human footprint index assessments, which were used to quantify past
 and recent anthropogenic pressures (See Methods)." %>%
@@ -317,10 +317,10 @@ if (knitr::is_latex_output()){
 
 ```
 
-```{r base-span-cpl, fig.cap=cap, fig.width = 8, fig.asp = 1}
+```{r base-span-cpl, fig.cap=cap, out.width = "80%", out.height = "95%"}
 leg_ecoregion <- get_legend(
-  p_span +
-    theme(legend.position = "bottom", legend.justification = "center") +
+  tar_read(p_timeseries) +
+    theme(legend.position = "right", legend.justification = "center") + #
     guides(fill = guide_legend(""))
 
 )
@@ -332,17 +332,26 @@ mid <- plot_grid(
   labels = c("c", "d")
   )
 
-timeseries_dist <- plot_grid(top, mid, leg_ecoregion,
-  ncol = 1, rel_heights = c(1, 1, .1)
+timeseries_dist <- plot_grid(top, mid,
+  plot_grid(
+    tar_read(p_timeseries) +
+      theme(
+        text = element_text(size = 8),
+        legend.position = "none"
+        ),
+    leg_ecoregion,
+    labels = c("e", "")
+    ),
+  ncol = 1, rel_heights = c(1, 1, 1)
   )
 
 ggsave(
   filename = "timeseries_dist.pdf",
   plot = timeseries_dist,
   path = here("paper", "fig_paper"),
-  scale = 2.4,
-  width = 80,
-  height = 80 * 1.0,
+  scale = 2.8,
+  width = 70,
+  height = 70 * 1.3,
   units = "mm",
   dpi = "print"
 )
@@ -350,11 +359,19 @@ knitr::include_graphics(here("paper", "fig_paper", "timeseries_dist.pdf"))
 ```
 
 ```{r}
-tar_load(p_site_trends_ts_caracteristics)
+tar_load(p_site_trends_ts_caracteristics2)
 ggsave(
-  filename = here("paper", "fig_paper",
-    "p_site_trends_ts_caracteristics.png"),
-  plot = p_site_trends_ts_caracteristics,
+  filename = here("paper", "fig_paper", "p_site_trends_ts_caracteristics.png"),
+  plot = p_site_trends_ts_caracteristics2,
+  scale = 3.2,
+  width = 80,
+  height = 80 * 1.2,
+  units = "mm",
+  dpi = "print"
+)
+ggsave(
+  filename = here("paper", "fig_paper", "p_site_trends_ts_caracteristics.pdf"),
+  plot = p_site_trends_ts_caracteristics2,
   scale = 3.2,
   width = 80,
   height = 80 * 1.2,
@@ -364,12 +381,28 @@ ggsave(
 ```
 
 ```{r}
-tar_load(p_hft_mu_venter)
+cov_ts_site_cap <- "**Covariation between temporal trends estimated at the site
+level and the characteristics of the timeseries**. The year span is in number of
+year, completeness in proportion and first year of sampling in year. The
+temporal trends were estimated with time as sole fixed predictor (See Methods,
+  eq. (3)). The black lines displays the fitted regressions with a GAM." %>%
+str_replace_all("  ", " ") %>%
+str_replace_all("\n|\r", " ")
 
+if (knitr::is_latex_output()){
+  cov_ts_site_cap <- str_replace(cov_ts_site_cap, bold_pattern, "\\\\textbf{\\2}")
+}
+```
+
+```{r trends-site, fig.cap=cov_ts_site_cap, fig.asp = 1.1, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "p_site_trends_ts_caracteristics.pdf"))
+```
+
+```{r}
 ggsave(
   filename = here("paper", "fig_paper",
     "p_hft_mu_venter.png"),
-  plot = p_hft_mu_venter,
+  plot = tar_read(p_hft_mu_venter),
   scale = 2.2,
   width = 80,
   height = 80 * 1.0,
@@ -377,8 +410,6 @@ ggsave(
   dpi = "print"
 )
 ```
-
-
 
 ```{r}
 fnsite <- format(nrow(filtered_dataset_modelling$location), big.mark = ",")
@@ -436,6 +467,47 @@ if (knitr::is_latex_output()){
 ```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%"}
 knitr::include_graphics(here("paper", "fig_paper", "clust_figure_na.pdf"))
 ```
+
+```{r}
+tar_load(p_drivers_ts_caracteristics)
+ggsave(
+  filename = "p_drivers_ts_caracteristic.pdf",
+  plot = p_drivers_ts_caracteristics,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "screen"
+)
+ggsave(
+  filename = "p_drivers_ts_caracteristic.png",
+  plot = p_drivers_ts_caracteristics,
+  path = here("paper", "fig_paper"),
+  scale = 2.2,
+  width = 80,
+  height = 80 * 1.0,
+  units = "mm",
+  dpi = "screen"
+)
+```
+
+```{r}
+drivers_ts_cap <- paste0("**Relationships among the ecological drivers and
+  timeseries characteristics**. The ecological drivers were largely unrelated
+  to the characteristics of the timeseries.") %>% str_replace_all("\\s+", " ")
+
+if (knitr::is_latex_output()) {
+ drivers_ts_cap <- str_replace(drivers_ts_cap, bold_pattern, "\\\\textbf{\\2}")
+}
+```
+
+```{r drivers-ts, fig.cap=drivers_ts_cap, fig.asp = 1.1, out.width = "80%"}
+knitr::include_graphics(here("paper", "fig_paper", "p_drivers_ts_caracteristic.pdf"))
+```
+```{r}
+```
+
 
 
 ```{r}
@@ -583,7 +655,7 @@ pred_hft_cap <- "**Predictions of community metric changes over
 time according to past human pressures and recent changes in human pressures
 using a hierarchical Bayesian model**. Total abundance is expressed in count,
 species richness in number of species (raw), while non-native abundance, non-native
-abundance, dissimilarity and turnover are expressed in proportion. No pressure,
+richness, dissimilarity and turnover are expressed in proportion. No pressure,
 medium pressure, and highly degraded past pressure levels correspond
 respectively to values of human footprint index for the year 1993 of 2.5 (intact
 ecosystem), 16.8 (median value in our dataset), and 45.6 (maximum value in the
@@ -740,29 +812,6 @@ knitr::include_graphics(here("paper", "fig_paper", "p_cor_lc_hft.pdf"))
 ```
 
 
-```{r}
-tar_load(p_drivers_ts_caracteristic)
-ggsave(
-  filename = "p_drivers_ts_caracteristic.pdf",
-  plot = p_drivers_ts_caracteristic,
-  path = here("paper", "fig_paper"),
-  scale = 2.2,
-  width = 80,
-  height = 80 * 1.0,
-  units = "mm",
-  dpi = "screen"
-)
-ggsave(
-  filename = "p_drivers_ts_caracteristic.png",
-  plot = p_drivers_ts_caracteristic,
-  path = here("paper", "fig_paper"),
-  scale = 2.2,
-  width = 80,
-  height = 80 * 1.0,
-  units = "mm",
-  dpi = "screen"
-)
-```
 
 
 
