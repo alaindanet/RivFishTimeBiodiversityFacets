@@ -1011,9 +1011,9 @@ share of the variance in the community metrics was explained by site and basin
 identity rather than by the fixed effects alone (R² conditional varying from
 0.15 for turnover to 0.80 for species richness vs. R² marginal varying from 0.02
 for species richness to 0.07 for community turnover; Table 1). This indicates
-that context-dependencies are not well captured by our models and suggest that
-integrating fine scale local drivers may improve our ability to predict local
-community changes.
+that context-dependencies are well captured by our hierarchical models but
+suggests that integrating fine scale local drivers may improve our ability to
+predict local community changes.
 
 
 ```{r}
