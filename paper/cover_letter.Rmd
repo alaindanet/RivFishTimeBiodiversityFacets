@@ -1,7 +1,7 @@
 ---
 author:
 - On behalf of all the authors, Dr. Alain Danet
-opening: Dear Chief editor Patrick Goymer, dear Senior Editors,
+opening: Dear Dr Luke Grinham
 closing: Sincerely yours,
 fontsize: 11pt
 return-address:
@@ -25,94 +25,24 @@ signature: /home/alain/Documents/Administration/signature.pdf
 Sys.setlocale("LC_TIME", "C")
 ```
 
-Please find enclosed our manuscript entitled "Past and recent anthropogenic
-pressures drive rapid changes in riverine fish communities", which we submit for
-consideration in Nature in Ecology & Evolution.
+We are herewith submitting a revision of our manuscript entitled “Past and
+recent anthropogenic pressures drive rapid changes in riverine fish communities”
+for consideration in Nature Ecology and Evolution.
 
-In the midst of the current biodiversity crisis, it is now more important than
-ever to understand the dynamics and drivers of biodiversity changes in order to
-design and implement adapted conservation policies. This is particularly true in
-freshwater systems, which are considered among the most threatened in the world.
-Yet, despite broad scientific consensus on the global biodiversity decline, we
-still lack a clear understanding of the processes underlying local community
-changes in response to anthropogenic pressures. It remains a challenging task as
-anthropogenic pressures can have both negative and positive effects on total
-abundance and species richness through habitat degradation and introduction of
-widespread generalist species. Local community composition and changes are also
-influenced by long lasting effects of past anthropogenic pressures as well as by
-the effects of connectivity which control the opportunity for community
-dynamics.
+We have now completed a careful and detailed revision of our manuscript by
+incorporating suggestions and comments from the three reviewers. This has led us
+to (i) provide more information regarding the site selection, (ii) clarify some
+parts of the methods regarding the structure of the Bayesian models, (iii)
+provide additional information regarding the potential influence of the
+characteristics of the time series on the temporal trends (presented in new
+Figures S5-S6), and (iv) explore the relationships between different human
+footprint indices. We also carefully dealt with more minor comments by
+incorporating the suggestions of the reviewers, as well as added some contextual
+information regarding the degree of anthropogenic pressures to the Supplementary
+Map.
 
-We addressed this challenging task by investigating the effects of both past and
-recent changes in anthropogenic pressures over space and time in riverine fish
-communities. Using a compilation of more than 4,000 fish community timeseries
-located in several biogeographic realms (mainly Palearctic, Nearctic and
-Australasian), we related changes in community structure (total abundance and
-species richness), composition (temporal dissimilarity and turnover), and
-non-native species contribution to past and recent anthropogenic pressures. Our
-results show a global increase in fish species richness and total abundance
-over time, but revealed that those increases are associated with important
-species replacement and changes in dominance, together with an upsurge in the
-proportion of non-native species in historically degraded sites,
-reflecting a legacy of past anthropogenic pressures. We further uncovered an
-interacting effect with recent changes in anthropogenic pressures, such as sites
-that had been further degraded do not display increases in total abundance and
-species richness but faster species replacement, changes in dominance, and
-increases in the share of non-native species.
+We think the revised manuscript is much improved, and we thank you very much for
+considering our revised manuscript. A point-by-point
+response to the reviewers’ comments, as well as a document highlighting the
+changes incorporated in the manuscript are included in the submission packet.
 
-Our study provides a large-scale picture of the biodiversity trends in an
-important freshwater group, but also a better understanding of the drivers
-underlying community changes in an era of dramatic environmental changes. Our
-results are coherent with the abundant literature reporting an ongoing biotic
-homogenization of riverine fish communities at the global scale, and suggest
-that recent increases in species richness and total abundance at the local scale
-are due to adaptation to highly degraded environments rather than recent
-improvements in water quality as suggested in previous studies. Finally, the
-weak covariation of community changes that we reported among different community
-metrics together with the high spatial heterogeneity in community trajectories
-highlights the multidimensional nature of community changes and the need to
-account for the complex spatio-temporal patterns in the underlying drivers of
-changes when assessing the status and trends in biodiversity.
-
-As Nature in Ecology & Evolution has been at the forefront of the research on
-large-scale patterns in biodiversity trends, we are confident that our study
-will interest the broad readership of the journal and will stimulate exciting
-new perspectives and research on local biodiversity changes at large spatial
-scale. We think that the methods used to disentangle community variations in
-space from changes in time will be of interest for a large readership. Lastly,
-this study will be of high interest for freshwater scientists and conservation
-practitioners as we provide the first comprehensive analysis of riverine fish
-community changes at this scale. The enclosed manuscript has been edited and
-approved by all the authors and has not been published or submitted to any other
-journal. We had no prior discussions with a Nature Ecology & Evolution editor
-about the work described in the manuscript.
-
-We suggest the following potential reviewers for their respective expertise regarding our
-study:
-
-- Charlotte Outhwaite, Centre for Biodiversity and Environment Research, University College London, London, UK:
-  - relevant expertise: Effects of human pressures on biodiversity trends across
-    realms
-  - `charlotte.outhwaite.14@ucl.ac.uk`
-- Fengzhi He: Aarhus University and Geography Department, Humboldt-Universität zu Berlin, Berlin, Germany
-  - Relevant expertise: Biodiversity patterns of riverine species
-  - `fengzhi.he@igb-berlin.de`
-- Renato Bolson Dala Corte: PPG-Ecologia & Evolução of the Universidade Federal de Goiás (UFG), Brazil
-  - Relevant expertise: Effects of human pressures on riverine fish communities
-  - `renatocorte@gmail.com`
-- Jani Heino: University of Oulu, Oulu, Finland
-  - Relevant expertise: Biodiversity patterns and impacts of dispersal in
-    riverine systems
-  - `jani.heino@oulu.fi`
-- Kirk Winemiller: Texas A & M University, USA
-  - Relevant expertise: Fish community ecology and global changes
-  - `kirk.winemiller@ag.tamu.edu`
-
----
-#- Adriano Sanches Melo: Universidade Federal do Rio Grande do Sul, Brazil
-#  - Relevant expertise: Human impacts on riverine communities
-#  - `asm.adrimelo@gmail.com`
-#- Roel van Klink: German Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig, 04103 Leipzig, Germany
-#  - Relevant expertise: Long-term community dynamics in freshwater systems
-#  - `roel.klink@idiv.de`
----

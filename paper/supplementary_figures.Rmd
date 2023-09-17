@@ -303,18 +303,18 @@ ggsave(
 
 ```{r}
 cap <- "**Distribution of (a) year of all sampling events (b) first year of the
-time series,
-(c) time span, (d) completeness of the time series, (e) time series sampling year**. In (a), (b), and (e), the
-lines display the year 1993 and 2009. The years 1993 and 2009 correspond to the
-years of the human footprint index assessments, which were used to quantify past
-and recent anthropogenic pressures (See Methods)." %>%
+time series, (c) time span, (d) completeness of the time series, (e) time series
+of yearly sampling events**. Colours correspond to the biogeographic realms. In
+(a), (b), and (e), the lines display the year 1993 and 2009. The years 1993 and
+2009 correspond to the years of the human footprint index assessments, which
+were used to quantify past and recent changes in anthropogenic pressures (See
+  Methods)." %>%
 str_replace_all("  ", " ") %>%
 str_replace_all("\n|\r", " ")
 
 if (knitr::is_latex_output()){
  cap <- str_replace(cap, bold_pattern, "\\\\textbf{\\2}")
 }
-
 ```
 
 ```{r base-span-cpl, fig.cap=cap, out.width = "80%", out.height = "95%"}
@@ -381,11 +381,15 @@ ggsave(
 ```
 
 ```{r}
-cov_ts_site_cap <- "**Covariation between temporal trends estimated at the site
-level and the characteristics of the timeseries**. The year span is in number of
-year, completeness in proportion and first year of sampling in year. The
-temporal trends were estimated with time as sole fixed predictor (See Methods,
-  eq. (3)). The black lines displays the fitted regressions with a GAM." %>%
+
+
+cov_ts_site_cap <- "**Covariations between temporal trends estimated at the site
+level and the characteristics of the time series**. The year span is expressed
+in number of years, completeness in proportion of years over the entire study
+period and first year of sampling in year. The temporal trends were estimated
+with time as sole fixed predictor (See Methods, eq. (3)). The black lines
+display the regression lines fitted with a Generalized Additive Model (GAM) and
+the gray area the confidence interval." %>%
 str_replace_all("  ", " ") %>%
 str_replace_all("\n|\r", " ")
 
@@ -446,17 +450,18 @@ na_cluster <- paste0("(N = ",
 
 ```{r}
 pca_clust_cap <- paste0("**Covariation among the community temporal trends and
-  characterization of community trajectories**. (a, b) PCA biplot of the community
-  temporal trends and their cluster assignment where the sites are colored
-  according to their cluster assignment. (c) Boxplots
-  displaying the distribution of the temporal trends by cluster. (d) Cluster
-  frequencies across the three main biogeographic realms. The ellipses in (a-b) display the 95\\% intervals around
-  the clusters assuming a Student’s t distribution. The clusters were named
-  according to their main characteristics. Contrary to Fig. 2 (Main text), we included the sites whose cluster
-affiliation was uncertain ('NA', black color, ", na_cluster, ".",
-" NA clusters are well distributed over the PCA (a-b), which is confirmed by the
-distribution of community metric temporal trends (c). We observe a few more NAs
-in the Nearctic realm (+5\\%, i.e. around 40 sites over 897).") %>%
+  characterization of community trajectories**. (a, b) PCA biplot of the
+  community temporal trends and their cluster assignment where the sites are
+  colored according to their cluster assignment. (c) Boxplots displaying the
+  distribution of the temporal trends by cluster. (d) Cluster frequencies across
+  the three main biogeographic realms. The ellipses in (a-b) display the 95\\%
+  intervals around the clusters assuming a Student’s t distribution. The
+  clusters were named according to their main characteristics. Contrary to Fig.
+  2 (Main text), we included the sites whose cluster affiliation was uncertain
+  ('NA', black color, ", na_cluster, ".", " NA clusters are well distributed
+  over the PCA (a-b), which is confirmed by the distribution of community metric
+  temporal trends (c). We observe a few more NAs in the Nearctic realm (+5\\%,
+    i.e. around 40 sites over 897).") %>%
 str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
@@ -488,14 +493,20 @@ ggsave(
   width = 80,
   height = 80 * 1.0,
   units = "mm",
-  dpi = "screen"
+  dpi = "print"
 )
 ```
 
 ```{r}
-drivers_ts_cap <- paste0("**Relationships among the ecological drivers and
-  timeseries characteristics**. The ecological drivers were largely unrelated
-  to the characteristics of the timeseries.") %>% str_replace_all("\\s+", " ")
+drivers_ts_cap <- paste0("**Covariations between ecological drivers used in the
+  hierarchical Bayesian model** (longitudinal stream position, past and recent
+    changes in anthropogenic pressures) and time series characteristics (time
+    span in number of years and beginning of the time series in year). The blue
+  lines display the regression lines fitted with a Generalized Additive Model
+  (GAM) and the gray area the confidence interval. The ecological drivers were
+  largely unrelated to the characteristics of the time series
+  (N = ",fnsite," sites).") %>%
+  str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()) {
  drivers_ts_cap <- str_replace(drivers_ts_cap, bold_pattern, "\\\\textbf{\\2}")
@@ -504,8 +515,6 @@ if (knitr::is_latex_output()) {
 
 ```{r drivers-ts, fig.cap=drivers_ts_cap, fig.asp = 1.1, out.width = "80%"}
 knitr::include_graphics(here("paper", "fig_paper", "p_drivers_ts_caracteristic.pdf"))
-```
-```{r}
 ```
 
 
@@ -705,13 +714,13 @@ tar_load(pca_riv_str)
 
 
 ```{r}
-cap_pca_riv <- "**Rotated principal component analysis (PCA) over the physical and hydrological characteristics of
-the sites**. PCA axes (Rotated Component, RC) were rotated using the varimax algorithm
-(See Methods). The first axis is related to the average discharge, Strahler
-order and the distance from source, and was subsequently used in the statistical
-modelling as a composite variable intended to summarise the longitudinal stream position from upstream
-to downstream." %>%
-  str_replace_all("\\s+", " ")
+cap_pca_riv <- "**Rotated principal component analysis (PCA) over the physical
+and hydrological characteristics of the sites**. PCA axes (Rotated Component,
+  RC) were rotated using the varimax algorithm (See Methods). The first axis is
+related to the average discharge, Strahler order and the distance from source,
+and was subsequently used in the statistical modelling as a composite variable
+intended to summarise the longitudinal stream position from upstream to
+downstream." %>% str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
  cap_pca_riv <- str_replace(cap_pca_riv, bold_pattern, "\\\\textbf{\\2}")
@@ -789,19 +798,18 @@ ggsave(
 cor_cap <- "**Spearman correlations among the ecological drivers** used in the
 hierarchical Bayesian model as well as with additional population density land
 use variables. Land use data and population density were extracted from
-HydroAtlas and are meant to illustrate the covariations of various
+RiverAtlas and are meant to illustrate the covariations of various
 human pressures with the human footprint index. We show the correlation with the
 extents of forest, pasture, and cropland for year 2000, urban extent for year 2015
 and population density for year 2010 (See Linke et al., 2019 for details). We
 observe very low correlations among the ecological drivers (longitudinal stream
-  position, past
-  pressures and recent pressures). Past pressures (human footprint index for year
-  1993) are positively correlated with population density, urban extent and
-cropland extent, but are negatively correlated with forest extent." %>%
-  str_replace_all("\\s+", " ")
+position, past pressures and recent pressures). Past pressures (human footprint
+index for year 1993) are positively correlated with population density, urban
+extent and cropland extent, but are negatively correlated with
+forest extent." %>% str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
- cor_cap <- str_replace(cor_cap, bold_pattern, "\\\\textbf{\\2}")
+  cor_cap <- str_replace(cor_cap, bold_pattern, "\\\\textbf{\\2}")
 }
 ```
 

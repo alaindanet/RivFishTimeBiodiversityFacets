@@ -942,7 +942,7 @@ list(
       "total_abundance", "total_abundance_scaled",
       "log_total_abundance",
       "total_abundance_tps")),
-  ## More coherent modelling by response variable caracteristics
+  ## More coherent modelling by response variable characteristics
   tar_target(tps_var, c("jaccard_dis_scaled", "turnover_scaled",
       "nestedness_scaled", "hillebrand_dis_scaled", "appearance_scaled",
       "disappearance_scaled", "chao_richness_tps_scaled",
@@ -2154,7 +2154,7 @@ list(
     )
   ),
 
-  # Trends/timeseries caracteristics
+  # Trends/timeseries characteristics
   tar_target(site_trends_ts_caracteristics,
     site_trends_tot_dec %>%
       pivot_longer(-siteid, names_to = "response", values_to = "trends") %>%
@@ -2185,7 +2185,7 @@ list(
       name = "Community metrics"
       ) +
     labs(
-      x = "Time series caracteristics",
+      x = "Time series characteristics",
       y = "Temporal trends by decade") +
     theme(legend.position = "bottom") +
     guides(colour = guide_legend(override.aes = list(alpha = 1)))),
@@ -2246,7 +2246,7 @@ list(
     geom_point(alpha = .3) +
     geom_smooth() +
     facet_grid(rows = vars(evt), cols = vars(ts), scale = "free") +
-    labs(x = "Time series caracteristics", y = "Ecological drivers") +
+    labs(x = "Time series characteristics", y = "Ecological drivers") +
     theme_bw()),
   tar_target(ts_coverage, {
     ordered_year <- filtered_dataset$site_quanti %>%
