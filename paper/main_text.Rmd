@@ -266,7 +266,7 @@ composition of 30% per decade characterised by significant changes in the
 dominant species, together with a 13% increase in total abundance per decade,
 and a 7% increase in species richness per decade. The spatial heterogeneity in
 these trends could be traced back to the strength and timing of anthropogenic
-pressures and was mediated by non-native species introductions. Specifically, we
+pressures and was mainly mediated by non-native species introductions. Specifically, we
 demonstrate that the negative effects of anthropogenic pressures on species
 richness and total abundance were compensated over time by the establishment of
 non-native species, a pattern consistent with previously reported biotic
@@ -314,7 +314,7 @@ going beyond analyses of changes in the number of species or individuals by
 considering concomitant changes in species identity[@dornelas_assemblage_2014; @blowes_geography_2019; @scott_native_2001;
 @hillebrand_biodiversity_2018].
 
-Community composition and trajectories are influenced by past anthropogenic
+Temporal changes in community composition are influenced by past anthropogenic
 pressures that can generate transient ecological dynamics and long-lasting
 biotic ‘legacies’[@jackson_balancing_2010]. Given the high spatio-temporal
 heterogeneity of anthropogenic pressures[@venter_sixteen_2016], ignoring the
@@ -691,7 +691,7 @@ tab_palearctic %>%
 Beyond overall temporal trends, considerable spatial heterogeneity exists across
 sites, as illustrated by the spread of the histograms in Fig. 1. This
 heterogeneity is also apparent within the same river basin (Supplementary Map
-S1). For example, on average the Thames basin show the same patterns than at the
+S1). For example, on average the Thames basin show the same spatial patterns than at the
 global scale but that a variety of temporal trends were observed across the 139
 sites within the basin, including decrease in species richness (18 sites), decrease in
 abundance (20), and high turnover (17). The (random) slope of time in our
@@ -868,7 +868,7 @@ longitudinal stream position (i.e. represented by a synthetic PCA axis based on
 abundance (strong evidence) and species richness (weak evidence) were buffered
 in more downstream areas (resp. CI 95%:$\beta\prime =$ `r rivhftabun` and CI
 80%:$\beta\prime =$ `r rivhftrich`, Fig. 3a). Similar results were obtained using raw
-or coverage-based species richness (See Methods, Fig. S5).
+or coverage-based species richness (See Methods, Fig. S7).
 
 Past anthropogenic pressures were also associated with changes in community
 composition. We found evidence (albeit weak) that a higher degree of past

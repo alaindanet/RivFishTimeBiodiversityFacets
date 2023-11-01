@@ -1,7 +1,7 @@
 ---
 author:
 - On behalf of all the authors, Dr. Alain Danet
-opening: Dear Dr Luke Grinham
+opening: Dear Dr Luke Grinham,
 closing: Sincerely yours,
 fontsize: 11pt
 return-address:
@@ -35,7 +35,7 @@ to (i) provide more information regarding the site selection, (ii) clarify some
 parts of the methods regarding the structure of the Bayesian models, (iii)
 provide additional information regarding the potential influence of the
 characteristics of the time series on the temporal trends (presented in new
-Figures S5-S6), and (iv) explore the relationships between different human
+Figures S2-S5), and (iv) explore the relationships between different human
 footprint indices. We also carefully dealt with more minor comments by
 incorporating the suggestions of the reviewers, as well as added some contextual
 information regarding the degree of anthropogenic pressures to the Supplementary
