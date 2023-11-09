@@ -1,7 +1,7 @@
 ---
 title: "Supplementary Figures and Tables"
-subtitle: "Past and recent anthropogenic pressures drive rapid changes in riverine fish communities"
-author: "Alain Danet, Xingli Giam, Julian D. Olden, Lise Comte"
+subtitle: ""
+author: ""
 date: ""
 output:
   bookdown::pdf_document2:
@@ -317,7 +317,7 @@ if (knitr::is_latex_output()){
 }
 ```
 
-```{r base-span-cpl, fig.cap=cap, out.width = "80%", out.height = "95%"}
+```{r base-span-cpl, fig.cap=cap, out.width = "80%", out.height = "95%", fig.show = "hide"}
 leg_ecoregion <- get_legend(
   tar_read(p_timeseries) +
     theme(legend.position = "right", legend.justification = "center") + #
@@ -398,7 +398,7 @@ if (knitr::is_latex_output()){
 }
 ```
 
-```{r trends-site, fig.cap=cov_ts_site_cap, fig.asp = 1.1, out.width = "80%"}
+```{r trends-site, fig.cap=cov_ts_site_cap, fig.asp = 1.1, out.width = "80%", fig.show = "hide"}
 knitr::include_graphics(here("paper", "fig_paper", "p_site_trends_ts_caracteristics.pdf"))
 ```
 
@@ -423,7 +423,7 @@ trends_cap <- paste0("**Distribution of community temporal trends across sites**
   for Jaccard dissimilarity and Jaccard Nestedness. Temporal trends per decade
 were estimated from a hierarchical Bayesian model including time as sole
 predictor (See Methods). The histograms show the Best Linear Unbiased Predictor
-(BLUP) estimated at each site and the dots the average posterior distribution
+(BLUP) estimated at each site. The points depict the average posterior distribution
 with bars depicting the Bayesian credible intervals at
 95\\%. The dashed lines refer to no temporal trend.", "
 N = ", fnop, " sampling events across ", fnsite, " sites.") %>%
@@ -432,7 +432,7 @@ if (knitr::is_latex_output()){
  trends_cap <- str_replace(trends_cap, bold_pattern, "\\\\textbf{\\2}")
 }
 ```
-```{r trends-dist, fig.cap=trends_cap, fig.asp = 1.1, out.width = "80%"}
+```{r trends-dist, fig.cap=trends_cap, fig.asp = 1.1, out.width = "80%", fig.show = "hide"}
 knitr::include_graphics(here("paper", "fig_paper", "p_trends_supp.pdf"))
 ```
 
@@ -453,7 +453,10 @@ pca_clust_cap <- paste0("**Covariation among the community temporal trends and
   characterization of community trajectories**. (a, b) PCA biplot of the
   community temporal trends and their cluster assignment where the sites are
   colored according to their cluster assignment. (c) Boxplots displaying the
-  distribution of the temporal trends by cluster. (d) Cluster frequencies across
+  distribution of the temporal trends by cluster. The center of
+  the box depicts the median while the bounds depicts the 25\\% and 75\\%
+    percentile. The whiskers depict the extreme values within 1.5 interquartile
+  range beyond the bounds of the box. (d) Cluster frequencies across
   the three main biogeographic realms. The ellipses in (a-b) display the 95\\%
   intervals around the clusters assuming a Student’s t distribution. The
   clusters were named according to their main characteristics. Contrary to Fig.
@@ -469,7 +472,7 @@ if (knitr::is_latex_output()){
 }
 ```
 
-```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%"}
+```{r cl-map, fig.cap=pca_clust_cap, fig.asp = 1.1, out.width = "80%", fig.show = "hide"}
 knitr::include_graphics(here("paper", "fig_paper", "clust_figure_na.pdf"))
 ```
 
@@ -513,7 +516,7 @@ if (knitr::is_latex_output()) {
 }
 ```
 
-```{r drivers-ts, fig.cap=drivers_ts_cap, fig.asp = 1.1, out.width = "80%"}
+```{r drivers-ts, fig.cap=drivers_ts_cap, fig.asp = 1.1, out.width = "80%", fig.show = "hide"}
 knitr::include_graphics(here("paper", "fig_paper", "p_drivers_ts_caracteristic.pdf"))
 ```
 
@@ -679,12 +682,12 @@ if (knitr::is_latex_output()){
 ```
 
 
-```{r, out.width = "70%", out.height = "85%", fig.cap = pred_hft_cap}
+```{r, out.width = "70%", out.height = "85%", fig.cap = pred_hft_cap, fig.show = "hide"}
 knitr::include_graphics(here("paper", "fig_paper", "p_pred_hft.pdf"))
 ```
 
 ```{r}
-std_tot_cap <- "**Effects of anthropogenic pressures and longitudinal stream position on (a)
+std_tot_cap <- paste0("**Effects of anthropogenic pressures and longitudinal stream position on (a)
 community temporal changes and (b) community spatial variations**. See
 Fig. 3 in the main text for details. We compare coverage corrected species
 richness (Richness) with raw species richness (Richness (raw)) and Simpson
@@ -694,7 +697,9 @@ species richness does not affect the results. Similarly, we observe consistent
 effect sizes for Simpson and Jaccard dissimilarity indices, meaning that
 observed changes in community composition concerned abundant species and thus
 changes in the identity of dominant species (see
-  Methods)." %>%
+  Methods). The points depict the average posterior distribution. Large, medium and thin bars depict the Bayesian credible intervals
+at 80, 90 and 95\\%, respectively. Please note the broken abscissa scale in (a).
+N = ", fnop, " sampling events across ", fnsite," sites.") %>%
   str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
@@ -703,8 +708,8 @@ if (knitr::is_latex_output()){
 ```
 
 
-```{r std-tot, fig.width = 8, fig.asp = .5, fig.cap=std_tot_cap}
-knitr::include_graphics(here("paper", "fig_paper", "p_effect_supp.png"))
+```{r std-tot, fig.width = 8, fig.asp = .5, fig.cap=std_tot_cap, fig.show = "hide"}
+knitr::include_graphics(here("paper", "fig_paper", "p_effect_supp.pdf"))
 ```
 
 
@@ -727,7 +732,7 @@ if (knitr::is_latex_output()){
 }
 ```
 
-```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv}
+```{r }
 p_pca_riv_str <- plot_pca_clust(
   .data = pca_riv_str$rotated,
   site_cl = NULL,
@@ -743,8 +748,23 @@ p_pca_riv_str <- plot_pca_clust(
   add_point = FALSE,
   add_ellipse = FALSE
 )
-p_pca_riv_str
+ggsave(
+  filename = "p_pca_riv_str.pdf",
+  plot = p_pca_riv_str +
+    theme(plot.margin = margin(t = 5, r = 8, b = 2, l = 2, unit = "pt")),
+  path = here("paper", "fig_paper"),
+  scale = 1.4,
+  width = 80,
+  height = 80 * .90,
+  units = "mm",
+  dpi = "screen"
+)
 ```
+
+```{r pca-riv-str, fig.width = 6, fig.asp = 1, fig.cap=cap_pca_riv, fig.show = "hide"}
+knitr::include_graphics(here("paper", "fig_paper", "p_pca_riv_str.pdf"))
+```
+
 
 ```{r}
 lc_hft <- riveratlas_site %>%
@@ -799,7 +819,7 @@ cor_cap <- "**Spearman correlations among the ecological drivers** used in the
 hierarchical Bayesian model as well as with additional population density land
 use variables. Land use data and population density were extracted from
 RiverAtlas and are meant to illustrate the covariations of various
-human pressures with the human footprint index. We show the correlation with the
+human pressures with the human footprint index. We show the Spearman correlation with the
 extents of forest, pasture, and cropland for year 2000, urban extent for year 2015
 and population density for year 2010 (See Linke et al., 2019 for details). We
 observe very low correlations among the ecological drivers (longitudinal stream
@@ -924,7 +944,7 @@ numbers. In the results presented in the main text, we removed 5\\% of the data
 increased only marginally from 6 to 7 clusters (and beyond). However, because of
 the small increases in goodness of fit observed from 4 to 5 clusters, we also
 tested the sensitivity of our conclusions regarding the community trajectories
-using 4 clusters  (see Fig. S10)." %>%
+using 4 clusters  (see Fig. S4)." %>%
   str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
@@ -988,7 +1008,9 @@ site_k4_fac_1_cl <- get_cluster_df(
 bp_cl_dist_cap <- "**Distribution of temporal trends per decade by variable and
 cluster, with four clusters**. With four clusters instead of six,
 we do not observe the clusters related to changes in community
-composition (Fig. 2, main text)." %>%
+composition (Fig. 2, main text). The center of the box depicts the median while
+the bounds depicts the 25\\% and 75\\% percentile. The whiskers depict the extreme
+values within 1.5 interquartile range beyond the bounds of the box." %>%
   str_replace_all("\\s+", " ")
 
 if (knitr::is_latex_output()){
@@ -1086,7 +1108,7 @@ tab_rand2 <- tab_rand %>%
   arrange(`Response variable`)
 ```
 
-```{r}
+```{r, fig.show = "hide", results = "hide"}
 tab_rand_cap <- "**Random effects associated with the estimation of the temporal trends
 computed from the model containing only time as fixed predictor**. [95\\% CI]: Credible Interval computed using
 the Highest Posterior Density method." %>%
@@ -1095,15 +1117,25 @@ if (knitr::is_latex_output()) {
   tab_rand_cap <- str_replace(tab_rand_cap, bold_pattern, "\\\\textbf{\\2}")
 }
 
-tab_rand2 %>%
+tab_rand_ok <- tab_rand2 %>%
   pivot_wider(names_from = "Spatial scale", values_from = "Temporal trends s.d.") %>%
   select(1, 3, 2) %>%
   kbl(booktabs = T,
-    label = "tab-rand",
+    format = "latex",#ifelse(knitr::is_latex_output(), "latex", "html"),
+    label = "",
     caption = tab_rand_cap) %>%
   add_header_above(c(" " = 1, "Temporal trends s.d." = 2)) %>%
   collapse_rows(columns = c(1, 2), valign = "middle", latex_hline = "major") %>%
   kable_styling(latex_options = c("hold_position"))
+
+kableExtra::save_kable(
+  tab_rand_ok,
+  self_contained = TRUE,
+  density = 600,
+  file = here("paper", "fig_paper", "tab_rand_extended_data_table1.jpg"),
+  keep_tex = TRUE
+)
+tab_rand_ok
 ```
 
 
@@ -1165,7 +1197,7 @@ data_ref_cap <- "**References of the dataset included in the study**, arranged b
     2021a). N: number of sites." %>%
 str_replace_all("\\s+", " ")
 
-if (knitr::is_latex_output()){
+if (knitr::is_latex_output()) {
   data_ref_cap <- str_replace(data_ref_cap, bold_pattern, "\\\\textbf{\\2}")
 }
 
@@ -1191,6 +1223,17 @@ add_dataset_ref %>%
 ```
 
 ```{r, eval = FALSE}
+add_dataset_ref %>%
+  select(`Source ID` = `Source id`, 2, 3, Reference) %>%
+  mutate(
+    Country = str_replace(Country, "Canada", "CAN"),
+    Country = factor(Country, levels = country_lvl),
+    ) %>%
+  rbind(ti_ref) %>%
+  mutate(Reference = str_replace(Reference, "\\.;", ".")) %>%
+  arrange(Country, desc(N)) %>%
+  slice_tail(n = 2) %>%
+  .$Reference
 # SourceID of the dataset from RivFishTime used in the study as Lise would like
 # to thank them individually:
 tar_load(
