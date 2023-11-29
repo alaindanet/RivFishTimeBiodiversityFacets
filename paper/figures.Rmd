@@ -864,7 +864,7 @@ fig1_cap <- paste0("**Response of riverine fish communities to time,
 
 ```{r eff, fig.asp = 2.5, fig.width = 88* 0.0393701}
 #, fig.cap=fig1_cap
-knitr::include_graphics(here("paper", "fig_paper", "fig1.pdf"))
+knitr::include_graphics(here("paper", "fig_paper", "p_effect.pdf"))
 ```
 
 
@@ -902,7 +902,7 @@ axis_l <- list(
 
 cluster_names <- c(
   "Medium change", "High turnover",
-  "Increase in\nrichness", "Decrease in\nabundance (total)",
+  "Increase in\nrichness", "Decrease in\ntotal abundance",
   "Decrease in\nrichness", "Low change"
 )
 nb_clusters <- table_to_vec(table(site_cl_rm$cl))
@@ -1210,7 +1210,7 @@ p_ecoregion_cl <-
     size = 3,
     colour = "white",
     position = position_fill(vjust = 0.5)) +
-  labs(x = "Percentage") +
+  labs(x = "Frequency (%)") +
   scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
   theme_cowplot(10) +
   theme(
@@ -1309,7 +1309,7 @@ p_ecoregion_cl_na <-
     size = 3,
     colour = "white",
     position = position_fill(vjust = 0.5)) +
-  labs(x = "Percentage") +
+  labs(x = "Frequency (%)") +
   scale_x_continuous(labels = scales::percent, expand = c(0, .01)) +
   theme_cowplot(10) +
   theme(
