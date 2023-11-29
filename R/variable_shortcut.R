@@ -57,8 +57,8 @@ get_var_replacement_vulgarisation <- function() {
   c(
     log_species_nb = "Species richness (raw)",
     species_nb = "Species richness",
-    log_total_abundance = "Abundance (total)",
-    total_abundance = "Abundance (total)",
+    log_total_abundance = "Total abundance",
+    total_abundance = "Total abundance",
     chao_richness = "Richness",
     log_chao_richness = "Richness",
     chao_shannon = "Chao shannon",
