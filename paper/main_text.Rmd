@@ -695,8 +695,8 @@ tab_palearctic %>%
 
 Beyond overall temporal trends, considerable spatial heterogeneity exists across
 sites, as illustrated by the spread of the histograms in Fig. 1. This
-heterogeneity is also apparent within the same river basin (Supplementary Data
-S1). For example, on average the Thames basin show the same spatial patterns than at the
+heterogeneity is also apparent within the same river basin (Supplementary
+Software 1). For example, on average the Thames basin show the same spatial patterns than at the
 global scale but that a variety of temporal trends were observed across the 139
 sites within the basin, including decrease in species richness (18 sites), decrease in
 abundance (20), and high turnover (17). The (random) slope of time in our
@@ -768,7 +768,7 @@ temporal trends in total abundance and species richness; however these two sets
 of trajectories appeared largely independent to each other (Fig. 2a). Using a k-mean
 trimmed clustering method on the temporal trends in the community metrics at the
 site level (see Methods), we further detected six distinct types of community
-trajectories (Fig. 2c). The largest cluster was characterised by moderate
+trajectories (Fig. 2c, non assigned sites are displayed in Extended Data Fig. 4). The largest cluster was characterised by moderate
 changes along all biodiversity dimensions: medium temporal increases in total
 abundance and species richness, temporal dissimilarity and turnover (‘medium
 change’; `r per_cluster[1]` of the sites). The second cluster was associated
@@ -871,11 +871,14 @@ series) was associated with faster increases in total abundance and species
 richness (resp.
 CI 95%:$\beta\prime=$ `r hft93abun` in blue and `r hft93rich` in green, Fig.
 3a). We also uncovered evidence for an interaction with the
-longitudinal stream position (i.e. represented by a synthetic PCA axis based on several hydromorphological characteristics where high values are associated with more downstream areas, see Methods), such as the legacy effects of past anthropogenic pressures on total
-abundance (strong evidence) and species richness (weak evidence) were buffered
+longitudinal stream position (i.e. represented by a synthetic PCA axis based on
+several hydromorphological characteristics where high values are associated with
+more downstream areas, Extended Data Fig. 7), such as the legacy effects of past
+anthropogenic pressures on total abundance (strong evidence) and species
+richness (weak evidence) were buffered
 in more downstream areas (resp. CI 95%:$\beta\prime =$ `r rivhftabun` and CI
 80%:$\beta\prime =$ `r rivhftrich`, Fig. 3a). Similar results were obtained using raw
-or coverage-based species richness (See Methods, Extended Data Fig. 7).
+or coverage-based species richness (See Methods, Extended Data Fig. 8).
 
 Past anthropogenic pressures were also associated with changes in community
 composition. We found evidence (albeit weak) that a higher degree of past
@@ -893,10 +896,10 @@ faster rates of increases in temporal dissimilarity and turnover (resp. CI
 95%:$\beta\prime =$ `r hft93hill` in red and `r hft93turn` in purple, Fig. 3a),
 irrespective of the longitudinal stream position (resp. CI 80%:$\beta\prime =$
 `r rivhfthill` and `r rivhftturn`, Fig. 3a). This result was consistent between
-Jaccard and Simpson-based dissimilarity (Extended Data Fig. 7) but the effects of past
+Jaccard and Simpson-based dissimilarity (Extended Data Fig. 8) but the effects of past
 anthropogenic pressures were attenuated in most downstream areas for Jaccard’s
 dissimilarity, indicating that those changes involved more dominant species
-(Extended Data Fig. 7).
+(Extended Data Fig. 8).
 
 Recent increases in anthropogenic pressures (i.e. ratio of the human footprint
 index between 2009 and 1993) were found to have a context-specific effect on
@@ -1265,7 +1268,7 @@ S2). The final database mainly covered western and northern Europe, northern
 America, and southeastern Australia. We selected time series having at least 5
 years of data over a 10-year period as well as a consistent sampling protocol
 and abundance unit. As several sites had been sampled using different sampling
-methods (e.g. electrofishing, seining, Supplementary Table S2), we selected for each site only
+methods (e.g. electrofishing, seining, Supplementary Table 2), we selected for each site only
 the sampling events that were performed using the most frequent sampling method.
 To minimize the influence of seasonal variation in community composition (e.g.
 due to spawning or migration), we further only selected sampling events that
@@ -1287,7 +1290,7 @@ completeness (i.e. number of annual samplings / time span) was of
 (`r per_eco["Australasia"]`), and distributed across 307 hydrographic basins.
 Four countries gathered 85% of the sites, namely Great Britain (`r per_pays["GBR"]`),
 France (`r per_pays["FRA"]`), Sweden (`r per_pays["SWE"]`), and the USA
-(`r per_pays["USA"]`, Supplementary Table S2).
+(`r per_pays["USA"]`, Supplementary Table 2).
 
 ## Community metrics
 
@@ -1322,10 +1325,10 @@ u_per <- scales::percent(table_to_vec(unitvec))
 
 We assessed community changes in riverine fish communities using several
 biodiversity facets related to total abundance, species richness, the share of
-non-native species and community composition (Supplementary Table S2). Total abundance was
+non-native species and community composition (Supplementary Table 2). Total abundance was
 reported in number of individuals (`r u_per["Count"]` of the sampling events), density of
 individuals per 100 $m^2$ (`r u_per["Ind.100m2"]`), Catch Per Unit Effort (CPUE,
-`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`, Supplementary Table S2).
+`r u_per["CPUE"]`), and Leslie index (`r u_per["Leslie_index"]`, Supplementary Table 2).
 Although we selected for strict protocol consistency, 70% or more of the
 sampling events by unit of abundance did not report sampling effort, preventing
 us from harmonising count, abundance density and CPUE[@comte_rivfishtime_2021].
@@ -1377,7 +1380,7 @@ The biogeographic origin of the fish species describing whether species were
 native or introduced to a given drainage basin was retrieved using a global
 database documenting species status across drainage basins of the
 world[@tedesco_global_2017] (`r nat_per["tedesco"]` of the species occurrences,
-Supplementary Table S2). For the sites falling outside the river basins provided in the global
+Supplementary Table 2). For the sites falling outside the river basins provided in the global
 database, such as for the sites located close to the
 shore, we used the closest basin within the same country. For species not
 included in a given drainage basin, we determined the origin of the species at
@@ -1390,8 +1393,8 @@ Species (NAS) database developed by the US Geological Survey
 species origins at the country scale, using national atlases and Fishbase data
 in neighbouring countries, such as for *Piaractus brachypomus* and *Rutilus
 rutilus* in the USA (`r nat_per["handmade"]` of the species occurrences,
-Supplementary Table S2). We then estimated the percentage of non-native species with respect
-to both abundance and species richness for each sampling event (Supplementary Table S3).
+Supplementary Table 2). We then estimated the percentage of non-native species with respect
+to both abundance and species richness for each sampling event (Supplementary Table 3).
 
 
 ### Dissimilarity metrics
@@ -1547,7 +1550,7 @@ of the variance (Extended Data Fig. 8), and was subsequently used as a composite
 describing the longitudinal stream position from upstream to downstream (from
 negative to positive values, respectively). The correlation coefficients
 indicated little covariations among the predictors (maximum Spearman's
-correlation of 0.09 found between past and recent pressures, Supplementary Fig. S1).
+correlation of 0.09 found between past and recent pressures, Supplementary Figure 1).
 
 
 
@@ -1661,7 +1664,7 @@ dec_waic <- round(mean((tab_waic[["Log (Year # + 1)"]] - tab_waic[["Year #"]])))
 ```
 We log-transformed the number of years as $\log(year + 1)$ as it improved the quality
 of the model fitting to the data, decreasing the WAIC[@gelman_understanding_2014; @vehtari_practical_2017] by `r dec_waic` on average
-(`r perc_dec_waic`) across community metrics facets (Supplementary Table S4). It suggested
+(`r perc_dec_waic`) across community metrics facets (Supplementary Table 4). It suggested
 the presence of non-linearity in the temporal trends, which is particularly
 expected in the case of bounded variables such as the dissimilarity metrics. We
 log-transformed total abundance and species richness, so that their temporal trends
@@ -1709,11 +1712,11 @@ concluded that the quality of parameter inference did not suffer from the
 uninformative priors.
 
 We checked the overall quality of the model fit to the data by plotting the
-fitted versus observed values (Supplementary Fig. S2). We visually inspected the PIT and
+fitted versus observed values (Supplementary Figure 2). We visually inspected the PIT and
 CPO (respectively Posterior Integral Transform and Conditional Predictive
 Ordinate) distribution to assess both the quality of data representation, and
 the frequency of outliers. There was very little multicollinearity in the model,
-as all Variance Inflation Factors were around 1 (Supplementary Table S5).
+as all Variance Inflation Factors were around 1 (Supplementary Table 5).
 
 We computed marginal ($R^2_m$) and conditional ($R^2_c$) R-squared (Eq.
 \@ref(eq:r2)) to assess the quality of the fit of the Bayesian models,
@@ -1783,9 +1786,9 @@ clusters. The method consists of trimming the  most outlying data in the
 multidimensional space, the number of dimensions being the number of community
 metrics. To choose a relevant number of clusters, we plotted the log-likelihood
 of the trimmed classification as a function of the proportion of the most
-outlying data trimmed ($\alpha$) and the number of clusters (Supplementary Fig. S3). We
+outlying data trimmed ($\alpha$) and the number of clusters (Supplementary Figure 3). We
 thus selected a partition of temporal community changes in six clusters with
-$\alpha=5\%$ (see Supplementary Fig. S4 with four clusters). We did not constrain the algorithm for the
+$\alpha=5\%$ (see Supplementary Figure 4 with four clusters). We did not constrain the algorithm for the
 relative size or shape of the clusters, as we had no a priori expectation about
 them. The clustering algorithm was run for a minimum number of 100 iterations
 and up to a maximum of 125 iterations. To further control for the quality of the
@@ -1818,7 +1821,7 @@ researchers for their continuous efforts of data collection and for making these
 data publicly available; this study would not be possible without their efforts
 and generosity. In particular, we would like to acknowledge the authors that
 gave us the permission to use the data or who made their data available for this
-study (Supplementary Table S1). We further thank Suzanne
+study (Supplementary Table 1). We further thank Suzanne
 Bonnamour, Colin Fontaine, Grégoire Loïs, Maud Mouchet, and Emmanuelle Porcher
 at the Centre d’Écologie et des Sciences de la Conservation as well as Andrew P
 Beckerman and Thomas F Johnson at the University of Sheffield for their very

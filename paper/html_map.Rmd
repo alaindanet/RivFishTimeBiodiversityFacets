@@ -356,7 +356,7 @@ mapview(trends_cl_loc,
 ```
 ```{r}
 mapshot(m,
-  url = here("paper", "fig_paper", "SupplementaryMap","SupplementaryMapS1.html"),
+  url = here("paper", "fig_paper", "SupplementaryMap", "SupplementaryMap1.html"),
   selfcontained = FALSE
 )
 ```

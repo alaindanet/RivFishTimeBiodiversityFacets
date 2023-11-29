@@ -1,13 +1,11 @@
 ---
 title: "Supplementary Figures and Tables"
-subtitle: ""
-author: ""
-date: ""
 output:
   bookdown::pdf_document2:
     latex_engine: xelatex
     keep_tex: true
     df_print: paged
+    number_sections: false
     toc: false
 bibliography: "bibliography.bib"
 always_allow_html: true
@@ -16,8 +14,11 @@ header-includes:
   \usepackage{booktabs}
   \usepackage{colortbl}
   \usepackage{caption}
-  \renewcommand{\thetable}{S\arabic{table}}
-  \renewcommand{\thefigure}{S\arabic{figure}}
+  \renewcommand{\figurename}{Supplementary Figure}
+  \renewcommand{\tablename}{Supplementary Table}
+  \renewcommand{\thetable}{\arabic{table}}
+  \renewcommand{\thefigure}{\arabic{figure}}
+  \AtBeginDocument{\let\maketitle\relax}
 ---
 
 ```{r options, include = FALSE}
@@ -115,7 +116,7 @@ measurement_exo <- measurement_exo %>%
   filter(op_id %in% unique(modelling_data_exo$op_id))
 ```
 
-# Supplementary figures
+# Supplementary Figures
 
 ```{r tab-loc-u, results = "hide"}
 location_site <- filtered_dataset_modelling$location %>%
@@ -1060,7 +1061,7 @@ knitr::include_graphics(here("paper", "fig_paper", "cl_bt_supp.pdf"))
 
 \newpage
 
-# Supplementary tables
+# Supplementary Tables
 
 
 ```{r, eval=FALSE}
